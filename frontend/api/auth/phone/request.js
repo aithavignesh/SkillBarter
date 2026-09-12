@@ -1,4 +1,4 @@
-import { createOtpChallenge, normalizePhone, response } from './_utils.js';
+import { createOtpChallenge, normalizePhone, response, sendSmsOtp } from './_utils.js';
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') return response({ ok: true });
@@ -8,18 +8,18 @@ export default async function handler(req) {
     const phone = normalizePhone(req.body?.phone);
     const challenge = createOtpChallenge(phone);
 
-    // Submission-safe mobile authentication: generate the OTP locally on the
-    // server and return it immediately. This keeps the required mobile login
-    // flow functional even when an external SMS provider is unavailable.
+    // The OTP is generated server-side and is sent only through Twilio SMS.
+    // The signed challenge contains the OTP hash and never exposes the code.
+    await sendSmsOtp(phone, challenge.otp);
+
     return response({
       success: true,
       phone,
       challenge: challenge.token,
-      delivery: 'demo',
-      demoOtp: challenge.otp,
+      delivery: 'sms',
     });
   } catch (error) {
     console.error('Phone OTP request failed:', error);
-    return response({ error: error?.message || 'Unable to create OTP' }, 400);
+    return response({ error: error?.message || 'Unable to send OTP by SMS' }, 400);
   }
 }
