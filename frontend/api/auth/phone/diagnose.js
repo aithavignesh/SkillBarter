@@ -1,4 +1,5 @@
-import { checkTwilioAuthentication, getEnvConfig, sendJson } from './_utils.js';
+import { getEnvConfig, sendJson } from './_utils.js';
+import { getSmsProviderDiagnostics } from './smsProvider.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -7,28 +8,26 @@ export default async function handler(req, res) {
 
   try {
     const env = getEnvConfig();
-    const authTest = await checkTwilioAuthentication();
+    const sms = getSmsProviderDiagnostics();
 
-    const safeReport = {
-      success: authTest.authOk,
-      accountSidPrefix: authTest.diagnostics?.accountSidPrefix || '',
-      accountSidLength: authTest.diagnostics?.accountSidLength || 0,
-      authCredentialLength: authTest.diagnostics?.authCredentialLength || 0,
-      authCredentialType: authTest.diagnostics?.authCredentialType || '',
-      fromNumberPrefix: authTest.diagnostics?.fromNumberPrefix || '',
-      fromNumberLength: authTest.diagnostics?.fromNumberLength || 0,
-      fromNumberType: authTest.diagnostics?.fromNumberType || '',
-      hasWhitespaceOrQuotes: Boolean(authTest.diagnostics?.hasWhitespaceOrQuotes),
-      twilioHttpStatus: authTest.httpStatus,
-      twilioErrorCode: authTest.twilioCode,
-      twilioSafeMessage: authTest.twilioMessage,
-      senderSmsCapable: authTest.diagnostics?.senderSmsCapable ?? null,
-      phoneAuthSecretConfigured: Boolean(env.phoneAuthSecret),
-      insforgeConfigured: Boolean(env.insforgeUrl && env.insforgeAnonKey),
-    };
-
-    return sendJson(res, safeReport, authTest.authOk ? 200 : 400);
+    return sendJson(
+      res,
+      {
+        success: sms.configured,
+        smsProvider: sms.provider,
+        smsProviderConfigured: sms.configured,
+        smsCredentialLength: sms.credentialLength,
+        smsTemplateConfigured: sms.templateConfigured,
+        phoneAuthSecretConfigured: Boolean(env.phoneAuthSecret),
+        insforgeConfigured: Boolean(env.insforgeUrl && env.insforgeAnonKey),
+        note: sms.configured
+          ? 'SMS provider configuration is present. A real SMS is sent only through the configured provider.'
+          : 'SMS provider credentials are missing. No OTP is sent until the provider is configured.',
+      },
+      sms.configured ? 200 : 500
+    );
   } catch (err) {
-    return sendJson(res, { error: err.message }, 500);
+    console.error('[Phone OTP Diagnosis Failed]', err.message);
+    return sendJson(res, { error: 'Unable to diagnose SMS configuration.' }, 500);
   }
 }
