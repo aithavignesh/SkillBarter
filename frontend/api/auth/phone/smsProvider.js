@@ -1,5 +1,6 @@
 import { getEnvConfig } from './_utils.js';
 
+const TWOFACTOR_OTP_ENDPOINT = 'https://2factor.in/API/V1/OTP/SEND';
 const TWOFACTOR_BASE = 'https://2factor.in/API/V1';
 
 function clean(value) {
@@ -42,19 +43,27 @@ async function sendVia2Factor(phone, otp) {
     throw error;
   }
 
-  // 2Factor's approved custom OTP template API uses:
-  // /API/V1/{api_key}/SMS/{phone_number}/{otp}/{template_name}
-  // Phone number is sent as country code + national number, without '+'.
-  const phoneDigits = phone.replace(/\D/g, '');
-  const url = `${TWOFACTOR_BASE}/${encodeURIComponent(twoFactorApiKey)}/SMS/${encodeURIComponent(phoneDigits)}/${encodeURIComponent(otp)}/${encodeURIComponent(twoFactorTemplate)}`;
-
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { Accept: 'application/json, text/plain, */*' },
+    // Current 2Factor v4 OTP API. The API accepts the approved template name
+    // and OTP as variables; include both documented template field variants for
+    // compatibility with accounts using the newer unified API.
+    const response = await fetch(TWOFACTOR_OTP_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': twoFactorApiKey,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        to: phone,
+        channel: 'SMS',
+        template: twoFactorTemplate,
+        template_name: twoFactorTemplate,
+        var1: otp,
+      }),
       signal: controller.signal,
     });
 
@@ -63,31 +72,31 @@ async function sendVia2Factor(phone, otp) {
     try {
       data = JSON.parse(text);
     } catch {
-      // The legacy OTP endpoint may return plain text.
+      // Keep plain-text/gateway responses available for diagnostics.
     }
 
-    const statusText = String(data?.Status || data?.status || '').toLowerCase();
-    const success = response.ok && (
-      ['success', 'sent', 'queued'].includes(statusText) ||
-      /success|sent|queued/i.test(text)
+    const statusText = String(data?.status || data?.Status || '').toLowerCase();
+    if (response.ok && (!statusText || ['success', 'sent', 'queued'].includes(statusText))) {
+      return {
+        provider: '2factor',
+        sid: data?.session_id || data?.message_id || data?.id || null,
+        status: data?.status || data?.Status || 'sent',
+      };
+    }
+
+    // If the current endpoint is not available on this account, use the
+    // documented custom-template manual OTP endpoint as a compatibility path.
+    if (response.status === 404 || response.status === 405) {
+      return await sendVia2FactorLegacy(phone, otp, twoFactorApiKey, twoFactorTemplate);
+    }
+
+    const gatewayMessage = safeGatewayText(
+      data?.message || data?.error || data?.detail || data?.Details || data?.details || text || '2Factor rejected the SMS request'
     );
-
-    if (!success) {
-      // Never include the request URL because it contains the API key.
-      const gatewayMessage = safeGatewayText(
-        data?.Details || data?.details || data?.message || data?.error || text || '2Factor rejected the SMS request'
-      );
-      const error = new Error(`SMS delivery failed: ${gatewayMessage}`);
-      error.code = `TWOFACTOR_${data?.Code || response.status}`;
-      error.statusCode = response.status >= 500 ? 502 : 400;
-      throw error;
-    }
-
-    return {
-      provider: '2factor',
-      sid: data?.Details || data?.details || data?.session_id || data?.message_id || data?.id || null,
-      status: data?.Status || data?.status || 'sent',
-    };
+    const error = new Error(`SMS delivery failed: ${gatewayMessage}`);
+    error.code = `TWOFACTOR_${data?.code || data?.Code || response.status}`;
+    error.statusCode = response.status >= 500 ? 502 : 400;
+    throw error;
   } catch (err) {
     if (err.name === 'AbortError') {
       const timeoutError = new Error('SMS service timed out. Please try again.');
@@ -99,6 +108,47 @@ async function sendVia2Factor(phone, otp) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+async function sendVia2FactorLegacy(phone, otp, apiKey, template) {
+  // 2Factor's documented custom-template Manual OTP API:
+  // /API/V1/{api_key}/SMS/{phone_number}/{otp}/{template_name}
+  const phoneDigits = phone.replace(/\D/g, '');
+  const url = `${TWOFACTOR_BASE}/${encodeURIComponent(apiKey)}/SMS/${encodeURIComponent(phoneDigits)}/${encodeURIComponent(otp)}/${encodeURIComponent(template)}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { Accept: 'application/json, text/plain, */*' },
+  });
+
+  const text = (await response.text()).trim();
+  let data = null;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    // Legacy endpoint may return plain text.
+  }
+
+  const statusText = String(data?.Status || data?.status || '').toLowerCase();
+  const success = response.ok && (
+    ['success', 'sent', 'queued'].includes(statusText) ||
+    /success|sent|queued/i.test(text)
+  );
+
+  if (!success) {
+    const gatewayMessage = safeGatewayText(
+      data?.Details || data?.details || data?.message || data?.error || text || '2Factor rejected the SMS request'
+    );
+    const error = new Error(`SMS delivery failed: ${gatewayMessage}`);
+    error.code = `TWOFACTOR_${data?.Code || response.status}`;
+    error.statusCode = response.status >= 500 ? 502 : 400;
+    throw error;
+  }
+
+  return {
+    provider: '2factor',
+    sid: data?.Details || data?.details || data?.session_id || data?.message_id || data?.id || null,
+    status: data?.Status || data?.status || 'sent',
+  };
 }
 
 export async function sendSmsOtpViaProvider(phone, otp) {
