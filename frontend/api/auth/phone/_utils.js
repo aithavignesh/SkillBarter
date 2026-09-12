@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import https from 'node:https';
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -29,33 +30,48 @@ function twilioCredentials() {
 }
 
 async function twilioRequest(url, body) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 7000);
-  try {
-    const result = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${twilioCredentials()}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'application/json',
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const request = https.request(
+      {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port || 443,
+        path: `${parsed.pathname}${parsed.search}`,
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${twilioCredentials()}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(body.toString()),
+          Accept: 'application/json',
+          Connection: 'close',
+        },
+        timeout: 6000,
       },
-      body,
-      signal: controller.signal,
+      (result) => {
+        let raw = '';
+        result.setEncoding('utf8');
+        result.on('data', (chunk) => { raw += chunk; });
+        result.on('end', () => {
+          let data = {};
+          try { data = raw ? JSON.parse(raw) : {}; } catch {}
+          if (result.statusCode && result.statusCode >= 200 && result.statusCode < 300) {
+            resolve(data);
+            return;
+          }
+          const code = data?.code ? ` (${data.code})` : '';
+          reject(new Error(`${data?.message || data?.error_message || 'Twilio request failed'}${code}`));
+        });
+      },
+    );
+
+    request.on('timeout', () => {
+      request.destroy(new Error('Twilio SMS service timed out. Check the Twilio account, sender number, and verified recipient.'));
     });
-    const data = await result.json().catch(() => ({}));
-    if (!result.ok) {
-      const code = data?.code ? ` (${data.code})` : '';
-      throw new Error(`${data?.message || data?.error_message || 'Twilio request failed'}${code}`);
-    }
-    return data;
-  } catch (error) {
-    if (error?.name === 'AbortError') {
-      throw new Error('Twilio SMS service timed out. Check the Twilio account, sender number, and verified recipient.');
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
+    request.on('error', reject);
+    request.write(body.toString());
+    request.end();
+  });
 }
 
 function otpHash(phone, otp, expiresAt) {
