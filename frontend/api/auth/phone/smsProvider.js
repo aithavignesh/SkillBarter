@@ -7,8 +7,8 @@ function clean(value) {
 }
 
 export function getSmsProviderConfig() {
-  const provider = clean(process.env.SMS_PROVIDER || '2factor').toLowerCase();
   const twoFactorApiKey = clean(process.env.TWOFACTOR_API_KEY);
+  const provider = clean(process.env.SMS_PROVIDER || (twoFactorApiKey ? '2factor' : 'twilio')).toLowerCase();
   const twoFactorTemplate = clean(process.env.TWOFACTOR_TEMPLATE_NAME || 'LOGIN_OTP');
 
   return { provider, twoFactorApiKey, twoFactorTemplate };
