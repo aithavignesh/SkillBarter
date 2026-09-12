@@ -9,7 +9,6 @@ export const LoginPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [demoOtp, setDemoOtp] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -22,12 +21,9 @@ export const LoginPage: React.FC = () => {
     try {
       setError(null);
       await requestPhoneOtp(phone);
-      const fallback = sessionStorage.getItem('skillbarter_demo_otp') || '';
-      setDemoOtp(fallback);
-      setOtp(fallback);
       setOtpSent(true);
     } catch (err: any) {
-      setError(err.message || 'Unable to create OTP');
+      setError(err.message || 'Unable to send OTP by SMS');
     }
   };
 
@@ -70,13 +66,9 @@ export const LoginPage: React.FC = () => {
               <label className="block text-xs font-semibold text-slate-700 mb-1">Mobile Number</label>
               <div className="relative"><Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" /><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+917050062084" disabled={otpSent} className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60" required /></div>
             </div>
-            {otpSent && <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">6-Digit OTP</label>
-              {demoOtp && <div className="mb-2 p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-center"><div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Mobile OTP</div><div className="text-2xl font-extrabold tracking-[0.35em] text-emerald-800 mt-1">{demoOtp}</div><div className="text-[10px] text-emerald-700 mt-1">Use this OTP to complete mobile login • expires in 10 minutes</div></div>}
-              <input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="123456" className="w-full text-center tracking-[0.4em] text-lg py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
-            </div>}
+            {otpSent && <div><label className="block text-xs font-semibold text-slate-700 mb-1">6-Digit OTP</label><input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="123456" className="w-full text-center tracking-[0.4em] text-lg py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" required /></div>}
             <Button type="submit" loading={loading} className="w-full" icon={<ArrowRight className="w-4 h-4" />}>{otpSent ? 'Verify OTP & Sign In' : 'Send OTP'}</Button>
-            {otpSent && <button type="button" onClick={() => { setOtpSent(false); setOtp(''); setDemoOtp(''); setError(null); }} className="w-full text-[11px] text-slate-500 hover:text-emerald-700">Change mobile number</button>}
+            {otpSent && <button type="button" onClick={() => { setOtpSent(false); setOtp(''); setError(null); }} className="w-full text-[11px] text-slate-500 hover:text-emerald-700">Change mobile number</button>}
           </form>
         </Card>
 
