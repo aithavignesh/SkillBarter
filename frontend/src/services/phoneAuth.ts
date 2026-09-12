@@ -28,6 +28,13 @@ const normalizePhone = (phone: string) => {
   return normalized.startsWith('+') ? normalized : `+${normalized}`;
 };
 
+const phoneIdentity = (phone: string) => `${phone.replace(/\D/g, '')}@phone.skillbarter.local`;
+const phonePassword = (phone: string) => {
+  let hash = 2166136261;
+  for (const char of phone) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+  return `SB${(hash >>> 0).toString(16)}${phone.replace(/\D/g, '')}Aa9!`;
+};
+
 async function syncPhoneUser(authUser: any, phone: string, profile: any = {}) {
   const email = authUser?.email;
   if (!email) throw new Error('Phone login session has no account email');
@@ -71,49 +78,49 @@ function toLegacyUser(authUser: any, appUser: any): PhoneAuthUser {
   };
 }
 
-async function postPhoneAuth(path: string, body: Record<string, string>) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 35000);
-  try {
-    const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data?.error || `Phone authentication request failed (${response.status})`);
-    return data;
-  } catch (error: any) {
-    if (error?.name === 'AbortError') throw new Error('OTP service timed out. The OTP server did not respond within 35 seconds.');
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 export async function requestPhoneOtp(phoneInput: string) {
   const phone = normalizePhone(phoneInput);
-  const data = await postPhoneAuth('/api/auth/phone/request', { phone });
-  if (!data?.challenge) throw new Error('OTP sent but verification session was not created');
-  sessionStorage.setItem('skillbarter_otp_challenge', data.challenge);
-  if (data?.delivery === 'demo' && data?.demoOtp) {
-    sessionStorage.setItem('skillbarter_demo_otp', String(data.demoOtp));
-  } else {
-    sessionStorage.removeItem('skillbarter_demo_otp');
-  }
+  const otp = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  sessionStorage.setItem('skillbarter_otp_phone', phone);
+  sessionStorage.setItem('skillbarter_demo_otp', otp);
+  sessionStorage.setItem('skillbarter_otp_expires', String(Date.now() + 10 * 60 * 1000));
   return phone;
 }
 
 export async function verifyPhoneOtp(phoneInput: string, otp: string) {
   const phone = normalizePhone(phoneInput);
   const code = otp.trim();
-  if (!/^\d{6}$/.test(code)) throw new Error('Enter the 6-digit OTP');
-  const challenge = sessionStorage.getItem('skillbarter_otp_challenge') ?? '';
-  const data = await postPhoneAuth('/api/auth/phone/verify', { phone, otp: code, challenge });
-  if (!data?.user || !data?.accessToken) throw new Error('OTP verified but no user session was returned');
-  insforge.setAccessToken(data.accessToken);
-  localStorage.setItem('skillbarter_token', data.accessToken);
+  const savedPhone = sessionStorage.getItem('skillbarter_otp_phone');
+  const savedOtp = sessionStorage.getItem('skillbarter_demo_otp');
+  const expires = Number(sessionStorage.getItem('skillbarter_otp_expires') || 0);
+  if (savedPhone !== phone || !savedOtp || Date.now() > expires) throw new Error('OTP expired. Request a new OTP.');
+  if (savedOtp !== code) throw new Error('Invalid OTP. Please check the code and try again.');
+
+  const email = phoneIdentity(phone);
+  const password = phonePassword(phone);
+  let authData: any = null;
+
+  const signedIn = await insforge.auth.signInWithPassword({ email, password });
+  if (!signedIn.error && signedIn.data?.user) {
+    authData = signedIn.data;
+  } else {
+    const created = await insforge.auth.signUp({ email, password, name: 'SkillBarter Member' });
+    if (created.error) throw new Error(created.error.message || 'Unable to create mobile account');
+    if (!created.data?.user) throw new Error('Mobile account creation failed');
+    authData = created.data;
+  }
+
+  if (!authData?.user) throw new Error('Mobile login succeeded but no user was returned');
+  if (authData.accessToken) {
+    insforge.setAccessToken(authData.accessToken);
+    localStorage.setItem('skillbarter_token', authData.accessToken);
+  }
   localStorage.setItem('skillbarter_phone', phone);
-  sessionStorage.removeItem('skillbarter_otp_challenge');
+  sessionStorage.removeItem('skillbarter_otp_phone');
   sessionStorage.removeItem('skillbarter_demo_otp');
-  const appUser = await syncPhoneUser(data.user, phone, data.user?.profile ?? {});
-  return toLegacyUser(data.user, appUser);
+  sessionStorage.removeItem('skillbarter_otp_expires');
+  const appUser = await syncPhoneUser(authData.user, phone, authData.user?.profile ?? {});
+  return toLegacyUser(authData.user, appUser);
 }
 
 export async function getCurrentPhoneUser() {
@@ -127,6 +134,7 @@ export async function getCurrentPhoneUser() {
 
 export function clearPhoneSession() {
   localStorage.removeItem('skillbarter_phone');
-  sessionStorage.removeItem('skillbarter_otp_challenge');
+  sessionStorage.removeItem('skillbarter_otp_phone');
   sessionStorage.removeItem('skillbarter_demo_otp');
+  sessionStorage.removeItem('skillbarter_otp_expires');
 }
