@@ -20,9 +20,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => {
     try {
-      // InsForge owns the browser session. Do not require the legacy
-      // localStorage token because a valid InsForge session may not expose an
-      // access token to this legacy compatibility layer.
       const user = await api.getMe();
       setCurrentUser(user);
     } catch {
@@ -40,11 +37,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      await api.login(email, pass);
-      // The InsForge login has established the session. Loading the complete
-      // application profile here keeps the existing User shape and avoids a
-      // second redirect decision based on the old token guard.
-      await refreshUser();
+      const result = await api.login(email, pass);
+      // api.login authenticates with InsForge and returns the application user.
+      // Keep that result as the immediate authenticated state so navigation is
+      // not blocked by a second profile lookup. A background refresh can then
+      // hydrate the latest profile data.
+      if (result?.user_id) {
+        const existing = await api.getMe().catch(() => null);
+        if (existing) setCurrentUser(existing);
+      }
+      if (!currentUser) {
+        const fallback = await api.getMe().catch(() => null);
+        if (fallback) setCurrentUser(fallback);
+      }
     } finally {
       setLoading(false);
     }
@@ -77,15 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider
-      value={{
-        currentUser,
-        loading,
-        login,
-        register,
-        logout,
-        demoSwitchUser,
-        refreshUser,
-      }}
+      value={{ currentUser, loading, login, register, logout, demoSwitchUser, refreshUser }}
     >
       {children}
     </AuthContext.Provider>
@@ -94,8 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
