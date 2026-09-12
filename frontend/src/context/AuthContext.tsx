@@ -30,9 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  useEffect(() => {
-    refreshUser();
-  }, []);
+  useEffect(() => { refreshUser(); }, []);
 
   const login = async (email: string, pass: string) => {
     setLoading(true);
