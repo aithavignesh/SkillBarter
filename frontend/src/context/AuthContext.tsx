@@ -20,12 +20,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => {
     try {
-      const token = localStorage.getItem('skillbarter_token');
-      if (!token) {
-        setCurrentUser(null);
-        setLoading(false);
-        return;
-      }
+      // InsForge owns the browser session. Do not require the legacy
+      // localStorage token because a valid InsForge session may not expose an
+      // access token to this legacy compatibility layer.
       const user = await api.getMe();
       setCurrentUser(user);
     } catch {
@@ -44,6 +41,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await api.login(email, pass);
+      // The InsForge login has established the session. Loading the complete
+      // application profile here keeps the existing User shape and avoids a
+      // second redirect decision based on the old token guard.
       await refreshUser();
     } finally {
       setLoading(false);
