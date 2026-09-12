@@ -1,4 +1,12 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+import { insforge } from '../lib/insforge';
+
+/**
+ * SkillBarter API facade.
+ *
+ * Authentication is handled directly by InsForge in the browser. The legacy
+ * FastAPI transport is intentionally disabled so production can never fall
+ * back to the old Render/localhost API.
+ */
 class ApiClient {
   private getToken(): string | null {
     return localStorage.getItem('skillbarter_token');
@@ -12,308 +20,169 @@ class ApiClient {
     localStorage.removeItem('skillbarter_token');
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string> || {}),
-    };
-
-    const token = this.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    if (response.status === 401 && !endpoint.includes('/auth/login')) {
-      this.clearToken();
-      // Only redirect if not already on login or landing
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-        window.location.href = '/login';
-      }
-      throw new Error('Session expired. Please log in again.');
-    }
-
-    if (!response.ok) {
-      let errorMessage = 'An error occurred';
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.detail || errorData.message || response.statusText;
-        if (typeof errorMessage === 'object') {
-          errorMessage = JSON.stringify(errorMessage);
-        }
-      } catch {
-        errorMessage = response.statusText;
-      }
-      throw new Error(errorMessage);
-    }
-
-    return response.json();
+  private async request<T>(_endpoint: string, _options: RequestInit = {}): Promise<T> {
+    throw new Error('This API endpoint has not yet been migrated to InsForge. Please use the InsForge database/auth service.');
   }
 
-  // Auth
+  private authUserToLegacyUser(authUser: any): any {
+    const metadata = authUser?.profile ?? authUser?.metadata ?? {};
+    return {
+      id: Number(metadata.legacy_id ?? authUser?.id) || 0,
+      email: authUser?.email ?? '',
+      full_name: metadata.full_name ?? authUser?.name ?? metadata.nickname ?? '',
+      avatar_url: metadata.avatar_url,
+      bio: metadata.bio,
+      headline: metadata.headline,
+      address_display: metadata.address_display,
+      latitude: metadata.latitude,
+      longitude: metadata.longitude,
+      exchange_radius_km: Number(metadata.exchange_radius_km ?? 10),
+      location_visibility: metadata.location_visibility ?? 'APPROXIMATE',
+      availability: metadata.availability ?? 'Weekends & Evenings',
+      primary_intent: metadata.primary_intent ?? 'EXCHANGE',
+      trust_score: Number(metadata.trust_score ?? 85),
+      reliability_score: Number(metadata.reliability_score ?? 90),
+      response_rate: Number(metadata.response_rate ?? 95),
+      skill_quality_score: Number(metadata.skill_quality_score ?? 90),
+      completed_exchanges_count: Number(metadata.completed_exchanges_count ?? 0),
+      reviews_count: Number(metadata.reviews_count ?? 0),
+      badges: Array.isArray(metadata.badges) ? metadata.badges : ['Verified Member'],
+      is_active: metadata.is_active !== false,
+      is_admin: metadata.is_admin === true,
+      onboarding_completed: metadata.onboarding_completed !== false,
+      created_at: authUser?.createdAt ?? new Date().toISOString(),
+      skills: [],
+    };
+  }
+
+  // Auth - InsForge
   async login(email: string, password: string) {
-    const data = await this.request<{ access_token: string; user_id: number; email: string; full_name: string; is_admin: boolean }>(
-      '/auth/login',
-      { method: 'POST', body: JSON.stringify({ email, password }) }
-    );
-    this.setToken(data.access_token);
-    return data;
+    const { data, error } = await insforge.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message || 'Invalid credentials');
+    if (!data?.user) throw new Error('Login succeeded but no user was returned.');
+
+    if (data.accessToken) this.setToken(data.accessToken);
+
+    const user = this.authUserToLegacyUser(data.user);
+    return {
+      access_token: data.accessToken ?? '',
+      user_id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      is_admin: user.is_admin,
+    };
   }
 
   async register(payload: any) {
-    const data = await this.request<{ access_token: string; user_id: number; email: string; full_name: string; is_admin: boolean }>(
-      '/auth/register',
-      { method: 'POST', body: JSON.stringify(payload) }
-    );
-    this.setToken(data.access_token);
-    return data;
+    const { data, error } = await insforge.auth.signUp({
+      email: payload.email,
+      password: payload.password,
+      name: payload.full_name,
+    });
+
+    if (error) throw new Error(error.message || 'Registration failed');
+    if (!data?.user) throw new Error('Registration succeeded but no user was returned.');
+
+    // Store the application's profile fields in the InsForge auth profile.
+    const { error: profileError } = await insforge.auth.setProfile({
+      nickname: payload.full_name,
+      bio: payload.bio,
+      avatar_url: payload.avatar_url,
+      full_name: payload.full_name,
+      address_display: payload.address_display,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      primary_intent: payload.primary_intent ?? 'EXCHANGE',
+      onboarding_completed: false,
+    } as any);
+
+    if (profileError) {
+      // Authentication itself succeeded. Keep registration usable even if an
+      // optional profile field is rejected by a project-specific profile schema.
+      console.warn('InsForge profile update warning:', profileError);
+    }
+
+    if (data.accessToken) this.setToken(data.accessToken);
+
+    const user = this.authUserToLegacyUser(data.user);
+    return {
+      access_token: data.accessToken ?? '',
+      user_id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      is_admin: false,
+    };
   }
 
-  async demoSwitch(userId: number) {
-    const data = await this.request<{ access_token: string; user_id: number; email: string; full_name: string; is_admin: boolean }>(
-      `/auth/demo-switch/${userId}`,
-      { method: 'POST' }
-    );
-    this.setToken(data.access_token);
-    return data;
+  async demoSwitch(_userId: number) {
+    throw new Error('Demo switching is not available until demo accounts are migrated to InsForge Auth.');
   }
 
   async getMe() {
-    return this.request<any>('/users/me');
+    const { data, error } = await insforge.auth.getCurrentUser();
+    if (error) throw new Error(error.message || 'Unable to load current user');
+    if (!data?.user) throw new Error('Not authenticated');
+    return this.authUserToLegacyUser(data.user);
   }
 
   async updateMe(payload: any) {
-    return this.request<any>('/users/me', { method: 'PATCH', body: JSON.stringify(payload) });
+    const { data, error } = await insforge.auth.setProfile(payload);
+    if (error) throw new Error(error.message || 'Unable to update profile');
+    return data;
   }
 
   async logout() {
+    const { error } = await insforge.auth.signOut();
     this.clearToken();
+    if (error) throw new Error(error.message || 'Logout failed');
   }
 
-  // Users & Nearby
-  async getNearbyUsers(radiusKm?: number) {
-    const query = radiusKm ? `?radius_km=${radiusKm}` : '';
-    return this.request<any[]>(`/users/nearby${query}`);
-  }
-
-  async getUserProfile(userId: number) {
-    return this.request<any>(`/users/${userId}`);
-  }
-
-  // Skills
-  async getSkills(category?: string) {
-    const query = category ? `?category=${encodeURIComponent(category)}` : '';
-    return this.request<any[]>(`/skills${query}`);
-  }
-
-  async searchSkills(q: string) {
-    return this.request<any[]>(`/skills/search?q=${encodeURIComponent(q)}`);
-  }
-
-  async addUserSkill(payload: { skill_name: string; category?: string; skill_type: 'OFFERED' | 'NEEDED'; experience_level?: string; description?: string }) {
-    return this.request<any>('/skills/user/me', { method: 'POST', body: JSON.stringify(payload) });
-  }
-
-  async deleteUserSkill(userSkillId: number) {
-    return this.request<any>(`/skills/user/me/${userSkillId}`, { method: 'DELETE' });
-  }
-
-  // Matching
-  async getMatches() {
-    return this.request<any[]>('/matches');
-  }
-
-  // Exchanges
-  async getExchanges(status?: string) {
-    const query = status ? `?status=${status}` : '';
-    return this.request<any[]>(`/exchanges${query}`);
-  }
-
-  async getExchangeDetails(id: number) {
-    return this.request<any>(`/exchanges/${id}`);
-  }
-
-  async proposeExchange(payload: {
-    receiver_id: number;
-    requester_skill_name?: string;
-    receiver_skill_name?: string;
-    proposal_message: string;
-    preferred_date?: string;
-    estimated_hours?: number;
-    location_area?: string;
-  }) {
-    return this.request<any>('/exchanges', { method: 'POST', body: JSON.stringify(payload) });
-  }
-
-  async acceptExchange(id: number) {
-    return this.request<any>(`/exchanges/${id}/accept`, { method: 'PATCH' });
-  }
-
-  async counterExchange(id: number, payload: { counter_message: string; preferred_date?: string; estimated_hours?: number }) {
-    return this.request<any>(`/exchanges/${id}/counter`, { method: 'PATCH', body: JSON.stringify(payload) });
-  }
-
-  async rejectExchange(id: number) {
-    return this.request<any>(`/exchanges/${id}/reject`, { method: 'PATCH' });
-  }
-
-  async startExchange(id: number) {
-    return this.request<any>(`/exchanges/${id}/start`, { method: 'PATCH' });
-  }
-
-  async completeExchange(id: number) {
-    return this.request<any>(`/exchanges/${id}/complete`, { method: 'PATCH' });
-  }
-
-  async cancelExchange(id: number, cancellation_reason: string) {
-    return this.request<any>(`/exchanges/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ cancellation_reason }) });
-  }
-
-  // Reviews
-  async submitReview(payload: {
-    exchange_id: number;
-    rating: number;
-    reliability_score?: number;
-    skill_quality_score?: number;
-    would_exchange_again?: boolean;
-    comment?: string;
-  }) {
-    return this.request<any>('/reviews', { method: 'POST', body: JSON.stringify(payload) });
-  }
-
-  async getUserReviews(userId: number) {
-    return this.request<any[]>(`/reviews/user/${userId}`);
-  }
-
-  // Trust Score
-  async getTrustDetails(userId: number) {
-    return this.request<any>(`/trust/user/${userId}`);
-  }
-
-  // Messages
-  async getConversations() {
-    return this.request<any[]>('/messages/conversations');
-  }
-
-  async getMessages(partnerId: number) {
-    return this.request<any[]>(`/messages/${partnerId}`);
-  }
-
-  async sendMessage(payload: { receiver_id: number; content: string; exchange_id?: number }) {
-    return this.request<any>('/messages', { method: 'POST', body: JSON.stringify(payload) });
-  }
-
-  // Notifications
-  async getNotifications() {
-    return this.request<any[]>('/notifications');
-  }
-
-  async getUnreadNotificationCount() {
-    return this.request<{ unread_count: number }>('/notifications/unread-count');
-  }
-
-  async markNotificationRead(id: number) {
-    return this.request<any>(`/notifications/${id}/read`, { method: 'PATCH' });
-  }
-
-  async markAllNotificationsRead() {
-    return this.request<any>('/notifications/read-all', { method: 'PATCH' });
-  }
-
-  // Connections
-  async getConnections() {
-    return this.request<any[]>('/connections');
-  }
-
-  async connectNeighbor(userId: number) {
-    return this.request<any>(`/connections/${userId}`, { method: 'POST' });
-  }
-
-  async disconnectNeighbor(userId: number) {
-    return this.request<any>(`/connections/${userId}`, { method: 'DELETE' });
-  }
-
-  async getConnectionSuggestions() {
-    return this.request<any[]>('/connections/suggestions');
-  }
-
-  // Feed
-  async getFeed(postType?: string) {
-    const query = postType ? `?post_type=${postType}` : '';
-    return this.request<any[]>(`/feed${query}`);
-  }
-
-  async createPost(payload: { post_type: string; title: string; content: string; skill_name?: string }) {
-    return this.request<any>('/feed', { method: 'POST', body: JSON.stringify(payload) });
-  }
-
-  async likePost(postId: number) {
-    return this.request<any>(`/feed/${postId}/like`, { method: 'POST' });
-  }
-
-  // Community
-  async getCommunityStats() {
-    return this.request<any>('/community/stats');
-  }
-
-  // Search
-  async search(q: string, category?: string, minTrust?: number) {
-    const params = new URLSearchParams();
-    if (q) params.append('q', q);
-    if (category) params.append('category', category);
-    if (minTrust) params.append('min_trust', minTrust.toString());
-    return this.request<{ people: any[]; skills: any[]; posts: any[] }>(`/search?${params.toString()}`);
-  }
-
-  // Safety & Moderation
-  async createReport(payload: { reported_user_id?: number; reported_exchange_id?: number; category: string; details: string }) {
-    return this.request<any>('/reports', { method: 'POST', body: JSON.stringify(payload) });
-  }
-
-  async blockUser(userId: number) {
-    return this.request<any>(`/blocks/${userId}`, { method: 'POST' });
-  }
-
-  async unblockUser(userId: number) {
-    return this.request<any>(`/blocks/${userId}`, { method: 'DELETE' });
-  }
-
-  async getBlocks() {
-    return this.request<any[]>('/blocks');
-  }
-
-  // Admin
-  async getAdminStats() {
-    return this.request<any>('/admin/stats');
-  }
-
-  async getAdminUsers() {
-    return this.request<any[]>('/admin/users');
-  }
-
-  async toggleAdminUserActive(userId: number) {
-    return this.request<any>(`/admin/users/${userId}/toggle-active`, { method: 'PATCH' });
-  }
-
-  async getAdminReports(status?: string) {
-    const query = status ? `?status_filter=${status}` : '';
-    return this.request<any[]>(`/admin/reports${query}`);
-  }
-
-  async resolveAdminReport(reportId: number, status: 'RESOLVED' | 'DISMISSED', adminNote?: string) {
-    const params = new URLSearchParams({ resolution_status: status });
-    if (adminNote) params.append('admin_note', adminNote);
-    return this.request<any>(`/admin/reports/${reportId}/resolve?${params.toString()}`, { method: 'PATCH' });
-  }
-
-  async getAdminExchanges() {
-    return this.request<any[]>('/admin/exchanges');
-  }
+  // Legacy endpoints intentionally fail fast instead of calling Render.
+  async getNearbyUsers(_radiusKm?: number) { return this.request<any[]>('/users/nearby'); }
+  async getUserProfile(_userId: number) { return this.request<any>('/users/profile'); }
+  async getSkills(_category?: string) { return this.request<any[]>('/skills'); }
+  async searchSkills(_q: string) { return this.request<any[]>('/skills/search'); }
+  async addUserSkill(_payload: any) { return this.request<any>('/skills/user/me'); }
+  async deleteUserSkill(_userSkillId: number) { return this.request<any>('/skills/user/me'); }
+  async getMatches() { return this.request<any[]>('/matches'); }
+  async getExchanges(_status?: string) { return this.request<any[]>('/exchanges'); }
+  async getExchangeDetails(_id: number) { return this.request<any>('/exchanges'); }
+  async proposeExchange(_payload: any) { return this.request<any>('/exchanges'); }
+  async acceptExchange(_id: number) { return this.request<any>('/exchanges'); }
+  async counterExchange(_id: number, _payload: any) { return this.request<any>('/exchanges'); }
+  async rejectExchange(_id: number) { return this.request<any>('/exchanges'); }
+  async startExchange(_id: number) { return this.request<any>('/exchanges'); }
+  async completeExchange(_id: number) { return this.request<any>('/exchanges'); }
+  async cancelExchange(_id: number, _reason: string) { return this.request<any>('/exchanges'); }
+  async submitReview(_payload: any) { return this.request<any>('/reviews'); }
+  async getUserReviews(_userId: number) { return this.request<any[]>('/reviews'); }
+  async getTrustDetails(_userId: number) { return this.request<any>('/trust'); }
+  async getConversations() { return this.request<any[]>('/messages/conversations'); }
+  async getMessages(_partnerId: number) { return this.request<any[]>('/messages'); }
+  async sendMessage(_payload: any) { return this.request<any>('/messages'); }
+  async getNotifications() { return this.request<any[]>('/notifications'); }
+  async getUnreadNotificationCount() { return this.request<any>('/notifications/unread-count'); }
+  async markNotificationRead(_id: number) { return this.request<any>('/notifications/read'); }
+  async markAllNotificationsRead() { return this.request<any>('/notifications/read-all'); }
+  async getConnections() { return this.request<any[]>('/connections'); }
+  async connectNeighbor(_userId: number) { return this.request<any>('/connections'); }
+  async disconnectNeighbor(_userId: number) { return this.request<any>('/connections'); }
+  async getConnectionSuggestions() { return this.request<any[]>('/connections/suggestions'); }
+  async getFeed(_postType?: string) { return this.request<any[]>('/feed'); }
+  async createPost(_payload: any) { return this.request<any>('/feed'); }
+  async likePost(_postId: number) { return this.request<any>('/feed/like'); }
+  async getCommunityStats() { return this.request<any>('/community/stats'); }
+  async search(_q: string, _category?: string, _minTrust?: number) { return this.request<any>('/search'); }
+  async createReport(_payload: any) { return this.request<any>('/reports'); }
+  async blockUser(_userId: number) { return this.request<any>('/blocks'); }
+  async unblockUser(_userId: number) { return this.request<any>('/blocks'); }
+  async getBlocks() { return this.request<any[]>('/blocks'); }
+  async getAdminStats() { return this.request<any>('/admin/stats'); }
+  async getAdminUsers() { return this.request<any[]>('/admin/users'); }
+  async toggleAdminUserActive(_userId: number) { return this.request<any>('/admin/users'); }
+  async getAdminReports(_status?: string) { return this.request<any[]>('/admin/reports'); }
+  async resolveAdminReport(_reportId: number, _status: 'RESOLVED' | 'DISMISSED', _adminNote?: string) { return this.request<any>('/admin/reports'); }
+  async getAdminExchanges() { return this.request<any[]>('/admin/exchanges'); }
 }
 
 export const api = new ApiClient();
