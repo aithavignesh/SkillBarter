@@ -1,5 +1,4 @@
 import {
-  checkSmsOtp,
   createOrSignInPhoneUser,
   normalizePhone,
   response,
@@ -15,11 +14,8 @@ export default async function handler(req) {
     const otp = String(req.body?.otp ?? '').trim();
     const challenge = String(req.body?.challenge ?? '');
     if (!/^\d{6}$/.test(otp)) return response({ error: 'Enter the 6-digit OTP' }, 400);
-    if (!verifyOtpChallenge(phone, challenge)) return response({ error: 'OTP session expired. Request a new OTP.' }, 401);
-
-    const verification = await checkSmsOtp(phone, otp);
-    if (verification?.status !== 'approved' || verification?.valid !== true) {
-      return response({ error: 'Invalid OTP. Please check the code and try again.' }, 401);
+    if (!verifyOtpChallenge(phone, otp, challenge)) {
+      return response({ error: 'Invalid or expired OTP. Request a new OTP and try again.' }, 401);
     }
 
     const session = await createOrSignInPhoneUser(phone);
