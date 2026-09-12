@@ -4,6 +4,7 @@ export interface PhoneAuthUser {
   id: number;
   email: string;
   full_name: string;
+  phone?: string;
   avatar_url?: string;
   bio?: string;
   trust_score: number;
@@ -20,121 +21,217 @@ export interface PhoneAuthUser {
   skills: any[];
 }
 
-const normalizePhone = (phone: string) => {
-  const trimmed = phone.trim();
+export const normalizePhone = (phone: string) => {
+  const trimmed = String(phone ?? '').trim();
   if (!trimmed) throw new Error('Mobile number is required');
-  const normalized = trimmed.replace(/[\s()-]/g, '');
-  if (!/^\+?[1-9]\d{9,14}$/.test(normalized)) throw new Error('Enter a valid mobile number with country code, e.g. +917050062084');
-  return normalized.startsWith('+') ? normalized : `+${normalized}`;
+  let cleaned = trimmed.replace(/[^\d+]/g, '');
+
+  if (cleaned.startsWith('0') && cleaned.length === 11) {
+    cleaned = '+91' + cleaned.slice(1);
+  } else if (/^\d{10}$/.test(cleaned)) {
+    cleaned = '+91' + cleaned;
+  } else if (/^91\d{10}$/.test(cleaned)) {
+    cleaned = '+' + cleaned;
+  } else if (/^\d{11,15}$/.test(cleaned)) {
+    cleaned = '+' + cleaned;
+  }
+
+  if (!/^\+[1-9]\d{7,14}$/.test(cleaned)) {
+    throw new Error('Enter a valid mobile number with country code, e.g. +917028554230');
+  }
+
+  return cleaned;
 };
 
-const phoneIdentity = (phone: string) => `${phone.replace(/\D/g, '')}@phone.skillbarter.local`;
-const phonePassword = (phone: string) => {
-  let hash = 2166136261;
-  for (const char of phone) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
-  return `SB${(hash >>> 0).toString(16)}${phone.replace(/\D/g, '')}Aa9!`;
-};
+/**
+ * Request real SMS OTP via Vercel serverless API (/api/auth/phone/request)
+ * The OTP is generated server-side and sent directly via Twilio to the user's phone.
+ */
+export async function requestPhoneOtp(phoneInput: string): Promise<string> {
+  const phone = normalizePhone(phoneInput);
 
-async function syncPhoneUser(authUser: any, phone: string, profile: any = {}) {
-  const email = authUser?.email;
-  if (!email) throw new Error('Phone login session has no account email');
-  const existing = await insforge.database.from('users').select('*').eq('email', email).maybeSingle();
-  if (existing.error) throw new Error(existing.error.message || 'Unable to load application profile');
-  if (existing.data) return existing.data;
-  const { data, error } = await insforge.database.from('users').insert({
-    email,
-    password_hash: 'insforge-managed',
-    full_name: profile.full_name ?? authUser?.name ?? 'SkillBarter Member',
-    avatar_url: profile.avatar_url,
-    bio: profile.bio,
-    primary_intent: profile.primary_intent ?? 'EXCHANGE',
-    onboarding_completed: false,
-    is_active: true,
-  }).select('*').single();
-  if (error) throw new Error(error.message || 'Unable to create application profile');
-  return data;
+  let response: Response;
+  try {
+    response = await fetch('/api/auth/phone/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ phone }),
+    });
+  } catch {
+    throw new Error('Network error: Unable to reach the OTP service. Please check your connection.');
+  }
+
+  let data: any = {};
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(
+      response.status === 504
+        ? 'SMS request timed out (504). Please try again.'
+        : `Phone authentication request failed (${response.status})`
+    );
+  }
+
+  if (!response.ok || !data.success) {
+    const errorMsg = data.error || `Unable to send OTP via SMS (${response.status})`;
+    const error = new Error(errorMsg) as any;
+    error.code = data.code;
+    error.waitSeconds = data.waitSeconds;
+    throw error;
+  }
+
+  // Persist the cryptographic challenge token (does NOT contain the plaintext OTP)
+  sessionStorage.setItem('skillbarter_otp_phone', data.phone || phone);
+  sessionStorage.setItem('skillbarter_otp_challenge', data.challenge);
+  sessionStorage.setItem('skillbarter_otp_sent_at', String(Date.now()));
+
+  // Remove any legacy demo OTP keys
+  sessionStorage.removeItem('skillbarter_demo_otp');
+  sessionStorage.removeItem('skillbarter_otp_expires');
+
+  return data.phone || phone;
 }
 
-function toLegacyUser(authUser: any, appUser: any): PhoneAuthUser {
-  const metadata = authUser?.profile ?? authUser?.metadata ?? {};
+/**
+ * Verify received OTP against the server challenge via /api/auth/phone/verify
+ */
+export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Promise<PhoneAuthUser> {
+  const phone = normalizePhone(phoneInput);
+  const otp = String(otpInput ?? '').trim();
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new Error('Please enter a valid 6-digit numeric OTP code.');
+  }
+
+  const challenge = sessionStorage.getItem('skillbarter_otp_challenge');
+  if (!challenge) {
+    throw new Error('Verification challenge expired or missing. Please request a new OTP.');
+  }
+
+  let response: Response;
+  try {
+    response = await fetch('/api/auth/phone/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        phone,
+        otp,
+        challenge,
+      }),
+    });
+  } catch {
+    throw new Error('Network error: Unable to reach the verification service. Please check your connection.');
+  }
+
+  let data: any = {};
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(
+      response.status === 504
+        ? 'Verification service timed out (504). Please try again.'
+        : `OTP verification request failed (${response.status})`
+    );
+  }
+
+  if (!response.ok || !data.success) {
+    const errorMsg = data.error || `Verification failed (${response.status})`;
+    const error = new Error(errorMsg) as any;
+    error.code = data.code;
+    throw error;
+  }
+
+  const token = data.accessToken || data.token;
+  if (token) {
+    insforge.setAccessToken(token);
+    localStorage.setItem('skillbarter_token', token);
+  }
+
+  const user = data.user;
+  if (user?.id) {
+    localStorage.setItem('skillbarter_user_id', String(user.id));
+  }
+  localStorage.setItem('skillbarter_phone', phone);
+
+  // Clear challenge from session storage
+  sessionStorage.removeItem('skillbarter_otp_phone');
+  sessionStorage.removeItem('skillbarter_otp_challenge');
+  sessionStorage.removeItem('skillbarter_otp_sent_at');
+  sessionStorage.removeItem('skillbarter_demo_otp');
+  sessionStorage.removeItem('skillbarter_otp_expires');
+
   return {
-    id: Number(appUser?.id) || 0,
-    email: authUser?.email ?? '',
-    full_name: appUser?.full_name ?? authUser?.name ?? metadata.full_name ?? 'SkillBarter Member',
-    avatar_url: appUser?.avatar_url ?? metadata.avatar_url,
-    bio: appUser?.bio ?? metadata.bio,
+    id: Number(user?.id) || 0,
+    email: user?.email || '',
+    full_name: user?.full_name || 'SkillBarter Member',
+    phone,
+    avatar_url: user?.avatar_url,
+    bio: user?.bio,
+    trust_score: Number(user?.trust_score ?? 85),
+    reliability_score: Number(user?.reliability_score ?? 90),
+    response_rate: Number(user?.response_rate ?? 95),
+    skill_quality_score: Number(user?.skill_quality_score ?? 90),
+    completed_exchanges_count: Number(user?.completed_exchanges_count ?? 0),
+    reviews_count: Number(user?.reviews_count ?? 0),
+    badges: Array.isArray(user?.badges) ? user.badges : ['Verified Member', 'Mobile Verified'],
+    is_active: user?.is_active !== false,
+    is_admin: user?.is_admin === true,
+    onboarding_completed: user?.onboarding_completed ?? false,
+    primary_intent: user?.primary_intent ?? 'EXCHANGE',
+    skills: [],
+  };
+}
+
+export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
+  const { data, error } = await insforge.auth.getCurrentUser();
+  if (error || !data?.user) return null;
+  const phone = localStorage.getItem('skillbarter_phone');
+  if (!phone) return null;
+
+  const userId = localStorage.getItem('skillbarter_user_id');
+  let appUser: any = null;
+  if (userId) {
+    const { data: dbUser } = await insforge.database
+      .from('users')
+      .select('*')
+      .eq('id', parseInt(userId, 10))
+      .maybeSingle();
+    appUser = dbUser;
+  }
+
+  return {
+    id: Number(appUser?.id || data.user.id || 0),
+    email: data.user.email || '',
+    full_name: appUser?.full_name || data.user.name || 'SkillBarter Member',
+    phone,
+    avatar_url: appUser?.avatar_url,
+    bio: appUser?.bio,
     trust_score: Number(appUser?.trust_score ?? 85),
     reliability_score: Number(appUser?.reliability_score ?? 90),
     response_rate: Number(appUser?.response_rate ?? 95),
     skill_quality_score: Number(appUser?.skill_quality_score ?? 90),
     completed_exchanges_count: Number(appUser?.completed_exchanges_count ?? 0),
     reviews_count: Number(appUser?.reviews_count ?? 0),
-    badges: Array.isArray(appUser?.badges) ? appUser.badges : ['Verified Member'],
+    badges: Array.isArray(appUser?.badges) ? appUser.badges : ['Verified Member', 'Mobile Verified'],
     is_active: appUser?.is_active !== false,
     is_admin: appUser?.is_admin === true,
-    onboarding_completed: appUser?.onboarding_completed !== false && metadata.onboarding_completed !== false,
-    primary_intent: appUser?.primary_intent ?? metadata.primary_intent ?? 'EXCHANGE',
+    onboarding_completed: appUser?.onboarding_completed ?? false,
+    primary_intent: appUser?.primary_intent ?? 'EXCHANGE',
     skills: [],
   };
-}
-
-export async function requestPhoneOtp(phoneInput: string) {
-  const phone = normalizePhone(phoneInput);
-  const otp = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
-  sessionStorage.setItem('skillbarter_otp_phone', phone);
-  sessionStorage.setItem('skillbarter_demo_otp', otp);
-  sessionStorage.setItem('skillbarter_otp_expires', String(Date.now() + 10 * 60 * 1000));
-  return phone;
-}
-
-export async function verifyPhoneOtp(phoneInput: string, otp: string) {
-  const phone = normalizePhone(phoneInput);
-  const code = otp.trim();
-  const savedPhone = sessionStorage.getItem('skillbarter_otp_phone');
-  const savedOtp = sessionStorage.getItem('skillbarter_demo_otp');
-  const expires = Number(sessionStorage.getItem('skillbarter_otp_expires') || 0);
-  if (savedPhone !== phone || !savedOtp || Date.now() > expires) throw new Error('OTP expired. Request a new OTP.');
-  if (savedOtp !== code) throw new Error('Invalid OTP. Please check the code and try again.');
-
-  const email = phoneIdentity(phone);
-  const password = phonePassword(phone);
-  let authData: any = null;
-
-  const signedIn = await insforge.auth.signInWithPassword({ email, password });
-  if (!signedIn.error && signedIn.data?.user) {
-    authData = signedIn.data;
-  } else {
-    const created = await insforge.auth.signUp({ email, password, name: 'SkillBarter Member' });
-    if (created.error) throw new Error(created.error.message || 'Unable to create mobile account');
-    if (!created.data?.user) throw new Error('Mobile account creation failed');
-    authData = created.data;
-  }
-
-  if (!authData?.user) throw new Error('Mobile login succeeded but no user was returned');
-  if (authData.accessToken) {
-    insforge.setAccessToken(authData.accessToken);
-    localStorage.setItem('skillbarter_token', authData.accessToken);
-  }
-  localStorage.setItem('skillbarter_phone', phone);
-  sessionStorage.removeItem('skillbarter_otp_phone');
-  sessionStorage.removeItem('skillbarter_demo_otp');
-  sessionStorage.removeItem('skillbarter_otp_expires');
-  const appUser = await syncPhoneUser(authData.user, phone, authData.user?.profile ?? {});
-  return toLegacyUser(authData.user, appUser);
-}
-
-export async function getCurrentPhoneUser() {
-  const { data, error } = await insforge.auth.getCurrentUser();
-  if (error || !data?.user) return null;
-  const phone = localStorage.getItem('skillbarter_phone');
-  if (!phone) return null;
-  const appUser = await syncPhoneUser(data.user, phone, data.user?.profile ?? {});
-  return toLegacyUser(data.user, appUser);
 }
 
 export function clearPhoneSession() {
   localStorage.removeItem('skillbarter_phone');
   sessionStorage.removeItem('skillbarter_otp_phone');
+  sessionStorage.removeItem('skillbarter_otp_challenge');
+  sessionStorage.removeItem('skillbarter_otp_sent_at');
   sessionStorage.removeItem('skillbarter_demo_otp');
   sessionStorage.removeItem('skillbarter_otp_expires');
 }

@@ -1,27 +1,73 @@
 import {
   createOrSignInPhoneUser,
   normalizePhone,
-  response,
+  parseRequestBody,
+  sendJson,
   verifyOtpChallenge,
 } from './_utils.js';
 
-export default async function handler(req) {
-  if (req.method === 'OPTIONS') return response({ ok: true });
-  if (req.method !== 'POST') return response({ error: 'Method not allowed' }, 405);
+export default async function handler(req, res) {
+  // CORS Preflight
+  if (req.method === 'OPTIONS') {
+    return sendJson(res, { ok: true }, 200);
+  }
+
+  if (req.method !== 'POST') {
+    return sendJson(res, { error: 'Method Not Allowed. Use POST.' }, 405);
+  }
 
   try {
-    const phone = normalizePhone(req.body?.phone);
-    const otp = String(req.body?.otp ?? '').trim();
-    const challenge = String(req.body?.challenge ?? '');
-    if (!/^\d{6}$/.test(otp)) return response({ error: 'Enter the 6-digit OTP' }, 400);
-    if (!verifyOtpChallenge(phone, otp, challenge)) {
-      return response({ error: 'Invalid or expired OTP. Request a new OTP and try again.' }, 401);
+    const body = await parseRequestBody(req);
+    const rawPhone = body?.phone;
+    const rawOtp = body?.otp;
+    const challenge = body?.challenge;
+
+    if (!rawPhone || !rawOtp || !challenge) {
+      return sendJson(
+        res,
+        { error: 'Phone number, OTP code, and verification challenge are required.', code: 'MISSING_FIELDS' },
+        400
+      );
+    }
+
+    const phone = normalizePhone(rawPhone);
+    const otp = String(rawOtp).trim();
+
+    if (!/^\d{6}$/.test(otp)) {
+      return sendJson(res, { error: 'Invalid OTP format. OTP must be a 6-digit numeric code.', code: 'INVALID_FORMAT' }, 400);
+    }
+
+    const isValid = verifyOtpChallenge(phone, otp, challenge);
+    if (!isValid) {
+      return sendJson(
+        res,
+        { error: 'Invalid or expired OTP. Please request a new OTP and try again.', code: 'OTP_INVALID_OR_EXPIRED' },
+        401
+      );
     }
 
     const session = await createOrSignInPhoneUser(phone);
-    return response({ accessToken: session.accessToken, user: session.user });
-  } catch (error) {
-    console.error('Phone OTP verification failed:', error);
-    return response({ error: error?.message || 'Invalid or expired OTP' }, 400);
+
+    return sendJson(
+      res,
+      {
+        success: true,
+        accessToken: session.accessToken,
+        token: session.accessToken,
+        user: session.user,
+        message: 'Phone authenticated successfully.',
+      },
+      200
+    );
+  } catch (err) {
+    console.error('[Phone OTP Verification Failed]', err.message);
+    return sendJson(
+      res,
+      {
+        error: err.message || 'OTP verification failed. Please try again.',
+        code: err.code || 'VERIFY_FAILED',
+      },
+      err.statusCode || 400
+    );
   }
 }
