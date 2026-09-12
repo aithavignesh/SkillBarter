@@ -73,7 +73,7 @@ function toLegacyUser(authUser: any, appUser: any): PhoneAuthUser {
 
 async function postPhoneAuth(path: string, body: Record<string, string>) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 28000);
   try {
     const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
     const data = await response.json().catch(() => ({}));
