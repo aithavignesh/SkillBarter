@@ -1,9 +1,9 @@
 import { getEnvConfig } from './_utils.js';
 
-const TWOFACTOR_ENDPOINT = 'https://2factor.in/API/V1/OTP/SEND';
+const TWOFACTOR_BASE = 'https://2factor.in/API/V1';
 
 function clean(value) {
-  return typeof value === 'string' ? value.trim().replace(/^["'`]|["'`]$/g, '').trim() : '';
+  return typeof value === 'string' ? value.trim().replace(/^[\"'`]|[\"'`]$/g, '').trim() : '';
 }
 
 function safeGatewayText(value) {
@@ -42,46 +42,51 @@ async function sendVia2Factor(phone, otp) {
     throw error;
   }
 
+  // 2Factor's approved custom OTP template API uses:
+  // /API/V1/{api_key}/SMS/{phone_number}/{otp}/{template_name}
+  // Phone number is sent as country code + national number, without '+'.
+  const phoneDigits = phone.replace(/\D/g, '');
+  const url = `${TWOFACTOR_BASE}/${encodeURIComponent(twoFactorApiKey)}/SMS/${encodeURIComponent(phoneDigits)}/${encodeURIComponent(otp)}/${encodeURIComponent(twoFactorTemplate)}`;
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const response = await fetch(TWOFACTOR_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'X-API-Key': twoFactorApiKey,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        to: phone,
-        template_name: twoFactorTemplate,
-        var1: otp,
-      }),
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json, text/plain, */*' },
       signal: controller.signal,
     });
 
-    const text = await response.text();
-    let data = {};
+    const text = (await response.text()).trim();
+    let data = null;
     try {
       data = JSON.parse(text);
     } catch {
-      // Keep an empty object for non-JSON gateway responses.
+      // The legacy OTP endpoint may return plain text.
     }
 
-    const status = String(data.status || '').toLowerCase();
-    if (!response.ok || (status && !['sent', 'success', 'queued'].includes(status))) {
-      const gatewayMessage = safeGatewayText(data.message || data.error || data.detail || text || '2Factor rejected the SMS request');
+    const statusText = String(data?.Status || data?.status || '').toLowerCase();
+    const success = response.ok && (
+      ['success', 'sent', 'queued'].includes(statusText) ||
+      /success|sent|queued/i.test(text)
+    );
+
+    if (!success) {
+      // Never include the request URL because it contains the API key.
+      const gatewayMessage = safeGatewayText(
+        data?.Details || data?.details || data?.message || data?.error || text || '2Factor rejected the SMS request'
+      );
       const error = new Error(`SMS delivery failed: ${gatewayMessage}`);
-      error.code = `TWOFACTOR_${data.code || response.status}`;
+      error.code = `TWOFACTOR_${data?.Code || response.status}`;
       error.statusCode = response.status >= 500 ? 502 : 400;
       throw error;
     }
 
     return {
       provider: '2factor',
-      sid: data.session_id || data.message_id || data.id || null,
-      status: data.status || 'sent',
+      sid: data?.Details || data?.details || data?.session_id || data?.message_id || data?.id || null,
+      status: data?.Status || data?.status || 'sent',
     };
   } catch (err) {
     if (err.name === 'AbortError') {
