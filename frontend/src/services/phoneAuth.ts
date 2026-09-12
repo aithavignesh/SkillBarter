@@ -73,14 +73,14 @@ function toLegacyUser(authUser: any, appUser: any): PhoneAuthUser {
 
 async function postPhoneAuth(path: string, body: Record<string, string>) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 28000);
+  const timeout = setTimeout(() => controller.abort(), 35000);
   try {
     const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data?.error || `Phone authentication request failed (${response.status})`);
     return data;
   } catch (error: any) {
-    if (error?.name === 'AbortError') throw new Error('OTP service timed out. Please try again in a moment.');
+    if (error?.name === 'AbortError') throw new Error('OTP service timed out. The OTP server did not respond within 35 seconds.');
     throw error;
   } finally {
     clearTimeout(timeout);
