@@ -30,10 +30,10 @@ const normalizePhone = (phone: string) => {
   return normalized.startsWith('+') ? normalized : `+${normalized}`;
 };
 
-const profileEmail = (phone: string) => `${phone.replace(/\D/g, '')}@phone.skillbarter.local`;
-
 async function syncPhoneUser(authUser: any, phone: string, profile: any = {}) {
-  const email = authUser?.email || profileEmail(phone);
+  const email = authUser?.email;
+  if (!email) throw new Error('Phone login session has no account email');
+
   const existing = await insforge.database.from('users').select('*').eq('email', email).maybeSingle();
   if (existing.error) throw new Error(existing.error.message || 'Unable to load application profile');
 
@@ -56,11 +56,11 @@ async function syncPhoneUser(authUser: any, phone: string, profile: any = {}) {
   return data;
 }
 
-function toLegacyUser(authUser: any, appUser: any, phone: string): PhoneAuthUser {
+function toLegacyUser(authUser: any, appUser: any): PhoneAuthUser {
   const metadata = authUser?.profile ?? authUser?.metadata ?? {};
   return {
     id: Number(appUser?.id) || 0,
-    email: authUser?.email ?? phone,
+    email: authUser?.email ?? '',
     full_name: appUser?.full_name ?? authUser?.name ?? metadata.full_name ?? 'SkillBarter Member',
     avatar_url: appUser?.avatar_url ?? metadata.avatar_url,
     bio: appUser?.bio ?? metadata.bio,
@@ -81,12 +81,13 @@ function toLegacyUser(authUser: any, appUser: any, phone: string): PhoneAuthUser
 
 export async function requestPhoneOtp(phoneInput: string) {
   const phone = normalizePhone(phoneInput);
-  const auth = insforge.auth as any;
-  const { error } = await auth.signInWithOtp({
-    phone,
-    options: { shouldCreateUser: true, channel: 'sms' },
+  const response = await fetch('/api/auth/phone/request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone }),
   });
-  if (error) throw new Error(error.message || 'Unable to send OTP');
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || 'Unable to send OTP');
   return phone;
 }
 
@@ -95,22 +96,38 @@ export async function verifyPhoneOtp(phoneInput: string, otp: string) {
   const code = otp.trim();
   if (!/^\d{6}$/.test(code)) throw new Error('Enter the 6-digit OTP');
 
-  const auth = insforge.auth as any;
-  const { data, error } = await auth.verifyOtp({ phone, otp: code, type: 'sms' });
-  if (error) throw new Error(error.message || 'Invalid or expired OTP');
-  if (!data?.user) throw new Error('OTP verified but no user session was returned');
+  const response = await fetch('/api/auth/phone/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, otp: code }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || 'Invalid or expired OTP');
+  if (!data?.user || !data?.accessToken) {
+    throw new Error('OTP verified but no user session was returned');
+  }
+
+  // The server has already authenticated the user with InsForge. Push the
+  // returned token into the browser SDK so database calls use the same session.
+  insforge.setAccessToken(data.accessToken);
+  localStorage.setItem('skillbarter_token', data.accessToken);
+  localStorage.setItem('skillbarter_phone', phone);
 
   const appUser = await syncPhoneUser(data.user, phone, data.user?.profile ?? {});
-  const user = toLegacyUser(data.user, appUser, phone);
-  if (data.accessToken) localStorage.setItem('skillbarter_token', data.accessToken);
-  return user;
+  return toLegacyUser(data.user, appUser);
 }
 
 export async function getCurrentPhoneUser() {
   const { data, error } = await insforge.auth.getCurrentUser();
   if (error || !data?.user) return null;
-  const phone = data.user.phone;
+
+  const phone = localStorage.getItem('skillbarter_phone');
   if (!phone) return null;
+
   const appUser = await syncPhoneUser(data.user, phone, data.user?.profile ?? {});
-  return toLegacyUser(data.user, appUser, phone);
+  return toLegacyUser(data.user, appUser);
+}
+
+export function clearPhoneSession() {
+  localStorage.removeItem('skillbarter_phone');
 }
