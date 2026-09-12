@@ -37,19 +37,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const result = await api.login(email, pass);
-      // api.login authenticates with InsForge and returns the application user.
-      // Keep that result as the immediate authenticated state so navigation is
-      // not blocked by a second profile lookup. A background refresh can then
-      // hydrate the latest profile data.
-      if (result?.user_id) {
-        const existing = await api.getMe().catch(() => null);
-        if (existing) setCurrentUser(existing);
-      }
-      if (!currentUser) {
-        const fallback = await api.getMe().catch(() => null);
-        if (fallback) setCurrentUser(fallback);
-      }
+      await api.login(email, pass);
+      await refreshUser();
     } finally {
       setLoading(false);
     }
@@ -81,9 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider
-      value={{ currentUser, loading, login, register, logout, demoSwitchUser, refreshUser }}
-    >
+    <AuthContext.Provider value={{ currentUser, loading, login, register, logout, demoSwitchUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
