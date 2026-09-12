@@ -24,21 +24,16 @@ const normalizePhone = (phone: string) => {
   const trimmed = phone.trim();
   if (!trimmed) throw new Error('Mobile number is required');
   const normalized = trimmed.replace(/[\s()-]/g, '');
-  if (!/^\+?[1-9]\d{9,14}$/.test(normalized)) {
-    throw new Error('Enter a valid mobile number with country code, e.g. +917050062084');
-  }
+  if (!/^\+?[1-9]\d{9,14}$/.test(normalized)) throw new Error('Enter a valid mobile number with country code, e.g. +917050062084');
   return normalized.startsWith('+') ? normalized : `+${normalized}`;
 };
 
 async function syncPhoneUser(authUser: any, phone: string, profile: any = {}) {
   const email = authUser?.email;
   if (!email) throw new Error('Phone login session has no account email');
-
   const existing = await insforge.database.from('users').select('*').eq('email', email).maybeSingle();
   if (existing.error) throw new Error(existing.error.message || 'Unable to load application profile');
-
   if (existing.data) return existing.data;
-
   const { data, error } = await insforge.database.from('users').insert({
     email,
     password_hash: 'insforge-managed',
@@ -49,7 +44,6 @@ async function syncPhoneUser(authUser: any, phone: string, profile: any = {}) {
     onboarding_completed: false,
     is_active: true,
   }).select('*').single();
-
   if (error) throw new Error(error.message || 'Unable to create application profile');
   return data;
 }
@@ -81,19 +75,12 @@ async function postPhoneAuth(path: string, body: Record<string, string>) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data?.error || `Phone authentication request failed (${response.status})`);
     return data;
   } catch (error: any) {
-    if (error?.name === 'AbortError') {
-      throw new Error('OTP service timed out. Please try again in a moment.');
-    }
+    if (error?.name === 'AbortError') throw new Error('OTP service timed out. Please try again in a moment.');
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -102,7 +89,9 @@ async function postPhoneAuth(path: string, body: Record<string, string>) {
 
 export async function requestPhoneOtp(phoneInput: string) {
   const phone = normalizePhone(phoneInput);
-  await postPhoneAuth('/api/auth/phone/request', { phone });
+  const data = await postPhoneAuth('/api/auth/phone/request', { phone });
+  if (!data?.challenge) throw new Error('OTP sent but verification session was not created');
+  sessionStorage.setItem('skillbarter_otp_challenge', data.challenge);
   return phone;
 }
 
@@ -110,14 +99,13 @@ export async function verifyPhoneOtp(phoneInput: string, otp: string) {
   const phone = normalizePhone(phoneInput);
   const code = otp.trim();
   if (!/^\d{6}$/.test(code)) throw new Error('Enter the 6-digit OTP');
-
-  const data = await postPhoneAuth('/api/auth/phone/verify', { phone, otp: code });
+  const challenge = sessionStorage.getItem('skillbarter_otp_challenge') ?? '';
+  const data = await postPhoneAuth('/api/auth/phone/verify', { phone, otp: code, challenge });
   if (!data?.user || !data?.accessToken) throw new Error('OTP verified but no user session was returned');
-
   insforge.setAccessToken(data.accessToken);
   localStorage.setItem('skillbarter_token', data.accessToken);
   localStorage.setItem('skillbarter_phone', phone);
-
+  sessionStorage.removeItem('skillbarter_otp_challenge');
   const appUser = await syncPhoneUser(data.user, phone, data.user?.profile ?? {});
   return toLegacyUser(data.user, appUser);
 }
@@ -125,14 +113,13 @@ export async function verifyPhoneOtp(phoneInput: string, otp: string) {
 export async function getCurrentPhoneUser() {
   const { data, error } = await insforge.auth.getCurrentUser();
   if (error || !data?.user) return null;
-
   const phone = localStorage.getItem('skillbarter_phone');
   if (!phone) return null;
-
   const appUser = await syncPhoneUser(data.user, phone, data.user?.profile ?? {});
   return toLegacyUser(data.user, appUser);
 }
 
 export function clearPhoneSession() {
   localStorage.removeItem('skillbarter_phone');
+  sessionStorage.removeItem('skillbarter_otp_challenge');
 }
