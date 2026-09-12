@@ -42,9 +42,10 @@ export default async function handler(req, res) {
       );
     }
 
-    // Check Twilio environment configuration
+    // Check Twilio environment configuration (supports API Key or Auth Token)
     const config = getEnvConfig();
-    if (!config.twilioAccountSid || !config.twilioAuthToken || !config.twilioFromNumber) {
+    const hasCredentials = (config.twilioApiKeySid && config.twilioApiKeySecret) || config.twilioAuthToken;
+    if (!config.twilioAccountSid || !config.twilioFromNumber || !hasCredentials) {
       console.error('[Configuration Error] Missing Twilio environment variables.');
       return sendJson(
         res,
@@ -81,6 +82,7 @@ export default async function handler(req, res) {
       {
         error: err.message || 'Unable to send OTP via SMS. Please try again.',
         code: err.code || 'REQUEST_FAILED',
+        details: err.details || null,
       },
       statusCode
     );

@@ -13,7 +13,7 @@ export function sendJson(res, data, status = 200) {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     return res.status(status).json(data);
   }
@@ -24,7 +24,7 @@ export function sendJson(res, data, status = 200) {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
@@ -90,25 +90,283 @@ export function sanitizeEnvValue(val) {
 }
 
 /**
- * Get required environment variables with validation & sanitization
+ * Get required environment variables with validation & sanitization (NO hardcoded secrets or fallbacks)
  */
 export function getEnvConfig() {
-  const twilioAccountSid = sanitizeEnvValue(process.env.TWILIO_ACCOUNT_SID);
-  const twilioAuthToken = sanitizeEnvValue(process.env.TWILIO_AUTH_TOKEN);
-  const twilioFromNumber = sanitizeEnvValue(process.env.TWILIO_FROM_NUMBER);
-  const phoneAuthSecret = sanitizeEnvValue(process.env.PHONE_AUTH_SECRET) || 'skillbarter_dev_phone_secret_fallback_key';
+  const rawAccountSid = process.env.TWILIO_ACCOUNT_SID;
+  const rawAuthToken = process.env.TWILIO_AUTH_TOKEN;
+  const rawApiKeySid = process.env.TWILIO_API_KEY_SID;
+  const rawApiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+  const rawFromNumber = process.env.TWILIO_FROM_NUMBER;
+  const rawPhoneAuthSecret = process.env.PHONE_AUTH_SECRET;
+  const rawInsforgeUrl = process.env.INSFORGE_URL || process.env.VITE_INSFORGE_URL;
+  const rawInsforgeAnonKey = process.env.INSFORGE_ANON_KEY || process.env.VITE_INSFORGE_ANON_KEY;
 
-  const insforgeUrl = sanitizeEnvValue(process.env.INSFORGE_URL || process.env.VITE_INSFORGE_URL || 'https://ju9c3u2p.us-east.insforge.app');
-  const insforgeAnonKey = sanitizeEnvValue(process.env.INSFORGE_ANON_KEY || process.env.VITE_INSFORGE_ANON_KEY || 'anon_e3dcf1e52fe1ae002bc9861d496dd401834536158c30477adc2ab779cae75edf');
+  const twilioAccountSid = sanitizeEnvValue(rawAccountSid);
+  const twilioAuthToken = sanitizeEnvValue(rawAuthToken);
+  const twilioApiKeySid = sanitizeEnvValue(rawApiKeySid);
+  const twilioApiKeySecret = sanitizeEnvValue(rawApiKeySecret);
+  const twilioFromNumber = sanitizeEnvValue(rawFromNumber);
+  const phoneAuthSecret = sanitizeEnvValue(rawPhoneAuthSecret);
+  const insforgeUrl = sanitizeEnvValue(rawInsforgeUrl);
+  const insforgeAnonKey = sanitizeEnvValue(rawInsforgeAnonKey);
+
+  const hasWhitespaceOrQuotes = Boolean(
+    (rawAccountSid && rawAccountSid !== twilioAccountSid) ||
+    (rawAuthToken && rawAuthToken !== twilioAuthToken) ||
+    (rawApiKeySid && rawApiKeySid !== twilioApiKeySid) ||
+    (rawApiKeySecret && rawApiKeySecret !== twilioApiKeySecret) ||
+    (rawFromNumber && rawFromNumber !== twilioFromNumber) ||
+    (rawPhoneAuthSecret && rawPhoneAuthSecret !== phoneAuthSecret)
+  );
 
   return {
     twilioAccountSid,
     twilioAuthToken,
+    twilioApiKeySid,
+    twilioApiKeySecret,
     twilioFromNumber,
     phoneAuthSecret,
     insforgeUrl,
     insforgeAnonKey,
+    hasWhitespaceOrQuotes,
   };
+}
+
+/**
+ * Resolves active Twilio credentials with priority (STEP 5):
+ * 1. TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET
+ * 2. TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN
+ * Endpoint always targets /Accounts/${accountSid}/...
+ */
+export function getTwilioAuthCredentials() {
+  const config = getEnvConfig();
+  const {
+    twilioAccountSid,
+    twilioAuthToken,
+    twilioApiKeySid,
+    twilioApiKeySecret,
+    twilioFromNumber,
+  } = config;
+
+  if (!twilioAccountSid) {
+    throw new Error('TWILIO_ACCOUNT_SID environment variable is missing.');
+  }
+  if (!twilioFromNumber) {
+    throw new Error('TWILIO_FROM_NUMBER environment variable is missing.');
+  }
+
+  // Priority 1: API Key authentication
+  if (twilioApiKeySid && twilioApiKeySecret) {
+    return {
+      authType: 'api_key',
+      accountSid: twilioAccountSid,
+      authHeader: 'Basic ' + Buffer.from(`${twilioApiKeySid}:${twilioApiKeySecret}`).toString('base64'),
+      credentialLength: twilioApiKeySecret.length,
+      credentialPrefix: twilioApiKeySid.slice(0, 2),
+      fromNumber: twilioFromNumber,
+    };
+  }
+
+  // Priority 2: Account SID + Auth Token fallback
+  if (twilioAuthToken) {
+    return {
+      authType: 'auth_token',
+      accountSid: twilioAccountSid,
+      authHeader: 'Basic ' + Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64'),
+      credentialLength: twilioAuthToken.length,
+      credentialPrefix: twilioAccountSid.slice(0, 2),
+      fromNumber: twilioFromNumber,
+    };
+  }
+
+  throw new Error('Missing Twilio credentials: Configure TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET or TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN.');
+}
+
+/**
+ * Safe server-side Twilio authentication check (STEP 3 & STEP 4).
+ * Queries Twilio Account resource (GET https://api.twilio.com/2010-04-01/Accounts/{accountSid}.json)
+ * Verifies credentials authenticate WITHOUT sending an SMS.
+ * Never leaks full credentials or secrets.
+ */
+export async function checkTwilioAuthentication() {
+  const config = getEnvConfig();
+  let credentials;
+  try {
+    credentials = getTwilioAuthCredentials();
+  } catch (err) {
+    return {
+      authOk: false,
+      httpStatus: 500,
+      twilioCode: null,
+      twilioMessage: err.message,
+      diagnostics: {
+        accountSidPrefix: config.twilioAccountSid ? config.twilioAccountSid.slice(0, 2) : '',
+        accountSidLength: config.twilioAccountSid ? config.twilioAccountSid.length : 0,
+        authCredentialLength: config.twilioApiKeySecret ? config.twilioApiKeySecret.length : (config.twilioAuthToken ? config.twilioAuthToken.length : 0),
+        authCredentialType: config.twilioApiKeySid ? 'api_key' : 'auth_token',
+        fromNumberPrefix: config.twilioFromNumber ? config.twilioFromNumber.slice(0, 2) : '',
+        fromNumberLength: config.twilioFromNumber ? config.twilioFromNumber.length : 0,
+        fromNumberType: config.twilioFromNumber ? (config.twilioFromNumber.startsWith('MG') ? 'messaging_service' : 'phone_number') : 'unknown',
+        hasWhitespaceOrQuotes: config.hasWhitespaceOrQuotes,
+      },
+    };
+  }
+
+  const { accountSid, authHeader, authType, credentialLength, fromNumber } = credentials;
+  const accountSidPrefix = accountSid.slice(0, 2);
+  const accountSidLength = accountSid.length;
+  const fromNumberPrefix = fromNumber.slice(0, 2);
+  const fromNumberLength = fromNumber.length;
+  const fromNumberType = fromNumber.startsWith('MG') ? 'messaging_service' : 'phone_number';
+
+  const diagnostics = {
+    accountSidPrefix,
+    accountSidLength,
+    authCredentialLength: credentialLength,
+    authCredentialType: authType,
+    fromNumberPrefix,
+    fromNumberLength,
+    fromNumberType,
+    hasWhitespaceOrQuotes: config.hasWhitespaceOrQuotes,
+  };
+
+  const testEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}.json`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+  try {
+    const res = await fetch(testEndpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader,
+        'Accept': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = {};
+    }
+
+    if (res.ok) {
+      // Safe check on sender if phone number (STEP 4)
+      let senderSmsCapable = true;
+      if (!fromNumber.startsWith('MG')) {
+        try {
+          const phoneRes = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(fromNumber)}`,
+            {
+              method: 'GET',
+              headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+            }
+          );
+          if (phoneRes.ok) {
+            const phoneData = await phoneRes.json();
+            const numbers = phoneData?.incoming_phone_numbers || [];
+            if (numbers.length > 0) {
+              const numObj = numbers[0];
+              senderSmsCapable = Boolean(numObj?.capabilities?.sms);
+            }
+          }
+        } catch {
+          // Non-blocking
+        }
+      }
+
+      return {
+        authOk: true,
+        httpStatus: res.status,
+        twilioCode: null,
+        twilioMessage: 'Twilio authentication successful',
+        diagnostics: {
+          ...diagnostics,
+          senderSmsCapable,
+        },
+      };
+    }
+
+    return {
+      authOk: false,
+      httpStatus: res.status,
+      twilioCode: data?.code || null,
+      twilioMessage: data?.message || 'Twilio authentication failed',
+      diagnostics,
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return {
+      authOk: false,
+      httpStatus: err.name === 'AbortError' ? 504 : 500,
+      twilioCode: err.name === 'AbortError' ? 'SMS_GATEWAY_TIMEOUT' : 'AUTH_CHECK_FAILED',
+      twilioMessage: err.message || 'Twilio authentication check failed',
+      diagnostics,
+    };
+  }
+}
+
+/**
+ * Safe error message translator providing exact diagnostics without secrets (STEP 6)
+ */
+export function mapTwilioErrorToSafeMessage(code, status, rawMsg, diagnostics) {
+  const sidPrefix = diagnostics?.accountSidPrefix;
+  const sidLength = diagnostics?.accountSidLength;
+  const credLen = diagnostics?.authCredentialLength;
+  const credType = diagnostics?.authCredentialType;
+  const hasWhitespace = diagnostics?.hasWhitespaceOrQuotes;
+
+  if (code === 20003 || status === 401) {
+    let hint = '';
+    if (sidPrefix && sidPrefix !== 'AC') {
+      hint = ` TWILIO_ACCOUNT_SID starts with '${sidPrefix}' (expected 'AC').`;
+    } else if (sidLength && sidLength !== 34) {
+      hint = ` TWILIO_ACCOUNT_SID length is ${sidLength} (expected 34).`;
+    } else if (credType === 'auth_token' && credLen !== 32) {
+      hint = ` TWILIO_AUTH_TOKEN length is ${credLen} (expected 32).`;
+    } else if (credType === 'api_key' && credLen !== 32) {
+      hint = ` TWILIO_API_KEY_SECRET length is ${credLen} (expected 32).`;
+    } else if (hasWhitespace) {
+      hint = ' Unexpected quotes or whitespace detected in credentials.';
+    } else if (rawMsg) {
+      hint = ` Detail: ${rawMsg}.`;
+    }
+    return `Twilio authentication failed (20003). Check the production Twilio credentials.${hint}`;
+  }
+
+  if (code === 21212 || code === 21606 || code === 21659 || code === 21660) {
+    return 'Twilio sender is invalid or not SMS-enabled.';
+  }
+
+  if (code === 21408 || code === 21614) {
+    return 'SMS delivery to this destination is not permitted.';
+  }
+
+  if (code === 21608) {
+    return 'This number must be verified in the Twilio trial account.';
+  }
+
+  if (code === 21211) {
+    return 'The mobile number is not valid or cannot receive SMS.';
+  }
+
+  if (code === 20429) {
+    return 'Too many requests to SMS service. Please wait a few moments and try again.';
+  }
+
+  if (code >= 30000 && code <= 30010) {
+    return 'Carrier network error delivering SMS. Please try again.';
+  }
+
+  if (rawMsg) {
+    return `Twilio SMS error (${code || status}): ${rawMsg.slice(0, 150)}`;
+  }
+
+  return `Twilio SMS error (${code || status || 'unknown'}). Please try again.`;
 }
 
 /**
@@ -177,6 +435,9 @@ export function generateSecureOtp() {
  */
 export function createOtpChallenge(phone, customOtp = null, customSecret = null) {
   const secret = customSecret || getEnvConfig().phoneAuthSecret;
+  if (!secret) {
+    throw new Error('PHONE_AUTH_SECRET environment variable is missing.');
+  }
   const otp = customOtp || generateSecureOtp();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
   const salt = crypto.randomBytes(16).toString('hex');
@@ -224,6 +485,7 @@ export function verifyOtpChallenge(phone, enteredOtp, token, customSecret = null
   if (Date.now() > expiresAt) return false;
 
   const secret = customSecret || getEnvConfig().phoneAuthSecret;
+  if (!secret) return false;
 
   const expectedSig = crypto
     .createHmac('sha256', secret)
@@ -255,43 +517,44 @@ export function verifyOtpChallenge(phone, enteredOtp, token, customSecret = null
  * Strict 8-second timeout prevents Vercel 504 gateway timeout.
  */
 export async function sendSmsOtp(phone, otp) {
-  const config = getEnvConfig();
-  const { twilioAccountSid, twilioAuthToken, twilioFromNumber } = config;
-
-  if (!twilioAccountSid || !twilioAuthToken || !twilioFromNumber) {
-    const missing = [];
-    if (!twilioAccountSid) missing.push('TWILIO_ACCOUNT_SID');
-    if (!twilioAuthToken) missing.push('TWILIO_AUTH_TOKEN');
-    if (!twilioFromNumber) missing.push('TWILIO_FROM_NUMBER');
-    throw new Error(`Twilio SMS service is not configured. Missing required Vercel environment variables: ${missing.join(', ')}.`);
+  // 1. Safe pre-flight authentication test without sending SMS (STEP 3)
+  const authTest = await checkTwilioAuthentication();
+  if (!authTest.authOk) {
+    const safeMsg = mapTwilioErrorToSafeMessage(
+      authTest.twilioCode,
+      authTest.httpStatus,
+      authTest.twilioMessage,
+      authTest.diagnostics
+    );
+    const error = new Error(safeMsg);
+    error.code = authTest.twilioCode ? `TWILIO_${authTest.twilioCode}` : 'TWILIO_20003';
+    error.statusCode = authTest.httpStatus >= 500 ? 502 : 400;
+    error.details = {
+      ...authTest.diagnostics,
+      twilioHttpStatus: authTest.httpStatus,
+      twilioErrorCode: authTest.twilioCode,
+      twilioSafeMessage: authTest.twilioMessage,
+    };
+    throw error;
   }
 
-  const cleanSid = sanitizeEnvValue(twilioAccountSid);
-  const cleanToken = sanitizeEnvValue(twilioAuthToken);
-  const cleanFrom = sanitizeEnvValue(twilioFromNumber);
+  const credentials = getTwilioAuthCredentials();
+  const { accountSid, authHeader, fromNumber } = credentials;
 
-  const sidPrefix = cleanSid.slice(0, 2);
-  const sidLength = cleanSid.length;
-  const tokenLength = cleanToken.length;
-
-  console.log(`[Twilio Diagnostic] Account SID prefix: '${sidPrefix}', length: ${sidLength}; Token length: ${tokenLength}; From prefix: '${cleanFrom.slice(0, 2)}', length: ${cleanFrom.length}`);
-
-  const twilioEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(cleanSid)}/Messages.json`;
+  const twilioEndpoint = `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/Messages.json`;
 
   const bodyRecord = {
     To: phone,
     Body: `Your SkillBarter verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
   };
 
-  if (cleanFrom.startsWith('MG')) {
-    bodyRecord.MessagingServiceSid = cleanFrom;
+  if (fromNumber.startsWith('MG')) {
+    bodyRecord.MessagingServiceSid = fromNumber;
   } else {
-    bodyRecord.From = cleanFrom;
+    bodyRecord.From = fromNumber;
   }
 
   const bodyParams = new URLSearchParams(bodyRecord);
-  const authHeader = 'Basic ' + Buffer.from(`${cleanSid}:${cleanToken}`).toString('base64');
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second strict timeout
 
@@ -320,48 +583,23 @@ export async function sendSmsOtp(phone, otp) {
     if (!response.ok) {
       const twilioCode = data?.code;
       const twilioMsg = data?.message || '';
-      const twilioMoreInfo = data?.more_info || '';
 
-      console.error(`[Twilio SMS Error] HTTP ${response.status}, Code ${twilioCode || 'N/A'}: ${twilioMsg} (More info: ${twilioMoreInfo})`);
+      console.error(`[Twilio SMS Error] HTTP ${response.status}, Code ${twilioCode || 'N/A'}: ${twilioMsg}`);
 
-      let userMsg = 'Unable to send SMS. Please try again.';
-      let diagnosticHint = '';
-
-      if (twilioCode === 20003) {
-        userMsg = 'SMS service authentication failed.';
-        if (sidPrefix !== 'AC') {
-          diagnosticHint = `TWILIO_ACCOUNT_SID starts with '${sidPrefix}' instead of 'AC' (must be Twilio Account SID, not an API Key or Messaging Service).`;
-        } else if (sidLength !== 34) {
-          diagnosticHint = `TWILIO_ACCOUNT_SID has length ${sidLength} (expected 34 characters). Please check for extra quotes or spaces.`;
-        } else if (tokenLength !== 32) {
-          diagnosticHint = `TWILIO_AUTH_TOKEN has length ${tokenLength} (expected 32 characters). Please check for extra quotes or spaces.`;
-        } else {
-          diagnosticHint = `${twilioMsg || 'Account SID or Auth Token was rejected by Twilio'}. Verify credentials in Vercel project settings.`;
-        }
-      } else if (twilioCode === 21211) {
-        userMsg = 'The mobile number is not valid or cannot receive SMS.';
-      } else if (twilioCode === 21608) {
-        userMsg = 'This mobile number is unverified on the Twilio trial account. Please verify it in Twilio console or upgrade the account.';
-      } else if (twilioCode === 21408) {
-        userMsg = 'Permission to send SMS to this country or region is not enabled in your Twilio Geo-Permissions settings.';
-      } else if (twilioCode === 21614) {
-        userMsg = 'The recipient number is a landline or unable to receive SMS messages.';
-      } else if (twilioCode === 20429) {
-        userMsg = 'Too many requests to SMS service. Please wait a few moments and try again.';
-      } else if (twilioCode >= 30000 && twilioCode <= 30010) {
-        userMsg = 'Carrier network error delivering SMS. Please try again.';
-      }
-
-      const fullErrorMessage = diagnosticHint ? `${userMsg} ${diagnosticHint}` : userMsg;
-      const error = new Error(fullErrorMessage);
+      const safeMsg = mapTwilioErrorToSafeMessage(
+        twilioCode,
+        response.status,
+        twilioMsg,
+        authTest.diagnostics
+      );
+      const error = new Error(safeMsg);
       error.code = twilioCode ? `TWILIO_${twilioCode}` : 'TWILIO_ERROR';
       error.statusCode = response.status >= 500 ? 502 : 400;
       error.details = {
-        twilioCode,
-        twilioMessage: twilioMsg,
-        sidPrefix,
-        sidLength,
-        tokenLength,
+        ...authTest.diagnostics,
+        twilioHttpStatus: response.status,
+        twilioErrorCode: twilioCode,
+        twilioSafeMessage: twilioMsg,
       };
       throw error;
     }
@@ -391,6 +629,13 @@ export async function sendSmsOtp(phone, otp) {
 export async function createOrSignInPhoneUser(phone) {
   const config = getEnvConfig();
   const { insforgeUrl, insforgeAnonKey, phoneAuthSecret } = config;
+
+  if (!phoneAuthSecret) {
+    throw new Error('PHONE_AUTH_SECRET environment variable is missing.');
+  }
+  if (!insforgeUrl || !insforgeAnonKey) {
+    throw new Error('INSFORGE_URL or INSFORGE_ANON_KEY environment variable is missing.');
+  }
 
   const insforgeClient = createClient({
     baseUrl: insforgeUrl,

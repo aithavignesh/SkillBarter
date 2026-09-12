@@ -80,6 +80,7 @@ export async function requestPhoneOtp(phoneInput: string): Promise<string> {
     const error = new Error(errorMsg) as any;
     error.code = data.code;
     error.waitSeconds = data.waitSeconds;
+    error.details = data.details;
     throw error;
   }
 
