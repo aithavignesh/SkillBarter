@@ -6,8 +6,8 @@ export default async function handler(req) {
 
   try {
     const phone = normalizePhone(req.body?.phone);
-    await sendSmsOtp(phone);
     const challenge = createOtpChallenge(phone);
+    await sendSmsOtp(phone, challenge.otp);
     return response({ success: true, phone, challenge: challenge.token });
   } catch (error) {
     console.error('Phone OTP request failed:', error);
