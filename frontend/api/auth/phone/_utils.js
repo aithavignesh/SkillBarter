@@ -28,18 +28,18 @@ function twilioCredentials() {
   return Buffer.from(`${accountSid}:${authToken}`).toString('base64');
 }
 
-async function twilioRequest(url, method = 'POST', body = null) {
+async function twilioRequest(url, body) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeout = setTimeout(() => controller.abort(), 7000);
   try {
     const result = await fetch(url, {
-      method,
+      method: 'POST',
       headers: {
         Authorization: `Basic ${twilioCredentials()}`,
-        ...(body ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}),
+        'Content-Type': 'application/x-www-form-urlencoded',
         Accept: 'application/json',
       },
-      ...(body ? { body } : {}),
+      body,
       signal: controller.signal,
     });
     const data = await result.json().catch(() => ({}));
@@ -50,7 +50,7 @@ async function twilioRequest(url, method = 'POST', body = null) {
     return data;
   } catch (error) {
     if (error?.name === 'AbortError') {
-      throw new Error('Twilio verification service timed out. Check the Twilio account and verified recipient.');
+      throw new Error('Twilio SMS service timed out. Check the Twilio account, sender number, and verified recipient.');
     }
     throw error;
   } finally {
@@ -58,67 +58,41 @@ async function twilioRequest(url, method = 'POST', body = null) {
   }
 }
 
-let cachedVerifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID || '';
-let verifyServiceSidPromise = null;
-
-async function getVerifyServiceSid() {
-  if (cachedVerifyServiceSid) return cachedVerifyServiceSid;
-  if (verifyServiceSidPromise) return verifyServiceSidPromise;
-
-  verifyServiceSidPromise = (async () => {
-    const body = new URLSearchParams({ FriendlyName: 'SkillBarter OTP', CodeLength: '6' });
-    const created = await twilioRequest('https://verify.twilio.com/v2/Services', 'POST', body);
-    if (!created?.sid) throw new Error('Twilio Verify service could not be created');
-    cachedVerifyServiceSid = created.sid;
-    return cachedVerifyServiceSid;
-  })();
-
-  try {
-    return await verifyServiceSidPromise;
-  } finally {
-    verifyServiceSidPromise = null;
-  }
-}
-
-function challengeSecret() {
-  return requireEnv('PHONE_AUTH_SECRET');
+function otpHash(phone, otp, expiresAt) {
+  return crypto
+    .createHmac('sha256', requireEnv('PHONE_AUTH_SECRET'))
+    .update(`otp:${phone}|${otp}|${expiresAt}`)
+    .digest('base64url');
 }
 
 export function createOtpChallenge(phone) {
+  const otp = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
   const expiresAt = Date.now() + 10 * 60 * 1000;
-  const payload = `${phone}|${expiresAt}`;
-  const signature = crypto.createHmac('sha256', challengeSecret()).update(payload).digest('base64url');
-  return { token: `${expiresAt}.${signature}` };
+  const signature = otpHash(phone, otp, expiresAt);
+  return { otp, token: `${expiresAt}.${signature}` };
 }
 
-export function verifyOtpChallenge(phone, token) {
+export function verifyOtpChallenge(phone, otp, token) {
   const parts = String(token ?? '').split('.');
   if (parts.length !== 2) return false;
   const expiresAt = Number(parts[0]);
   if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) return false;
-  const payload = `${phone}|${expiresAt}`;
-  const expected = crypto.createHmac('sha256', challengeSecret()).update(payload).digest('base64url');
+  const expected = otpHash(phone, otp, expiresAt);
   const a = Buffer.from(expected);
   const b = Buffer.from(parts[1]);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-export async function sendSmsOtp(phone) {
-  const serviceSid = await getVerifyServiceSid();
-  const body = new URLSearchParams({ To: phone, Channel: 'sms' });
+export async function sendSmsOtp(phone, otp) {
+  const accountSid = requireEnv('TWILIO_ACCOUNT_SID');
+  const fromNumber = requireEnv('TWILIO_FROM_NUMBER');
+  const body = new URLSearchParams({
+    To: phone,
+    From: fromNumber,
+    Body: `Your SkillBarter OTP is ${otp}. It expires in 10 minutes. Do not share this code.`,
+  });
   return twilioRequest(
-    `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/Verifications`,
-    'POST',
-    body,
-  );
-}
-
-export async function checkSmsOtp(phone, code) {
-  const serviceSid = await getVerifyServiceSid();
-  const body = new URLSearchParams({ To: phone, Code: code });
-  return twilioRequest(
-    `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/VerificationCheck`,
-    'POST',
+    `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/Messages.json`,
     body,
   );
 }
@@ -129,7 +103,7 @@ export function phoneIdentity(phone) {
 }
 
 export function phonePassword(phone) {
-  return crypto.createHmac('sha256', challengeSecret()).update(`skillbarter:${phone}`).digest('hex');
+  return crypto.createHmac('sha256', requireEnv('PHONE_AUTH_SECRET')).update(`skillbarter:${phone}`).digest('hex');
 }
 
 function insforgeConfig() {
