@@ -22,21 +22,24 @@ function requireEnv(name) {
   return value;
 }
 
-async function twilioRequest(url, body) {
+function twilioCredentials() {
   const accountSid = requireEnv('TWILIO_ACCOUNT_SID');
   const authToken = requireEnv('TWILIO_AUTH_TOKEN');
-  const credentials = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  return Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+}
 
+async function twilioRequest(url, method = 'POST', body = null) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
     const result = await fetch(url, {
-      method: 'POST',
+      method,
       headers: {
-        Authorization: `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${twilioCredentials()}`,
+        ...(body ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}),
+        Accept: 'application/json',
       },
-      body,
+      ...(body ? { body } : {}),
       signal: controller.signal,
     });
     const data = await result.json().catch(() => ({}));
@@ -46,44 +49,78 @@ async function twilioRequest(url, body) {
     }
     return data;
   } catch (error) {
-    if (error?.name === 'AbortError') throw new Error('Twilio did not respond within 12 seconds. Check your Twilio sender and trial recipient.');
+    if (error?.name === 'AbortError') {
+      throw new Error('Twilio verification service timed out. Check the Twilio account and verified recipient.');
+    }
     throw error;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-export function createOtpChallenge(phone) {
-  const secret = requireEnv('PHONE_AUTH_SECRET');
-  const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
-  const expiresAt = Date.now() + 5 * 60 * 1000;
-  const payload = `${phone}|${code}|${expiresAt}`;
-  const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
-  return { code, token: `${expiresAt}.${signature}` };
+let cachedVerifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID || '';
+
+async function getVerifyServiceSid() {
+  if (cachedVerifyServiceSid) return cachedVerifyServiceSid;
+
+  const accountSid = requireEnv('TWILIO_ACCOUNT_SID');
+  const listUrl = `https://verify.twilio.com/v2/Services?PageSize=50`;
+  const listed = await twilioRequest(listUrl, 'GET');
+  const existing = Array.isArray(listed?.services)
+    ? listed.services.find((service) => service?.friendly_name === 'SkillBarter OTP')
+    : null;
+
+  if (existing?.sid) {
+    cachedVerifyServiceSid = existing.sid;
+    return cachedVerifyServiceSid;
+  }
+
+  const body = new URLSearchParams({ FriendlyName: 'SkillBarter OTP', CodeLength: '6' });
+  const created = await twilioRequest('https://verify.twilio.com/v2/Services', 'POST', body);
+  if (!created?.sid) throw new Error('Twilio Verify service could not be created');
+  cachedVerifyServiceSid = created.sid;
+  return cachedVerifyServiceSid;
 }
 
-export function verifyOtpChallenge(phone, code, token) {
-  const secret = requireEnv('PHONE_AUTH_SECRET');
+function challengeSecret() {
+  return requireEnv('PHONE_AUTH_SECRET');
+}
+
+export function createOtpChallenge(phone) {
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  const payload = `${phone}|${expiresAt}`;
+  const signature = crypto.createHmac('sha256', challengeSecret()).update(payload).digest('base64url');
+  return { token: `${expiresAt}.${signature}` };
+}
+
+export function verifyOtpChallenge(phone, token) {
   const parts = String(token ?? '').split('.');
   if (parts.length !== 2) return false;
   const expiresAt = Number(parts[0]);
   if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) return false;
-  const payload = `${phone}|${code}|${expiresAt}`;
-  const expected = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
+  const payload = `${phone}|${expiresAt}`;
+  const expected = crypto.createHmac('sha256', challengeSecret()).update(payload).digest('base64url');
   const a = Buffer.from(expected);
   const b = Buffer.from(parts[1]);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-export async function sendSmsOtp(phone, challenge) {
-  const from = requireEnv('TWILIO_FROM_NUMBER');
-  const body = new URLSearchParams({
-    To: phone,
-    From: from,
-    Body: `SkillBarter login OTP: ${challenge.code}. It expires in 5 minutes. Do not share this code.`,
-  });
+export async function sendSmsOtp(phone) {
+  const serviceSid = await getVerifyServiceSid();
+  const body = new URLSearchParams({ To: phone, Channel: 'sms' });
   return twilioRequest(
-    `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(requireEnv('TWILIO_ACCOUNT_SID'))}/Messages.json`,
+    `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/Verifications`,
+    'POST',
+    body,
+  );
+}
+
+export async function checkSmsOtp(phone, code) {
+  const serviceSid = await getVerifyServiceSid();
+  const body = new URLSearchParams({ To: phone, Code: code });
+  return twilioRequest(
+    `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/VerificationCheck`,
+    'POST',
     body,
   );
 }
@@ -94,8 +131,7 @@ export function phoneIdentity(phone) {
 }
 
 export function phonePassword(phone) {
-  const secret = requireEnv('PHONE_AUTH_SECRET');
-  return crypto.createHmac('sha256', secret).update(`skillbarter:${phone}`).digest('hex');
+  return crypto.createHmac('sha256', challengeSecret()).update(`skillbarter:${phone}`).digest('hex');
 }
 
 function insforgeConfig() {
