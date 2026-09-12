@@ -1,0 +1,1494 @@
+You are a senior product designer + senior frontend engineer at a modern startup.
+
+I am building my first internship project and I want the frontend to look production-ready, premium, and impressive enough to demonstrate to a CEO.
+
+PROJECT NAME:
+SkillBarter
+
+PROJECT TAGLINE:
+"Your Skills. Your Community. Your Currency."
+
+CORE PROBLEM STATEMENT:
+"Hyperlocal Community Service & Skill Barter: A geo-fenced social network connecting neighbors to trade physical skills (e.g., plumbing for web design or painting for carpentry) with zero cash exchange, governed by a community trust score."
+
+IMPORTANT PRODUCT IDEA:
+This is similar to LinkedIn in terms of social-network structure:
+- User profiles
+- Feed
+- Connections
+- Messaging
+- Notifications
+- Search
+- Skill profiles
+- Reputation
+
+BUT IT IS NOT A PROFESSIONAL JOB NETWORK.
+
+The audience is different:
+- Local residents
+- Students
+- Freelancers
+- Skilled workers
+- Hobbyists
+- Home-service providers
+- People who want to learn skills
+- People who want help from nearby people
+
+The core purpose is:
+"Connect nearby people so they can exchange skills/services without money."
+
+Example:
+Person A knows Web Development but needs plumbing help.
+Person B knows Plumbing but needs a website.
+They can barter their skills instead of exchanging money.
+
+Build ONLY THE FRONTEND for now.
+Use realistic mock data and mock interactions.
+Structure the application cleanly so a real backend/API can be integrated later.
+
+==================================================
+TECH STACK
+==================================================
+
+Use:
+
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui where appropriate
+- Lucide React icons
+- React Router
+- Reusable components
+- Responsive design
+- Modern CSS animations/transitions
+
+Do NOT use:
+- Bootstrap
+- outdated UI patterns
+- excessive gradients
+- excessive glassmorphism
+- cartoonish illustrations
+- generic admin-dashboard styling
+
+The application should feel like a serious startup product.
+
+==================================================
+DESIGN DIRECTION
+==================================================
+
+The design should take inspiration from the usability and information architecture of LinkedIn, but MUST NOT simply copy LinkedIn.
+
+Create a unique visual identity for SkillBarter.
+
+Design characteristics:
+
+- Clean
+- Premium
+- Modern
+- Community-focused
+- Trustworthy
+- Human
+- Professional
+- Minimal
+- Mobile-friendly
+
+Think:
+
+LinkedIn + Nextdoor + modern marketplace + community platform.
+
+But the main identity must be:
+"Local people exchanging useful skills."
+
+Use a professional neutral color system with one strong brand accent.
+
+Suggested visual language:
+- clean white/light backgrounds
+- subtle gray borders
+- dark readable typography
+- one strong accent color
+- rounded cards
+- subtle shadows
+- excellent spacing
+- strong hierarchy
+
+Do not make every element rounded like a children's app.
+
+Use cards strategically.
+
+Typography:
+Use a modern font such as Inter.
+
+==================================================
+BRAND
+==================================================
+
+Application name:
+
+SkillBarter
+
+Logo concept:
+Create a simple text/icon-based logo representing:
+- exchange
+- connection
+- two-way skill flow
+- community
+
+Possible logo concept:
+Two arrows forming a subtle loop around an "S".
+
+Do not create a complicated logo.
+
+Tagline:
+"Your Skills. Your Community. Your Currency."
+
+Supporting statement:
+"Exchange skills with trusted people in your neighborhood — no cash required."
+
+==================================================
+CORE DIFFERENTIATOR
+==================================================
+
+The UI must make these 4 concepts extremely clear:
+
+1. HYPERLOCAL
+2. SKILL EXCHANGE
+3. ZERO CASH
+4. TRUST
+
+These should appear throughout the product naturally.
+
+For example:
+
+"2.4 km away"
+
+"Available for barter"
+
+"Trust Score: 92"
+
+"Skill Exchange"
+
+"No cash involved"
+
+"Verified community member"
+
+==================================================
+APPLICATION STRUCTURE
+==================================================
+
+Create the following main sections:
+
+1. Landing / Welcome
+2. Authentication
+3. Onboarding
+4. Home Feed
+5. Discover Skills
+6. Skill Exchange
+7. My Profile
+8. Other User Profile
+9. Connections
+10. Messages
+11. Notifications
+12. Exchange Requests
+13. Trust & Reputation
+14. Settings
+
+==================================================
+1. LANDING PAGE
+==================================================
+
+Create a premium startup landing page.
+
+Hero section:
+
+Headline:
+"Turn Your Skills Into Something Valuable."
+
+Subheadline:
+"Connect with people nearby, exchange skills, and get things done without exchanging money."
+
+Primary CTA:
+"Join Your Community"
+
+Secondary CTA:
+"Explore Skills"
+
+Show a visual representation of nearby community members exchanging skills.
+
+Example cards:
+
+"Web Design ↔ Plumbing"
+"Photography ↔ Carpentry"
+"Cooking ↔ Graphic Design"
+
+Show:
+- location
+- skill
+- trust score
+- exchange status
+
+Include sections:
+
+WHY SKILLBARTER
+
+"Skills are currency."
+
+Explain that users can exchange knowledge and services instead of money.
+
+HOW IT WORKS
+
+1. Create your skill profile
+2. Discover people nearby
+3. Send an exchange request
+4. Complete the exchange
+5. Build your trust score
+
+TRUST MATTERS
+
+Explain the trust-score system.
+
+COMMUNITY
+
+Show realistic user cards.
+
+Final CTA:
+"Your neighborhood has skills. Start connecting."
+
+==================================================
+2. AUTHENTICATION
+==================================================
+
+Create:
+
+Login
+Signup
+Forgot Password
+
+Signup fields:
+- Name
+- Email
+- Password
+- Location
+- Primary Skill
+
+Include:
+"Use my location"
+
+But keep location permission as a frontend mock.
+
+Authentication should feel clean and premium.
+
+==================================================
+3. ONBOARDING
+==================================================
+
+After signup, show a multi-step onboarding flow.
+
+Step 1:
+"Where are you located?"
+
+Show a map/location visualization.
+
+Step 2:
+"What skills can you offer?"
+
+Examples:
+- Plumbing
+- Electrical
+- Carpentry
+- Web Development
+- Graphic Design
+- Photography
+- Cooking
+- Gardening
+- Tutoring
+- Painting
+- Bike Repair
+- Home Repair
+
+Allow multiple skills.
+
+Step 3:
+"What are you looking for?"
+
+Examples:
+- Learn a skill
+- Get help
+- Exchange services
+- Teach others
+- Meet people locally
+
+Step 4:
+"Set your exchange radius"
+
+Options:
+2 km
+5 km
+10 km
+25 km
+
+Step 5:
+"Build your community profile"
+
+Show preview.
+
+CTA:
+"Enter My Community"
+
+==================================================
+4. HOME FEED
+==================================================
+
+This should be the primary social-network screen.
+
+Desktop layout:
+
+LEFT:
+Profile summary
+Trust score
+Skills offered
+Location
+
+CENTER:
+Feed
+
+RIGHT:
+Nearby skill matches
+Pending requests
+Community activity
+
+Top navigation:
+
+SkillBarter logo
+
+Search
+
+Home
+Discover
+Exchange
+Messages
+Notifications
+
+Profile avatar
+
+Create a feed similar to a social network but focused on local skills.
+
+Example posts:
+
+"Ravi is offering bicycle repair in your neighborhood."
+
+"Ananya is looking for someone who can help with basic plumbing."
+
+"Priya completed a skill exchange with Arjun."
+
+"5 people near you offer photography."
+
+Post types:
+
+- Skill offer
+- Skill request
+- Exchange completed
+- Community achievement
+- Recommendation
+
+Each post should show:
+
+Avatar
+Name
+Trust score
+Distance
+Time
+Skill
+Description
+Exchange requirement
+Actions
+
+Actions:
+
+Offer Exchange
+Connect
+Save
+Share
+
+==================================================
+5. DISCOVER SKILLS
+==================================================
+
+Create a beautiful discovery page.
+
+Header:
+
+"Find Skills Near You"
+
+Search bar:
+"What skill do you need?"
+
+Categories:
+
+Home Repair
+Technology
+Design
+Education
+Photography
+Cooking
+Fitness
+Automotive
+Gardening
+Creative
+Events
+Other
+
+Show skill cards.
+
+Example:
+
+PLUMBING
+
+Ramesh Kumar
+★★★★☆
+Trust Score: 94
+1.8 km away
+
+"Can help with basic plumbing repairs."
+
+Looking for:
+"Web Design"
+
+Button:
+"Propose Exchange"
+
+Another:
+
+WEB DESIGN
+
+Ananya
+Trust Score: 91
+2.3 km away
+
+Offers:
+Landing pages
+Portfolio websites
+UI design
+
+Looking for:
+"Photography"
+
+IMPORTANT:
+
+Make distance highly visible.
+
+Use:
+"1.8 km away"
+
+This reinforces the hyperlocal concept.
+
+==================================================
+6. SMART SKILL MATCHING UI
+==================================================
+
+This is one of the most important features.
+
+Create a page called:
+
+"Skill Matches"
+
+Show:
+
+"You offer:"
+Web Development
+
+"You need:"
+Plumbing
+
+Then display matching users.
+
+Example:
+
+MATCH FOUND
+
+Ravi
+Plumbing
+2.1 km away
+Trust Score 94
+
+Ravi needs:
+Website redesign
+
+You offer:
+Web Development
+
+MATCH SCORE:
+96%
+
+Button:
+"Propose Exchange"
+
+Create a visual compatibility indicator.
+
+Example:
+
+YOUR SKILL
+Web Development
+
+        ↕ EXCHANGE
+
+THEIR SKILL
+Plumbing
+
+This should be one of the standout features of the product.
+
+==================================================
+7. EXCHANGE REQUEST FLOW
+==================================================
+
+Create a polished exchange workflow.
+
+User clicks:
+
+"Propose Exchange"
+
+Open a modal/page:
+
+EXCHANGE REQUEST
+
+You offer:
+Web Development
+
+You are requesting:
+Plumbing
+
+Message:
+"I can build a simple landing page in exchange for help fixing my kitchen sink."
+
+Preferred date:
+Saturday
+
+Estimated time:
+2 hours
+
+Location:
+Within 2 km
+
+Button:
+"Send Exchange Request"
+
+After sending:
+
+Status:
+Pending
+
+Receiver can:
+
+Accept
+Decline
+Counter Offer
+
+==================================================
+8. ACTIVE EXCHANGE
+==================================================
+
+After acceptance:
+
+Show an exchange workspace.
+
+EXCHANGE ACTIVE
+
+You:
+Web Development
+
+Partner:
+Plumbing
+
+Status:
+Confirmed
+
+Exchange date:
+Saturday
+
+Location:
+2.1 km
+
+Include:
+
+Chat
+Checklist
+Exchange details
+Mark as completed
+
+Both users must confirm completion.
+
+==================================================
+9. COMPLETION + TRUST SCORE
+==================================================
+
+After completing an exchange:
+
+Show:
+
+"Exchange Completed 🎉"
+
+Ask both users to review each other.
+
+Rating:
+
+★★★★★
+
+Questions:
+
+"Was the person reliable?"
+"Was the skill delivered as promised?"
+"Would you exchange skills with this person again?"
+
+Trust score should update visually.
+
+Example:
+
+TRUST SCORE
+
+92 / 100
+
+Reliability
+95%
+
+Skill Quality
+91%
+
+Completed Exchanges
+18
+
+Community Reviews
+16
+
+Response Rate
+98%
+
+Create a clean trust-score visualization.
+
+Do NOT make trust score feel like a meaningless social-media number.
+
+Explain why it matters.
+
+==================================================
+10. USER PROFILE
+==================================================
+
+Make profiles much more useful than LinkedIn-style resumes.
+
+Profile header:
+
+Avatar
+Name
+Location
+Distance
+Trust Score
+Member since
+
+Example:
+
+Arjun Sharma
+Web Developer & Photographer
+
+Hyderabad
+2.4 km away
+
+Trust Score
+94/100
+
+Sections:
+
+ABOUT
+
+SKILLS I OFFER
+
+Web Development
+Photography
+UI Design
+
+SKILLS I NEED
+
+Plumbing
+Carpentry
+
+AVAILABLE FOR
+
+Skill Exchange
+Teaching
+Learning
+
+EXCHANGE HISTORY
+
+18 completed exchanges
+
+REVIEWS
+
+Show community reviews.
+
+BADGES
+
+Verified Member
+Reliable Exchanger
+Community Helper
+Top Contributor
+
+Buttons:
+
+Propose Exchange
+Connect
+Message
+
+==================================================
+11. TRUST SYSTEM
+==================================================
+
+Create a dedicated Trust page.
+
+Explain:
+
+"Trust is earned through real community interactions."
+
+Show:
+
+Trust Score
+94
+
+Breakdown:
+
+Completed exchanges
+Reliability
+Response rate
+Community reviews
+Verification
+
+Show badges.
+
+Examples:
+
+✓ Identity Verified
+✓ 10+ Successful Exchanges
+✓ Reliable Partner
+✓ Community Contributor
+
+Create a visual "How your score works" section.
+
+IMPORTANT:
+Do not claim that the frontend is actually verifying identity.
+
+Use mock/demo data.
+
+==================================================
+12. CONNECTIONS
+==================================================
+
+Create a connections page.
+
+Tabs:
+
+My Connections
+Nearby
+Suggested
+
+Show people cards with:
+
+Name
+Skill
+Distance
+Trust Score
+
+Buttons:
+
+Message
+Propose Exchange
+Remove
+
+==================================================
+13. MESSAGES
+==================================================
+
+Build a modern messaging interface.
+
+Left:
+Conversation list
+
+Right:
+Chat
+
+Example conversation:
+
+"You offer web design?"
+
+"Yes. What kind of plumbing work do you need?"
+
+"I need help fixing my kitchen sink."
+
+"I can help with that. Would Saturday work?"
+
+Show:
+
+Skill being exchanged
+Exchange request status
+Trust score
+
+Include attachment and emoji icons.
+
+Make it functional as a frontend mock.
+
+==================================================
+14. NOTIFICATIONS
+==================================================
+
+Notifications examples:
+
+"Ravi accepted your exchange request."
+
+"Ananya proposed a skill exchange."
+
+"You received a new review."
+
+"Your trust score increased to 94."
+
+"3 new skill matches were found near you."
+
+==================================================
+15. SEARCH
+==================================================
+
+Create global search.
+
+Users can search:
+
+People
+Skills
+Requests
+Nearby exchanges
+
+Search examples:
+
+"Plumber"
+"Web Designer"
+"Carpenter"
+"Photography"
+
+Filters:
+
+Distance
+Trust Score
+Skill Category
+Availability
+Exchange Type
+
+Example:
+
+Within 2 km
+Trust score 80+
+Available this week
+
+==================================================
+16. LOCATION / GEO-FENCING EXPERIENCE
+==================================================
+
+Location is a CORE feature.
+
+Create a community/location visualization.
+
+Example:
+
+"Your Skill Community"
+
+Show:
+
+You
+
+Nearby members
+
+2 km radius
+
+5 km radius
+
+Use a map-like UI or stylized neighborhood visualization.
+
+Do NOT require an actual Google Maps API.
+
+Use a frontend mock map.
+
+Show nearby users as markers.
+
+Example:
+
+You
+↓
+2.1 km
+Ravi — Plumbing
+1.8 km
+Ananya — Photography
+3.2 km
+Arjun — Carpentry
+
+The user should immediately understand:
+
+"This app connects me with people around me."
+
+==================================================
+17. COMMUNITY PAGE
+==================================================
+
+Create:
+
+"Your Community"
+
+Show:
+
+People nearby
+Popular skills
+Recent exchanges
+Community activity
+
+Stats:
+
+1,248 Members Nearby
+327 Skills Available
+84 Exchanges This Week
+94% Average Trust Score
+
+Also show:
+
+"Most requested skills this week"
+
+Plumbing
+Carpentry
+Computer Repair
+Tutoring
+Photography
+
+==================================================
+18. RESPONSIVE MOBILE DESIGN
+==================================================
+
+This is VERY IMPORTANT.
+
+The application must work beautifully on:
+
+Desktop
+Laptop
+Tablet
+Mobile
+
+Desktop:
+Sidebar/navigation + multi-column layout.
+
+Mobile:
+Bottom navigation.
+
+Mobile bottom nav:
+
+Home
+Discover
+Exchange
+Messages
+Profile
+
+Cards must resize correctly.
+
+No horizontal scrolling.
+
+==================================================
+19. MICRO INTERACTIONS
+==================================================
+
+Add subtle animations.
+
+Examples:
+
+- button hover
+- card hover
+- page transitions
+- modal animation
+- trust score progress animation
+- skill-match animation
+- notification badge
+- skeleton loaders
+- toast notifications
+
+Do NOT over-animate.
+
+The UI should feel fast and professional.
+
+==================================================
+20. EMPTY STATES
+==================================================
+
+Do not leave blank screens.
+
+Create meaningful empty states.
+
+Example:
+
+"No exchange requests yet."
+
+"Once you find someone with a matching skill, your requests will appear here."
+
+CTA:
+"Discover Skills"
+
+==================================================
+21. LOADING STATES
+==================================================
+
+Create skeleton loaders for:
+
+Feed
+Profiles
+Skill cards
+Messages
+
+==================================================
+22. ERROR STATES
+==================================================
+
+Create professional error states.
+
+Example:
+
+"Something went wrong."
+
+"Unable to load nearby skills."
+
+Button:
+"Try Again"
+
+==================================================
+23. MOCK DATA
+==================================================
+
+Create realistic mock users.
+
+Example:
+
+Ravi Kumar
+Plumber
+Trust Score 94
+1.8 km away
+
+Ananya Rao
+UI Designer
+Trust Score 91
+2.4 km away
+
+Arjun Patel
+Carpenter
+Trust Score 88
+3.1 km away
+
+Priya Sharma
+Photographer
+Trust Score 96
+1.2 km away
+
+Do not use lorem ipsum.
+
+Use realistic content.
+
+==================================================
+24. COMPONENT ARCHITECTURE
+==================================================
+
+Create reusable components.
+
+Examples:
+
+Navbar
+Sidebar
+MobileBottomNav
+ProfileCard
+SkillCard
+SkillBadge
+TrustScore
+TrustBadge
+DistanceBadge
+ExchangeCard
+ExchangeRequestModal
+SkillMatchCard
+PostCard
+Feed
+SearchBar
+NotificationItem
+MessageList
+ChatWindow
+ReviewCard
+CommunityStats
+LocationPreview
+EmptyState
+LoadingSkeleton
+Modal
+Toast
+
+Do not duplicate UI unnecessarily.
+
+==================================================
+25. TYPESCRIPT TYPES
+==================================================
+
+Create proper types/interfaces.
+
+Example:
+
+User
+Skill
+SkillCategory
+Post
+Exchange
+ExchangeRequest
+Review
+Notification
+Message
+TrustScore
+Location
+Connection
+
+Avoid using "any" unless absolutely necessary.
+
+==================================================
+26. ROUTING
+==================================================
+
+Create routes such as:
+
+/
+ /login
+ /signup
+ /onboarding
+ /home
+ /discover
+ /matches
+ /exchange
+ /exchange/:id
+ /profile
+ /profile/:id
+ /connections
+ /messages
+ /notifications
+ /trust
+ /community
+ /settings
+
+Use React Router.
+
+==================================================
+27. STATE MANAGEMENT
+==================================================
+
+For now, use simple frontend state management.
+
+You may use:
+
+React Context
+or
+Zustand
+
+Keep the architecture ready for future backend integration.
+
+Do NOT create unnecessary complexity.
+
+==================================================
+28. FUTURE BACKEND READY
+==================================================
+
+Separate mock data from UI components.
+
+Create a structure such as:
+
+src/
+  components/
+  pages/
+  layouts/
+  hooks/
+  types/
+  data/
+  services/
+  utils/
+  assets/
+
+Create mock service functions where appropriate.
+
+Example:
+
+getNearbyUsers()
+getSkills()
+getMatches()
+sendExchangeRequest()
+acceptExchangeRequest()
+getMessages()
+
+For now these should return mock data.
+
+Later they can be replaced with REST APIs.
+
+==================================================
+29. ACCESSIBILITY
+==================================================
+
+Follow good accessibility practices.
+
+Use:
+
+Semantic HTML
+ARIA labels where necessary
+Keyboard navigation
+Visible focus states
+Good color contrast
+Accessible buttons
+Accessible modals
+
+==================================================
+30. CEO-LEVEL POLISH
+==================================================
+
+This is extremely important.
+
+Do not make the project look like:
+
+"Student created a few React pages."
+
+Make it look like:
+
+"A real startup MVP."
+
+Pay attention to:
+
+- spacing
+- typography
+- hierarchy
+- consistency
+- responsive behavior
+- realistic data
+- empty states
+- loading states
+- error states
+- interactions
+- trust indicators
+- location indicators
+- exchange workflow
+
+Every page should have a clear purpose.
+
+Avoid unnecessary features just to increase the number of pages.
+
+Focus on product quality.
+
+==================================================
+31. KEY PRODUCT EXPERIENCE
+==================================================
+
+The main user journey should be:
+
+SIGN UP
+↓
+SET LOCATION
+↓
+ADD SKILLS
+↓
+ENTER COMMUNITY
+↓
+SEE NEARBY PEOPLE
+↓
+DISCOVER A NEEDED SKILL
+↓
+FIND A MATCH
+↓
+PROPOSE EXCHANGE
+↓
+CHAT
+↓
+ACCEPT EXCHANGE
+↓
+COMPLETE EXCHANGE
+↓
+REVIEW USER
+↓
+TRUST SCORE UPDATED
+
+This journey must feel extremely smooth.
+
+==================================================
+32. DEMO EXPERIENCE
+==================================================
+
+Create the app so that I can demonstrate it to a CEO in 2–3 minutes.
+
+Demo scenario:
+
+User:
+Arjun
+
+Offers:
+Web Development
+
+Needs:
+Plumbing
+
+The dashboard shows:
+
+"3 skill matches near you."
+
+One match:
+
+Ravi
+Plumber
+1.8 km away
+Trust Score 94
+
+Ravi needs:
+Website Design
+
+Match Score:
+96%
+
+Click:
+
+"Propose Exchange"
+
+Enter:
+
+"I can build your landing page in exchange for fixing my kitchen sink."
+
+Send.
+
+Show:
+
+"Exchange request sent."
+
+Then demonstrate:
+
+Messages
+→ Accepted
+→ Exchange Active
+→ Completed
+→ Review
+→ Trust Score updated.
+
+Make this flow visually impressive.
+
+==================================================
+33. DASHBOARD HIGHLIGHTS
+==================================================
+
+The home dashboard should immediately communicate:
+
+GOOD MORNING, ARJUN
+
+"Here is what's happening in your community."
+
+Cards:
+
+3
+Skill Matches
+
+12
+Nearby Members
+
+2
+Pending Requests
+
+94
+Trust Score
+
+Then:
+
+"Recommended for You"
+
+"People Near You"
+
+"Community Activity"
+
+==================================================
+34. DIFFERENTIATION FROM LINKEDIN
+==================================================
+
+IMPORTANT:
+
+Do not use corporate/job-network terminology everywhere.
+
+Avoid making the UI centered around:
+
+Jobs
+Recruitment
+Companies
+Resumes
+Job applications
+
+Instead emphasize:
+
+Skills
+Community
+Neighbors
+Exchange
+Trust
+Distance
+Availability
+Helping
+Learning
+Bartering
+
+The application can borrow the familiar social-network structure of LinkedIn, but the product identity must clearly be different.
+
+==================================================
+35. FINAL UI QUALITY CHECK
+==================================================
+
+Before finishing, inspect the entire application and ensure:
+
+- No broken routes
+- No console errors
+- No TypeScript errors
+- No missing imports
+- No placeholder lorem ipsum
+- No empty pages
+- No broken responsive layouts
+- No inconsistent buttons
+- No inconsistent spacing
+- No unnecessary duplicate components
+- All major interactions work with mock data
+- Navigation works
+- Modals work
+- Forms work
+- Search works
+- Filters work
+- Exchange flow works
+- Trust score UI works
+- Mobile navigation works
+
+==================================================
+36. IMPORTANT DEVELOPMENT INSTRUCTION
+==================================================
+
+Do NOT simply provide a design description.
+
+Actually generate the complete frontend implementation.
+
+Start by creating the project structure and then implement the UI.
+
+If you need to make reasonable assumptions, make them yourself instead of repeatedly asking questions.
+
+Prioritize a polished working MVP over excessive explanation.
+
+After implementation, provide:
+
+1. Project structure
+2. Technologies used
+3. How to install
+4. How to run
+5. Main features implemented
+6. Important files and their purpose
+7. Any future backend integration points
+
+The final result should feel like a polished startup MVP rather than a college project.
+
+PROJECT:
+SkillBarter
+
+TAGLINE:
+"Your Skills. Your Community. Your Currency."
+
+CORE VALUE:
+"Exchange skills locally. Build trust. Spend zero cash."
+
+Build it with the quality bar of a professional product team.
