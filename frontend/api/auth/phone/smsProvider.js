@@ -6,6 +6,13 @@ function clean(value) {
   return typeof value === 'string' ? value.trim().replace(/^["'`]|["'`]$/g, '').trim() : '';
 }
 
+function safeGatewayText(value) {
+  return String(value || '')
+    .replace(/(?:X-API-Key|api[_ -]?key|token|authorization)[\s:=]+[^\s,;]+/gi, '$1=[redacted]')
+    .replace(/\s+/g, ' ')
+    .slice(0, 240);
+}
+
 export function getSmsProviderConfig() {
   const twoFactorApiKey = clean(process.env.TWOFACTOR_API_KEY);
   const provider = clean(process.env.SMS_PROVIDER || (twoFactorApiKey ? '2factor' : 'twilio')).toLowerCase();
@@ -64,7 +71,7 @@ async function sendVia2Factor(phone, otp) {
 
     const status = String(data.status || '').toLowerCase();
     if (!response.ok || (status && !['sent', 'success', 'queued'].includes(status))) {
-      const gatewayMessage = String(data.message || data.error || data.detail || '2Factor rejected the SMS request').slice(0, 180);
+      const gatewayMessage = safeGatewayText(data.message || data.error || data.detail || text || '2Factor rejected the SMS request');
       const error = new Error(`SMS delivery failed: ${gatewayMessage}`);
       error.code = `TWOFACTOR_${data.code || response.status}`;
       error.statusCode = response.status >= 500 ? 502 : 400;
