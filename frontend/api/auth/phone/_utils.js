@@ -46,7 +46,7 @@ async function twilioRequest(url, body) {
           Accept: 'application/json',
           Connection: 'close',
         },
-        timeout: 6000,
+        timeout: 2500,
       },
       (result) => {
         let raw = '';
@@ -64,10 +64,7 @@ async function twilioRequest(url, body) {
         });
       },
     );
-
-    request.on('timeout', () => {
-      request.destroy(new Error('Twilio SMS service timed out. Check the Twilio account, sender number, and verified recipient.'));
-    });
+    request.on('timeout', () => request.destroy(new Error('Twilio SMS timed out')));
     request.on('error', reject);
     request.write(body.toString());
     request.end();
