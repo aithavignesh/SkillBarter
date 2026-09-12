@@ -21,6 +21,7 @@ import { TrustSystemPage } from './pages/TrustSystemPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { MonetizationPage } from './pages/MonetizationPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -53,6 +54,7 @@ const AppContent: React.FC = () => {
           <Route path="/trust" element={<ProtectedRoute><TrustSystemPage /></ProtectedRoute>} />
           <Route path="/connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
           <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+          <Route path="/monetization" element={<ProtectedRoute><MonetizationPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
