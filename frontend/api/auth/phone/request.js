@@ -1,15 +1,13 @@
 import {
   checkRateLimit,
   createOtpChallenge,
-  getEnvConfig,
   normalizePhone,
   parseRequestBody,
   sendJson,
-  sendSmsOtp,
 } from './_utils.js';
+import { getSmsProviderConfig, sendSmsOtpViaProvider } from './smsProvider.js';
 
 export default async function handler(req, res) {
-  // CORS Preflight
   if (req.method === 'OPTIONS') {
     return sendJson(res, { ok: true }, 200);
   }
@@ -27,43 +25,32 @@ export default async function handler(req, res) {
     }
 
     const phone = normalizePhone(rawPhone);
-
-    // Rate limiting check
     const rateLimit = checkRateLimit(phone);
     if (!rateLimit.allowed) {
       return sendJson(
         res,
-        {
-          error: rateLimit.error,
-          waitSeconds: rateLimit.waitSeconds,
-          code: 'RATE_LIMITED',
-        },
+        { error: rateLimit.error, waitSeconds: rateLimit.waitSeconds, code: 'RATE_LIMITED' },
         429
       );
     }
 
-    // Check Twilio environment configuration (supports API Key or Auth Token)
-    const config = getEnvConfig();
-    const hasCredentials = (config.twilioApiKeySid && config.twilioApiKeySecret) || config.twilioAuthToken;
-    if (!config.twilioAccountSid || !config.twilioFromNumber || !hasCredentials) {
-      console.error('[Configuration Error] Missing Twilio environment variables.');
-      return sendJson(
-        res,
-        {
-          error: 'SMS service configuration error. Required server variables are missing.',
-          code: 'TWILIO_NOT_CONFIGURED',
-        },
-        500
-      );
+    const provider = getSmsProviderConfig();
+    if (provider.provider === '2factor' || provider.provider === '2factor.in') {
+      if (!provider.twoFactorApiKey) {
+        return sendJson(
+          res,
+          {
+            error: 'SMS service is not configured yet. Add TWOFACTOR_API_KEY to Vercel Production.',
+            code: 'TWOFACTOR_NOT_CONFIGURED',
+          },
+          500
+        );
+      }
     }
 
-    // Generate secure OTP & cryptographic challenge token
     const challenge = createOtpChallenge(phone);
+    await sendSmsOtpViaProvider(phone, challenge.otp);
 
-    // Send real Twilio SMS (strictly awaited)
-    await sendSmsOtp(phone, challenge.otp);
-
-    // Return success with challenge token (NEVER returns plaintext OTP)
     return sendJson(
       res,
       {
@@ -71,6 +58,7 @@ export default async function handler(req, res) {
         phone,
         challenge: challenge.token,
         delivery: 'sms',
+        provider: provider.provider,
       },
       200
     );
@@ -82,7 +70,6 @@ export default async function handler(req, res) {
       {
         error: err.message || 'Unable to send OTP via SMS. Please try again.',
         code: err.code || 'REQUEST_FAILED',
-        details: err.details || null,
       },
       statusCode
     );
