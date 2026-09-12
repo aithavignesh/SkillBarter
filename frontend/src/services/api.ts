@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://skillbarter-api-6e06535c-f2fc-4853-8267-b064e674ee3b.fly.dev/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 class ApiClient {
   private getToken(): string | null {
     return localStorage.getItem('skillbarter_token');

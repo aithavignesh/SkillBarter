@@ -34,7 +34,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const base = apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '');
         return `${base}/ws/${token}`;
       }
-      return `wss://skillbarter-api-6e06535c-f2fc-4853-8267-b064e674ee3b.fly.dev/ws/${token}`;
+      return `ws://localhost:8000/ws/${token}`;
     };
     const wsUrl = getWsUrl();
     let socket: WebSocket | null = null;

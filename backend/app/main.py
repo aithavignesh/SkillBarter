@@ -1,13 +1,17 @@
+import logging
+import time
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from jose import jwt, JWTError
 
 from app.config import settings
-from app.database import engine, Base
+from app.database import engine, Base, check_db_connection
 import app.models # ensure all models are registered
 from app.services.websocket import ws_manager
 from app.seed.seed_data import seed_database
+
+logger = logging.getLogger(__name__)
 
 # Routers
 from app.routers import (
@@ -30,12 +34,26 @@ from app.routers import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB tables and demo seed data on startup
-    Base.metadata.create_all(bind=engine)
-    try:
-        seed_database()
-    except Exception as e:
-        print(f"Seed info: {e}")
+    # Initialize DB tables and demo seed data with retries for cloud environments
+    max_retries = 5
+    retry_delay = 2
+    for attempt in range(1, max_retries + 1):
+        try:
+            logger.info(f"Checking database connection (attempt {attempt}/{max_retries})...")
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database schema verified and tables ready.")
+            try:
+                seed_database()
+            except Exception as seed_err:
+                logger.info(f"Seed note: {seed_err}")
+            break
+        except Exception as db_err:
+            logger.warning(f"Database connection attempt {attempt}/{max_retries} failed: {db_err}")
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 10)
+            else:
+                logger.error("Could not complete database initialization after all retries. App starting in degraded state.")
     yield
 
 app = FastAPI(
@@ -72,8 +90,10 @@ app.include_router(admin.router, prefix=settings.API_V1_STR)
 
 @app.get("/health")
 def health_check():
+    db_ok = check_db_connection()
     return {
-        "status": "healthy",
+        "status": "healthy" if db_ok else "degraded",
+        "database": "connected" if db_ok else "disconnected",
         "app": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "zero_cash_policy": "Enforced"

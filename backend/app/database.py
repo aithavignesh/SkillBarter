@@ -1,48 +1,52 @@
-from sqlalchemy import create_engine
+import logging
+import socket
+import urllib.parse
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.config import settings
 
-connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+logger = logging.getLogger(__name__)
 
-# ==============================================================================
-# TEMPORARY STARTUP DIAGNOSTIC: RENDER DNS CHECK (Remove after diagnosis)
-# ==============================================================================
-import sys
-import platform
-import socket
-import urllib.parse
+def get_connect_args(db_url: str) -> dict:
+    connect_args = {}
+    if db_url.startswith("sqlite"):
+        connect_args["check_same_thread"] = False
+        return connect_args
 
-try:
-    print("----- [START DNS DIAGNOSTIC] -----")
-    print(f"[DNS DIAGNOSTIC] Python version: {sys.version}")
-    print(f"[DNS DIAGNOSTIC] Platform: {platform.platform()}")
-    
-    parsed_db_url = urllib.parse.urlparse(settings.DATABASE_URL)
-    db_host = parsed_db_url.hostname or "ju9c3u2p.us-east.database.insforge.app"
-    print(f"[DNS DIAGNOSTIC] DATABASE_URL host only: {db_host}")
-    
-    target_host = "ju9c3u2p.us-east.database.insforge.app"
-    print(f"[DNS DIAGNOSTIC] Attempting socket.getaddrinfo() for: {target_host}")
-    addr_info = socket.getaddrinfo(target_host, 5432)
-    resolved_ips = list({item[4][0] for item in addr_info})
-    print(f"[DNS DIAGNOSTIC] Resolution successful! Resolved IPs: {resolved_ips}")
-    print(f"[DNS DIAGNOSTIC] Full getaddrinfo result: {addr_info}")
-    print("----- [END DNS DIAGNOSTIC] -----")
-except Exception as diag_err:
-    print(f"[DNS DIAGNOSTIC] Resolution failed with error: {type(diag_err).__name__}: {diag_err}")
-    print("----- [END DNS DIAGNOSTIC] -----")
-# ==============================================================================
-# END TEMPORARY STARTUP DIAGNOSTIC
-# ==============================================================================
+    if db_url.startswith("postgresql"):
+        parsed = urllib.parse.urlparse(db_url)
+        hostname = parsed.hostname
+        port = parsed.port or 5432
+        # If connecting to a remote host, resolve IPv4 dynamically to prevent container C resolver issues
+        if hostname and hostname not in ("localhost", "127.0.0.1"):
+            try:
+                addr_info = socket.getaddrinfo(hostname, port, socket.AF_INET, socket.SOCK_STREAM)
+                if addr_info:
+                    resolved_ip = addr_info[0][4][0]
+                    connect_args["hostaddr"] = resolved_ip
+                    logger.info(f"Dynamically resolved database host {hostname} to {resolved_ip}")
+            except Exception as e:
+                logger.warning(f"Could not resolve hostaddr dynamically for {hostname}: {e}")
+    return connect_args
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args=connect_args,
-    echo=False,
-    pool_pre_ping=True
-)
+db_url = settings.normalized_database_url
+connect_args = get_connect_args(db_url)
+
+engine_kwargs = {
+    "connect_args": connect_args,
+    "echo": False,
+    "pool_pre_ping": True,
+}
+
+if not db_url.startswith("sqlite"):
+    engine_kwargs.update({
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_timeout": 30,
+        "pool_recycle": 1800,
+    })
+
+engine = create_engine(db_url, **engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -53,3 +57,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def check_db_connection() -> bool:
+    """Test if database is reachable and accepting queries."""
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return True
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return False

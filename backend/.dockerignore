@@ -12,3 +12,7 @@ env
 fly.toml
 .git
 .gitignore
+.env
+.env.*
+.env.local
+.insforge
