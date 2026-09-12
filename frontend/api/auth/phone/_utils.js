@@ -346,7 +346,7 @@ export function mapTwilioErrorToSafeMessage(code, status, rawMsg, diagnostics) {
     return 'SMS delivery to this destination is not permitted.';
   }
 
-  if (code === 21608) {
+  if (code === 21608 || code === 572002 || (rawMsg && rawMsg.toLowerCase().includes('verified recipient'))) {
     return 'This number must be verified in the Twilio trial account.';
   }
 

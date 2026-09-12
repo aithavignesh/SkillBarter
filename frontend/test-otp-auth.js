@@ -89,6 +89,9 @@ assert.strictEqual(errDest, 'SMS delivery to this destination is not permitted.'
 
 const errTrial = mapTwilioErrorToSafeMessage(21608, 400, 'Unverified trial', {});
 assert.strictEqual(errTrial, 'This number must be verified in the Twilio trial account.');
+
+const errTrial572002 = mapTwilioErrorToSafeMessage(572002, 422, "No Twilio trial phone number is assigned for messaging to this destination number. Please add the 'to' number as a verified recipient.", {});
+assert.strictEqual(errTrial572002, 'This number must be verified in the Twilio trial account.');
 console.log('  [PASS] Safe error message mapping');
 
 // Restore env
