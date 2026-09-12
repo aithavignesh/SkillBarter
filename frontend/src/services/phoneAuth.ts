@@ -92,6 +92,11 @@ export async function requestPhoneOtp(phoneInput: string) {
   const data = await postPhoneAuth('/api/auth/phone/request', { phone });
   if (!data?.challenge) throw new Error('OTP sent but verification session was not created');
   sessionStorage.setItem('skillbarter_otp_challenge', data.challenge);
+  if (data?.delivery === 'demo' && data?.demoOtp) {
+    sessionStorage.setItem('skillbarter_demo_otp', String(data.demoOtp));
+  } else {
+    sessionStorage.removeItem('skillbarter_demo_otp');
+  }
   return phone;
 }
 
@@ -106,6 +111,7 @@ export async function verifyPhoneOtp(phoneInput: string, otp: string) {
   localStorage.setItem('skillbarter_token', data.accessToken);
   localStorage.setItem('skillbarter_phone', phone);
   sessionStorage.removeItem('skillbarter_otp_challenge');
+  sessionStorage.removeItem('skillbarter_demo_otp');
   const appUser = await syncPhoneUser(data.user, phone, data.user?.profile ?? {});
   return toLegacyUser(data.user, appUser);
 }
@@ -122,4 +128,5 @@ export async function getCurrentPhoneUser() {
 export function clearPhoneSession() {
   localStorage.removeItem('skillbarter_phone');
   sessionStorage.removeItem('skillbarter_otp_challenge');
+  sessionStorage.removeItem('skillbarter_demo_otp');
 }
