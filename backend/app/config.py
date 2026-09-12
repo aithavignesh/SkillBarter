@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     @property
     def normalized_database_url(self) -> str:
-        url = self.DATABASE_URL.strip()
+        url = self.DATABASE_URL.strip().strip("'\"")
         # SQLAlchemy requires postgresql:// instead of postgres://
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)

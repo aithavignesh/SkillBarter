@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from jose import jwt, JWTError
 
 from app.config import settings
-from app.database import engine, Base, check_db_connection
+from app.database import engine, Base, check_db_connection, get_last_db_error
 import app.models # ensure all models are registered
 from app.services.websocket import ws_manager
 from app.seed.seed_data import seed_database
@@ -91,13 +91,18 @@ app.include_router(admin.router, prefix=settings.API_V1_STR)
 @app.get("/health")
 def health_check():
     db_ok = check_db_connection()
-    return {
+    resp = {
         "status": "healthy" if db_ok else "degraded",
         "database": "connected" if db_ok else "disconnected",
         "app": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "zero_cash_policy": "Enforced"
     }
+    if not db_ok:
+        err = get_last_db_error()
+        if err:
+            resp["database_error"] = err
+    return resp
 
 @app.websocket("/ws/{token}")
 async def websocket_endpoint(websocket: WebSocket, token: str):
