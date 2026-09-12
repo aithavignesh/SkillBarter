@@ -37,9 +37,7 @@ async function syncPhoneUser(authUser: any, phone: string, profile: any = {}) {
   const existing = await insforge.database.from('users').select('*').eq('email', email).maybeSingle();
   if (existing.error) throw new Error(existing.error.message || 'Unable to load application profile');
 
-  if (existing.data) {
-    return existing.data;
-  }
+  if (existing.data) return existing.data;
 
   const { data, error } = await insforge.database.from('users').insert({
     email,
@@ -79,15 +77,32 @@ function toLegacyUser(authUser: any, appUser: any): PhoneAuthUser {
   };
 }
 
+async function postPhoneAuth(path: string, body: Record<string, string>) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data?.error || `Phone authentication request failed (${response.status})`);
+    return data;
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('OTP service timed out. Please try again in a moment.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function requestPhoneOtp(phoneInput: string) {
   const phone = normalizePhone(phoneInput);
-  const response = await fetch('/api/auth/phone/request', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || 'Unable to send OTP');
+  await postPhoneAuth('/api/auth/phone/request', { phone });
   return phone;
 }
 
@@ -96,19 +111,9 @@ export async function verifyPhoneOtp(phoneInput: string, otp: string) {
   const code = otp.trim();
   if (!/^\d{6}$/.test(code)) throw new Error('Enter the 6-digit OTP');
 
-  const response = await fetch('/api/auth/phone/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, otp: code }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || 'Invalid or expired OTP');
-  if (!data?.user || !data?.accessToken) {
-    throw new Error('OTP verified but no user session was returned');
-  }
+  const data = await postPhoneAuth('/api/auth/phone/verify', { phone, otp: code });
+  if (!data?.user || !data?.accessToken) throw new Error('OTP verified but no user session was returned');
 
-  // The server has already authenticated the user with InsForge. Push the
-  // returned token into the browser SDK so database calls use the same session.
   insforge.setAccessToken(data.accessToken);
   localStorage.setItem('skillbarter_token', data.accessToken);
   localStorage.setItem('skillbarter_phone', phone);
