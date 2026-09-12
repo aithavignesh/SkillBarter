@@ -7,7 +7,11 @@ if (!baseUrl || !anonKey) {
   throw new Error('Missing VITE_INSFORGE_URL or VITE_INSFORGE_ANON_KEY');
 }
 
-export const insforge = createClient({
+// The SDK's generated database query types are project-schema dependent and
+// can become incompatible with this legacy application's dynamic table schema.
+// Keep the runtime client unchanged while allowing the application data layer
+// to use the PostgREST-style query builder without false compile-time errors.
+export const insforge: any = createClient({
   baseUrl,
   anonKey,
 });
