@@ -30,8 +30,6 @@ function twilioCredentials() {
 
 async function twilioRequest(url, method = 'POST', body = null) {
   const controller = new AbortController();
-  // Keep each Twilio call short enough that a cold Vercel function cannot
-  // exhaust the platform timeout while resolving the Verify service + SMS.
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     const result = await fetch(url, {
@@ -68,17 +66,6 @@ async function getVerifyServiceSid() {
   if (verifyServiceSidPromise) return verifyServiceSidPromise;
 
   verifyServiceSidPromise = (async () => {
-    const listUrl = 'https://verify.twilio.com/v2/Services?PageSize=50';
-    const listed = await twilioRequest(listUrl, 'GET');
-    const existing = Array.isArray(listed?.services)
-      ? listed.services.find((service) => service?.friendly_name === 'SkillBarter OTP')
-      : null;
-
-    if (existing?.sid) {
-      cachedVerifyServiceSid = existing.sid;
-      return cachedVerifyServiceSid;
-    }
-
     const body = new URLSearchParams({ FriendlyName: 'SkillBarter OTP', CodeLength: '6' });
     const created = await twilioRequest('https://verify.twilio.com/v2/Services', 'POST', body);
     if (!created?.sid) throw new Error('Twilio Verify service could not be created');
