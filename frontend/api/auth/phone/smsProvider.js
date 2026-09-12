@@ -1,4 +1,4 @@
-import { getEnvConfig, getTwilioAuthCredentials, sendJson as _unused } from './_utils.js';
+import { getEnvConfig } from './_utils.js';
 
 const TWOFACTOR_ENDPOINT = 'https://2factor.in/API/V1/OTP/SEND';
 
@@ -11,11 +11,7 @@ export function getSmsProviderConfig() {
   const twoFactorApiKey = clean(process.env.TWOFACTOR_API_KEY);
   const twoFactorTemplate = clean(process.env.TWOFACTOR_TEMPLATE_NAME || 'LOGIN_OTP');
 
-  return {
-    provider,
-    twoFactorApiKey,
-    twoFactorTemplate,
-  };
+  return { provider, twoFactorApiKey, twoFactorTemplate };
 }
 
 export function getSmsProviderDiagnostics() {
@@ -32,9 +28,8 @@ export function getSmsProviderDiagnostics() {
 
 async function sendVia2Factor(phone, otp) {
   const { twoFactorApiKey, twoFactorTemplate } = getSmsProviderConfig();
-
   if (!twoFactorApiKey) {
-    const error = new Error('SMS provider is not configured. Add TWOFACTOR_API_KEY in Vercel Production environment variables.');
+    const error = new Error('SMS service is not configured yet. Add TWOFACTOR_API_KEY in Vercel Production environment variables.');
     error.code = 'TWOFACTOR_NOT_CONFIGURED';
     error.statusCode = 500;
     throw error;
@@ -49,7 +44,7 @@ async function sendVia2Factor(phone, otp) {
       headers: {
         'X-API-Key': twoFactorApiKey,
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify({
         to: phone,
@@ -64,10 +59,11 @@ async function sendVia2Factor(phone, otp) {
     try {
       data = JSON.parse(text);
     } catch {
-      // Keep empty object for non-JSON gateway responses.
+      // Keep an empty object for non-JSON gateway responses.
     }
 
-    if (!response.ok || (data.status && !['sent', 'success', 'queued'].includes(String(data.status).toLowerCase()))) {
+    const status = String(data.status || '').toLowerCase();
+    if (!response.ok || (status && !['sent', 'success', 'queued'].includes(status))) {
       const gatewayMessage = String(data.message || data.error || data.detail || '2Factor rejected the SMS request').slice(0, 180);
       const error = new Error(`SMS delivery failed: ${gatewayMessage}`);
       error.code = `TWOFACTOR_${data.code || response.status}`;
@@ -105,8 +101,6 @@ export async function sendSmsOtpViaProvider(phone, otp) {
     if (!config.twilioAccountSid || !config.twilioFromNumber || !(config.twilioApiKeySid || config.twilioAuthToken)) {
       throw new Error('Twilio SMS provider is not configured correctly.');
     }
-
-    // Delegate to the existing Twilio implementation only when explicitly selected.
     const { sendSmsOtp } = await import('./_utils.js');
     return sendSmsOtp(phone, otp);
   }
