@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { getCurrentPhoneUser, requestPhoneOtp, verifyPhoneOtp } from '../services/phoneAuth';
 import { User } from '../types';
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
+  requestPhoneOtp: (phone: string) => Promise<string>;
+  verifyPhoneOtp: (phone: string, otp: string) => Promise<void>;
   register: (payload: any) => Promise<void>;
   logout: () => Promise<void>;
   demoSwitchUser: (userId: number) => Promise<void>;
@@ -23,6 +26,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const user = await api.getMe();
       setCurrentUser(user);
     } catch {
+      try {
+        const phoneUser = await getCurrentPhoneUser();
+        if (phoneUser) {
+          setCurrentUser(phoneUser as User);
+          return;
+        }
+      } catch {
+        // No active phone session.
+      }
       setCurrentUser(null);
       api.clearToken();
     } finally {
@@ -37,6 +49,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.login(email, pass);
       await refreshUser();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestPhoneOtp = async (phone: string) => {
+    setLoading(true);
+    try {
+      return await requestPhoneOtp(phone);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async (phone: string, otp: string) => {
+    setLoading(true);
+    try {
+      const user = await verifyPhoneOtp(phone, otp);
+      setCurrentUser(user as User);
     } finally {
       setLoading(false);
     }
@@ -68,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, login, register, logout, demoSwitchUser, refreshUser }}>
+    <AuthContext.Provider value={{ currentUser, loading, login, requestPhoneOtp: handleRequestPhoneOtp, verifyPhoneOtp: handleVerifyPhoneOtp, register, logout, demoSwitchUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
