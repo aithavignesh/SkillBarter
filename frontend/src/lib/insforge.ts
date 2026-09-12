@@ -1,6 +1,6 @@
 import { createClient } from '@insforge/sdk';
 
-const baseUrl = import.meta.env.VITE_INSFORGE_URL;
+const baseUrl = import.meta.env.VITE_INSFORGE_URL?.replace(/\/+$/, '');
 const anonKey = import.meta.env.VITE_INSFORGE_ANON_KEY;
 
 if (!baseUrl || !anonKey) {
