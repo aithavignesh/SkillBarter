@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { getCurrentPhoneUser, requestPhoneOtp, verifyPhoneOtp } from '../services/phoneAuth';
+import { clearPhoneSession, getCurrentPhoneUser, requestPhoneOtp, verifyPhoneOtp } from '../services/phoneAuth';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -47,6 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
+      clearPhoneSession();
       await api.login(email, pass);
       await refreshUser();
     } finally {
@@ -76,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (payload: any) => {
     setLoading(true);
     try {
+      clearPhoneSession();
       await api.register(payload);
       await refreshUser();
     } finally {
@@ -85,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     await api.logout();
+    clearPhoneSession();
     setCurrentUser(null);
   };
 
@@ -107,6 +110,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
