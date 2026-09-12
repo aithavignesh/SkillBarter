@@ -39,7 +39,6 @@ async function twilioRequest(url, body) {
       body,
       signal: controller.signal,
     });
-
     const data = await result.json().catch(() => ({}));
     if (!result.ok) {
       const code = data?.code ? ` (${data.code})` : '';
@@ -47,29 +46,44 @@ async function twilioRequest(url, body) {
     }
     return data;
   } catch (error) {
-    if (error?.name === 'AbortError') {
-      throw new Error('Twilio did not respond within 12 seconds. Check the Twilio account, Verify Service, and trial recipient restrictions.');
-    }
+    if (error?.name === 'AbortError') throw new Error('Twilio did not respond within 12 seconds. Check your Twilio sender and trial recipient.');
     throw error;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-export async function twilioVerifyRequest(phone) {
-  const serviceSid = requireEnv('TWILIO_VERIFY_SERVICE_SID');
-  const body = new URLSearchParams({ To: phone, Channel: 'sms' });
-  return twilioRequest(
-    `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/Verifications`,
-    body,
-  );
+export function createOtpChallenge(phone) {
+  const secret = requireEnv('PHONE_AUTH_SECRET');
+  const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+  const expiresAt = Date.now() + 5 * 60 * 1000;
+  const payload = `${phone}|${code}|${expiresAt}`;
+  const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
+  return { code, token: `${expiresAt}.${signature}` };
 }
 
-export async function twilioVerifyCheck(phone, code) {
-  const serviceSid = requireEnv('TWILIO_VERIFY_SERVICE_SID');
-  const body = new URLSearchParams({ To: phone, Code: code });
+export function verifyOtpChallenge(phone, code, token) {
+  const secret = requireEnv('PHONE_AUTH_SECRET');
+  const parts = String(token ?? '').split('.');
+  if (parts.length !== 2) return false;
+  const expiresAt = Number(parts[0]);
+  if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) return false;
+  const payload = `${phone}|${code}|${expiresAt}`;
+  const expected = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
+  const a = Buffer.from(expected);
+  const b = Buffer.from(parts[1]);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+export async function sendSmsOtp(phone, challenge) {
+  const from = requireEnv('TWILIO_FROM_NUMBER');
+  const body = new URLSearchParams({
+    To: phone,
+    From: from,
+    Body: `SkillBarter login OTP: ${challenge.code}. It expires in 5 minutes. Do not share this code.`,
+  });
   return twilioRequest(
-    `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/VerificationCheck`,
+    `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(requireEnv('TWILIO_ACCOUNT_SID'))}/Messages.json`,
     body,
   );
 }
@@ -95,11 +109,7 @@ async function insforgeAuth(path, payload) {
   const { baseUrl, anonKey } = insforgeConfig();
   const result = await fetch(`${baseUrl}${path}`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${anonKey}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
+    headers: { Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(payload),
   });
   const data = await result.json().catch(() => ({}));
@@ -109,34 +119,15 @@ async function insforgeAuth(path, payload) {
 export async function createOrSignInPhoneUser(phone) {
   const email = phoneIdentity(phone);
   const password = phonePassword(phone);
-
-  // Existing phone users sign in directly.
   const signedIn = await insforgeAuth('/api/auth/sessions', { email, password });
-  if (signedIn.ok && signedIn.data?.accessToken && signedIn.data?.user) {
-    return signedIn.data;
-  }
+  if (signedIn.ok && signedIn.data?.accessToken && signedIn.data?.user) return signedIn.data;
 
-  // First-time phone users are created only after Twilio has verified the number.
-  const created = await insforgeAuth('/api/auth/users', {
-    email,
-    password,
-    name: 'SkillBarter Member',
-  });
+  const created = await insforgeAuth('/api/auth/users', { email, password, name: 'SkillBarter Member' });
+  if (created.ok && created.data?.accessToken && created.data?.user) return created.data;
 
-  if (created.ok && created.data?.accessToken && created.data?.user) {
-    return created.data;
-  }
-
-  // Handle a race where another request created the account between the two calls.
   const retry = await insforgeAuth('/api/auth/sessions', { email, password });
-  if (retry.ok && retry.data?.accessToken && retry.data?.user) {
-    return retry.data;
-  }
+  if (retry.ok && retry.data?.accessToken && retry.data?.user) return retry.data;
 
-  const message =
-    created.data?.message ||
-    created.data?.error ||
-    retry.data?.message ||
-    'Unable to create the SkillBarter phone account';
+  const message = created.data?.message || created.data?.error || retry.data?.message || 'Unable to create the SkillBarter phone account';
   throw new Error(typeof message === 'string' ? message : 'Unable to create the SkillBarter phone account');
 }
