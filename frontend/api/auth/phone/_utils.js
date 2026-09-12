@@ -22,56 +22,56 @@ function requireEnv(name) {
   return value;
 }
 
-export async function twilioVerifyRequest(phone) {
+async function twilioRequest(url, body) {
   const accountSid = requireEnv('TWILIO_ACCOUNT_SID');
   const authToken = requireEnv('TWILIO_AUTH_TOKEN');
-  const serviceSid = requireEnv('TWILIO_VERIFY_SERVICE_SID');
   const credentials = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
 
-  const body = new URLSearchParams({ To: phone, Channel: 'sms' });
-  const result = await fetch(
-    `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/Verifications`,
-    {
+  try {
+    const result = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body,
-    },
-  );
+      signal: controller.signal,
+    });
 
-  const data = await result.json().catch(() => ({}));
-  if (!result.ok) {
-    throw new Error(data?.message || data?.error_message || 'Unable to send OTP');
+    const data = await result.json().catch(() => ({}));
+    if (!result.ok) {
+      const code = data?.code ? ` (${data.code})` : '';
+      throw new Error(`${data?.message || data?.error_message || 'Twilio request failed'}${code}`);
+    }
+    return data;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Twilio did not respond within 12 seconds. Check the Twilio account, Verify Service, and trial recipient restrictions.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-  return data;
+}
+
+export async function twilioVerifyRequest(phone) {
+  const serviceSid = requireEnv('TWILIO_VERIFY_SERVICE_SID');
+  const body = new URLSearchParams({ To: phone, Channel: 'sms' });
+  return twilioRequest(
+    `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/Verifications`,
+    body,
+  );
 }
 
 export async function twilioVerifyCheck(phone, code) {
-  const accountSid = requireEnv('TWILIO_ACCOUNT_SID');
-  const authToken = requireEnv('TWILIO_AUTH_TOKEN');
   const serviceSid = requireEnv('TWILIO_VERIFY_SERVICE_SID');
-  const credentials = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
-
   const body = new URLSearchParams({ To: phone, Code: code });
-  const result = await fetch(
+  return twilioRequest(
     `https://verify.twilio.com/v2/Services/${encodeURIComponent(serviceSid)}/VerificationCheck`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body,
-    },
+    body,
   );
-
-  const data = await result.json().catch(() => ({}));
-  if (!result.ok) {
-    throw new Error(data?.message || data?.error_message || 'Unable to verify OTP');
-  }
-  return data;
 }
 
 export function phoneIdentity(phone) {
