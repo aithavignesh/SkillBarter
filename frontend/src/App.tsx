@@ -22,6 +22,7 @@ import { ConnectionsPage } from './pages/ConnectionsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { MonetizationPage } from './pages/MonetizationPage';
+import { AdditionalScreensIndex, AdditionalScreen } from './pages/AdditionalScreensPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -56,6 +57,8 @@ const AppContent: React.FC = () => {
           <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
           <Route path="/monetization" element={<ProtectedRoute><MonetizationPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+          <Route path="/screens" element={<ProtectedRoute><AdditionalScreensIndex /></ProtectedRoute>} />
+          <Route path="/screens/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
