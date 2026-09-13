@@ -158,8 +158,11 @@ export async function createOrSignInPhoneUser(phone) {
   const { createClient } = await import('@insforge/sdk');
   const insforgeClient = createClient({ baseUrl: insforgeUrl, anonKey: insforgeAnonKey });
   const phoneDigits = phone.replace(/[^\d]/g, '');
+
+  // Use a syntactically valid synthetic email. InsForge validates the email
+  // format before authentication, so .local/.local.v2 addresses are rejected.
   const legacyEmail = `${phoneDigits}@phone.skillbarter.local`;
-  const migratedEmail = `${phoneDigits}@phone.skillbarter.local.v2`;
+  const migratedEmail = `${phoneDigits}@phone.skillbarter.com`;
   const derivedPassword = crypto.createHmac('sha256', phoneAuthSecret)
     .update(`skillbarter:phone:pwd:${phone}`)
     .digest('hex') + 'Aa1!';
@@ -168,49 +171,41 @@ export async function createOrSignInPhoneUser(phone) {
   let authUser = null;
   let authEmail = legacyEmail;
 
-  // Normal path: existing account created with the current PHONE_AUTH_SECRET.
-  const primary = await signIn(insforgeClient, legacyEmail, derivedPassword);
+  // Normal path for a phone account created with the current secret and the
+  // valid synthetic email format.
+  const primary = await signIn(insforgeClient, migratedEmail, derivedPassword);
   if (!primary.error && primary.data?.accessToken) {
     accessToken = primary.data.accessToken;
     authUser = primary.data.user;
+    authEmail = migratedEmail;
   } else if (primary.error && !isInvalidCredentials(primary.error)) {
     throw new Error(primary.error.message || 'Unable to authenticate phone user');
   }
 
-  // Recovery path: an older deployment may have created the phone account using
-  // a previous PHONE_AUTH_SECRET. The SMS OTP is already the verified factor, so
-  // migrate the auth identity to a deterministic v2 email/password pair.
+  // Recovery path for accounts created by an older deployment.
   if (!accessToken) {
-    const migrated = await signIn(insforgeClient, migratedEmail, derivedPassword);
-    if (!migrated.error && migrated.data?.accessToken) {
-      accessToken = migrated.data.accessToken;
-      authUser = migrated.data.user;
+    const created = await signUp(insforgeClient, migratedEmail, derivedPassword);
+    const alreadyExists = Boolean(created.error?.message) && /already\s*(registered|exists)|email.*already.*(registered|exists)/i.test(created.error.message);
+    if (created.error && !alreadyExists) {
+      throw new Error(created.error.message || 'Unable to create phone authentication account');
+    }
+    if (created.data?.accessToken) {
+      accessToken = created.data.accessToken;
+      authUser = created.data.user;
       authEmail = migratedEmail;
-    } else if (migrated.error && !isInvalidCredentials(migrated.error)) {
-      throw new Error(migrated.error.message || 'Unable to authenticate phone user');
     } else {
-      const created = await signUp(insforgeClient, migratedEmail, derivedPassword);
-      const alreadyExists = Boolean(created.error?.message) && /already\s*(registered|exists)|email.*already.*(registered|exists)/i.test(created.error.message);
-      if (created.error && !alreadyExists) {
-        throw new Error(created.error.message || 'Unable to create phone authentication account');
+      const retry = await signIn(insforgeClient, migratedEmail, derivedPassword);
+      if (retry.error || !retry.data?.accessToken) {
+        throw new Error(retry.error?.message || 'Unable to sign in phone authentication account');
       }
-      if (created.data?.accessToken) {
-        accessToken = created.data.accessToken;
-        authUser = created.data.user;
-        authEmail = migratedEmail;
-      } else {
-        const retry = await signIn(insforgeClient, migratedEmail, derivedPassword);
-        if (retry.error || !retry.data?.accessToken) {
-          throw new Error(retry.error?.message || 'Unable to sign in phone authentication account');
-        }
-        accessToken = retry.data.accessToken;
-        authUser = retry.data.user;
-        authEmail = migratedEmail;
-      }
+      accessToken = retry.data.accessToken;
+      authUser = retry.data.user;
+      authEmail = migratedEmail;
     }
   }
 
-  // Preserve the existing SkillBarter profile when migrating auth identity.
+  // Preserve an existing application profile, including profiles from the
+  // original .local synthetic email implementation.
   let { data: userProfile } = await insforgeClient.database
     .from('users')
     .select('*')
