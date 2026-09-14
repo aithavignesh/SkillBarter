@@ -22,6 +22,7 @@ import { ConnectionsPage } from './pages/ConnectionsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { MonetizationPage } from './pages/MonetizationPage';
+import { DailyFeaturesPage } from './pages/DailyFeaturesPage';
 import { AdditionalScreen } from './pages/AdditionalScreensPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -90,9 +91,9 @@ const AppContent: React.FC = () => {
           <Route path="/trust/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
           <Route path="/connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
           <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
-          <Route path="/community/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
           <Route path="/monetization" element={<ProtectedRoute><MonetizationPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+          <Route path="/daily-features" element={<ProtectedRoute><DailyFeaturesPage /></ProtectedRoute>} />
 
           <Route path="/home/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
           <Route path="/learning/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
@@ -106,7 +107,6 @@ const AppContent: React.FC = () => {
           <Route path="/settings/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
           <Route path="/activity/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
 
-          {/* Backward compatibility only: old showcase links resolve into the integrated product route. */}
           <Route path="/screens/:id" element={<LegacyScreenRedirect />} />
           <Route path="/screens" element={<Navigate to="/feed" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
