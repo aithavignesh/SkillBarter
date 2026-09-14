@@ -6,6 +6,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { Navbar } from './components/layout/Navbar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { Footer } from './components/layout/Footer';
+import { PlatformEnhancements } from './components/features/PlatformEnhancements';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -22,7 +23,6 @@ import { ConnectionsPage } from './pages/ConnectionsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { MonetizationPage } from './pages/MonetizationPage';
-import { DailyFeaturesPage } from './pages/DailyFeaturesPage';
 import { AdditionalScreen } from './pages/AdditionalScreensPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -93,7 +93,6 @@ const AppContent: React.FC = () => {
           <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
           <Route path="/monetization" element={<ProtectedRoute><MonetizationPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
-          <Route path="/daily-features" element={<ProtectedRoute><DailyFeaturesPage /></ProtectedRoute>} />
 
           <Route path="/home/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
           <Route path="/learning/:id" element={<ProtectedRoute><AdditionalScreen /></ProtectedRoute>} />
@@ -111,6 +110,7 @@ const AppContent: React.FC = () => {
           <Route path="/screens" element={<Navigate to="/feed" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        {currentUser && <PlatformEnhancements />}
       </main>
       {!isChat && <Footer />}
       <MobileBottomNav />
