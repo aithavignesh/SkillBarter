@@ -14,8 +14,7 @@ export const ProfessionalLayer: React.FC = () => {
   const id = currentUser?.id;
   const offered = currentUser?.skills?.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name) || [];
   const needed = currentUser?.skills?.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name) || [];
-  const profile = currentUser?.profile as any;
-  const name = currentUser?.name || 'SkillBarter Member';
+  const name = currentUser?.full_name || 'SkillBarter Member';
   const [postText, setPostText] = useState('');
   const [posted, setPosted] = useState(() => read('posted', false, id));
   const [connected, setConnected] = useState(() => read('connected', false, id));
@@ -23,9 +22,9 @@ export const ProfessionalLayer: React.FC = () => {
   const [streak, setStreak] = useState(() => read('streak', 3, id));
 
   const completeness = useMemo(() => {
-    const checks = [Boolean(name), Boolean(profile?.bio), offered.length > 0, needed.length > 0, Boolean(profile?.avatar_url || currentUser?.avatar_url)];
+    const checks = [Boolean(name), Boolean(currentUser?.bio), offered.length > 0, needed.length > 0, Boolean(currentUser?.avatar_url)];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [name, profile, offered.length, needed.length, currentUser?.avatar_url]);
+  }, [name, currentUser?.bio, offered.length, needed.length, currentUser?.avatar_url]);
 
   if (pathname === '/feed') return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 pb-6 space-y-3">
