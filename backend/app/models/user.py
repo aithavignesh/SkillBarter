@@ -13,15 +13,15 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
     headline = Column(String(200), nullable=True)
-    
+
     # Hyperlocal coordinates & location
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     address_display = Column(String(200), nullable=True)
     exchange_radius_km = Column(Float, default=10.0)
-    location_visibility = Column(String(50), default="APPROXIMATE") # APPROXIMATE, CITY_ONLY, EXACT
+    location_visibility = Column(String(50), default="APPROXIMATE")
     availability = Column(String(100), default="Weekends & Evenings")
-    
+
     # Trust Score breakdown (0 to 100)
     trust_score = Column(Float, default=85.0)
     reliability_score = Column(Float, default=90.0)
@@ -29,16 +29,33 @@ class User(Base):
     skill_quality_score = Column(Float, default=90.0)
     completed_exchanges_count = Column(Integer, default=0)
     reviews_count = Column(Integer, default=0)
-    
+
     # Badges array/list
     badges = Column(JSON, default=lambda: ["Verified Member"])
-    
+
+    # Persistent monetization / product entitlements
+    premium = Column(Boolean, default=False, nullable=False)
+    premium_until = Column(DateTime, nullable=True)
+    verified = Column(Boolean, default=False, nullable=False)
+    verification_requested_at = Column(DateTime, nullable=True)
+    featured_until = Column(DateTime, nullable=True)
+    priority_matching = Column(Boolean, default=False, nullable=False)
+    credits = Column(Integer, default=100, nullable=False)
+    workshops_enabled = Column(Boolean, default=False, nullable=False)
+    corporate_interest = Column(Boolean, default=False, nullable=False)
+    sponsored_enabled = Column(Boolean, default=False, nullable=False)
+    lead_generation_enabled = Column(Boolean, default=False, nullable=False)
+    priority_matches_used = Column(Integer, default=0, nullable=False)
+    priority_matches_date = Column(String(10), nullable=True)
+    boosts_used = Column(Integer, default=0, nullable=False)
+    last_boost_at = Column(DateTime, nullable=True)
+
     # Status & Auth
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
     onboarding_completed = Column(Boolean, default=True)
-    primary_intent = Column(String(50), default="EXCHANGE") # EXCHANGE, LEARN, TEACH, HELP, MEET
-    
+    primary_intent = Column(String(50), default="EXCHANGE")
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
