@@ -57,7 +57,7 @@ export function createOtpChallenge(phone, customOtp=null, customSecret=null) {
 
 export function verifyOtpChallenge(phone, enteredOtp, token, customSecret=null) {
   if (!token) return false; let p; try { p=JSON.parse(Buffer.from(token,'base64url').toString('utf8')); } catch { return false; }
-  const {phone: cp, expiresAt, salt, otpHash, sig}=p; if (!cp||!expiresAt||!salt||!otpHash||!sig||cp!==phone||Date.now()>expiresAt) return false;
+  const {phone: cp, expiresAt, salt, otpHash, sig}=p; if(!cp||!expiresAt||!salt||!otpHash||!sig||cp!==phone||Date.now()>expiresAt) return false;
   const secret=customSecret||getEnvConfig().phoneAuthSecret; if(!secret) return false;
   const es=crypto.createHmac('sha256',secret).update(`sig:${phone}|${expiresAt}|${salt}|${otpHash}`).digest('hex');
   if(sig.length!==es.length||!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(es))) return false;
@@ -75,16 +75,44 @@ async function dbRequest(baseUrl, anonKey, method, query='', body) {
   return data;
 }
 
-async function authSession(client,email,password) {
+/**
+ * Phone accounts use an internal synthetic email because InsForge Auth is
+ * email/password based. The real phone OTP is verified by this serverless
+ * route first; the synthetic credential is never shown to the user.
+ *
+ * We first use the SDK, then fall back to InsForge's public client registration
+ * endpoint. The latter returns an access token on successful registration and
+ * avoids getting stuck when the SDK returns a verification-required response.
+ */
+async function authSession(client,email,password,baseUrl,anonKey) {
   const signIn=await client.auth.signInWithPassword({email,password});
   if(!signIn.error&&signIn.data?.accessToken) return signIn.data;
   if(signIn.error&&!invalidCredentials(signIn.error)) throw new Error(signIn.error.message||'Unable to authenticate phone user');
+
   const signUp=await client.auth.signUp({email,password,name:'SkillBarter Member'});
-  const exists=/already\s*(registered|exists)|email.*already.*(registered|exists)/i.test(signUp.error?.message||'');
-  if(signUp.error&&!exists) throw new Error(signUp.error.message||'Unable to create phone authentication account');
-  if(signUp.data?.accessToken) return signUp.data;
+  if(!signUp.error&&signUp.data?.accessToken) return signUp.data;
+
+  // Some InsForge projects return requireEmailVerification from the SDK. A
+  // phone-only account cannot complete an email verification flow, so retry
+  // through the documented client registration endpoint which returns a
+  // session token when registration succeeds.
+  try {
+    const response=await fetch(`${baseUrl.replace(/\/+$/,'')}/api/auth/users`,{
+      method:'POST',
+      headers:{Authorization:`Bearer ${anonKey}`,'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({email,password,name:'SkillBarter Member'}),
+    });
+    const text=await response.text();
+    let data=null; try{data=text?JSON.parse(text):null;}catch{}
+    if(response.ok&&data?.accessToken) return { accessToken:data.accessToken, user:data.user };
+    const alreadyExists=response.status===409||/already|exists|registered/i.test(String(data?.message||data?.error||text));
+    if(!alreadyExists&&!signUp.error) throw new Error(data?.message||data?.error||'Unable to create phone authentication account');
+  } catch (err) {
+    if(!signUp.error) throw err;
+  }
+
   const retry=await client.auth.signInWithPassword({email,password});
-  if(retry.error||!retry.data?.accessToken) throw new Error(retry.error?.message||'Unable to sign in phone authentication account');
+  if(retry.error||!retry.data?.accessToken) throw new Error(retry.error?.message||signUp.error?.message||'Unable to sign in phone authentication account');
   return retry.data;
 }
 
@@ -96,7 +124,7 @@ export async function createOrSignInPhoneUser(phone) {
   const client=createClient({baseUrl:insforgeUrl,anonKey:insforgeAnonKey});
   const digits=phone.replace(/[^\d]/g,''), email=`${digits}@phone.skillbarter.com`;
   const password=crypto.createHmac('sha256',phoneAuthSecret).update(`skillbarter:phone:pwd:${phone}`).digest('hex')+'Aa1!';
-  const session=await authSession(client,email,password);
+  const session=await authSession(client,email,password,insforgeUrl,insforgeAnonKey);
   let rows=await dbRequest(insforgeUrl,insforgeAnonKey,'GET',`?email=eq.${encodeURIComponent(email)}&limit=1`);
   let profile=Array.isArray(rows)?rows[0]:rows;
   if(!profile){
