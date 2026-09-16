@@ -18,7 +18,7 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none';
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0d1016] disabled:opacity-50 disabled:cursor-not-allowed select-none';
 
   const sizeStyles = {
     sm: 'text-xs px-3 py-1.5 gap-1.5',
@@ -27,11 +27,11 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const variantStyles = {
-    primary: 'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-sm focus:ring-emerald-500',
-    secondary: 'bg-slate-800 text-white hover:bg-slate-900 active:bg-black shadow-sm focus:ring-slate-700',
-    outline: 'border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 focus:ring-slate-400',
-    ghost: 'text-slate-600 hover:bg-slate-100 active:bg-slate-200 focus:ring-slate-400',
-    danger: 'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus:ring-rose-500',
+    primary: 'bg-violet-500 text-white hover:bg-violet-400 active:bg-violet-600 shadow-[0_8px_24px_rgba(139,92,246,0.24)] focus:ring-violet-400',
+    secondary: 'bg-[#252b36] text-slate-100 border border-white/[0.08] hover:bg-[#2d3440] active:bg-[#343c49] focus:ring-violet-400',
+    outline: 'border border-white/[0.12] text-slate-200 bg-transparent hover:bg-white/[0.05] hover:border-violet-400/40 active:bg-white/[0.08] focus:ring-violet-400',
+    ghost: 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100 active:bg-white/[0.08] focus:ring-violet-400',
+    danger: 'bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 focus:ring-rose-500',
   };
 
   return (
