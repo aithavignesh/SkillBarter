@@ -6,8 +6,8 @@ import { MatchResult, UserSummary } from '../types';
 import { Button } from '../components/ui/Button';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
 import { AppPageShell } from '../components/ui/AppPageShell';
-import { getMonetizationState, getPriorityMatchRemaining, consumePriorityMatch } from '../services/monetization';
-import { Sparkles, Repeat, MapPin, ShieldCheck, CheckCircle, ArrowRight, SlidersHorizontal, Crown } from 'lucide-react';
+import { getMonetizationState, getPriorityMatchRemaining, consumePriorityMatch, updateMonetizationState } from '../services/monetization';
+import { Sparkles, Repeat, MapPin, ShieldCheck, CheckCircle, ArrowRight, SlidersHorizontal, Crown, Power } from 'lucide-react';
 
 export const SkillMatchesPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -31,25 +31,34 @@ export const SkillMatchesPage: React.FC = () => {
 
   const monetization = useMemo(() => getMonetizationState(userId), [userId, usageTick]);
   const priorityRemaining = useMemo(() => getPriorityMatchRemaining(userId), [userId, usageTick, monetization]);
+  const priorityActive = monetization.premium && monetization.priorityMatching;
   const displayedMatches = useMemo(() => {
-    if (!monetization.premium || !monetization.priorityMatching) return matches;
+    if (!priorityActive) return matches;
     return [...matches].sort((a, b) => {
       const aPriority = Number(a.match_score || 0) * 0.65 + Number(a.score_breakdown?.trust || 0) * 1.2 + Number(a.score_breakdown?.location_proximity || 0) * 0.35;
       const bPriority = Number(b.match_score || 0) * 0.65 + Number(b.score_breakdown?.trust || 0) * 1.2 + Number(b.score_breakdown?.location_proximity || 0) * 0.35;
       return bPriority - aPriority;
     });
-  }, [matches, monetization]);
+  }, [matches, priorityActive]);
 
   const offeredList = currentUser?.skills?.filter(s => s.skill_type === 'OFFERED').map(s => s.skill_name) || [];
   const neededList = currentUser?.skills?.filter(s => s.skill_type === 'NEEDED').map(s => s.skill_name) || [];
-  const openProposal = (match: MatchResult) => {
-    if (monetization.premium && monetization.priorityMatching && priorityRemaining <= 0) {
-      setNotice('Your 20 daily priority actions have been used. Regular matching remains available after disabling Priority Matching.');
-      return;
-    }
-    setPriorityProposal(Boolean(monetization.premium && monetization.priorityMatching));
-    setSelectedPartner(match.candidate); setDefaultPartnerSkill(match.they_offer?.[0] || ''); setDefaultMySkill(match.matched_you_offer?.[0] || ''); setIsProposeOpen(true);
+
+  const disablePriority = () => {
+    updateMonetizationState(userId, { priorityMatching: false });
+    setUsageTick(v => v + 1);
+    setNotice('Priority matching disabled. Regular matching is now available without the daily priority limit.');
   };
+
+  const openProposal = (match: MatchResult) => {
+    setNotice('');
+    setPriorityProposal(priorityActive);
+    setSelectedPartner(match.candidate);
+    setDefaultPartnerSkill(match.they_offer?.[0] || '');
+    setDefaultMySkill(match.matched_you_offer?.[0] || '');
+    setIsProposeOpen(true);
+  };
+
   const handleProposalSuccess = () => {
     if (priorityProposal) consumePriorityMatch(userId);
     setUsageTick(v => v + 1);
@@ -73,10 +82,11 @@ export const SkillMatchesPage: React.FC = () => {
       </div>
 
       {notice && <div className="mt-4 border border-red-100 bg-[#fff5f5] px-4 py-3 text-xs font-semibold text-[#b8171d]">{notice}</div>}
-      {monetization.premium && monetization.priorityMatching && <div className="mt-4 flex flex-col gap-3 border border-red-100 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-2"><Crown className="h-4 w-4 text-[#d31d24]"/><div><p className="text-xs font-bold text-[#17233b]">Priority matching is active</p><p className="text-[10px] text-[#697386]">Recommendations are reordered using fit, trust and proximity. {priorityRemaining} priority actions remain today.</p></div></div><span className="border border-[#e1e4e8] bg-[#f7f8f7] px-2.5 py-1.5 text-[10px] font-bold text-slate-600">{priorityRemaining}/20 left</span></div>}
+      {priorityActive && <div className="mt-4 flex flex-col gap-3 border border-red-100 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-2"><Crown className="h-4 w-4 text-[#d31d24]"/><div><p className="text-xs font-bold text-[#17233b]">Priority matching is active</p><p className="text-[10px] text-[#697386]">Recommendations use fit, trust and proximity. {priorityRemaining} priority actions remain today.</p></div></div><div className="flex items-center gap-2"><span className="border border-[#e1e4e8] bg-[#f7f8f7] px-2.5 py-1.5 text-[10px] font-bold text-slate-600">{priorityRemaining}/20 left</span><Button size="sm" variant="outline" onClick={disablePriority} icon={<Power className="h-3 w-3" />}>Use regular matching</Button></div></div>}
+      {priorityActive && priorityRemaining === 0 && <div className="mt-3 border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800"><b>Daily priority limit reached.</b> Turn off Priority Matching above to propose exchanges using the regular flow.</div>}
 
       <div className="mt-5 border border-[#e1e4e8] bg-white">
-        <div className="border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">{monetization.premium && monetization.priorityMatching ? 'Priority recommendations' : 'Recommended exchanges'}</div>
+        <div className="border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">{priorityActive ? 'Priority recommendations' : 'Recommended exchanges'}</div>
         {loading ? <div className="py-20 text-center text-sm text-slate-400">Calculating matches…</div> : displayedMatches.length === 0 ? <div className="py-20 text-center"><Repeat className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No reciprocal matches yet</h3><p className="mx-auto mt-1 max-w-md text-xs text-slate-500">Add more offered or needed skills to improve the set of possible trades.</p></div> : <div className="divide-y divide-[#e1e4e8]">
           {displayedMatches.map((match, idx) => <div key={idx} className="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1.3fr)_220px] lg:items-center">
             <div className="flex items-start gap-3"><img src={match.candidate?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80'} alt={match.candidate?.full_name} className="h-12 w-12 rounded-full border border-[#dfe3e8] object-cover" /><div className="min-w-0"><p className="truncate text-sm font-bold text-[#17233b]">{match.candidate?.full_name}</p><p className="truncate text-xs text-slate-500">{match.candidate?.headline || 'SkillBarter member'}</p><div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold"><span className="flex items-center gap-1 text-slate-500"><MapPin className="h-3 w-3 text-[#d31d24]" />{match.distance_display}</span><span className="text-slate-600">★ {Math.round(match.candidate?.trust_score || 0)}</span></div></div></div>
