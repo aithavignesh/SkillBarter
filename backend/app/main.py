@@ -4,43 +4,57 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPExceptio
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from jose import jwt, JWTError
+from sqlalchemy import text
 
 from app.config import settings
 from app.database import engine, Base, check_db_connection, get_last_db_error
-import app.models # ensure all models are registered
+import app.models
 from app.services.websocket import ws_manager
 from app.seed.seed_data import seed_database
 
 logger = logging.getLogger(__name__)
 
-# Routers
 from app.routers import (
-    auth,
-    users,
-    skills,
-    matches,
-    exchanges,
-    messages,
-    reviews,
-    trust,
-    notifications,
-    connections,
-    feed,
-    community,
-    search,
-    reports,
-    admin
+    auth, users, skills, matches, exchanges, messages, reviews, trust,
+    notifications, connections, feed, community, search, reports, admin
 )
+
+
+def migrate_monetization_columns():
+    """Add monetization columns to existing deployments without requiring Alembic."""
+    if engine.dialect.name != "postgresql":
+        return
+    columns = {
+        "premium": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "premium_until": "TIMESTAMP NULL",
+        "verified": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "verification_requested_at": "TIMESTAMP NULL",
+        "featured_until": "TIMESTAMP NULL",
+        "priority_matching": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "credits": "INTEGER NOT NULL DEFAULT 100",
+        "workshops_enabled": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "corporate_interest": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "sponsored_enabled": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "lead_generation_enabled": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "priority_matches_used": "INTEGER NOT NULL DEFAULT 0",
+        "priority_matches_date": "VARCHAR(10) NULL",
+        "boosts_used": "INTEGER NOT NULL DEFAULT 0",
+        "last_boost_at": "TIMESTAMP NULL",
+    }
+    with engine.begin() as connection:
+        for name, definition in columns.items():
+            connection.execute(text(f'ALTER TABLE users ADD COLUMN IF NOT EXISTS {name} {definition}'))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB tables and demo seed data with retries for cloud environments
     max_retries = 5
     retry_delay = 2
     for attempt in range(1, max_retries + 1):
         try:
             logger.info(f"Checking database connection (attempt {attempt}/{max_retries})...")
             Base.metadata.create_all(bind=engine)
+            migrate_monetization_columns()
             logger.info("Database schema verified and tables ready.")
             try:
                 seed_database()
@@ -56,13 +70,8 @@ async def lifespan(app: FastAPI):
                 logger.error("Could not complete database initialization after all retries. App starting in degraded state.")
     yield
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    lifespan=lifespan
-)
+app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION, lifespan=lifespan)
 
-# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
@@ -71,7 +80,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register API routers
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(users.router, prefix=settings.API_V1_STR)
 app.include_router(skills.router, prefix=settings.API_V1_STR)
@@ -106,10 +114,6 @@ def health_check():
 
 @app.websocket("/ws/{token}")
 async def websocket_endpoint(websocket: WebSocket, token: str):
-    """
-    Real-time WebSocket endpoint for instant messaging and live notifications.
-    Authenticates via JWT token in URL path.
-    """
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = int(payload.get("sub"))
@@ -120,9 +124,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     await ws_manager.connect(user_id, websocket)
     try:
         while True:
-            # Echo / keepalive / incoming events
             data = await websocket.receive_text()
-            # Can process incoming client events if needed
             await websocket.send_text(f'{{"event":"PONG","received":{data}}}')
     except WebSocketDisconnect:
         ws_manager.disconnect(user_id, websocket)
