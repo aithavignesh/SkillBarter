@@ -18,7 +18,7 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0b1015] disabled:opacity-50 disabled:cursor-not-allowed select-none';
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1e2529] disabled:opacity-50 disabled:cursor-not-allowed select-none';
 
   const sizeStyles = {
     sm: 'text-xs px-3 py-1.5 gap-1.5',
@@ -27,10 +27,10 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const variantStyles = {
-    primary: 'bg-sky-500 text-[#07131a] font-semibold hover:bg-sky-400 active:bg-sky-600 shadow-[0_8px_24px_rgba(56,189,248,0.22)] focus:ring-sky-400',
-    secondary: 'bg-[#29323a] text-slate-100 border border-white/[0.08] hover:bg-[#333e47] active:bg-[#3b4750] focus:ring-sky-400',
-    outline: 'border border-white/[0.14] text-slate-200 bg-transparent hover:bg-white/[0.05] hover:border-sky-400/50 active:bg-white/[0.08] focus:ring-sky-400',
-    ghost: 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100 active:bg-white/[0.08] focus:ring-sky-400',
+    primary: 'bg-[#55a6c9] text-[#142027] font-semibold hover:bg-[#70b8d6] active:bg-[#427a93] shadow-[0_8px_24px_rgba(85,166,201,0.20)] focus:ring-[#55a6c9]',
+    secondary: 'bg-[#2c3439] text-slate-100 border border-white/[0.09] hover:bg-[#374147] active:bg-[#414c52] focus:ring-[#55a6c9]',
+    outline: 'border border-white/[0.14] text-slate-200 bg-transparent hover:bg-white/[0.05] hover:border-[#55a6c9]/55 active:bg-white/[0.08] focus:ring-[#55a6c9]',
+    ghost: 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100 active:bg-white/[0.08] focus:ring-[#55a6c9]',
     danger: 'bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 focus:ring-rose-500',
   };
 
