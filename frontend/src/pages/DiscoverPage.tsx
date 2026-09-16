@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { UserSummary } from '../types';
@@ -6,9 +6,12 @@ import { Button } from '../components/ui/Button';
 import { CommunityMap } from '../components/map/CommunityMap';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
 import { AppPageShell } from '../components/ui/AppPageShell';
-import { Search, MapPin, Repeat, LayoutGrid, Compass, ArrowUpRight } from 'lucide-react';
+import { Search, MapPin, Repeat, LayoutGrid, Compass, ArrowUpRight, Sparkles, LockKeyhole } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { getMonetizationState } from '../services/monetization';
 
 export const DiscoverPage: React.FC = () => {
+  const { currentUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -18,8 +21,12 @@ export const DiscoverPage: React.FC = () => {
   const [selectedPartner, setSelectedPartner] = useState<UserSummary | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
   const [defaultPartnerSkill, setDefaultPartnerSkill] = useState('');
+  const [priorityDiscovery, setPriorityDiscovery] = useState(false);
+  const [notice, setNotice] = useState('');
 
   const categories = ['All','Home Repair','Technology','Design','Education','Photography','Cooking','Fitness','Gardening','Creative'];
+  const premium = Boolean(currentUser?.id && getMonetizationState(Number(currentUser.id)).premium);
+
   const fetchNeighbors = async () => {
     try { setLoading(true); setNearbyUsers(await api.getNearbyUsers()); }
     catch (e) { console.error(e); }
@@ -27,20 +34,36 @@ export const DiscoverPage: React.FC = () => {
   };
   useEffect(() => { fetchNeighbors(); }, []);
 
-  const filteredNeighbors = nearbyUsers.filter((u) => {
-    const q = searchQuery.toLowerCase();
-    const matchesQuery = !q || [u.full_name, u.headline, ...(u.skills_offered || []), ...(u.skills_needed || [])].filter(Boolean).some((v: string) => v.toLowerCase().includes(q));
+  const filteredNeighbors = useMemo(() => {
     const categorySkills: Record<string,string[]> = {
       'Home Repair':['Plumbing','Carpentry','Electrical Work','Painting','Bike Repair'],
       Technology:['Web Development','Mobile App Dev','Python Tutoring'],
       Design:['UI Design','Graphic Design'], Photography:['Photography','Video Editing'], Cooking:['Cooking','Baking'],
     };
-    const matchesCat = selectedCategory === 'All' || (u.skills_offered || []).some((s: string) => (categorySkills[selectedCategory] || [s]).includes(s));
-    return matchesQuery && matchesCat;
-  });
+    const q = searchQuery.toLowerCase();
+    const results = nearbyUsers.filter((u) => {
+      const matchesQuery = !q || [u.full_name, u.headline, ...(u.skills_offered || []), ...(u.skills_needed || [])].filter(Boolean).some((v: string) => v.toLowerCase().includes(q));
+      const matchesCat = selectedCategory === 'All' || (u.skills_offered || []).some((s: string) => (categorySkills[selectedCategory] || [s]).includes(s));
+      return matchesQuery && matchesCat;
+    });
+    if (!priorityDiscovery || !premium) return results;
+    return [...results].sort((a, b) => {
+      const score = (u: any) => ((u.trust_score || 0) * 2) + Math.max(0, 100 - Number(u.distance_km || 100)) + ((u.skills_offered || []).length * 3);
+      return score(b) - score(a);
+    });
+  }, [nearbyUsers, searchQuery, selectedCategory, priorityDiscovery, premium]);
 
   const openProposal = (user: any) => {
     setSelectedPartner(user); setDefaultPartnerSkill(user.skills_offered?.[0] || ''); setIsProposeOpen(true);
+  };
+
+  const togglePriorityDiscovery = () => {
+    if (!premium) {
+      setNotice('Priority Discovery is a Premium feature. Open Monetization to activate Premium.');
+      return;
+    }
+    setNotice('');
+    setPriorityDiscovery((value) => !value);
   };
 
   return (
@@ -56,11 +79,20 @@ export const DiscoverPage: React.FC = () => {
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {categories.map((cat) => <button key={cat} onClick={() => setSelectedCategory(cat)} className={`whitespace-nowrap border px-3 py-2 text-xs font-bold transition ${selectedCategory === cat ? 'border-[#d31d24] bg-[#d31d24] text-white' : 'border-[#e1e4e8] bg-white text-slate-600 hover:border-slate-300'}`}>{cat}</button>)}
         </div>
-        <div className="flex shrink-0 border border-[#e1e4e8] bg-[#f7f8f7] p-1">
-          <button onClick={() => setViewMode('GRID')} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${viewMode === 'GRID' ? 'bg-white text-[#17233b] shadow-sm' : 'text-slate-500'}`}><LayoutGrid className="h-3.5 w-3.5" />List</button>
-          <button onClick={() => setViewMode('MAP')} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${viewMode === 'MAP' ? 'bg-white text-[#17233b] shadow-sm' : 'text-slate-500'}`}><Compass className="h-3.5 w-3.5" />Map</button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button onClick={togglePriorityDiscovery} className={`flex items-center gap-1.5 border px-3 py-2 text-xs font-bold ${priorityDiscovery && premium ? 'border-[#d31d24] bg-[#fff5f5] text-[#b8171d]' : 'border-[#e1e4e8] bg-white text-slate-600 hover:border-slate-300'}`}>
+            {premium ? <Sparkles className="h-3.5 w-3.5" /> : <LockKeyhole className="h-3.5 w-3.5" />}
+            Priority Discovery {premium ? (priorityDiscovery ? 'On' : 'Off') : 'Premium'}
+          </button>
+          <div className="flex border border-[#e1e4e8] bg-[#f7f8f7] p-1">
+            <button onClick={() => setViewMode('GRID')} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${viewMode === 'GRID' ? 'bg-white text-[#17233b] shadow-sm' : 'text-slate-500'}`}><LayoutGrid className="h-3.5 w-3.5" />List</button>
+            <button onClick={() => setViewMode('MAP')} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${viewMode === 'MAP' ? 'bg-white text-[#17233b] shadow-sm' : 'text-slate-500'}`}><Compass className="h-3.5 w-3.5" />Map</button>
+          </div>
         </div>
       </div>
+
+      {notice && <div className="flex items-center justify-between gap-3 border border-[#f1c8ca] bg-[#fff7f7] px-4 py-3 text-xs text-[#8f1a20]"><span>{notice}</span><Link to="/monetization" className="font-bold underline">View Premium</Link></div>}
+      {priorityDiscovery && premium && <div className="border border-[#e8d4d4] bg-[#fffafa] px-4 py-2.5 text-xs text-[#8f1a20]">Premium ranking is active: trust, proximity and skill breadth are weighted to surface stronger discovery candidates first.</div>}
 
       {viewMode === 'MAP' ? <div className="border border-[#e1e4e8] bg-white p-2"><CommunityMap users={filteredNeighbors} /></div> : (
         <div className="overflow-hidden border border-[#e1e4e8] bg-white">
