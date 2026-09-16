@@ -1,246 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { MatchResult, UserSummary } from '../types';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
-import {
-  Sparkles,
-  Repeat,
-  MapPin,
-  ShieldCheck,
-  CheckCircle,
-  HelpCircle,
-  Clock,
-  ArrowRight,
-  TrendingUp,
-  Info
-} from 'lucide-react';
+import { AppPageShell } from '../components/ui/AppPageShell';
+import { Sparkles, Repeat, MapPin, ShieldCheck, CheckCircle, ArrowRight, SlidersHorizontal } from 'lucide-react';
 
 export const SkillMatchesPage: React.FC = () => {
   const { currentUser } = useAuth();
   const [matches, setMatches] = useState<MatchResult[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  // Propose Modal State
+  const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<UserSummary | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
   const [defaultPartnerSkill, setDefaultPartnerSkill] = useState('');
   const [defaultMySkill, setDefaultMySkill] = useState('');
 
   const loadMatches = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getMatches();
-      setMatches(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    try { setLoading(true); setMatches(await api.getMatches()); }
+    catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
-
-  useEffect(() => {
-    loadMatches();
-  }, []);
-
-  const handleOpenPropose = (match: MatchResult) => {
-    setSelectedPartner(match.candidate);
-    setDefaultPartnerSkill(match.they_offer?.[0] || '');
-    setDefaultMySkill(match.matched_you_offer?.[0] || '');
-    setIsProposeOpen(true);
-  };
+  useEffect(() => { loadMatches(); }, []);
 
   const offeredList = currentUser?.skills?.filter(s => s.skill_type === 'OFFERED').map(s => s.skill_name) || [];
   const neededList = currentUser?.skills?.filter(s => s.skill_type === 'NEEDED').map(s => s.skill_name) || [];
+  const openProposal = (match: MatchResult) => {
+    setSelectedPartner(match.candidate); setDefaultPartnerSkill(match.they_offer?.[0] || ''); setDefaultMySkill(match.matched_you_offer?.[0] || ''); setIsProposeOpen(true);
+  };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Header Banner */}
-      <div>
-        <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
-          <Sparkles className="w-4 h-4" /> Smart Reciprocal Engine
-        </span>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-0.5">
-          Hyperlocal Skill Matches
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Algorithmic 2-way compatibility calculated dynamically from your offered skills, needed skills, proximity, and trust score.
-        </p>
+    <AppPageShell
+      eyebrow="Matching"
+      title="Smart skill matches"
+      description="See people whose offered and needed skills create a reciprocal exchange opportunity with you."
+      icon={<Sparkles className="h-3.5 w-3.5" />}
+      actions={<Link to="/discover"><Button size="sm" variant="outline" icon={<SlidersHorizontal className="h-3.5 w-3.5" />}>Adjust discovery</Button></Link>}
+    >
+      <div className="grid gap-px border border-[#e1e4e8] bg-[#e1e4e8] lg:grid-cols-[1fr_1fr_220px]">
+        <div className="bg-white p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">You offer</p><p className="mt-2 text-sm font-bold text-[#17233b]">{offeredList.join(', ') || 'Add skills you can teach'}</p></div>
+        <div className="bg-white p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">You need</p><p className="mt-2 text-sm font-bold text-[#17233b]">{neededList.join(', ') || 'Add skills you need'}</p></div>
+        <div className="bg-white p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Trust score</p><p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-[#d31d24]"><ShieldCheck className="h-4 w-4" />{Math.round(currentUser?.trust_score || 0)}/100</p></div>
       </div>
 
-      {/* Current User Skill Equation Box */}
-      <Card className="p-5 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white border-emerald-200/80 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
-              Your Current Barter Profile:
-            </span>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-slate-600 font-medium">You Offer:</span>
-              <span className="font-bold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded-md">
-                {offeredList.join(', ') || 'Web Development'}
-              </span>
-              <span className="text-slate-400">↔</span>
-              <span className="text-slate-600 font-medium">You Need:</span>
-              <span className="font-bold text-teal-900 bg-teal-100/80 px-2 py-0.5 rounded-md">
-                {neededList.join(', ') || 'Plumbing, Carpentry'}
-              </span>
-            </div>
-          </div>
+      <div className="mt-5 border border-[#e1e4e8] bg-white">
+        <div className="border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Recommended exchanges</div>
+        {loading ? <div className="py-20 text-center text-sm text-slate-400">Calculating matches…</div> : matches.length === 0 ? <div className="py-20 text-center"><Repeat className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No reciprocal matches yet</h3><p className="mx-auto mt-1 max-w-md text-xs text-slate-500">Add more offered or needed skills to improve the set of possible trades.</p></div> : <div className="divide-y divide-[#e1e4e8]">
+          {matches.map((match, idx) => <div key={idx} className="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1.3fr)_220px] lg:items-center">
+            <div className="flex items-start gap-3"><img src={match.candidate?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80'} alt={match.candidate?.full_name} className="h-12 w-12 rounded-full border border-[#dfe3e8] object-cover" /><div className="min-w-0"><p className="truncate text-sm font-bold text-[#17233b]">{match.candidate?.full_name}</p><p className="truncate text-xs text-slate-500">{match.candidate?.headline || 'SkillBarter member'}</p><div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold"><span className="flex items-center gap-1 text-slate-500"><MapPin className="h-3 w-3 text-[#d31d24]" />{match.distance_display}</span><span className="text-slate-600">★ {Math.round(match.candidate?.trust_score || 0)}</span></div></div></div>
+            <div><div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Exchange fit</span><span className="text-lg font-extrabold text-[#d31d24]">{match.match_score}%</span></div><div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border border-[#e1e4e8] bg-[#f7f8f7] p-3 text-xs"><div><p className="text-[9px] font-bold uppercase text-slate-400">You provide</p><p className="mt-1 truncate font-bold text-[#17233b]">{match.matched_you_offer?.[0] || offeredList[0] || 'Your skill'}</p></div><Repeat className="h-4 w-4 text-[#d31d24]" /><div className="text-right"><p className="text-[9px] font-bold uppercase text-slate-400">They provide</p><p className="mt-1 truncate font-bold text-[#17233b]">{match.they_offer?.[0] || 'Their skill'}</p></div></div><div className="mt-3 space-y-1">{match.reasons.slice(0,3).map((r,i)=><p key={i} className="flex items-center gap-1.5 text-[11px] text-slate-500"><CheckCircle className="h-3 w-3 text-[#d31d24]" />{r}</p>)}</div></div>
+            <div className="border-t border-[#e1e4e8] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0"><div className="mb-3 space-y-1 text-[11px] text-slate-500"><p className="flex justify-between"><span>Skills</span><b className="text-slate-700">{match.score_breakdown.skill_compatibility}/50</b></p><p className="flex justify-between"><span>Proximity</span><b className="text-slate-700">{match.score_breakdown.location_proximity}/20</b></p><p className="flex justify-between"><span>Trust</span><b className="text-slate-700">{match.score_breakdown.trust}/20</b></p></div><Button size="sm" className="w-full" onClick={() => openProposal(match)} icon={<ArrowRight className="h-3.5 w-3.5" />}>Propose exchange</Button></div>
+          </div>)}
+        </div>}
+      </div>
 
-          <div className="text-right shrink-0">
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-xs">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Your Trust: {Math.round(currentUser?.trust_score || 94)}/100
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Matches List */}
-      {loading ? (
-        <div className="text-center py-20 text-slate-400 text-xs">
-          Calculating reciprocal neighbor compatibility...
-        </div>
-      ) : matches.length === 0 ? (
-        <Card className="p-12 text-center space-y-3">
-          <Repeat className="w-10 h-10 text-slate-300 mx-auto" />
-          <h3 className="text-base font-bold text-slate-800">No reciprocal matches found right now</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Try adding more skills you can offer or broadening what skills you need to find more local trades.
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {matches.map((match, idx) => (
-            <Card key={idx} hover className="p-6 border-slate-200/90 relative overflow-hidden">
-              {/* Highlight ribbon for direct reciprocal trades */}
-              {match.is_reciprocal && (
-                <div className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-bold px-4 py-1 rounded-bl-xl shadow-xs uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Direct 2-Way Barter
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                {/* Neighbor Info & Distance */}
-                <div className="lg:col-span-4 flex items-start gap-4">
-                  <img
-                    src={match.candidate?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80'}
-                    alt={match.candidate?.full_name}
-                    className="w-14 h-14 rounded-full object-cover border-2 border-emerald-400 shadow-sm shrink-0"
-                  />
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">{match.candidate?.full_name}</h3>
-                    <p className="text-xs text-slate-500 line-clamp-1">{match.candidate?.headline || 'Neighbor'}</p>
-
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        <MapPin className="w-3 h-3 text-emerald-600" />
-                        {match.distance_display}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
-                        ★ {Math.round(match.candidate?.trust_score || 90)} Trust
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Center: Visual Two-Way Barter Flow */}
-                <div className="lg:col-span-5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200">
-                  <div className="flex items-center justify-between text-xs mb-3">
-                    <span className="font-bold text-slate-700">Reciprocal Exchange Plan:</span>
-                    <span className="text-2xl font-black text-emerald-600 font-mono">
-                      {match.match_score}% <span className="text-xs font-bold text-slate-500">Match</span>
-                    </span>
-                  </div>
-
-                  {/* Compatibility visual indicator */}
-                  <div className="flex items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-slate-200/80 text-xs">
-                    <div className="text-left flex-1 min-w-0">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">You Offer</span>
-                      <span className="font-bold text-slate-900 truncate block">
-                        {match.matched_you_offer?.[0] || offeredList[0] || 'Web Development'}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col items-center shrink-0 px-2">
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-xs">
-                        <Repeat className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-[9px] font-bold text-emerald-700 uppercase mt-0.5">Barter</span>
-                    </div>
-
-                    <div className="text-right flex-1 min-w-0">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">They Offer</span>
-                      <span className="font-bold text-slate-900 truncate block">
-                        {match.they_offer?.[0] || 'Plumbing'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Reasons checklist */}
-                  <div className="mt-3 space-y-1 text-[11px] text-slate-600">
-                    {match.reasons.map((r, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <CheckCircle className="w-3 h-3 text-emerald-600 shrink-0" />
-                        <span>{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Score Breakdown & Action Button */}
-                <div className="lg:col-span-3 flex flex-col justify-between h-full space-y-4">
-                  <div className="text-[11px] space-y-1.5 text-slate-500">
-                    <div className="flex justify-between">
-                      <span>Skill Compatibility:</span>
-                      <strong className="text-slate-800">{match.score_breakdown.skill_compatibility} / 50</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Location Proximity:</span>
-                      <strong className="text-slate-800">{match.score_breakdown.location_proximity} / 20</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Trust Rating:</span>
-                      <strong className="text-slate-800">{match.score_breakdown.trust} / 20</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Availability Overlap:</span>
-                      <strong className="text-slate-800">{match.score_breakdown.availability} / 10</strong>
-                    </div>
-                  </div>
-
-                  <Button
-                    size="md"
-                    className="w-full shadow-sm"
-                    onClick={() => handleOpenPropose(match)}
-                    icon={<Repeat className="w-4 h-4" />}
-                  >
-                    Propose Exchange
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Propose Exchange Modal */}
-      {selectedPartner && (
-        <ProposeExchangeModal
-          isOpen={isProposeOpen}
-          onClose={() => setIsProposeOpen(false)}
-          partner={selectedPartner}
-          defaultPartnerSkill={defaultPartnerSkill}
-          defaultMySkill={defaultMySkill}
-          onSuccess={() => {
-            alert('Exchange request sent successfully!');
-          }}
-        />
-      )}
-    </div>
+      {selectedPartner && <ProposeExchangeModal isOpen={isProposeOpen} onClose={() => setIsProposeOpen(false)} partner={selectedPartner} defaultPartnerSkill={defaultPartnerSkill} defaultMySkill={defaultMySkill} onSuccess={() => { setIsProposeOpen(false); alert('Exchange request sent successfully!'); }} />}
+    </AppPageShell>
   );
 };
