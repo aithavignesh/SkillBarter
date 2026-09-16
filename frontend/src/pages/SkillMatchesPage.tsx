@@ -20,6 +20,7 @@ export const SkillMatchesPage: React.FC = () => {
   const [defaultMySkill, setDefaultMySkill] = useState('');
   const [notice, setNotice] = useState('');
   const [usageTick, setUsageTick] = useState(0);
+  const [priorityProposal, setPriorityProposal] = useState(false);
 
   const loadMatches = async () => {
     try { setLoading(true); setMatches(await api.getMatches()); }
@@ -43,14 +44,18 @@ export const SkillMatchesPage: React.FC = () => {
   const neededList = currentUser?.skills?.filter(s => s.skill_type === 'NEEDED').map(s => s.skill_name) || [];
   const openProposal = (match: MatchResult) => {
     if (monetization.premium && monetization.priorityMatching && priorityRemaining <= 0) {
-      setNotice('Your 20 daily priority recommendations have been used. Regular matches are still available.');
+      setNotice('Your 20 daily priority actions have been used. Regular matching remains available after disabling Priority Matching.');
       return;
     }
-    if (monetization.premium && monetization.priorityMatching) {
-      consumePriorityMatch(userId);
-      setUsageTick(v => v + 1);
-    }
+    setPriorityProposal(Boolean(monetization.premium && monetization.priorityMatching));
     setSelectedPartner(match.candidate); setDefaultPartnerSkill(match.they_offer?.[0] || ''); setDefaultMySkill(match.matched_you_offer?.[0] || ''); setIsProposeOpen(true);
+  };
+  const handleProposalSuccess = () => {
+    if (priorityProposal) consumePriorityMatch(userId);
+    setUsageTick(v => v + 1);
+    setIsProposeOpen(false);
+    setPriorityProposal(false);
+    setNotice(priorityProposal ? 'Priority exchange request sent. One priority action was used.' : 'Exchange request sent successfully.');
   };
 
   return (
@@ -81,7 +86,7 @@ export const SkillMatchesPage: React.FC = () => {
         </div>}
       </div>
 
-      {selectedPartner && <ProposeExchangeModal isOpen={isProposeOpen} onClose={() => setIsProposeOpen(false)} partner={selectedPartner} defaultPartnerSkill={defaultPartnerSkill} defaultMySkill={defaultMySkill} onSuccess={() => { setIsProposeOpen(false); setNotice('Exchange request sent successfully.'); }} />}
+      {selectedPartner && <ProposeExchangeModal isOpen={isProposeOpen} onClose={() => { setIsProposeOpen(false); setPriorityProposal(false); }} partner={selectedPartner} defaultPartnerSkill={defaultPartnerSkill} defaultMySkill={defaultMySkill} onSuccess={handleProposalSuccess} />}
     </AppPageShell>
   );
 };
