@@ -9,37 +9,19 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button: React.FC<ButtonProps> = ({
-  children,
-  variant = 'primary',
-  size = 'md',
-  loading = false,
-  icon,
-  className = '',
-  disabled,
-  ...props
+  children, variant = 'primary', size = 'md', loading = false, icon, className = '', disabled, ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1e2529] disabled:opacity-50 disabled:cursor-not-allowed select-none';
-
-  const sizeStyles = {
-    sm: 'text-xs px-3 py-1.5 gap-1.5',
-    md: 'text-sm px-4 py-2 gap-2',
-    lg: 'text-base px-6 py-2.5 gap-2.5',
-  };
-
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#f7f8fa] disabled:opacity-50 disabled:cursor-not-allowed select-none';
+  const sizeStyles = { sm: 'text-xs px-3 py-1.5 gap-1.5', md: 'text-sm px-4 py-2 gap-2', lg: 'text-base px-6 py-2.5 gap-2.5' };
   const variantStyles = {
-    primary: 'bg-[#55a6c9] text-[#142027] font-semibold hover:bg-[#70b8d6] active:bg-[#427a93] shadow-[0_8px_24px_rgba(85,166,201,0.20)] focus:ring-[#55a6c9]',
-    secondary: 'bg-[#2c3439] text-slate-100 border border-white/[0.09] hover:bg-[#374147] active:bg-[#414c52] focus:ring-[#55a6c9]',
-    outline: 'border border-white/[0.14] text-slate-200 bg-transparent hover:bg-white/[0.05] hover:border-[#55a6c9]/55 active:bg-white/[0.08] focus:ring-[#55a6c9]',
-    ghost: 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100 active:bg-white/[0.08] focus:ring-[#55a6c9]',
-    danger: 'bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 focus:ring-rose-500',
+    primary: 'bg-[#d31d24] text-white font-semibold hover:bg-[#b8171d] active:bg-[#a91319] shadow-[0_7px_18px_rgba(211,29,36,0.18)] focus:ring-[#d31d24]',
+    secondary: 'bg-white text-[#17233b] border border-[#dfe4ea] hover:bg-[#f7f8fa] active:bg-[#eef1f5] focus:ring-[#d31d24]',
+    outline: 'border border-[#d9dfe7] text-[#17233b] bg-white hover:bg-[#fff5f5] hover:border-[#d31d24]/40 active:bg-[#fff0f0] focus:ring-[#d31d24]',
+    ghost: 'text-[#66738a] hover:bg-[#f5f7fa] hover:text-[#17233b] active:bg-[#eef1f5] focus:ring-[#d31d24]',
+    danger: 'bg-[#d31d24] text-white hover:bg-[#b8171d] active:bg-[#a91319] focus:ring-[#d31d24]',
   };
-
   return (
-    <button
-      className={`${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
-      disabled={disabled || loading}
-      {...props}
-    >
+    <button className={`${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`} disabled={disabled || loading} {...props}>
       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : icon ? <span className="shrink-0">{icon}</span> : null}
       {children}
     </button>
