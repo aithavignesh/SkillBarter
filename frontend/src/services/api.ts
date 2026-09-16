@@ -245,15 +245,18 @@ class ApiClient {
 
     const blocked = await insforge.database.from('blocks').select('blocker_id, blocked_id').or(`blocker_id.eq.${appUser.id},blocked_id.eq.${appUser.id}`);
     const excluded = new Set<number>([Number(appUser.id)]);
-    for (const b of blocked.data ?? []) { excluded.add(Number(b.blocker_id)); excluded.add(Number(b.blocked_id)); }
+    for (const b of blocked.data ?? []) {
+      excluded.add(Number(b.blocker_id));
+      excluded.add(Number(b.blocked_id));
+    }
 
-    const users = await insforge.database.from('users').select('*').eq('is_active', true).limit(200);
-    if (users.error) throw new Error(users.error.message || 'Unable to load matches');
-    const toRad = (v: number) => v * Math.PI / 180;
+    const users = await insforge.database.from('users').select('*').eq('is_active', true).limit(100);
+    if (users.error) throw new Error(users.error.message || 'Unable to load members');
     const distFn = (aLat: number, aLon: number, bLat: number, bLon: number) => {
+      const toRad = (v: number) => v * Math.PI / 180;
       const dLat = toRad(bLat - aLat), dLon = toRad(bLon - aLon);
-      const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
-      return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
     const myLat = Number(appUser.latitude ?? 17.4485), myLon = Number(appUser.longitude ?? 78.3748);
     const results: any[] = [];
@@ -456,30 +459,243 @@ class ApiClient {
     return this.serializeExchange(updated.data, uid);
   }
 
-  // Remaining modules are kept as explicit migration guards until their InsForge pass.
-  async submitReview(_payload: any) { return this.request<any>('/reviews'); }
+  // Messaging - InsForge
+  async getConversations() {
+    const { appUser } = await this.getAppUser();
+    const { data, error } = await insforge.database.from('messages').select('*').or(`sender_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`).order('created_at', { ascending: false }).limit(500);
+    if (error) throw new Error(error.message || 'Unable to load conversations');
+    const latest = new Map<number, any>();
+    for (const message of data ?? []) {
+      const partnerId = Number(message.sender_id) === Number(appUser.id) ? Number(message.receiver_id) : Number(message.sender_id);
+      if (!latest.has(partnerId)) latest.set(partnerId, message);
+    }
+    const ids = [...latest.keys()];
+    const profiles = new Map<number, any>();
+    await Promise.all(ids.map(async (id) => {
+      const r = await insforge.database.from('users').select('id,full_name,avatar_url,headline').eq('id', id).maybeSingle();
+      if (r.data) profiles.set(id, r.data);
+    }));
+    return [...latest.entries()].map(([partner_id, last_message]) => ({ partner_id, partner: profiles.get(partner_id) ?? { id: partner_id, full_name: 'Member' }, last_message }));
+  }
+
+  async getMessages(partnerId: number) {
+    const { appUser } = await this.getAppUser();
+    const pid = Number(partnerId);
+    if (!pid || pid === Number(appUser.id)) return [];
+    const r = await insforge.database.from('messages').select('*').or(`and(sender_id.eq.${appUser.id},receiver_id.eq.${pid}),and(sender_id.eq.${pid},receiver_id.eq.${appUser.id})`).order('created_at', { ascending: true }).limit(300);
+    if (r.error) throw new Error(r.error.message || 'Unable to load messages');
+    return r.data ?? [];
+  }
+
+  async sendMessage(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const receiverId = Number(payload.receiver_id);
+    const content = String(payload.content ?? '').trim();
+    if (!receiverId || receiverId === Number(appUser.id)) throw new Error('Choose another member.');
+    if (!content) throw new Error('Message cannot be empty.');
+    const partner = await insforge.database.from('users').select('id,is_active').eq('id', receiverId).maybeSingle();
+    if (partner.error) throw new Error(partner.error.message || 'Unable to find recipient');
+    if (!partner.data || partner.data.is_active === false) throw new Error('Recipient is unavailable.');
+    const r = await insforge.database.from('messages').insert({ sender_id: appUser.id, receiver_id: receiverId, content, exchange_id: payload.exchange_id ?? null }).select('*').single();
+    if (r.error) throw new Error(r.error.message || 'Unable to send message');
+    await this.notify(receiverId, 'MESSAGE', 'New message', `${appUser.full_name} sent you a message.`, `/messages/${appUser.id}`);
+    return r.data;
+  }
+
+  // Notifications - InsForge
+  async getNotifications() {
+    const { appUser } = await this.getAppUser();
+    const { data, error } = await insforge.database.from('notifications').select('*').eq('user_id', appUser.id).order('created_at', { ascending: false }).limit(100);
+    if (error) throw new Error(error.message || 'Unable to load notifications');
+    return data ?? [];
+  }
+
+  async getUnreadNotificationCount() {
+    const { appUser } = await this.getAppUser();
+    const r = await insforge.database.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', appUser.id).eq('is_read', false);
+    if (r.error) throw new Error(r.error.message || 'Unable to load notification count');
+    return { count: Number((r as any).count ?? 0) };
+  }
+
+  async markNotificationRead(id: number) {
+    const { appUser } = await this.getAppUser();
+    const r = await insforge.database.from('notifications').update({ is_read: true }).eq('id', id).eq('user_id', appUser.id).select('*').single();
+    if (r.error) throw new Error(r.error.message || 'Unable to mark notification');
+    return r.data;
+  }
+
+  async markAllNotificationsRead() {
+    const { appUser } = await this.getAppUser();
+    const r = await insforge.database.from('notifications').update({ is_read: true }).eq('user_id', appUser.id).eq('is_read', false);
+    if (r.error) throw new Error(r.error.message || 'Unable to update notifications');
+    return true;
+  }
+
+  // Connections - InsForge
+  async getConnections() {
+    const { appUser } = await this.getAppUser();
+    const r = await insforge.database.from('connections').select('*').or(`user_id.eq.${appUser.id},connected_user_id.eq.${appUser.id}`).order('created_at', { ascending: false });
+    if (r.error) throw new Error(r.error.message || 'Unable to load connections');
+    const rows = r.data ?? [];
+    const partnerIds = rows.map((row: any) => Number(row.user_id) === Number(appUser.id) ? Number(row.connected_user_id) : Number(row.user_id));
+    const uniqueIds = [...new Set(partnerIds)];
+    const profiles = new Map<number, any>();
+    await Promise.all(uniqueIds.map(async (id) => {
+      const p = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,reliability_score').eq('id', id).maybeSingle();
+      if (p.data) profiles.set(id, p.data);
+    }));
+    return rows.map((row: any) => ({ ...row, partner_id: Number(row.user_id) === Number(appUser.id) ? Number(row.connected_user_id) : Number(row.user_id), partner: profiles.get(Number(row.user_id) === Number(appUser.id) ? Number(row.connected_user_id) : Number(row.user_id)) }));
+  }
+
+  async getConnectionStatus(userId: number) {
+    const { appUser } = await this.getAppUser();
+    const target = Number(userId);
+    if (!target || target === Number(appUser.id)) return { connected: false, connection: null };
+    const a = await insforge.database.from('connections').select('*').eq('user_id', appUser.id).eq('connected_user_id', target).maybeSingle();
+    if (a.error) throw new Error(a.error.message || 'Unable to check connection');
+    const b = await insforge.database.from('connections').select('*').eq('user_id', target).eq('connected_user_id', appUser.id).maybeSingle();
+    if (b.error) throw new Error(b.error.message || 'Unable to check connection');
+    return { connected: Boolean(a.data || b.data), connection: a.data ?? b.data ?? null };
+  }
+
+  async connectNeighbor(userId: number) {
+    const { appUser } = await this.getAppUser();
+    const target = Number(userId);
+    if (!target || target === Number(appUser.id)) throw new Error('You cannot connect to yourself.');
+    const current = await this.getConnectionStatus(target);
+    if (current.connected) return current.connection;
+    const targetUser = await insforge.database.from('users').select('id,is_active,full_name').eq('id', target).maybeSingle();
+    if (targetUser.error) throw new Error(targetUser.error.message || 'Unable to find member');
+    if (!targetUser.data || targetUser.data.is_active === false) throw new Error('Member is unavailable.');
+    const created = await insforge.database.from('connections').insert({ user_id: appUser.id, connected_user_id: target, status: 'ACCEPTED' }).select('*').single();
+    if (created.error) throw new Error(created.error.message || 'Unable to create connection');
+    await this.notify(target, 'CONNECTION', 'New SkillBarter connection', `${appUser.full_name} connected with you.`, `/profile/${appUser.id}`);
+    return created.data;
+  }
+
+  async disconnectNeighbor(userId: number) {
+    const { appUser } = await this.getAppUser();
+    const target = Number(userId);
+    const a = await insforge.database.from('connections').delete().eq('user_id', appUser.id).eq('connected_user_id', target);
+    const b = await insforge.database.from('connections').delete().eq('user_id', target).eq('connected_user_id', appUser.id);
+    if (a.error && b.error) throw new Error(a.error.message || b.error?.message || 'Unable to remove connection');
+    return true;
+  }
+
+  async getConnectionSuggestions() { return this.getNearbyUsers(100); }
+
+  // Community feed - InsForge
+  async getFeed(postType?: string) {
+    let query: any = insforge.database.from('posts').select('*').order('created_at', { ascending: false }).limit(100);
+    if (postType && postType !== 'ALL') query = query.eq('post_type', postType);
+    const r = await query;
+    if (r.error) throw new Error(r.error.message || 'Unable to load feed');
+    const posts = r.data ?? [];
+    const authorIds = [...new Set(posts.map((p: any) => Number(p.author_id)).filter(Boolean))];
+    const authors = new Map<number, any>();
+    await Promise.all(authorIds.map(async (id) => {
+      const a = await insforge.database.from('users').select('id,full_name,avatar_url,headline').eq('id', id).maybeSingle();
+      if (a.data) authors.set(id, a.data);
+    }));
+    return posts.map((p: any) => ({ ...p, author: authors.get(Number(p.author_id)) }));
+  }
+
+  async createPost(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const title = String(payload.title ?? '').trim();
+    const content = String(payload.content ?? '').trim();
+    if (!title || !content) throw new Error('Title and content are required.');
+    const r = await insforge.database.from('posts').insert({ author_id: appUser.id, post_type: payload.post_type ?? 'COMMUNITY', title, content, likes_count: 0 }).select('*').single();
+    if (r.error) throw new Error(r.error.message || 'Unable to publish post');
+    return r.data;
+  }
+
+  async likePost(postId: number) {
+    const { appUser } = await this.getAppUser();
+    const id = Number(postId);
+    if (!id) throw new Error('Invalid post.');
+    const existing = await insforge.database.from('post_likes').select('*').eq('post_id', id).eq('user_id', appUser.id).maybeSingle();
+    if (!existing.error && existing.data) return { liked: true, likes_count: undefined };
+    if (existing.error && !String(existing.error.message || '').toLowerCase().includes('post_likes')) throw new Error(existing.error.message);
+    const created = await insforge.database.from('post_likes').insert({ post_id: id, user_id: appUser.id }).select('*').maybeSingle();
+    if (!created.error) {
+      const p = await insforge.database.from('posts').select('likes_count').eq('id', id).maybeSingle();
+      if (!p.error && p.data) {
+        const updated = await insforge.database.from('posts').update({ likes_count: Number(p.data.likes_count ?? 0) + 1 }).eq('id', id).select('likes_count').single();
+        if (!updated.error) return { liked: true, likes_count: Number(updated.data.likes_count ?? 0) };
+      }
+      return { liked: true, likes_count: undefined };
+    }
+    // Backward-compatible fallback for deployments that do not have post_likes yet.
+    const p = await insforge.database.from('posts').select('likes_count').eq('id', id).maybeSingle();
+    if (p.error || !p.data) throw new Error(p.error?.message || 'Post not found');
+    const updated = await insforge.database.from('posts').update({ likes_count: Number(p.data.likes_count ?? 0) + 1 }).eq('id', id).select('likes_count').single();
+    if (updated.error) throw new Error(updated.error.message || 'Unable to save like');
+    return { liked: true, likes_count: Number(updated.data.likes_count ?? 0) };
+  }
+
+  async getCommunityStats() {
+    const [posts, connections, exchanges] = await Promise.all([
+      insforge.database.from('posts').select('id', { count: 'exact', head: true }),
+      insforge.database.from('connections').select('id', { count: 'exact', head: true }),
+      insforge.database.from('exchanges').select('id', { count: 'exact', head: true }),
+    ]);
+    return { posts: Number((posts as any).count ?? 0), connections: Number((connections as any).count ?? 0), exchanges: Number((exchanges as any).count ?? 0) };
+  }
+
+  // Search + safety
+  async search(q: string, category?: string, minTrust?: number) {
+    const rows = await this.getNearbyUsers(100);
+    const text = String(q ?? '').trim().toLowerCase();
+    return rows.filter((u: any) => {
+      const hay = [u.full_name, u.headline, u.address_display, ...(u.skills_offered ?? []), ...(u.skills_needed ?? [])].join(' ').toLowerCase();
+      const categoryOk = !category || category === 'All' || [...(u.skills_offered ?? []), ...(u.skills_needed ?? [])].some((s: string) => s.toLowerCase().includes(category.toLowerCase()));
+      const trustOk = minTrust == null || Number(u.trust_score ?? 0) >= Number(minTrust);
+      return (!text || hay.includes(text)) && categoryOk && trustOk;
+    });
+  }
+
+  async createReport(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const targetId = Number(payload.reported_user_id ?? payload.user_id);
+    const reason = String(payload.reason ?? '').trim();
+    if (!targetId || !reason) throw new Error('Reported user and reason are required.');
+    const r = await insforge.database.from('reports').insert({ reporter_id: appUser.id, reported_user_id: targetId, reason, details: payload.details ?? null, status: 'OPEN' }).select('*').single();
+    if (r.error) throw new Error(r.error.message || 'Unable to submit report');
+    return r.data;
+  }
+
+  async blockUser(userId: number) {
+    const { appUser } = await this.getAppUser();
+    const target = Number(userId);
+    if (!target || target === Number(appUser.id)) throw new Error('Invalid member.');
+    const existing = await insforge.database.from('blocks').select('*').eq('blocker_id', appUser.id).eq('blocked_id', target).maybeSingle();
+    if (existing.error) throw new Error(existing.error.message || 'Unable to check block');
+    if (existing.data) return existing.data;
+    const r = await insforge.database.from('blocks').insert({ blocker_id: appUser.id, blocked_id: target }).select('*').single();
+    if (r.error) throw new Error(r.error.message || 'Unable to block member');
+    await this.disconnectNeighbor(target);
+    return r.data;
+  }
+
+  async unblockUser(userId: number) {
+    const { appUser } = await this.getAppUser();
+    const r = await insforge.database.from('blocks').delete().eq('blocker_id', appUser.id).eq('blocked_id', Number(userId));
+    if (r.error) throw new Error(r.error.message || 'Unable to unblock member');
+    return true;
+  }
+
+  async getBlocks() {
+    const { appUser } = await this.getAppUser();
+    const r = await insforge.database.from('blocks').select('*').eq('blocker_id', appUser.id).order('created_at', { ascending: false });
+    if (r.error) throw new Error(r.error.message || 'Unable to load blocked members');
+    return r.data ?? [];
+  }
+
+  // Remaining admin endpoints intentionally retain migration guards.
   async getUserReviews(_userId: number) { return this.request<any[]>('/reviews'); }
+  async submitReview(_payload: any) { return this.request<any>('/reviews'); }
   async getTrustDetails(_userId: number) { return this.request<any>('/trust'); }
-  async getConversations() { return this.request<any[]>('/messages/conversations'); }
-  async getMessages(_partnerId: number) { return this.request<any[]>('/messages'); }
-  async sendMessage(_payload: any) { return this.request<any>('/messages'); }
-  async getNotifications() { return this.request<any[]>('/notifications'); }
-  async getUnreadNotificationCount() { return this.request<any>('/notifications/unread-count'); }
-  async markNotificationRead(_id: number) { return this.request<any>('/notifications/read'); }
-  async markAllNotificationsRead() { return this.request<any>('/notifications/read-all'); }
-  async getConnections() { return this.request<any[]>('/connections'); }
-  async connectNeighbor(_userId: number) { return this.request<any>('/connections'); }
-  async disconnectNeighbor(_userId: number) { return this.request<any>('/connections'); }
-  async getConnectionSuggestions() { return this.request<any[]>('/connections/suggestions'); }
-  async getFeed(_postType?: string) { return this.request<any[]>('/feed'); }
-  async createPost(_payload: any) { return this.request<any>('/feed'); }
-  async likePost(_postId: number) { return this.request<any>('/feed/like'); }
-  async getCommunityStats() { return this.request<any>('/community/stats'); }
-  async search(_q: string, _category?: string, _minTrust?: number) { return this.request<any>('/search'); }
-  async createReport(_payload: any) { return this.request<any>('/reports'); }
-  async blockUser(_userId: number) { return this.request<any>('/blocks'); }
-  async unblockUser(_userId: number) { return this.request<any>('/blocks'); }
-  async getBlocks() { return this.request<any[]>('/blocks'); }
   async getAdminStats() { return this.request<any>('/admin/stats'); }
   async getAdminUsers() { return this.request<any[]>('/admin/users'); }
   async toggleAdminUserActive(_userId: number) { return this.request<any>('/admin/users'); }
