@@ -32,6 +32,19 @@ class UserUpdate(BaseModel):
     primary_intent: Optional[str] = None
     onboarding_completed: Optional[bool] = None
 
+class MonetizationUpdate(BaseModel):
+    premium: Optional[bool] = None
+    premium_until: Optional[datetime.datetime] = None
+    verified: Optional[bool] = None
+    verification_requested_at: Optional[datetime.datetime] = None
+    featured_until: Optional[datetime.datetime] = None
+    priority_matching: Optional[bool] = None
+    credits: Optional[int] = None
+    workshops_enabled: Optional[bool] = None
+    corporate_interest: Optional[bool] = None
+    sponsored_enabled: Optional[bool] = None
+    lead_generation_enabled: Optional[bool] = None
+
 class UserOut(UserBase):
     id: int
     latitude: Optional[float] = None
