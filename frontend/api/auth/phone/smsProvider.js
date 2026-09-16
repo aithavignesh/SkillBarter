@@ -11,7 +11,7 @@ function safeGatewayText(value) {
   return String(value || '')
     .replace(/(?:X-API-Key|api[_ -]?key|token|authorization)[\s:=]+[^\s,;]+/gi, '$1=[redacted]')
     .replace(/\s+/g, ' ')
-    .slice(0, 240);
+    .slice(0, 300);
 }
 
 export function getSmsProviderConfig() {
@@ -47,9 +47,8 @@ async function sendVia2Factor(phone, otp) {
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
-    // Current 2Factor v4 OTP API. The API accepts the approved template name
-    // and OTP as variables; include both documented template field variants for
-    // compatibility with accounts using the newer unified API.
+    // Use the exact current 2Factor v4 OTP contract. Extra fields can cause
+    // some older gateway/account routes to reject an otherwise valid request.
     const response = await fetch(TWOFACTOR_OTP_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -59,8 +58,6 @@ async function sendVia2Factor(phone, otp) {
       },
       body: JSON.stringify({
         to: phone,
-        channel: 'SMS',
-        template: twoFactorTemplate,
         template_name: twoFactorTemplate,
         var1: otp,
       }),
@@ -72,7 +69,7 @@ async function sendVia2Factor(phone, otp) {
     try {
       data = JSON.parse(text);
     } catch {
-      // Keep plain-text/gateway responses available for diagnostics.
+      // Keep plain-text gateway responses for safe diagnostics below.
     }
 
     const statusText = String(data?.status || data?.Status || '').toLowerCase();
@@ -84,8 +81,8 @@ async function sendVia2Factor(phone, otp) {
       };
     }
 
-    // If the current endpoint is not available on this account, use the
-    // documented custom-template manual OTP endpoint as a compatibility path.
+    // Compatibility fallback for accounts still routed through the documented
+    // custom-template Manual OTP endpoint.
     if (response.status === 404 || response.status === 405) {
       return await sendVia2FactorLegacy(phone, otp, twoFactorApiKey, twoFactorTemplate);
     }
@@ -111,8 +108,6 @@ async function sendVia2Factor(phone, otp) {
 }
 
 async function sendVia2FactorLegacy(phone, otp, apiKey, template) {
-  // 2Factor's documented custom-template Manual OTP API:
-  // /API/V1/{api_key}/SMS/{phone_number}/{otp}/{template_name}
   const phoneDigits = phone.replace(/\D/g, '');
   const url = `${TWOFACTOR_BASE}/${encodeURIComponent(apiKey)}/SMS/${encodeURIComponent(phoneDigits)}/${encodeURIComponent(otp)}/${encodeURIComponent(template)}`;
   const response = await fetch(url, {
