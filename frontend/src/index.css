@@ -3,73 +3,120 @@
 @tailwind utilities;
 
 @layer base {
-  html { background: #0b1015; }
+  html { background: #1e2529; }
 
   body {
     @apply min-h-screen font-sans antialiased text-slate-100;
     background:
-      radial-gradient(circle at 10% -10%, rgba(66, 196, 255, 0.10), transparent 30%),
-      radial-gradient(circle at 92% 5%, rgba(0, 170, 255, 0.07), transparent 25%),
-      linear-gradient(180deg, #11171d 0%, #0b1015 55%, #080c11 100%);
+      radial-gradient(circle at 12% -8%, rgba(85, 166, 201, 0.12), transparent 30%),
+      radial-gradient(circle at 92% 4%, rgba(66, 122, 147, 0.10), transparent 28%),
+      linear-gradient(180deg, #222a2f 0%, #1e2529 52%, #171d21 100%);
   }
 
-  ::selection { background: rgba(56, 189, 248, 0.28); color: #e0f7ff; }
+  ::selection { background: rgba(85, 166, 201, 0.32); color: #f2f5f6; }
   a { transition: color 160ms ease, opacity 160ms ease; }
 }
 
 @layer components {
-  .reference-surface { @apply border border-white/[0.07] bg-[#171d23] shadow-card; }
+  .reference-surface { @apply border border-white/[0.07] bg-[#1e2529] shadow-card; }
   .reference-muted { @apply text-slate-400; }
-  .reference-accent { @apply text-sky-300; }
-  .reference-link { @apply text-sky-300 underline decoration-sky-400/60 underline-offset-4 hover:text-sky-200; }
+  .reference-accent { color: #55a6c9; }
+  .reference-link { color: #55a6c9; text-decoration: underline; text-decoration-color: rgba(85,166,201,.65); text-underline-offset: 4px; }
+  .reference-link:hover { color: #7ac1df; }
 }
 
-/* Ricoz-inspired navigation treatment while preserving SkillBarter structure. */
+/* Ricoz reference palette: charcoal surfaces, soft white typography, restrained cyan accent. */
+.ricoz-theme {
+  --ricoz-bg: #1e2529;
+  --ricoz-surface: #252d32;
+  --ricoz-surface-2: #2c3439;
+  --ricoz-border: rgba(255,255,255,.10);
+  --ricoz-text: #f0f3f4;
+  --ricoz-muted: #9aa1a5;
+  --ricoz-accent: #55a6c9;
+  --ricoz-accent-strong: #78c1df;
+}
+
+.ricoz-theme .bg-white { background-color: var(--ricoz-surface) !important; color: var(--ricoz-text) !important; }
+.ricoz-theme .bg-slate-50 { background-color: #20282d !important; }
+.ricoz-theme .bg-slate-100 { background-color: #2a3237 !important; }
+.ricoz-theme .bg-slate-200 { background-color: #343d42 !important; }
+.ricoz-theme .text-slate-900 { color: #f0f3f4 !important; }
+.ricoz-theme .text-slate-800 { color: #e5e9ea !important; }
+.ricoz-theme .text-slate-700 { color: #cbd1d4 !important; }
+.ricoz-theme .text-slate-600 { color: #adb5b9 !important; }
+.ricoz-theme .text-slate-500 { color: #929a9f !important; }
+.ricoz-theme .text-slate-400 { color: #818a90 !important; }
+.ricoz-theme .border-slate-200 { border-color: var(--ricoz-border) !important; }
+.ricoz-theme .border-slate-100 { border-color: rgba(255,255,255,.07) !important; }
+.ricoz-theme .border-slate-300 { border-color: rgba(255,255,255,.15) !important; }
+
+.ricoz-theme [class*="bg-emerald-50"] { background-color: rgba(85,166,201,.10) !important; }
+.ricoz-theme [class*="bg-emerald-100"] { background-color: rgba(85,166,201,.14) !important; }
+.ricoz-theme [class*="bg-emerald-200"] { background-color: rgba(85,166,201,.20) !important; }
+.ricoz-theme [class*="bg-emerald-400"], .ricoz-theme [class*="bg-emerald-500"] { background-color: #55a6c9 !important; }
+.ricoz-theme [class*="bg-emerald-600"], .ricoz-theme [class*="bg-emerald-700"] { background-color: #427a93 !important; }
+.ricoz-theme [class*="text-emerald-"] { color: var(--ricoz-accent) !important; }
+.ricoz-theme [class*="border-emerald-"] { border-color: rgba(85,166,201,.38) !important; }
+.ricoz-theme [class*="text-teal-"] { color: #65b4d1 !important; }
+.ricoz-theme [class*="bg-teal-"] { background-color: rgba(85,166,201,.14) !important; }
+
+.ricoz-theme [class*="text-violet-"] { color: var(--ricoz-accent) !important; }
+.ricoz-theme [class*="bg-violet-"] { background-color: #427a93 !important; }
+.ricoz-theme [class*="border-violet-"] { border-color: rgba(85,166,201,.38) !important; }
+
+.ricoz-theme input,
+.ricoz-theme textarea,
+.ricoz-theme select {
+  color: #eef2f3;
+  background-color: #252d32;
+  border-color: rgba(255,255,255,.12);
+}
+.ricoz-theme input::placeholder,
+.ricoz-theme textarea::placeholder { color: #7f898e; }
+.ricoz-theme input:focus,
+.ricoz-theme textarea:focus,
+.ricoz-theme select:focus {
+  border-color: rgba(85,166,201,.75) !important;
+  box-shadow: 0 0 0 3px rgba(85,166,201,.12);
+  background-color: #2a3237;
+}
+
+/* Keep intentional light CTA buttons readable on dark surfaces. */
+.ricoz-theme button.bg-white,
+.ricoz-theme a.bg-white { background: #f0f3f4 !important; color: #1e2529 !important; }
+.ricoz-theme button.bg-white:hover,
+.ricoz-theme a.bg-white:hover { background: #dfe5e8 !important; }
+
 header.sticky.top-0.z-30 {
-  background: rgba(17, 23, 29, 0.94) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22) !important;
+  background: rgba(30, 37, 41, 0.94) !important;
+  border-color: rgba(255,255,255,.09) !important;
+  box-shadow: 0 12px 35px rgba(0,0,0,.25) !important;
 }
-
 header.sticky.top-0.z-30 input {
-  background: rgba(255, 255, 255, 0.055) !important;
-  color: #e8f2f6 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255,255,255,.055) !important;
+  color: #e8edef !important;
+  border-color: rgba(255,255,255,.09) !important;
 }
-
-header.sticky.top-0.z-30 input:focus {
-  border-color: rgba(56, 189, 248, 0.65) !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-}
-
+header.sticky.top-0.z-30 input:focus { border-color: rgba(85,166,201,.70) !important; background: rgba(255,255,255,.08) !important; }
 header.sticky.top-0.z-30 nav a:hover,
-header.sticky.top-0.z-30 nav a.bg-emerald-50 {
-  background: rgba(56, 189, 248, 0.10) !important;
-  color: #7dd3fc !important;
-}
-
-header.sticky.top-0.z-30 nav a:not(.bg-emerald-50) { color: #94a3b8 !important; }
-header.sticky.top-0.z-30 nav a .text-emerald-600 { color: #38bdf8 !important; }
-header.sticky.top-0.z-30 .text-emerald-600 { color: #38bdf8 !important; }
-header.sticky.top-0.z-30 .text-emerald-700 { color: #7dd3fc !important; }
-header.sticky.top-0.z-30 .bg-emerald-600 { background: #0ea5e9 !important; }
-header.sticky.top-0.z-30 .hover\:bg-emerald-700:hover { background: #0284c7 !important; }
-
-header.sticky.top-0.z-30 button:hover { color: #e0f2fe !important; }
-
+header.sticky.top-0.z-30 nav a.bg-emerald-50 { background: rgba(85,166,201,.10) !important; color: #78c1df !important; }
+header.sticky.top-0.z-30 nav a:not(.bg-emerald-50) { color: #9aa4a9 !important; }
+header.sticky.top-0.z-30 nav a .text-emerald-600,
+header.sticky.top-0.z-30 .text-emerald-600 { color: #55a6c9 !important; }
+header.sticky.top-0.z-30 .text-emerald-700 { color: #78c1df !important; }
+header.sticky.top-0.z-30 .bg-emerald-600 { background: #427a93 !important; }
+header.sticky.top-0.z-30 .hover\:bg-emerald-700:hover { background: #35677d !important; }
+header.sticky.top-0.z-30 button:hover { color: #e6f2f6 !important; }
 header.sticky.top-0.z-30 .bg-white,
-header.sticky.top-0.z-30 .bg-slate-50\/50 {
-  background: #171d23 !important;
-}
-
+header.sticky.top-0.z-30 .bg-slate-50\/50 { background: #252d32 !important; }
 header.sticky.top-0.z-30 .border-slate-100,
-header.sticky.top-0.z-30 .border-slate-200 { border-color: rgba(255, 255, 255, 0.08) !important; }
-
-header.sticky.top-0.z-30 .text-slate-900 { color: #f1f5f9 !important; }
-header.sticky.top-0.z-30 .text-slate-700 { color: #cbd5e1 !important; }
-header.sticky.top-0.z-30 .text-slate-600 { color: #94a3b8 !important; }
+header.sticky.top-0.z-30 .border-slate-200 { border-color: rgba(255,255,255,.08) !important; }
+header.sticky.top-0.z-30 .text-slate-900 { color: #f0f3f4 !important; }
+header.sticky.top-0.z-30 .text-slate-700 { color: #cbd1d4 !important; }
+header.sticky.top-0.z-30 .text-slate-600 { color: #9aa4a9 !important; }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #34404a; border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: #4b5d69; }
+::-webkit-scrollbar-thumb { background: #4a555b; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #617078; }
