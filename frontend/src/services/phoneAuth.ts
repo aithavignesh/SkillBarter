@@ -44,8 +44,8 @@ export const normalizePhone = (phone: string) => {
 };
 
 /**
- * Request real SMS OTP via Vercel serverless API (/api/auth/phone/request)
- * The OTP is generated server-side and sent directly via Twilio to the user's phone.
+ * Request a real SMS OTP through the Vercel serverless API. The API uses
+ * 2Factor for India-first SMS delivery when TWOFACTOR_API_KEY is configured.
  */
 export async function requestPhoneOtp(phoneInput: string): Promise<string> {
   const phone = normalizePhone(phoneInput);
@@ -84,21 +84,16 @@ export async function requestPhoneOtp(phoneInput: string): Promise<string> {
     throw error;
   }
 
-  // Persist the cryptographic challenge token (does NOT contain the plaintext OTP)
   sessionStorage.setItem('skillbarter_otp_phone', data.phone || phone);
   sessionStorage.setItem('skillbarter_otp_challenge', data.challenge);
   sessionStorage.setItem('skillbarter_otp_sent_at', String(Date.now()));
-
-  // Remove any legacy demo OTP keys
   sessionStorage.removeItem('skillbarter_demo_otp');
   sessionStorage.removeItem('skillbarter_otp_expires');
 
   return data.phone || phone;
 }
 
-/**
- * Verify received OTP against the server challenge via /api/auth/phone/verify
- */
+/** Verify the received OTP against the server-side cryptographic challenge. */
 export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Promise<PhoneAuthUser> {
   const phone = normalizePhone(phoneInput);
   const otp = String(otpInput ?? '').trim();
@@ -120,11 +115,7 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({
-        phone,
-        otp,
-        challenge,
-      }),
+      body: JSON.stringify({ phone, otp, challenge }),
     });
   } catch {
     throw new Error('Network error: Unable to reach the verification service. Please check your connection.');
@@ -149,18 +140,14 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
   }
 
   const token = data.accessToken || data.token;
-  if (token) {
-    insforge.setAccessToken(token);
-    localStorage.setItem('skillbarter_token', token);
-  }
+  if (!token) throw new Error('OTP verified, but no login session was returned. Please try again.');
+  insforge.setAccessToken(token);
+  localStorage.setItem('skillbarter_token', token);
 
   const user = data.user;
-  if (user?.id) {
-    localStorage.setItem('skillbarter_user_id', String(user.id));
-  }
+  if (user?.id) localStorage.setItem('skillbarter_user_id', String(user.id));
   localStorage.setItem('skillbarter_phone', phone);
 
-  // Clear challenge from session storage
   sessionStorage.removeItem('skillbarter_otp_phone');
   sessionStorage.removeItem('skillbarter_otp_challenge');
   sessionStorage.removeItem('skillbarter_otp_sent_at');
@@ -230,6 +217,7 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
 
 export function clearPhoneSession() {
   localStorage.removeItem('skillbarter_phone');
+  localStorage.removeItem('skillbarter_user_id');
   sessionStorage.removeItem('skillbarter_otp_phone');
   sessionStorage.removeItem('skillbarter_otp_challenge');
   sessionStorage.removeItem('skillbarter_otp_sent_at');
