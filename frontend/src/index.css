@@ -58,6 +58,9 @@
 .ricoz-theme [class*="bg-emerald-600"], .ricoz-theme [class*="bg-emerald-700"] { background-color: #427a93 !important; }
 .ricoz-theme [class*="text-emerald-"] { color: var(--ricoz-accent) !important; }
 .ricoz-theme [class*="border-emerald-"] { border-color: rgba(85,166,201,.38) !important; }
+.ricoz-theme [class*="hover:bg-emerald-"]:hover { background-color: #35677d !important; }
+.ricoz-theme [class*="from-emerald-"] { --tw-gradient-from: #427a93 var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(66 122 147 / 0) var(--tw-gradient-to-position) !important; }
+.ricoz-theme [class*="to-teal-"] { --tw-gradient-to: #55a6c9 var(--tw-gradient-to-position) !important; }
 .ricoz-theme [class*="text-teal-"] { color: #65b4d1 !important; }
 .ricoz-theme [class*="bg-teal-"] { background-color: rgba(85,166,201,.14) !important; }
 
