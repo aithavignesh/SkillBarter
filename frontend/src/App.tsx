@@ -44,7 +44,7 @@ const AppContent: React.FC = () => {
   const { currentUser } = useAuth();
   const location = useLocation();
   const isChat = location.pathname.startsWith('/messages') || location.pathname.includes('/exchanges/');
-  const appClass = currentUser ? 'lg:ml-[252px]' : '';
+  const appClass = currentUser ? 'lg:ml-[312px]' : '';
   return <div className="ricoz-theme min-h-screen bg-slate-50 text-slate-900">
     <Navbar />
     <main className={`min-h-[calc(100vh-72px)] pb-16 md:pb-0 ${appClass}`}><Routes>
