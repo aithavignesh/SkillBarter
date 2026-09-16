@@ -24,7 +24,7 @@ import { ConnectionsPage } from './pages/ConnectionsPage';
 import { CommunityPage } from './pages/CommunityPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { MonetizationPage } from './pages/MonetizationPage';
-import { AdditionalScreen } from './pages/AdditionalScreensPage';
+import { AdditionalScreen } from './pages/FunctionalAdditionalScreensPage2';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
