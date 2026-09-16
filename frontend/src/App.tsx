@@ -19,7 +19,7 @@ import { ExchangesPage } from './pages/ExchangesPage';
 import { ExchangeWorkspacePage } from './pages/ExchangeWorkspacePage';
 import { MessagesPage } from './pages/MessagesPage';
 import { ConversationPage } from './pages/ConversationPage';
-import { ProfilePage } from './pages/ProfilePage';
+import { ProfileWorkspacePage } from './pages/ProfileWorkspacePage';
 import { TrustSystemPage } from './pages/TrustSystemPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { CommunityPage } from './pages/CommunityPage';
@@ -38,7 +38,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const profileScreenIds = new Set(['edit-profile','public-profile','skills','add-skill']);
 const exchangeScreenIds = new Set(['active-exchange','exchange-history','exchange-rating','schedule','calendar']);
-const ProfileIntegratedRoute: React.FC = () => { const { id = '' } = useParams(); return profileScreenIds.has(id) ? <AdditionalScreen /> : <ProfilePage />; };
+const ProfileIntegratedRoute: React.FC = () => { const { id = '' } = useParams(); return profileScreenIds.has(id) ? <AdditionalScreen /> : <ProfileWorkspacePage />; };
 const ExchangeIntegratedRoute: React.FC = () => { const { id = '' } = useParams(); return exchangeScreenIds.has(id) ? <AdditionalScreen /> : <ExchangeWorkspacePage />; };
 const legacyScreenPaths: Record<string, string> = { dashboard:'/home/dashboard','edit-profile':'/profile/edit-profile','public-profile':'/profile/public-profile',skills:'/profile/skills','add-skill':'/profile/add-skill','learning-goals':'/learning/learning-goals','teaching-skills':'/learning/teaching-skills',search:'/discover/search','advanced-search':'/discover/advanced-search',recommended:'/discover/recommended','ai-matching':'/matches/ai-matching','match-details':'/matches/match-details','send-request':'/requests/send-request','incoming-requests':'/requests/incoming-requests','sent-requests':'/requests/sent-requests','request-details':'/requests/request-details','active-exchange':'/exchanges/active-exchange','exchange-history':'/exchanges/exchange-history','exchange-rating':'/exchanges/exchange-rating',schedule:'/exchanges/schedule',calendar:'/exchanges/calendar',notifications:'/notifications/notifications','notification-settings':'/notifications/notification-settings','chat-details':'/messages/chat-details','create-post':'/community/create-post','post-details':'/community/post-details',groups:'/community/groups','group-details':'/community/group-details',workshops:'/workshops/workshops','create-workshop':'/workshops/create-workshop','workshop-details':'/workshops/workshop-details','my-workshops':'/workshops/my-workshops',credits:'/learning/credits',premium:'/membership/premium',verification:'/trust/verification',support:'/support/support',faq:'/support/faq',privacy:'/settings/privacy','account-settings':'/settings/account-settings',activity:'/activity/activity' };
 const LegacyScreenRedirect: React.FC = () => { const { id = '' } = useParams(); return <Navigate to={legacyScreenPaths[id] || '/feed'} replace />; };
