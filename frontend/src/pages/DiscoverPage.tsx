@@ -1,283 +1,82 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { UserSummary } from '../types';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
 import { CommunityMap } from '../components/map/CommunityMap';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
-import {
-  Search,
-  MapPin,
-  Repeat,
-  Sparkles,
-  LayoutGrid,
-  Compass,
-  SlidersHorizontal,
-  Wrench,
-  HelpCircle
-} from 'lucide-react';
+import { AppPageShell } from '../components/ui/AppPageShell';
+import { Search, MapPin, Repeat, LayoutGrid, Compass, ArrowUpRight } from 'lucide-react';
 
 export const DiscoverPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
-
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [viewMode, setViewMode] = useState<'GRID' | 'MAP'>('GRID');
   const [nearbyUsers, setNearbyUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  // Propose Modal State
+  const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<UserSummary | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
   const [defaultPartnerSkill, setDefaultPartnerSkill] = useState('');
 
-  const categories = [
-    'All',
-    'Home Repair',
-    'Technology',
-    'Design',
-    'Education',
-    'Photography',
-    'Cooking',
-    'Fitness',
-    'Gardening',
-    'Creative'
-  ];
-
+  const categories = ['All','Home Repair','Technology','Design','Education','Photography','Cooking','Fitness','Gardening','Creative'];
   const fetchNeighbors = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getNearbyUsers();
-      setNearbyUsers(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    try { setLoading(true); setNearbyUsers(await api.getNearbyUsers()); }
+    catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
-
-  useEffect(() => {
-    fetchNeighbors();
-  }, []);
+  useEffect(() => { fetchNeighbors(); }, []);
 
   const filteredNeighbors = nearbyUsers.filter((u) => {
-    const matchesQuery =
-      !searchQuery ||
-      u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.headline?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.skills_offered?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      u.skills_needed?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesCat =
-      selectedCategory === 'All' ||
-      // Check if any offered skill matches
-      u.skills_offered?.some((s: string) => {
-        if (selectedCategory === 'Home Repair') return ['Plumbing', 'Carpentry', 'Electrical Work', 'Painting', 'Bike Repair'].includes(s);
-        if (selectedCategory === 'Technology') return ['Web Development', 'Mobile App Dev', 'Python Tutoring'].includes(s);
-        if (selectedCategory === 'Design') return ['UI Design', 'Graphic Design'].includes(s);
-        if (selectedCategory === 'Photography') return ['Photography', 'Video Editing'].includes(s);
-        if (selectedCategory === 'Cooking') return ['Cooking', 'Baking'].includes(s);
-        return true;
-      });
-
+    const q = searchQuery.toLowerCase();
+    const matchesQuery = !q || [u.full_name, u.headline, ...(u.skills_offered || []), ...(u.skills_needed || [])].filter(Boolean).some((v: string) => v.toLowerCase().includes(q));
+    const categorySkills: Record<string,string[]> = {
+      'Home Repair':['Plumbing','Carpentry','Electrical Work','Painting','Bike Repair'],
+      Technology:['Web Development','Mobile App Dev','Python Tutoring'],
+      Design:['UI Design','Graphic Design'], Photography:['Photography','Video Editing'], Cooking:['Cooking','Baking'],
+    };
+    const matchesCat = selectedCategory === 'All' || (u.skills_offered || []).some((s: string) => (categorySkills[selectedCategory] || [s]).includes(s));
     return matchesQuery && matchesCat;
   });
 
-  const handleOpenPropose = (user: any, skill?: string) => {
-    setSelectedPartner(user);
-    setDefaultPartnerSkill(skill || user.skills_offered?.[0] || '');
-    setIsProposeOpen(true);
+  const openProposal = (user: any) => {
+    setSelectedPartner(user); setDefaultPartnerSkill(user.skills_offered?.[0] || ''); setIsProposeOpen(true);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-            Hyperlocal Discovery
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-0.5">
-            Find Skills Near You
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Connect with verified neighbors offering skills within your local exchange radius
-          </p>
+    <AppPageShell
+      eyebrow="Discovery"
+      title="Find skills near you"
+      description="Search local members by skill, compare trust and distance, then start a real exchange."
+      icon={<Compass className="h-3.5 w-3.5" />}
+      actions={<Link to="/matches"><Button size="sm" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>Smart matches</Button></Link>}
+      search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Search people or skills…' }}
+    >
+      <div className="flex flex-col gap-3 border border-[#e1e4e8] bg-white p-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {categories.map((cat) => <button key={cat} onClick={() => setSelectedCategory(cat)} className={`whitespace-nowrap border px-3 py-2 text-xs font-bold transition ${selectedCategory === cat ? 'border-[#d31d24] bg-[#d31d24] text-white' : 'border-[#e1e4e8] bg-white text-slate-600 hover:border-slate-300'}`}>{cat}</button>)}
         </div>
-
-        {/* View Switcher (Grid vs Radar Map) */}
-        <div className="flex items-center bg-slate-200/80 p-1 rounded-xl shrink-0 self-start md:self-auto">
-          <button
-            onClick={() => setViewMode('GRID')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              viewMode === 'GRID'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" /> Grid Cards
-          </button>
-          <button
-            onClick={() => setViewMode('MAP')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              viewMode === 'MAP'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Compass className="w-4 h-4 text-emerald-600" /> Radar Map
-          </button>
+        <div className="flex shrink-0 border border-[#e1e4e8] bg-[#f7f8f7] p-1">
+          <button onClick={() => setViewMode('GRID')} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${viewMode === 'GRID' ? 'bg-white text-[#17233b] shadow-sm' : 'text-slate-500'}`}><LayoutGrid className="h-3.5 w-3.5" />List</button>
+          <button onClick={() => setViewMode('MAP')} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${viewMode === 'MAP' ? 'bg-white text-[#17233b] shadow-sm' : 'text-slate-500'}`}><Compass className="h-3.5 w-3.5" />Map</button>
         </div>
       </div>
 
-      {/* Search & Category Filter Bar */}
-      <div className="space-y-3">
-        <div className="relative">
-          <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="What skill do you need? (e.g. Plumbing, Photography, Web Design, Cooking)..."
-            className="w-full text-sm pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-        </div>
-
-        {/* Categories Horizontal Scroll */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                selectedCategory === cat
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main View Area */}
-      {viewMode === 'MAP' ? (
-        <CommunityMap users={filteredNeighbors} />
-      ) : (
-        <div>
-          {loading ? (
-            <div className="text-center py-20 text-slate-400 text-xs">
-              Locating neighbors within your barter radius...
-            </div>
-          ) : filteredNeighbors.length === 0 ? (
-            <Card className="p-12 text-center space-y-3">
-              <Compass className="w-10 h-10 text-slate-300 mx-auto" />
-              <h3 className="text-sm font-bold text-slate-800">No neighbors matched this query</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Try searching for a different skill or switch to another category to discover nearby trades.
-              </p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredNeighbors.map((neighbor) => (
-                <Card key={neighbor.id} hover className="p-5 flex flex-col justify-between space-y-4">
-                  <div>
-                    {/* Header: User avatar, distance & trust */}
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={neighbor.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'}
-                          alt={neighbor.full_name}
-                          className="w-12 h-12 rounded-full object-cover border border-slate-200"
-                        />
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900">{neighbor.full_name}</h3>
-                          <p className="text-xs text-slate-500 line-clamp-1">{neighbor.headline || 'Neighbor'}</p>
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        ★ {Math.round(neighbor.trust_score)}
-                      </span>
-                    </div>
-
-                    {/* Hyperlocal Distance Badge */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                        {neighbor.distance_display || `${neighbor.distance_km} km away`}
-                      </span>
-                      {neighbor.availability && (
-                        <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-1 rounded-lg font-medium">
-                          {neighbor.availability}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Skills Offered */}
-                    <div className="space-y-1.5 mb-2.5">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Can Provide:
-                      </span>
-                      <div className="flex flex-wrap gap-1">
-                        {neighbor.skills_offered?.map((s: string) => (
-                          <span key={s} className="text-xs font-medium text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-md">
-                            {s}
-                          </span>
-                        )) || <span className="text-xs text-slate-400">Skills on request</span>}
-                      </div>
-                    </div>
-
-                    {/* Skills Needed */}
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Looking For:
-                      </span>
-                      <div className="flex flex-wrap gap-1">
-                        {neighbor.skills_needed?.map((s: string) => (
-                          <span key={s} className="text-xs font-medium text-teal-800 bg-teal-50 px-2.5 py-0.5 rounded-md border border-teal-200/60">
-                            {s}
-                          </span>
-                        )) || <span className="text-xs text-slate-400">Open to offers</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Propose Action */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-slate-400">
-                      {neighbor.completed_exchanges_count || 0} barters completed
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={() => handleOpenPropose(neighbor)}
-                      icon={<Repeat className="w-3.5 h-3.5" />}
-                    >
-                      Propose Exchange
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+      {viewMode === 'MAP' ? <div className="border border-[#e1e4e8] bg-white p-2"><CommunityMap users={filteredNeighbors} /></div> : (
+        <div className="overflow-hidden border border-[#e1e4e8] bg-white">
+          <div className="hidden grid-cols-[minmax(260px,1.4fr)_minmax(180px,1fr)_minmax(180px,1fr)_170px] border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 md:grid"><span>Member</span><span>Skills offered</span><span>Location / trust</span><span className="text-right">Action</span></div>
+          {loading ? <div className="py-20 text-center text-sm text-slate-400">Finding members near you…</div> : filteredNeighbors.length === 0 ? <div className="py-20 text-center"><Compass className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No members found</h3><p className="mt-1 text-xs text-slate-500">Try another skill or category.</p></div> : <div className="divide-y divide-[#e1e4e8]">
+            {filteredNeighbors.map((neighbor) => <div key={neighbor.id} className="grid gap-4 px-5 py-4 transition hover:bg-[#fafafa] md:grid-cols-[minmax(260px,1.4fr)_minmax(180px,1fr)_minmax(180px,1fr)_170px] md:items-center">
+              <div className="flex min-w-0 items-center gap-3"><img src={neighbor.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'} alt={neighbor.full_name} className="h-11 w-11 shrink-0 rounded-full border border-[#dfe3e8] object-cover" /><div className="min-w-0"><p className="truncate text-sm font-bold text-[#17233b]">{neighbor.full_name}</p><p className="truncate text-xs text-slate-500">{neighbor.headline || 'SkillBarter member'}</p></div></div>
+              <div className="flex flex-wrap gap-1.5">{(neighbor.skills_offered || []).slice(0,4).map((s: string) => <span key={s} className="border border-[#e1e4e8] bg-[#f7f8f7] px-2 py-1 text-[10px] font-semibold text-slate-700">{s}</span>)}</div>
+              <div className="text-xs text-slate-500"><p className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-[#d31d24]" />{neighbor.distance_display || `${neighbor.distance_km || ''} km away`}</p><p className="mt-1 font-semibold text-slate-700">★ {Math.round(neighbor.trust_score || 0)} trust</p></div>
+              <div className="flex justify-start md:justify-end"><Button size="sm" onClick={() => openProposal(neighbor)} icon={<Repeat className="h-3.5 w-3.5" />}>Propose</Button></div>
+            </div>)}
+          </div>}
         </div>
       )}
 
-      {/* Propose Exchange Modal */}
-      {selectedPartner && (
-        <ProposeExchangeModal
-          isOpen={isProposeOpen}
-          onClose={() => setIsProposeOpen(false)}
-          partner={selectedPartner}
-          defaultPartnerSkill={defaultPartnerSkill}
-          onSuccess={() => {
-            alert('Barter request sent successfully!');
-          }}
-        />
-      )}
-    </div>
+      {selectedPartner && <ProposeExchangeModal isOpen={isProposeOpen} onClose={() => setIsProposeOpen(false)} partner={selectedPartner} defaultPartnerSkill={defaultPartnerSkill} onSuccess={() => { setIsProposeOpen(false); alert('Barter request sent successfully!'); }} />}
+    </AppPageShell>
   );
 };
