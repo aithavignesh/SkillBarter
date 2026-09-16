@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -6,16 +6,20 @@ import { MatchResult, UserSummary } from '../types';
 import { Button } from '../components/ui/Button';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
 import { AppPageShell } from '../components/ui/AppPageShell';
-import { Sparkles, Repeat, MapPin, ShieldCheck, CheckCircle, ArrowRight, SlidersHorizontal } from 'lucide-react';
+import { getMonetizationState, getPriorityMatchRemaining, consumePriorityMatch } from '../services/monetization';
+import { Sparkles, Repeat, MapPin, ShieldCheck, CheckCircle, ArrowRight, SlidersHorizontal, Crown } from 'lucide-react';
 
 export const SkillMatchesPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const userId = Number(currentUser?.id ?? 0);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<UserSummary | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
   const [defaultPartnerSkill, setDefaultPartnerSkill] = useState('');
   const [defaultMySkill, setDefaultMySkill] = useState('');
+  const [notice, setNotice] = useState('');
+  const [usageTick, setUsageTick] = useState(0);
 
   const loadMatches = async () => {
     try { setLoading(true); setMatches(await api.getMatches()); }
@@ -24,9 +28,28 @@ export const SkillMatchesPage: React.FC = () => {
   };
   useEffect(() => { loadMatches(); }, []);
 
+  const monetization = useMemo(() => getMonetizationState(userId), [userId, usageTick]);
+  const priorityRemaining = useMemo(() => getPriorityMatchRemaining(userId), [userId, usageTick, monetization]);
+  const displayedMatches = useMemo(() => {
+    if (!monetization.premium || !monetization.priorityMatching) return matches;
+    return [...matches].sort((a, b) => {
+      const aPriority = Number(a.match_score || 0) * 0.65 + Number(a.score_breakdown?.trust || 0) * 1.2 + Number(a.score_breakdown?.location_proximity || 0) * 0.35;
+      const bPriority = Number(b.match_score || 0) * 0.65 + Number(b.score_breakdown?.trust || 0) * 1.2 + Number(b.score_breakdown?.location_proximity || 0) * 0.35;
+      return bPriority - aPriority;
+    });
+  }, [matches, monetization]);
+
   const offeredList = currentUser?.skills?.filter(s => s.skill_type === 'OFFERED').map(s => s.skill_name) || [];
   const neededList = currentUser?.skills?.filter(s => s.skill_type === 'NEEDED').map(s => s.skill_name) || [];
   const openProposal = (match: MatchResult) => {
+    if (monetization.premium && monetization.priorityMatching && priorityRemaining <= 0) {
+      setNotice('Your 20 daily priority recommendations have been used. Regular matches are still available.');
+      return;
+    }
+    if (monetization.premium && monetization.priorityMatching) {
+      consumePriorityMatch(userId);
+      setUsageTick(v => v + 1);
+    }
     setSelectedPartner(match.candidate); setDefaultPartnerSkill(match.they_offer?.[0] || ''); setDefaultMySkill(match.matched_you_offer?.[0] || ''); setIsProposeOpen(true);
   };
 
@@ -44,10 +67,13 @@ export const SkillMatchesPage: React.FC = () => {
         <div className="bg-white p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Trust score</p><p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-[#d31d24]"><ShieldCheck className="h-4 w-4" />{Math.round(currentUser?.trust_score || 0)}/100</p></div>
       </div>
 
+      {notice && <div className="mt-4 border border-red-100 bg-[#fff5f5] px-4 py-3 text-xs font-semibold text-[#b8171d]">{notice}</div>}
+      {monetization.premium && monetization.priorityMatching && <div className="mt-4 flex flex-col gap-3 border border-red-100 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-2"><Crown className="h-4 w-4 text-[#d31d24]"/><div><p className="text-xs font-bold text-[#17233b]">Priority matching is active</p><p className="text-[10px] text-[#697386]">Recommendations are reordered using fit, trust and proximity. {priorityRemaining} priority actions remain today.</p></div></div><span className="border border-[#e1e4e8] bg-[#f7f8f7] px-2.5 py-1.5 text-[10px] font-bold text-slate-600">{priorityRemaining}/20 left</span></div>}
+
       <div className="mt-5 border border-[#e1e4e8] bg-white">
-        <div className="border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Recommended exchanges</div>
-        {loading ? <div className="py-20 text-center text-sm text-slate-400">Calculating matches…</div> : matches.length === 0 ? <div className="py-20 text-center"><Repeat className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No reciprocal matches yet</h3><p className="mx-auto mt-1 max-w-md text-xs text-slate-500">Add more offered or needed skills to improve the set of possible trades.</p></div> : <div className="divide-y divide-[#e1e4e8]">
-          {matches.map((match, idx) => <div key={idx} className="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1.3fr)_220px] lg:items-center">
+        <div className="border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">{monetization.premium && monetization.priorityMatching ? 'Priority recommendations' : 'Recommended exchanges'}</div>
+        {loading ? <div className="py-20 text-center text-sm text-slate-400">Calculating matches…</div> : displayedMatches.length === 0 ? <div className="py-20 text-center"><Repeat className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No reciprocal matches yet</h3><p className="mx-auto mt-1 max-w-md text-xs text-slate-500">Add more offered or needed skills to improve the set of possible trades.</p></div> : <div className="divide-y divide-[#e1e4e8]">
+          {displayedMatches.map((match, idx) => <div key={idx} className="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1.3fr)_220px] lg:items-center">
             <div className="flex items-start gap-3"><img src={match.candidate?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80'} alt={match.candidate?.full_name} className="h-12 w-12 rounded-full border border-[#dfe3e8] object-cover" /><div className="min-w-0"><p className="truncate text-sm font-bold text-[#17233b]">{match.candidate?.full_name}</p><p className="truncate text-xs text-slate-500">{match.candidate?.headline || 'SkillBarter member'}</p><div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold"><span className="flex items-center gap-1 text-slate-500"><MapPin className="h-3 w-3 text-[#d31d24]" />{match.distance_display}</span><span className="text-slate-600">★ {Math.round(match.candidate?.trust_score || 0)}</span></div></div></div>
             <div><div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Exchange fit</span><span className="text-lg font-extrabold text-[#d31d24]">{match.match_score}%</span></div><div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border border-[#e1e4e8] bg-[#f7f8f7] p-3 text-xs"><div><p className="text-[9px] font-bold uppercase text-slate-400">You provide</p><p className="mt-1 truncate font-bold text-[#17233b]">{match.matched_you_offer?.[0] || offeredList[0] || 'Your skill'}</p></div><Repeat className="h-4 w-4 text-[#d31d24]" /><div className="text-right"><p className="text-[9px] font-bold uppercase text-slate-400">They provide</p><p className="mt-1 truncate font-bold text-[#17233b]">{match.they_offer?.[0] || 'Their skill'}</p></div></div><div className="mt-3 space-y-1">{match.reasons.slice(0,3).map((r,i)=><p key={i} className="flex items-center gap-1.5 text-[11px] text-slate-500"><CheckCircle className="h-3 w-3 text-[#d31d24]" />{r}</p>)}</div></div>
             <div className="border-t border-[#e1e4e8] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0"><div className="mb-3 space-y-1 text-[11px] text-slate-500"><p className="flex justify-between"><span>Skills</span><b className="text-slate-700">{match.score_breakdown.skill_compatibility}/50</b></p><p className="flex justify-between"><span>Proximity</span><b className="text-slate-700">{match.score_breakdown.location_proximity}/20</b></p><p className="flex justify-between"><span>Trust</span><b className="text-slate-700">{match.score_breakdown.trust}/20</b></p></div><Button size="sm" className="w-full" onClick={() => openProposal(match)} icon={<ArrowRight className="h-3.5 w-3.5" />}>Propose exchange</Button></div>
@@ -55,7 +81,7 @@ export const SkillMatchesPage: React.FC = () => {
         </div>}
       </div>
 
-      {selectedPartner && <ProposeExchangeModal isOpen={isProposeOpen} onClose={() => setIsProposeOpen(false)} partner={selectedPartner} defaultPartnerSkill={defaultPartnerSkill} defaultMySkill={defaultMySkill} onSuccess={() => { setIsProposeOpen(false); alert('Exchange request sent successfully!'); }} />}
+      {selectedPartner && <ProposeExchangeModal isOpen={isProposeOpen} onClose={() => setIsProposeOpen(false)} partner={selectedPartner} defaultPartnerSkill={defaultPartnerSkill} defaultMySkill={defaultMySkill} onSuccess={() => { setIsProposeOpen(false); setNotice('Exchange request sent successfully.'); }} />}
     </AppPageShell>
   );
 };
