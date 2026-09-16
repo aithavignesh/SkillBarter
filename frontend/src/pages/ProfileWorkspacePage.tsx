@@ -6,7 +6,8 @@ import { AppPageShell } from '../components/ui/AppPageShell';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
-import { MapPin, MessageSquare, Plus, Repeat, Save, ShieldCheck, Sparkles, Trash2, UserPlus } from 'lucide-react';
+import { getMonetizationState } from '../services/monetization';
+import { MapPin, MessageSquare, Plus, Repeat, Save, ShieldCheck, Sparkles, Trash2, UserPlus, BadgeCheck, Rocket, Crown } from 'lucide-react';
 
 export const ProfileWorkspacePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,7 @@ export const ProfileWorkspacePage: React.FC = () => {
   const [skillType, setSkillType] = useState<'OFFERED' | 'NEEDED'>('OFFERED');
   const [proposeOpen, setProposeOpen] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [monetizationTick, setMonetizationTick] = useState(0);
 
   const load = async () => {
     if (!targetId) return;
@@ -38,6 +40,8 @@ export const ProfileWorkspacePage: React.FC = () => {
 
   const offered = useMemo(() => (profile?.skills || []).filter((s: any) => s.skill_type === 'OFFERED'), [profile]);
   const needed = useMemo(() => (profile?.skills || []).filter((s: any) => s.skill_type === 'NEEDED'), [profile]);
+  const monetization = useMemo(() => own ? getMonetizationState(targetId) : null, [own, targetId, monetizationTick]);
+  const featured = Boolean(monetization?.featuredUntil && new Date(monetization.featuredUntil).getTime() > Date.now());
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -78,7 +82,7 @@ export const ProfileWorkspacePage: React.FC = () => {
         <Card className="p-5">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <img src={profile.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160'} className="h-20 w-20 rounded-full border border-[#e1e4e8] object-cover" alt="" />
-            <div className="min-w-0 flex-1"><h2 className="text-xl font-extrabold text-[#17233b]">{profile.full_name}</h2><p className="mt-1 text-sm text-[#697386]">{profile.headline || 'Community member'}</p><p className="mt-3 flex items-center gap-1.5 text-xs text-[#697386]"><MapPin className="h-3.5 w-3.5 text-[#d31d24]" />{profile.address_display || 'Local neighborhood'}{profile.distance_display ? ` · ${profile.distance_display}` : ''}</p>{profile.bio && <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">{profile.bio}</p>}</div>
+            <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-extrabold text-[#17233b]">{profile.full_name}</h2>{own && monetization?.premium && <span className="inline-flex items-center gap-1 border border-red-100 bg-[#fff5f5] px-2 py-1 text-[9px] font-bold uppercase text-[#b8171d]"><Crown className="h-3 w-3"/> Premium</span>}{own && monetization?.verified && <span className="inline-flex items-center gap-1 border border-red-100 bg-[#fff5f5] px-2 py-1 text-[9px] font-bold uppercase text-[#b8171d]"><BadgeCheck className="h-3 w-3"/> Verified</span>}{own && featured && <span className="inline-flex items-center gap-1 border border-red-100 bg-[#fff5f5] px-2 py-1 text-[9px] font-bold uppercase text-[#b8171d]"><Rocket className="h-3 w-3"/> Featured</span>}</div><p className="mt-1 text-sm text-[#697386]">{profile.headline || 'Community member'}</p><p className="mt-3 flex items-center gap-1.5 text-xs text-[#697386]"><MapPin className="h-3.5 w-3.5 text-[#d31d24]" />{profile.address_display || 'Local neighborhood'}{profile.distance_display ? ` · ${profile.distance_display}` : ''}</p>{profile.bio && <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">{profile.bio}</p>}</div>
             <div className="shrink-0 border border-[#e1e4e8] bg-[#f7f8f7] px-4 py-3 text-center"><div className="text-2xl font-black text-[#d31d24]">{Math.round(profile.trust_score || 0)}</div><div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Trust / 100</div></div>
           </div>
         </Card>
