@@ -1,5 +1,6 @@
 import { api } from './api';
 import { functionalApi } from './functionalApi';
+import { exchangeFunctionalApi } from './exchangeFunctionalApi';
 import './enableSocialApi';
 
 // The legacy API facade still contains migration guards for modules that have moved to InsForge.
@@ -12,4 +13,8 @@ for (const name of [
   'markAllNotificationsRead','sendMessage','getFeed','createPost','likePost'
 ]) {
   if (typeof (functionalApi as any)[name] === 'function') target[name] = (functionalApi as any)[name].bind(functionalApi);
+}
+
+for (const name of ['rejectExchange','cancelExchange','getExchangeDetails']) {
+  if (typeof (exchangeFunctionalApi as any)[name] === 'function') target[name] = (exchangeFunctionalApi as any)[name].bind(exchangeFunctionalApi);
 }
