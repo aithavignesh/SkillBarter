@@ -5,16 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Tabs } from '../components/ui/Tabs';
-import {
-  Shield,
-  Users,
-  AlertTriangle,
-  Repeat,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Search
-} from 'lucide-react';
+import { Shield, Users, AlertTriangle, Repeat, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export const AdminDashboardPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -69,7 +60,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   if (!currentUser?.is_admin) {
     return (
-      <div className="max-w-md mx-auto py-20 text-center text-xs text-rose-600">
+      <div className="mx-auto max-w-md py-20 text-center text-xs text-rose-600">
         Access Denied: Administrative privileges required.
       </div>
     );
@@ -81,92 +72,141 @@ export const AdminDashboardPage: React.FC = () => {
     { id: 'EXCHANGES', label: 'Exchange Audit Log', count: exchanges.length },
   ];
 
+  const activeRate = stats?.total_users ? Math.round((stats.active_users / stats.total_users) * 100) : 0;
+  const completionRate = stats?.total_exchanges ? Math.round((stats.completed_exchanges / stats.total_exchanges) * 100) : 0;
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       <div>
-        <span className="text-xs font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1">
-          <Shield className="w-4 h-4" /> Platform Moderation & Safety
+        <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-700">
+          <Shield className="h-4 w-4" /> Platform moderation & safety
         </span>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-0.5">
-          Admin Dashboard
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Monitor platform metrics, resolve safety flags, and moderate community users
-        </p>
+        <div className="mt-2 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-slate-950">Admin Dashboard</h1>
+            <p className="mt-1 text-sm text-slate-500">Monitor platform metrics, resolve safety flags, and moderate community users.</p>
+          </div>
+          <span className="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-sm">
+            Live platform view
+          </span>
+        </div>
       </div>
 
-      {/* Admin Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-4 bg-white">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase">Total Members</span>
-          <p className="text-2xl font-black text-slate-900 font-mono mt-1">{stats?.total_users || 0}</p>
-          <span className="text-[10px] text-emerald-600 font-semibold">{stats?.active_users || 0} active</span>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {[
+          { label: 'Total members', value: stats?.total_users || 0, sub: `${stats?.active_users || 0} active`, icon: Users, tone: 'emerald' },
+          { label: 'Total exchanges', value: stats?.total_exchanges || 0, sub: `${stats?.completed_exchanges || 0} completed`, icon: Repeat, tone: 'slate' },
+          { label: 'Pending reports', value: stats?.pending_reports || 0, sub: 'Needs review', icon: AlertTriangle, tone: 'rose' },
+          { label: 'Avg trust score', value: stats?.average_trust_score || 94, sub: 'Platform-wide', icon: Shield, tone: 'emerald' },
+        ].map(({ label, value, sub, icon: Icon, tone }) => (
+          <Card key={label} className="p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</span>
+              <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${tone === 'rose' ? 'bg-rose-50 text-rose-600' : tone === 'emerald' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                <Icon className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-4 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+            <p className={`mt-1 text-[10px] font-semibold ${tone === 'rose' ? 'text-rose-600' : 'text-slate-400'}`}>{sub}</p>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">Platform chart</p>
+              <h2 className="mt-1 text-lg font-black text-slate-950">Community health overview</h2>
+            </div>
+            <div className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-500">Current totals</div>
+          </div>
+
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700">Active members</span>
+                <span className="text-sm font-black text-emerald-700">{activeRate}%</span>
+              </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${activeRate}%` }} />
+              </div>
+              <p className="mt-2 text-[10px] text-slate-400">{stats?.active_users || 0} of {stats?.total_users || 0} members currently active</p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700">Exchange completion</span>
+                <span className="text-sm font-black text-slate-800">{completionRate}%</span>
+              </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: `${completionRate}%` }} />
+              </div>
+              <p className="mt-2 text-[10px] text-slate-400">{stats?.completed_exchanges || 0} of {stats?.total_exchanges || 0} exchanges completed</p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-3 gap-3">
+            <div className="rounded-2xl bg-slate-950 p-4 text-white">
+              <CheckCircle className="h-4 w-4 text-emerald-400" />
+              <p className="mt-3 text-2xl font-black">{stats?.completed_exchanges || 0}</p>
+              <p className="mt-1 text-[10px] text-slate-400">Completed</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <Clock className="h-4 w-4 text-slate-500" />
+              <p className="mt-3 text-2xl font-black text-slate-950">{stats?.total_exchanges - (stats?.completed_exchanges || 0) || 0}</p>
+              <p className="mt-1 text-[10px] text-slate-400">In progress</p>
+            </div>
+            <div className="rounded-2xl border border-rose-100 bg-rose-50/60 p-4">
+              <XCircle className="h-4 w-4 text-rose-500" />
+              <p className="mt-3 text-2xl font-black text-rose-700">{stats?.pending_reports || 0}</p>
+              <p className="mt-1 text-[10px] text-rose-500">Reports pending</p>
+            </div>
+          </div>
         </Card>
 
-        <Card className="p-4 bg-white">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase">Total Exchanges</span>
-          <p className="text-2xl font-black text-slate-900 font-mono mt-1">{stats?.total_exchanges || 0}</p>
-          <span className="text-[10px] text-emerald-600 font-semibold">{stats?.completed_exchanges || 0} completed</span>
-        </Card>
-
-        <Card className="p-4 bg-white">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase">Pending Reports</span>
-          <p className="text-2xl font-black text-rose-600 font-mono mt-1">{stats?.pending_reports || 0}</p>
-          <span className="text-[10px] text-slate-400">Needs review</span>
-        </Card>
-
-        <Card className="p-4 bg-white">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase">Avg Trust Score</span>
-          <p className="text-2xl font-black text-emerald-600 font-mono mt-1">{stats?.average_trust_score || 94}</p>
-          <span className="text-[10px] text-slate-400">Platform-wide</span>
+        <Card className="p-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Trust signal</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Community trust</h2>
+          <div className="mt-7 flex items-center justify-center">
+            <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-[conic-gradient(#10b981_0_94%,#e2e8f0_94%_100%)]">
+              <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-white shadow-inner">
+                <span className="text-4xl font-black text-slate-950">{stats?.average_trust_score || 94}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">score</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 rounded-2xl bg-slate-50 p-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-600">Pending safety reports</span>
+              <span className="font-black text-rose-600">{stats?.pending_reports || 0}</span>
+            </div>
+            <div className="mt-3 h-1.5 rounded-full bg-slate-200">
+              <div className="h-full rounded-full bg-rose-500" style={{ width: `${Math.min((stats?.pending_reports || 0) * 10, 100)}%` }} />
+            </div>
+          </div>
         </Card>
       </div>
 
-      {/* Tabs */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* Tab Content */}
       {loading ? (
-        <div className="text-center py-20 text-xs text-slate-400">Loading admin data...</div>
+        <div className="py-20 text-center text-xs text-slate-400">Loading admin data...</div>
       ) : activeTab === 'USERS' ? (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
-                <tr>
-                  <th className="px-6 py-3">User</th>
-                  <th className="px-6 py-3">Email</th>
-                  <th className="px-6 py-3">Trust Score</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3 text-right">Action</th>
-                </tr>
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <tr><th className="px-6 py-3">User</th><th className="px-6 py-3">Email</th><th className="px-6 py-3">Trust Score</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Action</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-3.5 font-bold text-slate-900 flex items-center gap-2">
-                      <span>{u.full_name}</span>
-                      {u.is_admin && <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold">Admin</span>}
-                    </td>
+                  <tr key={u.id} className="transition-colors hover:bg-slate-50/80">
+                    <td className="flex items-center gap-2 px-6 py-3.5 font-bold text-slate-900"><span>{u.full_name}</span>{u.is_admin && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">Admin</span>}</td>
                     <td className="px-6 py-3.5 text-slate-600">{u.email}</td>
                     <td className="px-6 py-3.5 font-mono font-bold text-emerald-700">★ {Math.round(u.trust_score)}</td>
-                    <td className="px-6 py-3.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                        {u.is_active ? 'Active' : 'Deactivated'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 text-right">
-                      {!u.is_admin && (
-                        <Button
-                          size="sm"
-                          variant={u.is_active ? 'outline' : 'primary'}
-                          onClick={() => handleToggleUser(u.id)}
-                        >
-                          {u.is_active ? 'Deactivate' : 'Reactivate'}
-                        </Button>
-                      )}
-                    </td>
+                    <td className="px-6 py-3.5"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{u.is_active ? 'Active' : 'Deactivated'}</span></td>
+                    <td className="px-6 py-3.5 text-right">{!u.is_admin && <Button size="sm" variant={u.is_active ? 'outline' : 'primary'} onClick={() => handleToggleUser(u.id)}>{u.is_active ? 'Deactivate' : 'Reactivate'}</Button>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -175,35 +215,13 @@ export const AdminDashboardPage: React.FC = () => {
         </Card>
       ) : activeTab === 'REPORTS' ? (
         reports.length === 0 ? (
-          <Card className="p-12 text-center text-xs text-slate-400">
-            No safety reports on record. Neighborhood behavior is healthy!
-          </Card>
+          <Card className="p-12 text-center text-xs text-slate-400">No safety reports on record. Neighborhood behavior is healthy!</Card>
         ) : (
           <div className="space-y-4">
             {reports.map((r) => (
-              <Card key={r.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1 text-xs">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">
-                      {r.status}
-                    </Badge>
-                    <span className="font-bold text-slate-900">{r.category}</span>
-                    <span className="text-slate-400">• Reported by {r.reporter_name}</span>
-                  </div>
-                  <p className="text-slate-700 italic">"{r.details}"</p>
-                  <p className="text-[10px] text-slate-400">Against user: {r.reported_name}</p>
-                </div>
-
-                {r.status === 'PENDING' && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => handleResolveReport(r.id, 'DISMISSED')}>
-                      Dismiss
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => handleResolveReport(r.id, 'RESOLVED')}>
-                      Resolve & Penalize
-                    </Button>
-                  </div>
-                )}
+              <Card key={r.id} className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
+                <div className="space-y-1 text-xs"><div className="flex items-center gap-2"><Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">{r.status}</Badge><span className="font-bold text-slate-900">{r.category}</span><span className="text-slate-400">• Reported by {r.reporter_name}</span></div><p className="text-slate-700 italic">"{r.details}"</p><p className="text-[10px] text-slate-400">Against user: {r.reported_name}</p></div>
+                {r.status === 'PENDING' && <div className="flex shrink-0 items-center gap-2"><Button size="sm" variant="outline" onClick={() => handleResolveReport(r.id, 'DISMISSED')}>Dismiss</Button><Button size="sm" variant="danger" onClick={() => handleResolveReport(r.id, 'RESOLVED')}>Resolve & Penalize</Button></div>}
               </Card>
             ))}
           </div>
@@ -211,30 +229,10 @@ export const AdminDashboardPage: React.FC = () => {
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
-                <tr>
-                  <th className="px-6 py-3">Exchange ID</th>
-                  <th className="px-6 py-3">Requester</th>
-                  <th className="px-6 py-3">Receiver</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Message</th>
-                </tr>
-              </thead>
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500"><tr><th className="px-6 py-3">Exchange ID</th><th className="px-6 py-3">Requester</th><th className="px-6 py-3">Receiver</th><th className="px-6 py-3">Status</th><th className="px-6 py-3">Message</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
-                {exchanges.map((ex) => (
-                  <tr key={ex.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-3.5 font-mono text-slate-500">#{ex.id}</td>
-                    <td className="px-6 py-3.5 font-bold text-slate-900">{ex.requester_name}</td>
-                    <td className="px-6 py-3.5 font-bold text-slate-900">{ex.receiver_name}</td>
-                    <td className="px-6 py-3.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                        {ex.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 text-slate-600 truncate max-w-xs">{ex.proposal_message}</td>
-                  </tr>
-                ))}
+                {exchanges.map((ex) => <tr key={ex.id} className="transition-colors hover:bg-slate-50/80"><td className="px-6 py-3.5 font-mono text-slate-500">#{ex.id}</td><td className="px-6 py-3.5 font-bold text-slate-900">{ex.requester_name}</td><td className="px-6 py-3.5 font-bold text-slate-900">{ex.receiver_name}</td><td className="px-6 py-3.5"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">{ex.status}</span></td><td className="max-w-xs truncate px-6 py-3.5 text-slate-600">{ex.proposal_message}</td></tr>)}
               </tbody>
             </table>
           </div>
