@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Check, Compass, MessageCircle, Repeat, ShieldCheck, Sparkles, Users, MapPin } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Check, Compass, MessageCircle, Repeat, ShieldCheck, Sparkles, Users, MapPin, BookOpen, BriefcaseBusiness, HeartHandshake, ChevronDown } from 'lucide-react';
 
 const steps = [
   ['01', 'Tell us what you know', 'Add the skills you can teach and the skills you want to learn.'],
@@ -13,6 +13,19 @@ const features = [
   { icon: Sparkles, title: 'Smart matching', text: 'Use compatibility signals to surface useful skill exchanges.' },
   { icon: MessageCircle, title: 'Keep it practical', text: 'Move from a match to a real conversation and scheduled exchange.' },
   { icon: ShieldCheck, title: 'Build trust', text: 'Profiles, reviews and verification help members choose confidently.' },
+];
+
+const exchangeTypes = [
+  { icon: BookOpen, title: 'Learn a skill', text: 'Pick up practical skills from someone who already uses them.' },
+  { icon: BriefcaseBusiness, title: 'Share your expertise', text: 'Turn what you know into useful value for another member.' },
+  { icon: HeartHandshake, title: 'Grow your network', text: 'Meet people around shared interests, projects and goals.' },
+];
+
+const faqs = [
+  ['Do I need to pay to start?', 'No. SkillBarter is designed around skill-for-skill exchanges, so you can create a profile and start exploring without making money the starting point.'],
+  ['What can I exchange?', 'Anything practical that another member can learn from you: coding, design, languages, fitness, communication, music, career skills and many other areas.'],
+  ['How do I choose someone to exchange with?', 'Review their profile, skills, location and available trust signals, then start a conversation before proposing an exchange.'],
+  ['Can I use SkillBarter for professional growth?', 'Yes. You can use exchanges for portfolio feedback, interview preparation, project guidance, tools, creative skills and peer learning.'],
 ];
 
 export const LandingPage: React.FC = () => (
@@ -39,7 +52,7 @@ export const LandingPage: React.FC = () => (
             <div className="border border-[#d9dbd9] bg-white">
               <div className="flex items-center justify-between border-b border-[#e8e9e7] px-5 py-4">
                 <div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a9099]">A typical exchange</p><p className="mt-1 text-[15px] font-semibold text-[#17233b]">One person teaches. One person learns.</p></div>
-                <span className="text-[10px] font-bold text-[#d31d24]">SKILLBARter</span>
+                <span className="text-[10px] font-bold text-[#d31d24]">SKILLBARTER</span>
               </div>
               <div className="divide-y divide-[#ececea]">
                 <div className="flex gap-4 p-5 sm:p-6"><div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#f1f2f0] text-[#17233b]"><Users className="h-4 w-4" /></div><div><p className="text-[12px] font-bold text-[#17233b]">A designer wants to learn React</p><p className="mt-1 text-[12px] leading-5 text-[#6d7582]">They can offer UI/UX feedback and portfolio reviews in return.</p></div></div>
@@ -59,6 +72,27 @@ export const LandingPage: React.FC = () => (
       </div>
     </section>
 
+    <section className="border-b border-[#dedfdd] bg-[#17233b] text-white">
+      <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-14">
+        <div className="grid gap-px border border-white/10 bg-white/10 md:grid-cols-3">
+          {[
+            ['Teach what you know', 'Create a profile around the skills you are comfortable sharing.'],
+            ['Learn what matters', 'Find practical knowledge that helps with your goals, projects or career.'],
+            ['Meet useful people', 'Build relationships through real exchanges instead of passive scrolling.'],
+          ].map(([title, text]) => <div key={title} className="bg-[#17233b] p-7 sm:p-8"><p className="text-[13px] font-bold text-white">{title}</p><p className="mt-2 text-[12px] leading-5 text-[#c3c9d3]">{text}</p></div>)}
+        </div>
+      </div>
+    </section>
+
+    <section className="border-b border-[#dedfdd] bg-white py-16 sm:py-20">
+      <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+        <div className="max-w-2xl"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">What can you do here?</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Start with one skill. Let the network grow from there.</h2><p className="mt-4 text-[13px] leading-6 text-[#707884]">SkillBarter is useful for students, professionals, creators and anyone who has something valuable to teach or wants to learn something new.</p></div>
+        <div className="mt-10 grid gap-px border border-[#dfe1df] bg-[#dfe1df] md:grid-cols-3">
+          {exchangeTypes.map(({ icon: Icon, title, text }) => <div key={title} className="bg-white p-7 sm:p-8"><Icon className="h-5 w-5 text-[#d31d24]" /><h3 className="mt-7 text-[16px] font-semibold">{title}</h3><p className="mt-2 text-[12px] leading-5 text-[#747c87]">{text}</p><Link to="/signup" className="mt-6 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#17233b] hover:text-[#d31d24]">Create your profile <ArrowUpRight className="h-3.5 w-3.5" /></Link></div>)}
+        </div>
+      </div>
+    </section>
+
     <section className="bg-[#f7f7f5] py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
         <div className="grid gap-12 lg:grid-cols-[.7fr_1.3fr] lg:gap-20">
@@ -68,9 +102,18 @@ export const LandingPage: React.FC = () => (
       </div>
     </section>
 
+    <section className="border-y border-[#dedfdd] bg-white py-16 sm:py-20">
+      <div className="mx-auto max-w-4xl px-5 sm:px-8">
+        <div className="text-center"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">Questions before you join?</p><h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">A few things people usually ask.</h2></div>
+        <div className="mt-10 divide-y divide-[#e5e7e5] border-y border-[#e5e7e5]">
+          {faqs.map(([question, answer]) => <details key={question} className="group py-5"><summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-[14px] font-semibold text-[#17233b]"><span>{question}</span><ChevronDown className="h-4 w-4 shrink-0 text-[#8b929d] transition-transform group-open:rotate-180" /></summary><p className="mt-3 max-w-3xl pr-8 text-[12px] leading-6 text-[#737b87]">{answer}</p></details>)}
+        </div>
+      </div>
+    </section>
+
     <section className="bg-[#17233b] text-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-14 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10 lg:py-16">
-        <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e3a1a4]">Ready when you are</p><h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Bring one useful skill to the table.</h2><p className="mt-3 max-w-xl text-[13px] leading-6 text-[#c3c9d3]">Create your profile and find someone you can help — and someone who can help you.</p></div>
+        <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e3a1a4]">Ready when you are</p><h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Bring one useful skill to the table.</h2><p className="mt-3 max-w-xl text-[13px] leading-6 text-[#c3c9d3]">Create your profile, tell people what you know and discover someone who can help you move forward.</p></div>
         <Link to="/signup" className="inline-flex shrink-0 items-center gap-2 bg-white px-5 py-3 text-[13px] font-bold text-[#17233b] hover:bg-[#f2f3f1]">Create your profile <ArrowRight className="h-4 w-4" /></Link>
       </div>
     </section>
