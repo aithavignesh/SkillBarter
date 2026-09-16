@@ -52,16 +52,16 @@ const usageDefaults: MonetizationUsage = {
   lastBoostAt: null,
 };
 
-const read = <T,>(key: string, fallback: T): T => {
+const read = <T extends Record<string, unknown>>(key: string, fallback: T): T => {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? { ...fallback, ...JSON.parse(raw) } : { ...fallback };
+    return raw ? { ...fallback, ...(JSON.parse(raw) as Partial<T>) } : { ...fallback };
   } catch {
     return { ...fallback };
   }
 };
 
-const write = <T,>(key: string, value: T) => {
+const write = <T extends Record<string, unknown>>(key: string, value: T) => {
   localStorage.setItem(key, JSON.stringify(value));
 };
 
