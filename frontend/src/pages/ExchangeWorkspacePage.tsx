@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -8,286 +8,145 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { ExchangeReviewModal } from '../components/exchange/ExchangeReviewModal';
-import {
-  ArrowLeft,
-  Repeat,
-  CheckCircle2,
-  XCircle,
-  Calendar,
-  Clock,
-  MapPin,
-  Send,
-  ShieldCheck,
-  Star,
-  AlertTriangle
-} from 'lucide-react';
+import { ArrowLeft, Repeat, CheckCircle2, Send, Star, X, MessageSquare, Calendar, Clock, MapPin, ShieldCheck } from 'lucide-react';
 
 export const ExchangeWorkspacePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { currentUser } = useAuth();
   const { lastMessageEvent } = useSocket();
-  const navigate = useNavigate();
-
   const [exchange, setExchange] = useState<Exchange | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newTextMessage, setNewTextMessage] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [cancelModalOpen, setCancelModalOpen] = useState<boolean>(false);
-  const [cancelReason, setCancelReason] = useState<string>('');
-  const [reviewModalOpen, setReviewModalOpen] = useState<boolean>(false);
+  const [newTextMessage, setNewTextMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
-  const exchangeId = parseInt(id || '0', 10);
+  const exchangeId = Number(id || 0);
 
   const loadExchangeData = async () => {
     try {
       setLoading(true);
       const data = await api.getExchangeDetails(exchangeId);
       setExchange(data);
-
       const partnerId = currentUser?.id === data.requester_id ? data.receiver_id : data.requester_id;
-      const msgs = await api.getMessages(partnerId);
-      setMessages(msgs);
-    } catch (e: any) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+      setMessages(await api.getMessages(partnerId));
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    loadExchangeData();
-  }, [exchangeId, currentUser?.id]);
+  useEffect(() => { if (exchangeId) loadExchangeData(); }, [exchangeId, currentUser?.id]);
 
   useEffect(() => {
-    if (lastMessageEvent && lastMessageEvent.event === 'NEW_MESSAGE') {
-      const partnerId = currentUser?.id === exchange?.requester_id ? exchange?.receiver_id : exchange?.requester_id;
-      if (lastMessageEvent.data.sender_id === partnerId) {
-        setMessages((prev) => [...prev, lastMessageEvent.data]);
-      }
-    }
-  }, [lastMessageEvent]);
+    if (lastMessageEvent?.event !== 'NEW_MESSAGE' || !exchange) return;
+    const partnerId = currentUser?.id === exchange.requester_id ? exchange.receiver_id : exchange.requester_id;
+    if (Number(lastMessageEvent.data.sender_id) === Number(partnerId)) setMessages(prev => [...prev, lastMessageEvent.data]);
+  }, [lastMessageEvent, exchange, currentUser?.id]);
+
+  const isRequester = currentUser?.id === exchange?.requester_id;
+  const partner = exchange ? (isRequester ? exchange.receiver : exchange.requester) : null;
+  const myOffer = exchange ? (isRequester ? exchange.requester_skill_name : exchange.receiver_skill_name) : '';
+  const partnerOffer = exchange ? (isRequester ? exchange.receiver_skill_name : exchange.requester_skill_name) : '';
+  const myCompleted = exchange ? (isRequester ? exchange.requester_completed : exchange.receiver_completed) : false;
+  const partnerCompleted = exchange ? (isRequester ? exchange.receiver_completed : exchange.requester_completed) : false;
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTextMessage.trim() || !exchange) return;
-
-    const partnerId = currentUser?.id === exchange.requester_id ? exchange.receiver_id : exchange.requester_id;
+    if (!newTextMessage.trim() || !exchange || !partner) return;
     try {
-      const sent = await api.sendMessage({
-        receiver_id: partnerId,
-        content: newTextMessage.trim(),
-        exchange_id: exchange.id,
-      });
-      setMessages((prev) => [...prev, sent]);
+      const sent = await api.sendMessage({ receiver_id: partner.id, content: newTextMessage.trim(), exchange_id: exchange.id });
+      setMessages(prev => [...prev, sent]);
       setNewTextMessage('');
-    } catch (e: any) {
-      alert(e.message);
-    }
+    } catch (e: any) { alert(e?.message || 'Unable to send message'); }
   };
 
   const handleComplete = async () => {
+    if (!exchange) return;
     try {
-      const updated = await api.completeExchange(exchangeId);
+      const updated = await api.completeExchange(exchange.id);
       setExchange(updated);
-      if (updated.status === 'COMPLETED') {
-        setReviewModalOpen(true);
-      }
-    } catch (e: any) {
-      alert(e.message);
-    }
+      if (updated.status === 'COMPLETED' && updated.user_can_review) setReviewModalOpen(true);
+    } catch (e: any) { alert(e?.message || 'Unable to confirm completion'); }
   };
 
   const handleCancel = async () => {
-    if (!cancelReason.trim()) return;
+    if (!exchange || !cancelReason.trim()) return;
     try {
-      const updated = await api.cancelExchange(exchangeId, cancelReason.trim());
+      const updated = await api.cancelExchange(exchange.id, cancelReason.trim());
       setExchange(updated);
       setCancelModalOpen(false);
-    } catch (e: any) {
-      alert(e.message);
-    }
+      setCancelReason('');
+    } catch (e: any) { alert(e?.message || 'Unable to cancel exchange'); }
   };
 
-  if (loading || !exchange) {
-    return (
-      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-xs text-slate-400">
-        Loading exchange workspace...
-      </div>
-    );
-  }
+  if (loading) return <main className="min-h-screen bg-[#f7f7f5] px-6 py-16 text-center text-sm text-slate-400">Loading exchange workspace…</main>;
+  if (!exchange || !partner) return <main className="min-h-screen bg-[#f7f7f5] px-6 py-16 text-center"><p className="text-sm font-semibold text-[#17233b]">Exchange not found</p><Link to="/exchanges" className="mt-4 inline-block"><Button size="sm">Back to exchanges</Button></Link></main>;
 
-  const isRequester = currentUser?.id === exchange.requester_id;
-  const partner = isRequester ? exchange.receiver : exchange.requester;
-  const myOffer = isRequester ? exchange.requester_skill_name : exchange.receiver_skill_name;
-  const partnerOffer = isRequester ? exchange.receiver_skill_name : exchange.requester_skill_name;
-  const myCompleted = isRequester ? exchange.requester_completed : exchange.receiver_completed;
-  const partnerCompleted = isRequester ? exchange.receiver_completed : exchange.requester_completed;
+  const statusVariant: any = exchange.status === 'ACTIVE' ? 'emerald' : exchange.status === 'COMPLETED' ? 'emerald' : exchange.status === 'PENDING' ? 'amber' : 'slate';
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Back button & Status banner */}
-      <div className="flex items-center justify-between">
-        <Link to="/exchanges" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900">
-          <ArrowLeft className="w-4 h-4" /> Back to Exchanges
-        </Link>
-        <Badge variant={exchange.status === 'ACTIVE' || exchange.status === 'COMPLETED' ? 'emerald' : 'amber'} size="md">
-          {exchange.status}
-        </Badge>
+    <main className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+      <div className="mx-auto w-full max-w-[1320px]">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <Link to="/exchanges" className="inline-flex items-center gap-2 text-xs font-bold text-[#697386] hover:text-[#17233b]"><ArrowLeft className="h-4 w-4" /> Back to exchanges</Link>
+          <Badge variant={statusVariant} size="md">{exchange.status}</Badge>
+        </div>
+
+        <section className="border-b border-[#e1e4e8] pb-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#d31d24]">Exchange workspace</p>
+              <h1 className="text-2xl font-extrabold tracking-[-0.02em] text-[#17233b] sm:text-3xl">{myOffer || 'Skill exchange'} <span className="text-[#d31d24]">↔</span> {partnerOffer || 'Partner skill'}</h1>
+              <p className="mt-1.5 text-sm text-[#697386]">Coordinate the exchange, confirm delivery and keep the conversation in one place.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {exchange.status === 'ACTIVE' && !myCompleted && <Button size="sm" onClick={handleComplete} icon={<CheckCircle2 className="h-4 w-4" />}>Confirm completion</Button>}
+              {exchange.status === 'COMPLETED' && exchange.user_can_review && <Button size="sm" onClick={() => setReviewModalOpen(true)} icon={<Star className="h-4 w-4" />}>Leave review</Button>}
+              {['PENDING','ACTIVE'].includes(exchange.status) && <Button size="sm" variant="outline" onClick={() => setCancelModalOpen(true)} icon={<X className="h-4 w-4" />}>{exchange.status === 'PENDING' && isRequester ? 'Withdraw request' : 'Cancel exchange'}</Button>}
+            </div>
+          </div>
+        </section>
+
+        <div className="grid gap-5 pt-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-5">
+            <Card className="p-5">
+              <div className="flex items-start justify-between gap-4 border-b border-[#e1e4e8] pb-4">
+                <div className="flex items-center gap-3">
+                  <img src={partner.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'} alt={partner.full_name} className="h-12 w-12 rounded-full border border-[#e1e4e8] object-cover" />
+                  <div><h2 className="text-sm font-bold text-[#17233b]">{partner.full_name}</h2><p className="mt-0.5 text-xs text-[#697386]">{partner.headline || 'Community partner'}</p></div>
+                </div>
+                <span className="inline-flex items-center gap-1 border border-[#e1e4e8] bg-[#f7f8f7] px-2 py-1 text-[10px] font-bold text-[#697386]"><ShieldCheck className="h-3.5 w-3.5 text-[#d31d24]" /> {Math.round(partner.trust_score || 0)} Trust</span>
+              </div>
+              <div className="grid gap-3 pt-5 sm:grid-cols-3">
+                <div className="border border-[#e1e4e8] bg-[#f7f8f7] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">You provide</p><p className="mt-2 text-sm font-bold text-[#17233b]">{myOffer || 'Your skill'}</p></div>
+                <div className="flex items-center justify-center border border-[#e1e4e8] bg-white"><Repeat className="h-5 w-5 text-[#d31d24]" /></div>
+                <div className="border border-[#e1e4e8] bg-[#f7f8f7] p-4 sm:text-right"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Partner provides</p><p className="mt-2 text-sm font-bold text-[#17233b]">{partnerOffer || 'Partner skill'}</p></div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center gap-2 border border-[#e1e4e8] p-3 text-xs"><span className={`h-2.5 w-2.5 rounded-full ${myCompleted ? 'bg-[#d31d24]' : 'bg-slate-300'}`} /> You: {myCompleted ? 'completion confirmed' : 'awaiting confirmation'}</div>
+                <div className="flex items-center gap-2 border border-[#e1e4e8] p-3 text-xs"><span className={`h-2.5 w-2.5 rounded-full ${partnerCompleted ? 'bg-[#d31d24]' : 'bg-slate-300'}`} /> {partner.full_name}: {partnerCompleted ? 'completion confirmed' : 'awaiting confirmation'}</div>
+              </div>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <div className="flex items-center justify-between border-b border-[#e1e4e8] bg-[#f7f8f7] px-4 py-3"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-[#d31d24]" /><span className="text-xs font-bold text-[#17233b]">Conversation with {partner.full_name}</span></div><span className="text-[10px] text-slate-400">Exchange #{exchange.id}</span></div>
+              <div className="h-[390px] space-y-3 overflow-y-auto bg-white p-4">
+                {messages.length === 0 ? <div className="py-24 text-center text-xs text-slate-400">No messages yet. Start coordinating the exchange.</div> : messages.map(m => { const mine = Number(m.sender_id) === Number(currentUser?.id); return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[78%] px-3 py-2.5 text-xs ${mine ? 'bg-[#d31d24] text-white' : 'bg-[#f1f3f5] text-[#17233b]'}`}><p>{m.content}</p><span className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-slate-400'}`}>{new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>; })}
+              </div>
+              <form onSubmit={handleSendMessage} className="flex gap-2 border-t border-[#e1e4e8] bg-[#f7f8f7] p-3"><input value={newTextMessage} onChange={e => setNewTextMessage(e.target.value)} placeholder={`Message ${partner.full_name.split(' ')[0]}…`} className="h-10 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" /><Button type="submit" size="sm" icon={<Send className="h-3.5 w-3.5" />}>Send</Button></form>
+            </Card>
+          </div>
+
+          <aside className="space-y-5">
+            <Card className="p-5"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#d31d24]">Exchange details</p><div className="mt-4 space-y-3 text-xs"><div className="flex justify-between gap-4 border-b border-[#e1e4e8] pb-3"><span className="text-slate-400">Preferred date</span><span className="font-semibold text-[#17233b]">{exchange.preferred_date || 'Flexible'}</span></div><div className="flex justify-between gap-4 border-b border-[#e1e4e8] pb-3"><span className="flex items-center gap-1 text-slate-400"><Clock className="h-3.5 w-3.5" /> Duration</span><span className="font-semibold text-[#17233b]">~{exchange.estimated_hours || 2}h</span></div><div className="flex justify-between gap-4"><span className="flex items-center gap-1 text-slate-400"><MapPin className="h-3.5 w-3.5" /> Area</span><span className="font-semibold text-[#17233b]">{exchange.location_area || partner.address_display || 'Local'}</span></div></div></Card>
+            <Card className="p-5"><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#d31d24]">Proposal</p><p className="mt-3 text-sm leading-6 text-[#17233b]">“{exchange.proposal_message || 'Skill exchange proposal'}”</p></Card>
+          </aside>
+        </div>
       </div>
 
-      {/* Main Workspace Header Card */}
-      <Card className="p-6 border-slate-200/90 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <img
-              src={partner.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'}
-              alt={partner.full_name}
-              className="w-12 h-12 rounded-full object-cover border-2 border-emerald-400"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-slate-900">{partner.full_name}</h2>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  ★ {Math.round(partner.trust_score)} Trust
-                </span>
-              </div>
-              <p className="text-xs text-slate-500">{partner.headline || 'Community Partner'}</p>
-            </div>
-          </div>
+      {cancelModalOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-md border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">Cancel this exchange?</h3><p className="mt-1 text-xs text-[#697386]">The other participant will be notified.</p></div><button onClick={() => setCancelModalOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4" /></button></div><textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Reason for cancellation…" className="mt-4 min-h-24 w-full resize-none border border-[#d9dde2] p-3 text-xs outline-none focus:border-[#d31d24]" /><div className="mt-4 flex justify-end gap-2"><Button size="sm" variant="ghost" onClick={() => setCancelModalOpen(false)}>Keep exchange</Button><Button size="sm" onClick={handleCancel} disabled={!cancelReason.trim()}>Confirm cancellation</Button></div></div></div>}
 
-          <div className="flex items-center gap-2">
-            {exchange.status === 'ACTIVE' && !myCompleted && (
-              <Button size="sm" onClick={handleComplete} icon={<CheckCircle2 className="w-4 h-4" />}>
-                Confirm My Completion
-              </Button>
-            )}
-
-            {exchange.status === 'COMPLETED' && exchange.user_can_review && (
-              <Button size="sm" onClick={() => setReviewModalOpen(true)} icon={<Star className="w-4 h-4 text-amber-300 fill-amber-300" />}>
-                Leave Review
-              </Button>
-            )}
-
-            {['PENDING', 'ACCEPTED', 'ACTIVE'].includes(exchange.status) && (
-              <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50" onClick={() => setCancelModalOpen(true)}>
-                Cancel Barter
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* 2-Way Barter Flow Card */}
-        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center items-center">
-          <div className="text-left sm:text-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">You Provide</span>
-            <strong className="text-sm text-emerald-900 block mt-0.5">{myOffer || 'Web Development'}</strong>
-          </div>
-
-          <div className="flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-xs">
-              <Repeat className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div className="text-right sm:text-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Partner Provides</span>
-            <strong className="text-sm text-teal-900 block mt-0.5">{partnerOffer || 'Plumbing'}</strong>
-          </div>
-        </div>
-
-        {/* Mutual Protocol Status */}
-        <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl">
-          <h4 className="text-xs font-bold text-emerald-900 mb-2">Mutual Completion Protocol:</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white ${myCompleted ? 'bg-emerald-600' : 'bg-slate-300'}`}>
-                {myCompleted ? '✓' : '•'}
-              </div>
-              <span className={myCompleted ? 'font-bold text-emerald-900' : 'text-slate-600'}>
-                You: {myCompleted ? 'Delivery confirmed' : 'Awaiting confirmation'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white ${partnerCompleted ? 'bg-emerald-600' : 'bg-slate-300'}`}>
-                {partnerCompleted ? '✓' : '•'}
-              </div>
-              <span className={partnerCompleted ? 'font-bold text-emerald-900' : 'text-slate-600'}>
-                {partner.full_name}: {partnerCompleted ? 'Delivery confirmed' : 'Awaiting confirmation'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Embedded Live Chat Window */}
-      <Card className="overflow-hidden flex flex-col h-[500px]">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            <span className="text-xs font-bold text-slate-800">
-              Exchange Chat with {partner.full_name}
-            </span>
-          </div>
-          <span className="text-[11px] text-slate-400">Real-time WebSockets</span>
-        </div>
-
-        {/* Messages List */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-white">
-          {messages.length === 0 ? (
-            <div className="text-center py-16 text-xs text-slate-400">
-              No messages yet in this exchange. Say hello and coordinate your meetup!
-            </div>
-          ) : (
-            messages.map((m) => {
-              const isMe = m.sender_id === currentUser?.id;
-              return (
-                <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-xs sm:max-w-md p-3 rounded-2xl text-xs leading-relaxed ${
-                      isMe
-                        ? 'bg-emerald-600 text-white rounded-br-xs'
-                        : 'bg-slate-100 text-slate-800 rounded-bl-xs'
-                    }`}
-                  >
-                    <p>{m.content}</p>
-                    <span className={`text-[9px] mt-1 block ${isMe ? 'text-emerald-200' : 'text-slate-400'}`}>
-                      {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Input Form */}
-        <form onSubmit={handleSendMessage} className="p-3 bg-slate-50 border-t border-slate-200 flex gap-2">
-          <input
-            type="text"
-            placeholder={`Message ${partner.full_name.split(' ')[0]}...`}
-            value={newTextMessage}
-            onChange={(e) => setNewTextMessage(e.target.value)}
-            className="flex-1 text-xs px-3 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-          <Button type="submit" size="sm" icon={<Send className="w-4 h-4" />}>
-            Send
-          </Button>
-        </form>
-      </Card>
-
-      {/* Review Modal */}
-      {reviewModalOpen && (
-        <ExchangeReviewModal
-          isOpen={reviewModalOpen}
-          onClose={() => setReviewModalOpen(false)}
-          exchange={exchange}
-          onSuccess={() => {
-            alert('Review submitted! Community trust updated.');
-            loadExchangeData();
-          }}
-        />
-      )}
-    </div>
+      {reviewModalOpen && <ExchangeReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} exchange={exchange} onSuccess={() => { setReviewModalOpen(false); loadExchangeData(); }} />}
+    </main>
   );
 };
