@@ -1,277 +1,58 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Repeat,
-  ShieldCheck,
-  MapPin,
-  ArrowRight,
-  Sparkles,
-  Users,
-  CheckCircle2,
-  Lock,
-  Compass,
-  Star,
-  Zap
-} from 'lucide-react';
+import { ArrowRight, ArrowUpRight, CheckCircle2, Compass, Heart, MapPin, MessageCircle, Repeat, ShieldCheck, Sparkles, Star, UserPlus, Users, Zap } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
-export const LandingPage: React.FC = () => {
-  const barterExamples = [
-    {
-      personA: { name: 'Arjun', skill: 'Web Development', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', trust: 94 },
-      personB: { name: 'Ravi', skill: 'Plumbing & Repairs', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', trust: 94 },
-      distance: '1.8 km away',
-      saved: 'Zero Cash Spent'
-    },
-    {
-      personA: { name: 'Priya', skill: 'Portrait Photography', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80', trust: 96 },
-      personB: { name: 'Suresh', skill: 'Custom Carpentry', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80', trust: 92 },
-      distance: '3.1 km away',
-      saved: 'Zero Cash Spent'
-    },
-    {
-      personA: { name: 'Ananya', skill: 'UI / UX Design', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', trust: 91 },
-      personB: { name: 'Deepa', skill: 'Artisanal Sourdough Baking', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80', trust: 95 },
-      distance: '2.4 km away',
-      saved: 'Zero Cash Spent'
-    }
-  ];
+const journey = [
+  { number: '01', title: 'Build your profile', text: 'Show what you can teach, what you want to learn, and what you are working toward.' },
+  { number: '02', title: 'Discover people', text: 'Find relevant members through skills, interests, trust signals and recommendations.' },
+  { number: '03', title: 'Start a conversation', text: 'Connect, discuss goals and send a structured skill-exchange request.' },
+  { number: '04', title: 'Exchange skills', text: 'Chat, schedule the session, complete the exchange and keep everything organised.' },
+  { number: '05', title: 'Build reputation', text: 'Collect reviews, milestones and trust signals as your network grows.' },
+];
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
-        {/* Subtle background glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-100/60 rounded-full blur-3xl pointer-events-none" />
+const features = [
+  { icon: Users, title: 'Professional Networking', text: 'Build a useful network around the skills you offer and the skills you want to learn.' },
+  { icon: Sparkles, title: 'AI Skill Matching', text: 'Get clearer compatibility signals and discover people who complement your skills.' },
+  { icon: MessageCircle, title: 'Focused Conversations', text: 'Move naturally from discovery to conversation, request and scheduling.' },
+  { icon: ShieldCheck, title: 'Trust & Verification', text: 'Make better connections using profiles, reviews, verification and trust signals.' },
+  { icon: Repeat, title: 'Skill Exchange', text: 'Manage the journey from match to request, scheduled session and completion.' },
+  { icon: Zap, title: 'Learning Momentum', text: 'Track activity, milestones and learning progress while staying engaged.' },
+];
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            {/* Geofence / Zero-Cash pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-6 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Hyperlocal Community Barter • Zero Cash Exchanged</span>
-            </div>
+const people = [
+  { name: 'Ananya', role: 'UI/UX Designer', skill: 'Offers design • Wants React', score: '96%', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&auto=format&fit=crop&q=80' },
+  { name: 'Ravi', role: 'Full Stack Developer', skill: 'Offers React • Wants UI/UX', score: '94%', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&auto=format&fit=crop&q=80' },
+  { name: 'Priya', role: 'Data Analyst', skill: 'Offers Python • Wants ML', score: '91%', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=160&auto=format&fit=crop&q=80' },
+];
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15] mb-6">
-              Turn Your Skills Into Something <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Valuable.</span>
-            </h1>
-
-            <p className="text-base sm:text-lg text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Connect with verified neighbors nearby, exchange hands-on services and talents, and get things done without spending a single dollar. Governed by a community trust score.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto shadow-md" icon={<ArrowRight className="w-4 h-4" />}>
-                  Join Your Community
-                </Button>
-              </Link>
-              <Link to="/discover">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto" icon={<Compass className="w-4 h-4" />}>
-                  Explore Local Skills
-                </Button>
-              </Link>
-            </div>
-
-            <div className="mt-8 flex items-center justify-center gap-6 text-xs text-slate-500 font-medium">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> 100% Zero-Cash Policy
-              </span>
-              <span className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-emerald-600" /> Approximate Geo-Fencing
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-emerald-600" /> Algorithmic Trust Scores
-              </span>
-            </div>
+export const LandingPage: React.FC = () => (
+  <div className="min-h-screen bg-slate-50 text-slate-900 overflow-hidden">
+    <section className="relative bg-white">
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_32%),radial-gradient(circle_at_80%_15%,rgba(20,184,166,0.10),transparent_30%)]" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 md:pt-20 pb-14 md:pb-20 relative">
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-16 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700"><Sparkles className="w-3.5 h-3.5" /> Professional skill networking</div>
+            <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05]">Your skills can open doors. <span className="text-emerald-600">Meet the right people.</span></h1>
+            <p className="mt-6 max-w-xl text-base md:text-lg leading-8 text-slate-600">Discover people, exchange skills, learn together and build a trusted professional network in one connected experience.</p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3"><Link to="/signup"><Button size="lg" className="w-full sm:w-auto" icon={<ArrowRight className="w-4 h-4" />}>Create your profile</Button></Link><Link to="/discover"><Button size="lg" variant="outline" className="w-full sm:w-auto" icon={<Compass className="w-4 h-4" />}>Explore skills</Button></Link></div>
+            <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-semibold text-slate-500"><span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Trust-aware profiles</span><span className="inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-emerald-600" /> AI matching</span><span className="inline-flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5 text-emerald-600" /> Connected workflow</span></div>
           </div>
-
-          {/* Interactive Barter Exchange Showcase */}
-          <div className="mt-16 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-            {barterExamples.map((ex, i) => (
-              <Card key={i} hover className="p-5 relative overflow-hidden bg-white/90 backdrop-blur-sm">
-                <div className="flex items-center justify-between text-[11px] text-slate-500 mb-4 pb-3 border-b border-slate-100">
-                  <span className="flex items-center gap-1 font-semibold text-emerald-700">
-                    <MapPin className="w-3.5 h-3.5" /> {ex.distance}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">
-                    {ex.saved}
-                  </span>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Person A */}
-                  <div className="flex items-center gap-3">
-                    <img src={ex.personA.avatar} alt={ex.personA.name} className="w-9 h-9 rounded-full object-cover border border-slate-200" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-900">{ex.personA.name}</p>
-                      <p className="text-[11px] text-emerald-700 font-medium truncate">Offers: {ex.personA.skill}</p>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-600">★ {ex.personA.trust}</span>
-                  </div>
-
-                  {/* Barter Icon */}
-                  <div className="flex items-center justify-center">
-                    <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-xs">
-                      <Repeat className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-
-                  {/* Person B */}
-                  <div className="flex items-center gap-3">
-                    <img src={ex.personB.avatar} alt={ex.personB.name} className="w-9 h-9 rounded-full object-cover border border-slate-200" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-900">{ex.personB.name}</p>
-                      <p className="text-[11px] text-teal-700 font-medium truncate">Offers: {ex.personB.skill}</p>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-600">★ {ex.personB.trust}</span>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <div className="relative"><div className="absolute -inset-4 rounded-[2rem] bg-emerald-100/50 blur-2xl" /><Card className="relative p-4 sm:p-5 rounded-[1.5rem] shadow-[0_24px_70px_rgba(15,23,42,0.12)]"><div className="flex items-center justify-between pb-4 border-b border-slate-100"><div><p className="text-xs font-bold">Recommended for you</p><p className="text-[10px] text-slate-400 mt-0.5">Based on your skills and goals</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">AI powered</span></div><div className="space-y-3 mt-4">{people.map(person => <div key={person.name} className="group flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 hover:bg-white hover:border-emerald-200 transition-colors"><img src={person.avatar} alt="" className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm" /><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><p className="text-xs font-bold truncate">{person.name}</p><span className="text-[9px] font-bold text-emerald-700">{person.score} match</span></div><p className="text-[10px] text-slate-500">{person.role}</p><p className="text-[10px] text-emerald-700 font-medium truncate">{person.skill}</p></div><button className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-500 group-hover:text-emerald-600 group-hover:border-emerald-200 flex items-center justify-center"><UserPlus className="w-3.5 h-3.5" /></button></div>)}</div><div className="mt-4 rounded-2xl bg-slate-900 p-4 text-white"><div className="flex items-center justify-between"><div><p className="text-[10px] text-slate-400">Your next step</p><p className="text-sm font-bold mt-1">Complete your profile</p></div><span className="text-2xl font-black text-emerald-400">82%</span></div><div className="h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden"><div className="h-full w-[82%] bg-emerald-400 rounded-full" /></div></div></Card></div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 bg-white border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Simple 5-Step Process</span>
-            <h2 className="text-3xl font-extrabold text-slate-900 mt-1">How SkillBarter Works</h2>
-            <p className="text-sm text-slate-600 mt-2">
-              Trading physical and intellectual talents with nearby neighbors in minutes.
-            </p>
-          </div>
+    <section className="py-8 border-y border-slate-200 bg-slate-50/80"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-4">{[['10K+', 'skills discoverable'], ['4.9/5', 'community rating'], ['92%', 'average match signal'], ['24/7', 'connected learning']].map(([value, label]) => <div key={label} className="text-center md:text-left md:border-r last:border-r-0 border-slate-200 md:px-6 first:md:pl-0"><p className="text-xl font-black">{value}</p><p className="text-[10px] text-slate-500 mt-1">{label}</p></div>)}</div></section>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            {[
-              { step: '01', title: 'Create Profile', desc: 'Set your neighborhood location and list what you can offer and what you need.' },
-              { step: '02', title: 'Discover Nearby', desc: 'Browse geo-fenced neighbors within 2 to 25 km sorted by exact proximity.' },
-              { step: '03', title: 'Propose Barter', desc: 'Send a structured skill-for-skill barter proposal with preferred times.' },
-              { step: '04', title: 'Deliver & Chat', desc: 'Coordinate in real-time chat, meet locally, and mark completion mutually.' },
-              { step: '05', title: 'Earn Trust', desc: 'Rate reliability and skill delivery to increase your dynamic community score.' },
-            ].map((item, i) => (
-              <div key={i} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/70 relative">
-                <span className="text-2xl font-black text-emerald-600/40 mb-2 block font-mono">{item.step}</span>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">{item.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+    <section className="py-16 md:py-20 bg-white"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="max-w-2xl mb-10"><span className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-600">One connected journey</span><h2 className="text-3xl md:text-4xl font-black mt-2 tracking-tight">From discovery to a completed exchange.</h2><p className="text-sm text-slate-500 mt-3 leading-6">Every major action connects naturally so users always know what to do next.</p></div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">{journey.map(item => <Card key={item.number} hover className="p-5"><span className="text-3xl font-black text-emerald-600/20">{item.number}</span><h3 className="text-sm font-bold mt-3">{item.title}</h3><p className="text-[11px] leading-5 text-slate-500 mt-2">{item.text}</p><ArrowUpRight className="w-4 h-4 text-emerald-600 mt-4" /></Card>)}</div></div></section>
 
-      {/* Why SkillBarter / Core Differentiation */}
-      <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Pure Peer-to-Peer</span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-1 mb-4 leading-tight">
-                Why Pay For Services When You Can Exchange What You Know?
-              </h2>
-              <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-                LinkedIn connects you to recruiters for corporate jobs. SkillBarter connects you to the plumber down the street who wants a simple website, or the neighbor who bakes bread and needs their bicycle gears tuned.
-              </p>
+    <section className="py-16 md:py-20 bg-slate-50"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10"><div><span className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-600">Built around people</span><h2 className="text-3xl font-black mt-2">Everything you need to grow through skills.</h2></div><p className="max-w-md text-xs leading-5 text-slate-500">A professional experience that combines networking, learning and real skill exchanges.</p></div><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{features.map(feature => { const Icon = feature.icon; return <Card key={feature.title} hover className="p-5"><div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><Icon className="w-5 h-5" /></div><h3 className="text-sm font-bold mt-4">{feature.title}</h3><p className="text-xs leading-5 text-slate-500 mt-2">{feature.text}</p><div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-emerald-700">Explore <ArrowRight className="w-3 h-3" /></div></Card>; })}</div></div></section>
 
-              <div className="space-y-3.5">
-                {[
-                  { title: 'Zero Cash, Zero Fees', desc: 'No transaction cuts, subscription gates, or cash payments. Pure reciprocity.' },
-                  { title: 'Hyperlocal Geofenced Radius', desc: 'Filter trades within walking or short driving distance for real-world convenience.' },
-                  { title: 'Algorithmic Trust Score', desc: 'Built-in 0–100 reputation calculated from completion reliability and reviews.' },
-                  { title: 'Safe & Moderated', desc: 'Community safety tools including instant reporting, blocking, and admin oversight.' },
-                ].map((point, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900">{point.title}</h4>
-                      <p className="text-xs text-slate-500">{point.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+    <section className="py-16 md:py-20 bg-white"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8 items-stretch"><Card className="p-7 md:p-9 bg-slate-900 text-white border-slate-800 overflow-hidden relative"><div className="absolute -right-20 -top-20 w-48 h-48 rounded-full bg-emerald-500/20 blur-2xl" /><div className="relative"><span className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-400">Why it works</span><h2 className="text-3xl font-black mt-3 leading-tight">A network that is useful, not just social.</h2><p className="text-sm text-slate-300 mt-4 leading-6">Every profile, connection and conversation is tied back to a real learning goal or skill you can exchange.</p><div className="space-y-3 mt-7">{['Discover complementary skills', 'See trust and compatibility signals', 'Move from chat to an actual exchange', 'Build reputation through completed activity'].map(text => <div key={text} className="flex gap-2 text-xs text-slate-200"><CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />{text}</div>)}</div></div></Card><div className="grid grid-cols-2 gap-3"><Card className="p-5"><MapPin className="w-5 h-5 text-emerald-600" /><p className="text-xl font-black mt-5">Nearby</p><p className="text-[11px] text-slate-500 mt-1">Find relevant people around your preferred location.</p></Card><Card className="p-5"><Star className="w-5 h-5 text-amber-500" /><p className="text-xl font-black mt-5">Trusted</p><p className="text-[11px] text-slate-500 mt-1">Use reviews, activity and verification to make informed connections.</p></Card><Card className="p-5"><Heart className="w-5 h-5 text-rose-500" /><p className="text-xl font-black mt-5">Engaging</p><p className="text-[11px] text-slate-500 mt-1">Milestones and recommendations keep learning moving.</p></Card><Card className="p-5"><Zap className="w-5 h-5 text-emerald-600" /><p className="text-xl font-black mt-5">Actionable</p><p className="text-[11px] text-slate-500 mt-1">Turn a recommendation into a conversation and an exchange.</p></Card></div></div></section>
 
-            {/* Visual reputation card */}
-            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl relative">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Arjun Sharma</h3>
-                  <p className="text-xs text-slate-500">Web Developer & Photographer • Hitech City</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-black text-emerald-600 font-mono">94</span>
-                  <span className="text-xs text-slate-400">/100</span>
-                  <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">High Trust</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs mb-6">
-                <div>
-                  <div className="flex justify-between font-semibold text-slate-700 mb-1">
-                    <span>Completion Reliability</span>
-                    <span>95%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: '95%' }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between font-semibold text-slate-700 mb-1">
-                    <span>Skill Delivery Quality</span>
-                    <span>94%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-teal-500 h-full rounded-full" style={{ width: '94%' }} />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between font-semibold text-slate-700 mb-1">
-                    <span>Response Rate</span>
-                    <span>98%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-emerald-600 h-full rounded-full" style={{ width: '98%' }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 pt-4 border-t border-slate-100">
-                <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200">
-                  ✓ Verified Member
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
-                  ★ Reliable Exchanger
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-sky-50 text-sky-800 text-[11px] font-semibold border border-sky-200">
-                  🏆 Top Contributor
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-emerald-900 text-white relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 tracking-tight">
-            Your Neighborhood Has Skills. Start Connecting Today.
-          </h2>
-          <p className="text-emerald-100/90 text-sm sm:text-base mb-8 max-w-xl mx-auto">
-            Trade plumbing for web design, photography for carpentry, and build lasting neighborhood trust without spending a rupee.
-          </p>
-          <Link to="/signup">
-            <Button size="lg" className="bg-white text-emerald-900 hover:bg-emerald-50 shadow-xl" icon={<Repeat className="w-4 h-4" />}>
-              Create Your Skill Profile
-            </Button>
-          </Link>
-        </div>
-      </section>
-    </div>
-  );
-};
+    <section className="px-4 sm:px-6 lg:px-8 pb-14"><div className="max-w-7xl mx-auto rounded-[2rem] bg-emerald-700 px-6 py-12 md:px-12 md:py-14 text-white relative overflow-hidden"><div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.14),transparent_30%)]" /><div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-7"><div><span className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-100">Start your journey</span><h2 className="text-3xl md:text-4xl font-black mt-2">Turn one skill into your next opportunity.</h2><p className="text-sm text-emerald-50/90 mt-3 max-w-xl">Create your profile, discover the right people and start exchanging knowledge.</p></div><Link to="/signup"><Button size="lg" className="bg-white text-emerald-800 hover:bg-emerald-50 shrink-0" icon={<ArrowRight className="w-4 h-4" />}>Get started</Button></Link></div></div></section>
+  </div>
+);
