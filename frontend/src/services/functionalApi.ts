@@ -42,7 +42,10 @@ class FunctionalApi {
     if (result.error) fail(result.error, 'Unable to load members');
     const lat0 = Number(me.latitude ?? 17.4485), lon0 = Number(me.longitude ?? 78.3748);
     const rad = (v:number) => v * Math.PI / 180;
-    const distance = (lat:number, lon:number) => { const a = Math.sin(rad(lat-lat0)/2)**2 + Math.cos(rad(lat0))*Math.cos(rad(lat))/1*Math.sin(rad(lon-lon0)/2)**2; return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); };
+    const distance = (lat:number, lon:number) => {
+      const a = Math.sin(rad(lat - lat0) / 2) ** 2 + Math.cos(rad(lat0)) * Math.cos(rad(lat)) * Math.sin(rad(lon - lon0) / 2) ** 2;
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
+    };
     const rows:any[] = [];
     for (const u of result.data || []) {
       if (Number(u.id) === Number(me.id)) continue;
@@ -96,21 +99,31 @@ class FunctionalApi {
   }
 
   async getExchanges() {
-    const me=await this.appUser(); const r=await insforge.database.from('exchanges').select('*').or(`requester_id.eq.${me.id},receiver_id.eq.${me.id}`).order('created_at',{ascending:false}); if(r.error)fail(r.error,'Unable to load exchanges');
-    return Promise.all((r.data||[]).map(async(e:any)=>{const [a,b]=await Promise.all([insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score').eq('id',e.requester_id).maybeSingle(),insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score').eq('id',e.receiver_id).maybeSingle()]); return {...e,requester:a.data,receiver:b.data,requester_skill_name:'Skill exchange',receiver_skill_name:'Skill exchange'};}));
+    const me=await this.appUser();
+    const r=await insforge.database.from('exchanges').select('*').or(`requester_id.eq.${me.id},receiver_id.eq.${me.id}`).order('created_at',{ascending:false});
+    if(r.error)fail(r.error,'Unable to load exchanges');
+    return Promise.all((r.data||[]).map(async(e:any)=>{
+      const [a,b,requesterSkill,receiverSkill]=await Promise.all([
+        insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score').eq('id',e.requester_id).maybeSingle(),
+        insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score').eq('id',e.receiver_id).maybeSingle(),
+        e.requester_skill_id ? insforge.database.from('skills').select('name').eq('id',e.requester_skill_id).maybeSingle() : Promise.resolve({data:null,error:null}),
+        e.receiver_skill_id ? insforge.database.from('skills').select('name').eq('id',e.receiver_skill_id).maybeSingle() : Promise.resolve({data:null,error:null}),
+      ]);
+      return {...e,requester:a.data,receiver:b.data,requester_skill_name:requesterSkill.data?.name || 'Skill exchange',receiver_skill_name:receiverSkill.data?.name || 'Skill exchange'};
+    }));
   }
 
-  async acceptExchange(id:number){const me=await this.appUser();const e=await insforge.database.from('exchanges').select('*').eq('id',id).maybeSingle();if(e.error||!e.data)fail(e.error,'Exchange not found');if(Number(e.data.receiver_id)!==Number(me.id))throw new Error('Only the recipient can accept this request.');const r=await insforge.database.from('exchanges').update({status:'ACTIVE',updated_at:new Date().toISOString()}).eq('id',id).select('*').single();if(r.error)fail(r.error,'Unable to accept exchange');return r.data;}
-  async completeExchange(id:number){const me=await this.appUser();const e=await insforge.database.from('exchanges').select('*').eq('id',id).maybeSingle();if(e.error||!e.data)fail(e.error,'Exchange not found');const uid=Number(me.id);if(uid!==Number(e.data.requester_id)&&uid!==Number(e.data.receiver_id))throw new Error('Not authorized.');const patch=uid===Number(e.data.requester_id)?{requester_completed:true}:{receiver_completed:true};const both=uid===Number(e.data.requester_id)?e.data.receiver_completed:e.data.requester_completed;if(both)(patch as any).status='COMPLETED';const r=await insforge.database.from('exchanges').update({...patch,updated_at:new Date().toISOString()}).eq('id',id).select('*').single();if(r.error)fail(r.error,'Unable to complete exchange');return r.data;}
+  async acceptExchange(id:number){const me=await this.appUser();const e=await insforge.database.from('exchanges').select('*').eq('id',id).maybeSingle();if(e.error||!e.data)fail(e.error,'Exchange not found');if(Number(e.data.receiver_id)!==Number(me.id))throw new Error('Only the recipient can accept this request.');if(e.data.status!=='PENDING')throw new Error(`This exchange is already ${String(e.data.status).toLowerCase()}.`);const r=await insforge.database.from('exchanges').update({status:'ACTIVE',updated_at:new Date().toISOString()}).eq('id',id).select('*').single();if(r.error)fail(r.error,'Unable to accept exchange');return r.data;}
+  async completeExchange(id:number){const me=await this.appUser();const e=await insforge.database.from('exchanges').select('*').eq('id',id).maybeSingle();if(e.error||!e.data)fail(e.error,'Exchange not found');const uid=Number(me.id);if(uid!==Number(e.data.requester_id)&&uid!==Number(e.data.receiver_id))throw new Error('Not authorized.');if(e.data.status!=='ACTIVE')throw new Error('Only active exchanges can be completed.');const patch=uid===Number(e.data.requester_id)?{requester_completed:true}:{receiver_completed:true};const both=uid===Number(e.data.requester_id)?e.data.receiver_completed:e.data.requester_completed;if(both)(patch as any).status='COMPLETED';const r=await insforge.database.from('exchanges').update({...patch,updated_at:new Date().toISOString()}).eq('id',id).select('*').single();if(r.error)fail(r.error,'Unable to complete exchange');return r.data;}
 
   async getNotifications(){const me=await this.appUser();const r=await insforge.database.from('notifications').select('*').eq('user_id',me.id).order('created_at',{ascending:false}).limit(50);if(r.error)fail(r.error,'Unable to load notifications');return r.data||[];}
   async markNotificationRead(id:number){const me=await this.appUser();const r=await insforge.database.from('notifications').update({is_read:true}).eq('id',id).eq('user_id',me.id).select('*').single();if(r.error)fail(r.error,'Unable to mark notification');return r.data;}
   async markAllNotificationsRead(){const me=await this.appUser();const r=await insforge.database.from('notifications').update({is_read:true}).eq('user_id',me.id).eq('is_read',false);if(r.error)fail(r.error,'Unable to update notifications');return true;}
 
-  async sendMessage(payload:any){const me=await this.appUser();const r=await insforge.database.from('messages').insert({sender_id:me.id,receiver_id:Number(payload.receiver_id),content:String(payload.content).trim(),exchange_id:payload.exchange_id||null}).select('*').single();if(r.error)fail(r.error,'Unable to send message');await insforge.database.from('notifications').insert({user_id:Number(payload.receiver_id),type:'MESSAGE',title:'New message',message:`${me.full_name} sent you a message.`,link:`/messages/${me.id}`});return r.data;}
+  async sendMessage(payload:any){const me=await this.appUser();const receiverId=Number(payload.receiver_id);const content=String(payload.content||'').trim();if(!receiverId||receiverId===Number(me.id))throw new Error('Choose a valid recipient.');if(!content)throw new Error('Message cannot be empty.');const r=await insforge.database.from('messages').insert({sender_id:me.id,receiver_id:receiverId,content,exchange_id:payload.exchange_id||null}).select('*').single();if(r.error)fail(r.error,'Unable to send message');await insforge.database.from('notifications').insert({user_id:receiverId,type:'MESSAGE',title:'New message',message:`${me.full_name} sent you a message.`,link:`/messages/${me.id}`});return r.data;}
 
   async getFeed(){const r=await insforge.database.from('posts').select('*').order('created_at',{ascending:false}).limit(50);if(r.error)fail(r.error,'Unable to load feed');return r.data||[];}
-  async createPost(payload:any){const me=await this.appUser();const r=await insforge.database.from('posts').insert({author_id:me.id,post_type:payload.post_type||'COMMUNITY',title:payload.title,content:payload.content,likes_count:0}).select('*').single();if(r.error)fail(r.error,'Unable to publish post');return r.data;}
+  async createPost(payload:any){const me=await this.appUser();const title=String(payload.title||'').trim();const content=String(payload.content||'').trim();if(!content)throw new Error('Post content cannot be empty.');const r=await insforge.database.from('posts').insert({author_id:me.id,post_type:payload.post_type||'COMMUNITY',title:title||null,content,likes_count:0}).select('*').single();if(r.error)fail(r.error,'Unable to publish post');return r.data;}
   async likePost(id:number){const r=await insforge.database.from('posts').select('likes_count').eq('id',id).maybeSingle();if(r.error||!r.data)fail(r.error,'Post not found');const u=await insforge.database.from('posts').update({likes_count:Number(r.data.likes_count||0)+1}).eq('id',id).select('likes_count').single();if(u.error)fail(u.error,'Unable to save like');return u.data;}
 }
 export const functionalApi = new FunctionalApi();
