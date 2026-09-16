@@ -16,6 +16,10 @@
   .reference-accent { color: #d31d24; }
   .reference-link { color: #d31d24; text-decoration: none; font-weight: 600; }
   .reference-link:hover { color: #b8171d; }
+  .portal-card { background: #fff; border: 1px solid #e1e4e8; border-radius: 12px; box-shadow: 0 2px 10px rgba(23,35,59,.035); }
+  .portal-card:hover { border-color: #d5d9de; box-shadow: 0 6px 18px rgba(23,35,59,.06); }
+  .portal-card-header { border-bottom: 1px solid #edf0f2; }
+  .portal-section-label { color: #d31d24; font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 }
 
 .ricoz-theme {
@@ -80,6 +84,22 @@
 .ricoz-theme .rounded-3xl { border-radius: 16px !important; }
 .ricoz-theme .shadow-lg { box-shadow: 0 8px 24px rgba(23,35,59,.08) !important; }
 .ricoz-theme .shadow-xl, .ricoz-theme .shadow-2xl { box-shadow: 0 12px 32px rgba(23,35,59,.10) !important; }
+
+/* Inner portal cards: consistent Ricoz-style white surfaces, fine borders and restrained depth. */
+.ricoz-theme main .bg-white.border,
+.ricoz-theme main .border.bg-white,
+.ricoz-theme main .bg-white[class*="border-"] {
+  border-color: #e1e4e8 !important;
+  box-shadow: 0 2px 10px rgba(23,35,59,.035);
+}
+.ricoz-theme main .bg-white.border:hover,
+.ricoz-theme main .border.bg-white:hover,
+.ricoz-theme main .bg-white[class*="border-"]:hover {
+  border-color: #d5d9de !important;
+  box-shadow: 0 6px 18px rgba(23,35,59,.055);
+}
+.ricoz-theme main [class*="divide-"] > * + * { border-color: #edf0f2 !important; }
+.ricoz-theme main .bg-white .text-slate-900 { color: #17233b !important; }
 
 header.sticky.top-0.z-30 {
   background: rgba(255,255,255,.98) !important;
