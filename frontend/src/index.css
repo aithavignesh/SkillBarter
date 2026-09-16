@@ -3,8 +3,35 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    background: #0d1016;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 antialiased min-h-screen font-sans selection:bg-brand-100 selection:text-brand-900;
+    @apply min-h-screen font-sans antialiased text-slate-100 selection:bg-violet-500/30 selection:text-violet-100;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.10), transparent 28%),
+      radial-gradient(circle at 88% 8%, rgba(167, 139, 250, 0.07), transparent 24%),
+      #0d1016;
+  }
+
+  ::selection {
+    background: rgba(139, 92, 246, 0.32);
+  }
+}
+
+/* Reference-inspired surface utility */
+@layer components {
+  .reference-surface {
+    @apply border border-white/[0.07] bg-[#171b24] shadow-card;
+  }
+
+  .reference-muted {
+    @apply text-slate-400;
+  }
+
+  .reference-accent {
+    @apply text-violet-300;
   }
 }
 
@@ -19,10 +46,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #343b48;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #4b5565;
 }
