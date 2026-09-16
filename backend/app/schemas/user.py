@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional, List, Any
+from typing import Optional, List
 import datetime
 from app.schemas.skill import UserSkillOut
 
@@ -43,6 +43,21 @@ class UserOut(UserBase):
     completed_exchanges_count: int
     reviews_count: int
     badges: List[str] = []
+    premium: bool = False
+    premium_until: Optional[datetime.datetime] = None
+    verified: bool = False
+    verification_requested_at: Optional[datetime.datetime] = None
+    featured_until: Optional[datetime.datetime] = None
+    priority_matching: bool = False
+    credits: int = 100
+    workshops_enabled: bool = False
+    corporate_interest: bool = False
+    sponsored_enabled: bool = False
+    lead_generation_enabled: bool = False
+    priority_matches_used: int = 0
+    priority_matches_date: Optional[str] = None
+    boosts_used: int = 0
+    last_boost_at: Optional[datetime.datetime] = None
     is_active: bool
     is_admin: bool
     onboarding_completed: bool
@@ -65,6 +80,9 @@ class UserPublicProfile(BaseModel):
     completed_exchanges_count: int
     reviews_count: int
     badges: List[str] = []
+    verified: bool = False
+    featured_until: Optional[datetime.datetime] = None
+    premium: bool = False
     skills_offered: List[str] = []
     skills_needed: List[str] = []
     skills_detail: List[UserSkillOut] = []
@@ -78,11 +96,14 @@ class UserNearbyOut(BaseModel):
     headline: Optional[str] = None
     address_display: Optional[str] = None
     distance_km: float
-    distance_display: str # e.g. "1.8 km away"
+    distance_display: str
     trust_score: float
     reliability_score: float
     completed_exchanges_count: int
     badges: List[str] = []
+    verified: bool = False
+    featured_until: Optional[datetime.datetime] = None
+    premium: bool = False
     skills_offered: List[str] = []
     skills_needed: List[str] = []
     availability: Optional[str] = None
