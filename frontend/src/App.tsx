@@ -56,7 +56,7 @@ const AppContent: React.FC = () => {
   const { currentUser } = useAuth();
   const location = useLocation();
   const isChat = location.pathname.startsWith('/messages') || location.pathname.includes('/exchanges/');
-  return <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900"><Navbar /><main className="flex-1 pb-16 md:pb-0"><Routes>
+  return <div className="ricoz-theme min-h-screen flex flex-col bg-slate-50 text-slate-900"><Navbar /><main className="flex-1 pb-16 md:pb-0"><Routes>
     <Route path="/" element={currentUser ? <Navigate to="/feed" replace /> : <LandingPage />} />
     <Route path="/login" element={<LoginPage />} /><Route path="/signup" element={<SignupPage />} /><Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
     <Route path="/feed" element={<ProtectedRoute><FeedPage /></ProtectedRoute>} /><Route path="/discover" element={<ProtectedRoute><DiscoverPage /></ProtectedRoute>} /><Route path="/matches" element={<ProtectedRoute><SkillMatchesPage /></ProtectedRoute>} /><Route path="/exchanges" element={<ProtectedRoute><ExchangesPage /></ProtectedRoute>} /><Route path="/exchanges/:id" element={<ProtectedRoute><ExchangeIntegratedRoute /></ProtectedRoute>} />
