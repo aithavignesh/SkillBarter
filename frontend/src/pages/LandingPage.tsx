@@ -1,58 +1,78 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, CheckCircle2, Compass, Heart, MapPin, MessageCircle, Repeat, ShieldCheck, Sparkles, Star, UserPlus, Users, Zap } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { ArrowRight, ArrowUpRight, Check, Compass, MessageCircle, Repeat, ShieldCheck, Sparkles, Users, MapPin } from 'lucide-react';
 
-const journey = [
-  { number: '01', title: 'Build your profile', text: 'Show what you can teach, what you want to learn, and what you are working toward.' },
-  { number: '02', title: 'Discover people', text: 'Find relevant members through skills, interests, trust signals and recommendations.' },
-  { number: '03', title: 'Start a conversation', text: 'Connect, discuss goals and send a structured skill-exchange request.' },
-  { number: '04', title: 'Exchange skills', text: 'Chat, schedule the session, complete the exchange and keep everything organised.' },
-  { number: '05', title: 'Build reputation', text: 'Collect reviews, milestones and trust signals as your network grows.' },
+const steps = [
+  ['01', 'Tell us what you know', 'Add the skills you can teach and the skills you want to learn.'],
+  ['02', 'Find the right person', 'Discover people by skill, interests, location and trust signals.'],
+  ['03', 'Make an exchange', 'Talk, agree on the session and exchange knowledge without cash.'],
 ];
 
 const features = [
-  { icon: Users, title: 'Professional Networking', text: 'Build a useful network around the skills you offer and the skills you want to learn.' },
-  { icon: Sparkles, title: 'AI Skill Matching', text: 'Get clearer compatibility signals and discover people who complement your skills.' },
-  { icon: MessageCircle, title: 'Focused Conversations', text: 'Move naturally from discovery to conversation, request and scheduling.' },
-  { icon: ShieldCheck, title: 'Trust & Verification', text: 'Make better connections using profiles, reviews, verification and trust signals.' },
-  { icon: Repeat, title: 'Skill Exchange', text: 'Manage the journey from match to request, scheduled session and completion.' },
-  { icon: Zap, title: 'Learning Momentum', text: 'Track activity, milestones and learning progress while staying engaged.' },
-];
-
-const people = [
-  { name: 'Ananya', role: 'UI/UX Designer', skill: 'Offers design • Wants React', score: '96%', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&auto=format&fit=crop&q=80' },
-  { name: 'Ravi', role: 'Full Stack Developer', skill: 'Offers React • Wants UI/UX', score: '94%', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&auto=format&fit=crop&q=80' },
-  { name: 'Priya', role: 'Data Analyst', skill: 'Offers Python • Wants ML', score: '91%', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=160&auto=format&fit=crop&q=80' },
+  { icon: Compass, title: 'Discover locally', text: 'Search for people and skills that are relevant to you.' },
+  { icon: Sparkles, title: 'Smart matching', text: 'Use compatibility signals to surface useful skill exchanges.' },
+  { icon: MessageCircle, title: 'Keep it practical', text: 'Move from a match to a real conversation and scheduled exchange.' },
+  { icon: ShieldCheck, title: 'Build trust', text: 'Profiles, reviews and verification help members choose confidently.' },
 ];
 
 export const LandingPage: React.FC = () => (
-  <div className="min-h-screen bg-slate-50 text-slate-900 overflow-hidden">
-    <section className="relative bg-white">
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_32%),radial-gradient(circle_at_80%_15%,rgba(20,184,166,0.10),transparent_30%)]" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 md:pt-20 pb-14 md:pb-20 relative">
-        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-16 items-center">
+  <main className="min-h-screen bg-[#f7f7f5] text-[#17233b]">
+    <section className="border-b border-[#dedfdd] bg-[#f7f7f5]">
+      <div className="mx-auto max-w-7xl px-5 pb-16 pt-12 sm:px-8 lg:px-10 lg:pb-24 lg:pt-16">
+        <div className="grid items-end gap-12 lg:grid-cols-[1.08fr_.92fr] lg:gap-20">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700"><Sparkles className="w-3.5 h-3.5" /> Professional skill networking</div>
-            <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05]">Your skills can open doors. <span className="text-emerald-600">Meet the right people.</span></h1>
-            <p className="mt-6 max-w-xl text-base md:text-lg leading-8 text-slate-600">Discover people, exchange skills, learn together and build a trusted professional network in one connected experience.</p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-3"><Link to="/signup"><Button size="lg" className="w-full sm:w-auto" icon={<ArrowRight className="w-4 h-4" />}>Create your profile</Button></Link><Link to="/discover"><Button size="lg" variant="outline" className="w-full sm:w-auto" icon={<Compass className="w-4 h-4" />}>Explore skills</Button></Link></div>
-            <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-semibold text-slate-500"><span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Trust-aware profiles</span><span className="inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-emerald-600" /> AI matching</span><span className="inline-flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5 text-emerald-600" /> Connected workflow</span></div>
+            <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]"><span className="h-px w-8 bg-[#d31d24]" />Community skill exchange</div>
+            <h1 className="mt-7 max-w-4xl text-[clamp(3rem,7vw,6.8rem)] font-semibold leading-[0.92] tracking-[-0.065em] text-[#17233b]">Trade skills.<br /><span className="text-[#d31d24]">Build people.</span></h1>
+            <p className="mt-8 max-w-xl text-[16px] leading-7 text-[#5d6675] sm:text-[18px]">SkillBarter connects people who can teach what you need with people who want to learn what you know — without making money the starting point.</p>
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <Link to="/signup" className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Start exchanging <ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/discover" className="inline-flex items-center gap-2 border border-[#cfd2d1] bg-transparent px-5 py-3 text-[13px] font-bold text-[#17233b] hover:border-[#17233b]">Explore skills <Compass className="h-4 w-4" /></Link>
+            </div>
+            <div className="mt-10 flex flex-wrap gap-x-7 gap-y-2 text-[11px] font-medium text-[#7a8290]">
+              <span className="inline-flex items-center gap-2"><Users className="h-3.5 w-3.5" /> People first</span>
+              <span className="inline-flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> Local discovery</span>
+              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5" /> Trust-aware</span>
+            </div>
           </div>
-          <div className="relative"><div className="absolute -inset-4 rounded-[2rem] bg-emerald-100/50 blur-2xl" /><Card className="relative p-4 sm:p-5 rounded-[1.5rem] shadow-[0_24px_70px_rgba(15,23,42,0.12)]"><div className="flex items-center justify-between pb-4 border-b border-slate-100"><div><p className="text-xs font-bold">Recommended for you</p><p className="text-[10px] text-slate-400 mt-0.5">Based on your skills and goals</p></div><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">AI powered</span></div><div className="space-y-3 mt-4">{people.map(person => <div key={person.name} className="group flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 hover:bg-white hover:border-emerald-200 transition-colors"><img src={person.avatar} alt="" className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm" /><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><p className="text-xs font-bold truncate">{person.name}</p><span className="text-[9px] font-bold text-emerald-700">{person.score} match</span></div><p className="text-[10px] text-slate-500">{person.role}</p><p className="text-[10px] text-emerald-700 font-medium truncate">{person.skill}</p></div><button className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-500 group-hover:text-emerald-600 group-hover:border-emerald-200 flex items-center justify-center"><UserPlus className="w-3.5 h-3.5" /></button></div>)}</div><div className="mt-4 rounded-2xl bg-slate-900 p-4 text-white"><div className="flex items-center justify-between"><div><p className="text-[10px] text-slate-400">Your next step</p><p className="text-sm font-bold mt-1">Complete your profile</p></div><span className="text-2xl font-black text-emerald-400">82%</span></div><div className="h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden"><div className="h-full w-[82%] bg-emerald-400 rounded-full" /></div></div></Card></div>
+
+          <div className="lg:pb-2">
+            <div className="border border-[#d9dbd9] bg-white">
+              <div className="flex items-center justify-between border-b border-[#e8e9e7] px-5 py-4">
+                <div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a9099]">A typical exchange</p><p className="mt-1 text-[15px] font-semibold text-[#17233b]">One person teaches. One person learns.</p></div>
+                <span className="text-[10px] font-bold text-[#d31d24]">SKILLBARter</span>
+              </div>
+              <div className="divide-y divide-[#ececea]">
+                <div className="flex gap-4 p-5 sm:p-6"><div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#f1f2f0] text-[#17233b]"><Users className="h-4 w-4" /></div><div><p className="text-[12px] font-bold text-[#17233b]">A designer wants to learn React</p><p className="mt-1 text-[12px] leading-5 text-[#6d7582]">They can offer UI/UX feedback and portfolio reviews in return.</p></div></div>
+                <div className="flex items-center gap-3 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9aa0a8]"><span className="h-px flex-1 bg-[#e4e5e3]" /><Repeat className="h-4 w-4 text-[#d31d24]" /><span className="h-px flex-1 bg-[#e4e5e3]" /></div>
+                <div className="flex gap-4 p-5 sm:p-6"><div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#fff0f0] text-[#d31d24]"><Sparkles className="h-4 w-4" /></div><div><p className="text-[12px] font-bold text-[#17233b]">A developer wants design feedback</p><p className="mt-1 text-[12px] leading-5 text-[#6d7582]">SkillBarter helps them discover the match, start a conversation and plan the exchange.</p></div></div>
+              </div>
+              <div className="border-t border-[#e8e9e7] bg-[#fafaf8] px-5 py-4"><div className="flex items-center justify-between"><span className="text-[11px] text-[#7a8290]">No cash required to start</span><span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#17233b]"><Check className="h-3.5 w-3.5 text-[#d31d24]" /> Mutual value</span></div></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section className="py-8 border-y border-slate-200 bg-slate-50/80"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-4">{[['10K+', 'skills discoverable'], ['4.9/5', 'community rating'], ['92%', 'average match signal'], ['24/7', 'connected learning']].map(([value, label]) => <div key={label} className="text-center md:text-left md:border-r last:border-r-0 border-slate-200 md:px-6 first:md:pl-0"><p className="text-xl font-black">{value}</p><p className="text-[10px] text-slate-500 mt-1">{label}</p></div>)}</div></section>
+    <section className="border-b border-[#dedfdd] bg-white">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 px-5 sm:px-8 lg:grid-cols-3 lg:px-10">
+        {steps.map(([number, title, text], index) => <div key={number} className={`py-9 lg:px-8 ${index > 0 ? 'border-t border-[#e8e9e7] lg:border-l lg:border-t-0' : ''}`}><span className="text-[11px] font-bold tracking-[0.14em] text-[#d31d24]">{number}</span><h2 className="mt-5 text-[18px] font-semibold tracking-[-0.02em]">{title}</h2><p className="mt-2 max-w-sm text-[12px] leading-5 text-[#737b87]">{text}</p></div>)}
+      </div>
+    </section>
 
-    <section className="py-16 md:py-20 bg-white"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="max-w-2xl mb-10"><span className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-600">One connected journey</span><h2 className="text-3xl md:text-4xl font-black mt-2 tracking-tight">From discovery to a completed exchange.</h2><p className="text-sm text-slate-500 mt-3 leading-6">Every major action connects naturally so users always know what to do next.</p></div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">{journey.map(item => <Card key={item.number} hover className="p-5"><span className="text-3xl font-black text-emerald-600/20">{item.number}</span><h3 className="text-sm font-bold mt-3">{item.title}</h3><p className="text-[11px] leading-5 text-slate-500 mt-2">{item.text}</p><ArrowUpRight className="w-4 h-4 text-emerald-600 mt-4" /></Card>)}</div></div></section>
+    <section className="bg-[#f7f7f5] py-16 sm:py-20">
+      <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+        <div className="grid gap-12 lg:grid-cols-[.7fr_1.3fr] lg:gap-20">
+          <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">Designed around the exchange</p><h2 className="mt-4 max-w-md text-3xl font-semibold leading-tight tracking-[-0.04em] sm:text-4xl">Everything important happens between people.</h2><p className="mt-5 max-w-md text-[13px] leading-6 text-[#707884]">The product is built to get out of the way: discover, talk, exchange and build a reputation over time.</p><Link to="/discover" className="mt-7 inline-flex items-center gap-2 text-[12px] font-bold text-[#17233b] hover:text-[#d31d24]">See the community <ArrowUpRight className="h-4 w-4" /></Link></div>
+          <div className="grid gap-px border border-[#dfe1df] bg-[#dfe1df] sm:grid-cols-2">{features.map(({ icon: Icon, title, text }) => <div key={title} className="bg-white p-7"><Icon className="h-5 w-5 text-[#d31d24]" /><h3 className="mt-7 text-[15px] font-semibold">{title}</h3><p className="mt-2 text-[12px] leading-5 text-[#747c87]">{text}</p></div>)}</div>
+        </div>
+      </div>
+    </section>
 
-    <section className="py-16 md:py-20 bg-slate-50"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10"><div><span className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-600">Built around people</span><h2 className="text-3xl font-black mt-2">Everything you need to grow through skills.</h2></div><p className="max-w-md text-xs leading-5 text-slate-500">A professional experience that combines networking, learning and real skill exchanges.</p></div><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{features.map(feature => { const Icon = feature.icon; return <Card key={feature.title} hover className="p-5"><div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><Icon className="w-5 h-5" /></div><h3 className="text-sm font-bold mt-4">{feature.title}</h3><p className="text-xs leading-5 text-slate-500 mt-2">{feature.text}</p><div className="mt-4 flex items-center gap-1 text-[10px] font-bold text-emerald-700">Explore <ArrowRight className="w-3 h-3" /></div></Card>; })}</div></div></section>
-
-    <section className="py-16 md:py-20 bg-white"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8 items-stretch"><Card className="p-7 md:p-9 bg-slate-900 text-white border-slate-800 overflow-hidden relative"><div className="absolute -right-20 -top-20 w-48 h-48 rounded-full bg-emerald-500/20 blur-2xl" /><div className="relative"><span className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-400">Why it works</span><h2 className="text-3xl font-black mt-3 leading-tight">A network that is useful, not just social.</h2><p className="text-sm text-slate-300 mt-4 leading-6">Every profile, connection and conversation is tied back to a real learning goal or skill you can exchange.</p><div className="space-y-3 mt-7">{['Discover complementary skills', 'See trust and compatibility signals', 'Move from chat to an actual exchange', 'Build reputation through completed activity'].map(text => <div key={text} className="flex gap-2 text-xs text-slate-200"><CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />{text}</div>)}</div></div></Card><div className="grid grid-cols-2 gap-3"><Card className="p-5"><MapPin className="w-5 h-5 text-emerald-600" /><p className="text-xl font-black mt-5">Nearby</p><p className="text-[11px] text-slate-500 mt-1">Find relevant people around your preferred location.</p></Card><Card className="p-5"><Star className="w-5 h-5 text-amber-500" /><p className="text-xl font-black mt-5">Trusted</p><p className="text-[11px] text-slate-500 mt-1">Use reviews, activity and verification to make informed connections.</p></Card><Card className="p-5"><Heart className="w-5 h-5 text-rose-500" /><p className="text-xl font-black mt-5">Engaging</p><p className="text-[11px] text-slate-500 mt-1">Milestones and recommendations keep learning moving.</p></Card><Card className="p-5"><Zap className="w-5 h-5 text-emerald-600" /><p className="text-xl font-black mt-5">Actionable</p><p className="text-[11px] text-slate-500 mt-1">Turn a recommendation into a conversation and an exchange.</p></Card></div></div></section>
-
-    <section className="px-4 sm:px-6 lg:px-8 pb-14"><div className="max-w-7xl mx-auto rounded-[2rem] bg-emerald-700 px-6 py-12 md:px-12 md:py-14 text-white relative overflow-hidden"><div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.14),transparent_30%)]" /><div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-7"><div><span className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-100">Start your journey</span><h2 className="text-3xl md:text-4xl font-black mt-2">Turn one skill into your next opportunity.</h2><p className="text-sm text-emerald-50/90 mt-3 max-w-xl">Create your profile, discover the right people and start exchanging knowledge.</p></div><Link to="/signup"><Button size="lg" className="bg-white text-emerald-800 hover:bg-emerald-50 shrink-0" icon={<ArrowRight className="w-4 h-4" />}>Get started</Button></Link></div></div></section>
-  </div>
+    <section className="bg-[#17233b] text-white">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-14 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10 lg:py-16">
+        <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e3a1a4]">Ready when you are</p><h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Bring one useful skill to the table.</h2><p className="mt-3 max-w-xl text-[13px] leading-6 text-[#c3c9d3]">Create your profile and find someone you can help — and someone who can help you.</p></div>
+        <Link to="/signup" className="inline-flex shrink-0 items-center gap-2 bg-white px-5 py-3 text-[13px] font-bold text-[#17233b] hover:bg-[#f2f3f1]">Create your profile <ArrowRight className="h-4 w-4" /></Link>
+      </div>
+    </section>
+  </main>
 );
