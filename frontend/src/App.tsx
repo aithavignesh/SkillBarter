@@ -25,6 +25,7 @@ import { CommunityPage } from './pages/CommunityPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { MonetizationPage } from './pages/MonetizationPage';
 import { AdditionalScreen } from './pages/FunctionalAdditionalScreensPage2';
+import './services/enableFunctionalApi';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, loading } = useAuth();
