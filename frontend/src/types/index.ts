@@ -8,6 +8,9 @@ export interface UserSummary {
   distance_km?: number;
   distance_display?: string;
   badges?: string[];
+  premium?: boolean;
+  verified?: boolean;
+  featured_until?: string | null;
 }
 
 export interface UserSkill {
@@ -44,6 +47,21 @@ export interface User {
   completed_exchanges_count: number;
   reviews_count: number;
   badges: string[];
+  premium?: boolean;
+  premium_until?: string | null;
+  verified?: boolean;
+  verification_requested_at?: string | null;
+  featured_until?: string | null;
+  priority_matching?: boolean;
+  credits?: number;
+  workshops_enabled?: boolean;
+  corporate_interest?: boolean;
+  sponsored_enabled?: boolean;
+  lead_generation_enabled?: boolean;
+  priority_matches_used?: number;
+  priority_matches_date?: string | null;
+  boosts_used?: number;
+  last_boost_at?: string | null;
   is_active: boolean;
   is_admin: boolean;
   onboarding_completed: boolean;
