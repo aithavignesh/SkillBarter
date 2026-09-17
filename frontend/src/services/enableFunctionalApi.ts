@@ -1,6 +1,7 @@
 import { api } from './api';
 import { functionalApi } from './functionalApi';
 import { exchangeFunctionalApi } from './exchangeFunctionalApi';
+import { connectionRequestsApi } from './connectionRequestsApi';
 import './enableSocialApi';
 
 // The legacy API facade still contains migration guards for modules that have moved to InsForge.
@@ -13,6 +14,12 @@ for (const name of [
   'markAllNotificationsRead','sendMessage','getFeed','createPost','likePost'
 ]) {
   if (typeof (functionalApi as any)[name] === 'function') target[name] = (functionalApi as any)[name].bind(functionalApi);
+}
+
+// LinkedIn-style connection requests are handled separately so the existing
+// exchange/matching APIs remain unchanged.
+for (const name of ['connectNeighbor','getConnectionRequests','acceptConnectionRequest','rejectConnectionRequest','getConnectionStatus']) {
+  if (typeof (connectionRequestsApi as any)[name] === 'function') target[name] = (connectionRequestsApi as any)[name].bind(connectionRequestsApi);
 }
 
 for (const name of ['rejectExchange','cancelExchange','getExchangeDetails']) {
