@@ -6,7 +6,7 @@ export const productNavigationGroups = [
   { label: 'Profile & Learning', icon: UserRound, items: [['Edit Profile','/profile/edit-profile'],['Public Profile','/profile/public-profile'],['Skills Management','/profile/skills'],['Add New Skill','/profile/add-skill'],['Learning Goals','/learning/learning-goals'],['Teaching Skills','/learning/teaching-skills']] },
   { label: 'Discover & Matching', icon: Compass, items: [['Skill Search','/discover/search'],['Advanced Search & Filters','/discover/advanced-search'],['Recommended Users','/discover/recommended'],['AI Skill Matching','/matches/ai-matching'],['Match Details','/matches/match-details']] },
   { label: 'Requests & Exchanges', icon: ArrowLeftRight, items: [['Send Skill Request','/requests/send-request'],['Incoming Requests','/requests/incoming-requests'],['Sent Requests','/requests/sent-requests'],['Request Details','/requests/request-details'],['Active Skill Exchange','/exchanges/active-exchange'],['Exchange History','/exchanges/exchange-history'],['Exchange Rating','/exchanges/exchange-rating'],['Schedule Exchange','/exchanges/schedule'],['Calendar','/exchanges/calendar']] },
-  { label: 'Communication', icon: Bell, items: [['Notifications','/notifications/notifications'],['Notification Settings','/notifications/notification-settings'],['Chat Details','/messages/chat-details']] },
+  { label: 'Communication', icon: Bell, items: [['Notifications','/notifications'],['Notification Settings','/notifications/notification-settings'],['Chat Details','/messages/chat-details']] },
   { label: 'Community', icon: Users, items: [['Create Community Post','/community/create-post'],['Post Details','/community/post-details'],['Community Groups','/community/groups'],['Group Details','/community/group-details']] },
   { label: 'Workshops & Credits', icon: GraduationCap, items: [['Workshops','/workshops/workshops'],['Create Workshop','/workshops/create-workshop'],['Workshop Details','/workshops/workshop-details'],['My Workshops','/workshops/my-workshops'],['Skill Credits','/learning/credits']] },
   { label: 'Membership & Trust', icon: Coins, items: [['Premium Membership','/membership/premium'],['Verification Center','/trust/verification']] },
@@ -15,29 +15,72 @@ export const productNavigationGroups = [
 
 export const ProductNavigation: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const location = useLocation();
-  const active = productNavigationGroups.some(group => group.items.some(([, path]) => location.pathname === path));
+  const active = productNavigationGroups.some(group => group.items.some(([, path]) => location.pathname === path || location.pathname.startsWith(path + '/')));
+
+  const toggle = (label: string) => setExpandedGroup(current => current === label ? null : label);
 
   return (
-    <div className="relative hidden md:block w-full">
-      <button type="button" onClick={() => setOpen(v => !v)} className={`flex w-full items-center gap-2 px-3 py-2 text-[12px] font-semibold transition-colors ${active ? 'text-[#d31d24]' : 'text-[#697386] hover:bg-[#fafbfc] hover:text-[#17233b]'}`} aria-expanded={open}>
+    <div className="w-full">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className={`flex w-full items-center gap-2 px-3 py-2.5 text-[12px] font-semibold transition-colors ${open || active ? 'text-[#d31d24]' : 'text-[#697386] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+        aria-expanded={open}
+        aria-controls="skillbarter-all-features"
+      >
         <LayoutGrid className="h-4 w-4" />
         <span>All features</span>
-        <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="ml-auto text-[9px] font-medium text-[#a0a6af]">{productNavigationGroups.reduce((total, group) => total + group.items.length, 0)}</span>
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
+
       {open && (
-        <>
-          <button aria-label="Close feature menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} />
-          <div className="absolute left-full top-0 z-50 ml-3 w-[700px] max-w-[calc(100vw-2rem)] border border-[#e1e4e8] bg-white p-5 shadow-[0_16px_42px_rgba(23,35,59,.12)]">
-            <div className="mb-4 flex items-end justify-between border-b border-[#edf0f2] pb-3">
-              <div><p className="text-[13px] font-bold text-[#17233b]">All SkillBarter features</p><p className="mt-0.5 text-[10px] text-[#8a92a0]">Secondary screens stay here so the main navigation stays focused.</p></div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#d31d24]">Product library</span>
-            </div>
-            <div className="grid max-h-[70vh] grid-cols-2 gap-x-8 gap-y-5 overflow-y-auto pr-1 lg:grid-cols-3">
-              {productNavigationGroups.map(group => { const GroupIcon = group.icon; return <section key={group.label}><div className="mb-2 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#9aa1ac]"><GroupIcon className="h-3.5 w-3.5" />{group.label}</div><div className="space-y-0.5">{group.items.map(([label,path]) => <Link key={path} to={path} onClick={() => setOpen(false)} className={`block border-l-2 px-2.5 py-1.5 text-[11px] transition-colors ${location.pathname === path ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:border-[#e3e5e8] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}>{label}</Link>)}</div></section>; })}
-            </div>
+        <div id="skillbarter-all-features" className="mt-1 max-h-[46vh] overflow-y-auto border-y border-[#edf0f2] bg-[#fafbfc] py-1">
+          <div className="px-3 py-2">
+            <p className="text-[10px] font-bold text-[#17233b]">All SkillBarter features</p>
+            <p className="mt-0.5 text-[9px] leading-4 text-[#8a92a0]">Open any feature directly. Your workspace stays focused on the essentials.</p>
           </div>
-        </>
+          <div className="space-y-0.5 px-2 pb-2">
+            {productNavigationGroups.map(group => {
+              const GroupIcon = group.icon;
+              const groupActive = group.items.some(([, path]) => location.pathname === path || location.pathname.startsWith(path + '/'));
+              const expanded = expandedGroup === group.label || groupActive;
+              return (
+                <section key={group.label} className="border border-[#edf0f2] bg-white">
+                  <button
+                    type="button"
+                    onClick={() => toggle(group.label)}
+                    className={`flex w-full items-center gap-2 px-2.5 py-2 text-left text-[10px] font-semibold ${groupActive ? 'text-[#d31d24]' : 'text-[#536075] hover:text-[#17233b]'}`}
+                    aria-expanded={expanded}
+                  >
+                    <GroupIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="flex-1">{group.label}</span>
+                    <span className="text-[9px] font-normal text-[#a0a6af]">{group.items.length}</span>
+                    <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {expanded && (
+                    <div className="border-t border-[#f0f1f3] px-1.5 py-1">
+                      {group.items.map(([label, path]) => {
+                        const itemActive = location.pathname === path || location.pathname.startsWith(path + '/');
+                        return (
+                          <Link
+                            key={path}
+                            to={path}
+                            className={`block border-l-2 px-2 py-1.5 text-[10px] transition-colors ${itemActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:border-[#e3e5e8] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+                          >
+                            {label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -46,7 +89,7 @@ export const ProductNavigation: React.FC = () => {
 export const ProductNavigationMobile: React.FC = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const active = productNavigationGroups.some(group => group.items.some(([, path]) => location.pathname === path));
+  const active = productNavigationGroups.some(group => group.items.some(([, path]) => location.pathname === path || location.pathname.startsWith(path + '/')));
   return (
     <div className="relative flex-1">
       <button type="button" onClick={() => setOpen(v => !v)} className={`flex w-full flex-col items-center py-1 px-1 text-[10px] font-medium ${active ? 'text-[#d31d24] font-bold' : 'text-[#7b8492]'}`} aria-expanded={open}>
