@@ -1,13 +1,14 @@
-import React, { FormEvent, useEffect, useMemo, useState } from 'react';
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../services/api';
+import { insforge } from '../lib/insforge';
 import { useAuth } from '../context/AuthContext';
 import { AppPageShell } from '../components/ui/AppPageShell';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
 import { getMonetizationState } from '../services/monetization';
-import { MapPin, MessageSquare, Plus, Repeat, Save, ShieldCheck, Sparkles, Trash2, UserPlus, BadgeCheck, Rocket, Crown } from 'lucide-react';
+import { MapPin, MessageSquare, Plus, Repeat, Save, ShieldCheck, Sparkles, Trash2, UserPlus, BadgeCheck, Rocket, Crown, Camera, Loader2 } from 'lucide-react';
 
 export const ProfileWorkspacePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ export const ProfileWorkspacePage: React.FC = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(false);
   const [skillName, setSkillName] = useState('');
@@ -25,6 +27,7 @@ export const ProfileWorkspacePage: React.FC = () => {
   const [proposeOpen, setProposeOpen] = useState(false);
   const [connected, setConnected] = useState(false);
   const [monetizationTick, setMonetizationTick] = useState(0);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     if (!targetId) return;
@@ -42,6 +45,23 @@ export const ProfileWorkspacePage: React.FC = () => {
   const needed = useMemo(() => (profile?.skills || []).filter((s: any) => s.skill_type === 'NEEDED'), [profile]);
   const monetization = useMemo(() => own ? getMonetizationState(targetId) : null, [own, targetId, monetizationTick]);
   const featured = Boolean(monetization?.featuredUntil && new Date(monetization.featuredUntil).getTime() > Date.now());
+
+  const uploadAvatar = async (file?: File) => {
+    if (!file || !own) return;
+    if (!file.type.startsWith('image/')) { setMessage('Please choose an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setMessage('Profile pictures must be 5 MB or smaller.'); return; }
+    try {
+      setUploadingAvatar(true); setMessage('');
+      const { data, error } = await insforge.storage.from('avatars').uploadAuto(file);
+      if (error || !data?.url) throw new Error(error?.message || 'Unable to upload profile picture.');
+      await api.updateMe({ avatar_url: data.url });
+      setProfile((previous: any) => ({ ...previous, avatar_url: data.url }));
+      await refreshUser();
+      setMessage('Profile picture updated successfully.');
+    } catch (e: any) {
+      setMessage(e?.message || 'Unable to update profile picture.');
+    } finally { setUploadingAvatar(false); }
+  };
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -81,7 +101,11 @@ export const ProfileWorkspacePage: React.FC = () => {
       <div className="space-y-4">
         <Card className="p-5">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <img src={profile.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160'} className="h-20 w-20 rounded-full border border-[#e1e4e8] object-cover" alt="" />
+            <div className="relative shrink-0">
+              <img src={profile.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160'} className="h-20 w-20 rounded-full border border-[#e1e4e8] object-cover" alt="Profile" />
+              {own && <><button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#d31d24] text-white shadow-sm transition hover:bg-[#b8171d] disabled:cursor-not-allowed disabled:opacity-60" title="Change profile picture"><Camera className="h-3.5 w-3.5" /></button><input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; void uploadAvatar(file); }} /></>}
+              {uploadingAvatar && <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/35 text-white"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+            </div>
             <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-extrabold text-[#17233b]">{profile.full_name}</h2>{own && monetization?.premium && <span className="inline-flex items-center gap-1 border border-red-100 bg-[#fff5f5] px-2 py-1 text-[9px] font-bold uppercase text-[#b8171d]"><Crown className="h-3 w-3"/> Premium</span>}{own && monetization?.verified && <span className="inline-flex items-center gap-1 border border-red-100 bg-[#fff5f5] px-2 py-1 text-[9px] font-bold uppercase text-[#b8171d]"><BadgeCheck className="h-3 w-3"/> Verified</span>}{own && featured && <span className="inline-flex items-center gap-1 border border-red-100 bg-[#fff5f5] px-2 py-1 text-[9px] font-bold uppercase text-[#b8171d]"><Rocket className="h-3 w-3"/> Featured</span>}</div><p className="mt-1 text-sm text-[#697386]">{profile.headline || 'Community member'}</p><p className="mt-3 flex items-center gap-1.5 text-xs text-[#697386]"><MapPin className="h-3.5 w-3.5 text-[#d31d24]" />{profile.address_display || 'Local neighborhood'}{profile.distance_display ? ` · ${profile.distance_display}` : ''}</p>{profile.bio && <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">{profile.bio}</p>}</div>
             <div className="shrink-0 border border-[#e1e4e8] bg-[#f7f8f7] px-4 py-3 text-center"><div className="text-2xl font-black text-[#d31d24]">{Math.round(profile.trust_score || 0)}</div><div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Trust / 100</div></div>
           </div>
