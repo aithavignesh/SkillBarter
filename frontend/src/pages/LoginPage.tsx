@@ -185,7 +185,7 @@ export const LoginPage: React.FC = () => {
                   />
                 </div>
               </div>
-              {!otpSent && <p className="text-[11px] text-slate-500 mt-1">Select your country, then enter your mobile number. The country code is added automatically.</p>
+              {!otpSent && <p className="text-[11px] text-slate-500 mt-1">Select your country, then enter your mobile number. The country code is added automatically.</p>}
             </div>
 
             {otpSent && (
