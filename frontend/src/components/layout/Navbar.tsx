@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   Repeat, Compass, Sparkles, ArrowLeftRight, MessageSquare, Bell, Search,
   User as UserIcon, ShieldCheck, LogOut, Shield, Coins, Users, Settings,
-  HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy,
+  HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy, Sun, Moon,
 } from 'lucide-react';
 
 export const DEFAULT_AVATAR_URL = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160';
@@ -15,6 +16,7 @@ type NavItem = { label: string; path: string; icon: React.ComponentType<{ classN
 
 export const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -210,6 +212,9 @@ export const Navbar: React.FC = () => {
             <form onSubmit={handleSearchSubmit} className="relative mt-0.5 max-w-[520px]"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search people, skills or exchanges" className="h-9 w-full border border-[#e2e5e9] bg-[#fafbfc] pl-9 pr-4 text-[12px] text-[#17233b] outline-none transition focus:border-[#c8cdd5] focus:bg-white focus:ring-0" /></form>
           </div>
           <div className="flex items-center gap-1">
+            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Dark mode' : 'Light mode'} className="flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] hover:text-[#17233b]">
+              {theme === 'light' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
+            </button>
             <div className="relative">
               <button type="button" aria-label="Notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] hover:text-[#17233b]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
               {showNotifications && <div className="absolute right-0 mt-2 w-80 border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)]"><div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><span className="text-[12px] font-bold text-[#17233b]">Notifications</span>{unreadCount > 0 && <button type="button" onClick={markAllAsRead} className="text-[10px] font-semibold text-[#d31d24]">Mark all read</button>}</div><div className="max-h-80 overflow-y-auto">{notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">No notifications yet</div> : notifications.map((n) => <div key={n.id} onClick={() => { markAsRead(n.id); if (n.link) { navigate(n.link); setShowNotifications(false); } }} className={`cursor-pointer border-b border-[#f0f1f3] px-4 py-3 hover:bg-[#fafbfc] ${!n.is_read ? 'bg-[#fff8f8]' : ''}`}><div className="flex items-start justify-between gap-2"><span className="text-[12px] font-semibold text-[#17233b]">{n.title}</span>{!n.is_read && <span className="mt-1 h-1.5 w-1.5 bg-[#d31d24]" />}</div><p className="mt-1 text-[11px] leading-5 text-[#697386]">{n.message}</p></div>)}</div></div>}
