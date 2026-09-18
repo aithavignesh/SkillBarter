@@ -24,9 +24,13 @@ export default async function handler(req,res){
     const expected=crypto.createHmac('sha256',secret).update(razorpay_order_id+'|'+razorpay_payment_id).digest('hex');
     if(expected.length!==razorpay_signature.length||!crypto.timingSafeEqual(Buffer.from(expected),Buffer.from(razorpay_signature))) return json(res,{error:'Payment signature verification failed.'},400);
     const until=new Date(); until.setMonth(until.getMonth()+1);
-    const r=await fetch(base.replace(/\/+$/,'')+'/api/database/records/users?email=eq.'+encodeURIComponent(email),{method:'PATCH',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json',Prefer:'return=representation'},body:JSON.stringify({premium:true,premium_until:until.toISOString(),priority_matching:true,updated_at:new Date().toISOString()})});
-    const data=await r.json().catch(()=>null);
-    if(!r.ok) return json(res,{error:data?.message||data?.error||'Payment succeeded, but membership activation could not be saved. Please contact support with payment ID '+razorpay_payment_id+'.'},502);
+    const {data: updatedUser, error: updateError}=await client.database.from('users').update({
+      premium:true,
+      premium_until:until.toISOString(),
+      priority_matching:true,
+      updated_at:new Date().toISOString(),
+    }).eq('email',email).select('id,premium,premium_until').maybeSingle();
+    if(updateError || !updatedUser) return json(res,{error:updateError?.message||'Payment succeeded, but membership activation could not be saved. Please contact support with payment ID '+razorpay_payment_id+'.'},502);
     return json(res,{success:true,premium_until:until.toISOString(),payment_id:razorpay_payment_id});
   }catch(e){return json(res,{error:e?.message||'Unable to verify payment.'},401);}
 }
