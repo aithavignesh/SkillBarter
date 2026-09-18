@@ -4,6 +4,13 @@ const fail = (error: any, fallback: string): never => { throw new Error(error?.m
 
 class FunctionalApi {
   private async appUser() {
+    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
+    const phone = localStorage.getItem('skillbarter_phone');
+    if (phone && phoneUserId) {
+      const result = await insforge.database.from('users').select('*').eq('id', phoneUserId).maybeSingle();
+      if (result.error || !result.data) fail(result.error, 'Application profile not found');
+      return result.data;
+    }
     const auth = await insforge.auth.getCurrentUser();
     if (auth.error || !auth.data?.user?.email) fail(auth.error, 'Not authenticated');
     const result = await insforge.database.from('users').select('*').eq('email', auth.data.user.email).maybeSingle();
