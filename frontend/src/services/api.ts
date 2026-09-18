@@ -217,6 +217,30 @@ class ApiClient {
   }
 
   async updateMe(payload: any) {
+    // Phone OTP sessions only expose an access token to the browser. Updating
+    // the InsForge Auth profile through setProfile() can therefore trigger an
+    // "Invalid token" / refresh-token flow. The application profile is stored
+    // in users, so update that record directly for phone sessions.
+    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
+    const phone = localStorage.getItem('skillbarter_phone');
+    if (phone && phoneUserId) {
+      const { data, error } = await insforge.database
+        .from('users')
+        .update({
+          full_name: payload.full_name,
+          headline: payload.headline,
+          bio: payload.bio,
+          address_display: payload.address_display,
+          availability: payload.availability,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', phoneUserId)
+        .select('*')
+        .single();
+      if (error) throw new Error(error.message || 'Unable to update profile');
+      return { user: data };
+    }
+
     const { data, error } = await insforge.auth.setProfile(payload);
     if (error) throw new Error(error.message || 'Unable to update profile');
     const authUser = data?.user ?? (await insforge.auth.getCurrentUser()).data?.user;
