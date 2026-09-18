@@ -23,6 +23,19 @@ export default async function handler(req,res){
     const secret=env('RAZORPAY_KEY_SECRET'); if(!secret) return json(res,{error:'Razorpay is not configured yet.'},503);
     const expected=crypto.createHmac('sha256',secret).update(razorpay_order_id+'|'+razorpay_payment_id).digest('hex');
     if(expected.length!==razorpay_signature.length||!crypto.timingSafeEqual(Buffer.from(expected),Buffer.from(razorpay_signature))) return json(res,{error:'Payment signature verification failed.'},400);
+
+    // Signature verification proves the checkout response came from Razorpay.
+    // Also verify the server-side order/payment records before granting membership.
+    const razorpayAuth=Buffer.from(env('RAZORPAY_KEY_ID')+':'+secret).toString('base64');
+    const paymentResponse=await fetch('https://api.razorpay.com/v1/payments/'+encodeURIComponent(razorpay_payment_id),{
+      headers:{Authorization:'Basic '+razorpayAuth,Accept:'application/json'},
+    });
+    const payment=await paymentResponse.json().catch(()=>null);
+    if(!paymentResponse.ok||!payment?.id) return json(res,{error:'Unable to confirm the Razorpay payment status.'},502);
+    if(payment.order_id!==razorpay_order_id) return json(res,{error:'Payment does not belong to the expected order.'},400);
+    if(Number(payment.amount)!==14900||payment.currency!=='INR') return json(res,{error:'Payment amount or currency does not match the Premium Membership plan.'},400);
+    if(payment.status!=='captured') return json(res,{error:'Payment has not been captured yet. Premium will activate after the payment is captured.'},409);
+
     const until=new Date(); until.setMonth(until.getMonth()+1);
     const {data: updatedUser, error: updateError}=await client.database.from('users').update({
       premium:true,
