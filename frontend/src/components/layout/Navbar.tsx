@@ -132,6 +132,13 @@ export const Navbar: React.FC = () => {
             <span className="text-[19px] font-bold tracking-[-0.03em] text-[#17233b]">Skill<span className="text-[#d31d24]">Barter</span></span>
           </Link>
           <div className="flex items-center gap-1 sm:gap-3">
+            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} className="hidden items-center gap-2 border border-[#e1e4e8] bg-white px-3 py-2 text-[12px] font-semibold text-[#4d5b72] transition hover:border-[#cbd1d8] hover:text-[#17233b] sm:flex">
+              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              {theme === 'light' ? 'Dark mode' : 'Light mode'}
+            </button>
+            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} className="flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] sm:hidden">
+              {theme === 'light' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
+            </button>
             <Link to="/login" className="px-3 py-2 text-[13px] font-semibold text-[#4d5b72] hover:text-[#17233b]">Log in</Link>
             <Link to="/signup" className="bg-[#d31d24] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#b8171d]">Join SkillBarter</Link>
           </div>
@@ -212,8 +219,9 @@ export const Navbar: React.FC = () => {
             <form onSubmit={handleSearchSubmit} className="relative mt-0.5 max-w-[520px]"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search people, skills or exchanges" className="h-9 w-full border border-[#e2e5e9] bg-[#fafbfc] pl-9 pr-4 text-[12px] text-[#17233b] outline-none transition focus:border-[#c8cdd5] focus:bg-white focus:ring-0" /></form>
           </div>
           <div className="flex items-center gap-1">
-            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Dark mode' : 'Light mode'} className="flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] hover:text-[#17233b]">
-              {theme === 'light' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
+            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Dark mode' : 'Light mode'} className="flex h-9 items-center gap-2 border border-[#e1e4e8] bg-white px-3 text-[11px] font-semibold text-[#4d5b72] hover:border-[#cbd1d8] hover:text-[#17233b]">
+              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              <span className="hidden sm:inline">{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
             </button>
             <div className="relative">
               <button type="button" aria-label="Notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] hover:text-[#17233b]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
