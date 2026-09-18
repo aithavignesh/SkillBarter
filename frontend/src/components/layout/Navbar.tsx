@@ -241,7 +241,7 @@ export const Navbar: React.FC = () => {
           type="button"
           onClick={() => setShowMobileMenu(v => !v)}
           aria-label={showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'}
-          className="fixed right-5 top-[15px] z-50 flex h-9 w-9 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm"
+          className="fixed left-5 top-[15px] z-50 flex h-9 w-9 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm"
         >
           {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
