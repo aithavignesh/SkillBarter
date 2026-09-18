@@ -128,6 +128,36 @@ class FunctionalApi {
     return r.data;
   }
 
+  async updateExchangeSchedule(id: number, payload: { preferred_date: string; estimated_hours: number; location_area: string }) {
+    const me = await this.appUser();
+    const e = await insforge.database.from('exchanges').select('id,requester_id,receiver_id,status').eq('id', id).maybeSingle();
+    if (e.error || !e.data) fail(e.error, 'Exchange not found');
+    if (Number(e.data.requester_id) !== Number(me.id) && Number(e.data.receiver_id) !== Number(me.id)) throw new Error('Not authorized.');
+    if (!['PENDING', 'ACTIVE'].includes(String(e.data.status))) throw new Error('Only pending or active exchanges can be rescheduled.');
+    const preferredDate = String(payload.preferred_date || '').trim();
+    const hours = Number(payload.estimated_hours);
+    const locationArea = String(payload.location_area || '').trim();
+    if (!preferredDate) throw new Error('Please choose a preferred date.');
+    if (!Number.isFinite(hours) || hours < 0.5 || hours > 24) throw new Error('Duration must be between 0.5 and 24 hours.');
+    if (!locationArea) throw new Error('Please provide a meetup area.');
+    const r = await insforge.database.from('exchanges').update({
+      preferred_date: preferredDate,
+      estimated_hours: hours,
+      location_area: locationArea,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id).select('*').single();
+    if (r.error) fail(r.error, 'Unable to update exchange schedule');
+    const partnerId = Number(e.data.requester_id) === Number(me.id) ? Number(e.data.receiver_id) : Number(e.data.requester_id);
+    await insforge.database.from('notifications').insert({
+      user_id: partnerId,
+      type: 'EXCHANGE_UPDATED',
+      title: 'Exchange schedule updated',
+      message: `${me.full_name} updated the exchange date, duration or meetup area.`,
+      link: `/exchanges/${id}`,
+    });
+    return r.data;
+  }
+
   async completeExchange(id: number) {
     const me = await this.appUser(); const e = await insforge.database.from('exchanges').select('*').eq('id', id).maybeSingle(); if (e.error || !e.data) fail(e.error, 'Exchange not found');
     const uid = Number(me.id); if (uid !== Number(e.data.requester_id) && uid !== Number(e.data.receiver_id)) throw new Error('Not authorized.'); if (e.data.status !== 'ACTIVE') throw new Error('Only active exchanges can be completed.');
