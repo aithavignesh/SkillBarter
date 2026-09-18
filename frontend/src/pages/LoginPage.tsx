@@ -3,11 +3,30 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Repeat, Lock, Mail, ArrowRight, Phone, ShieldCheck, RotateCcw, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Repeat, Lock, Mail, ArrowRight, Phone, ShieldCheck, RotateCcw, KeyRound, CheckCircle2, ChevronDown } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
   const [otp, setOtp] = useState('');
+  const countries = [
+    ['IN','India','+91'],['US','United States','+1'],['CA','Canada','+1'],['GB','United Kingdom','+44'],['AU','Australia','+61'],
+    ['AE','United Arab Emirates','+971'],['SA','Saudi Arabia','+966'],['SG','Singapore','+65'],['MY','Malaysia','+60'],['SG','Singapore','+65'],
+    ['DE','Germany','+49'],['FR','France','+33'],['IT','Italy','+39'],['ES','Spain','+34'],['NL','Netherlands','+31'],
+    ['CH','Switzerland','+41'],['SE','Sweden','+46'],['NO','Norway','+47'],['DK','Denmark','+45'],['FI','Finland','+358'],
+    ['IE','Ireland','+353'],['PT','Portugal','+351'],['BE','Belgium','+32'],['AT','Austria','+43'],['PL','Poland','+48'],
+    ['CZ','Czechia','+420'],['RO','Romania','+40'],['GR','Greece','+30'],['TR','Türkiye','+90'],['UA','Ukraine','+380'],
+    ['RU','Russia','+7'],['IL','Israel','+972'],['EG','Egypt','+20'],['ZA','South Africa','+27'],['NG','Nigeria','+234'],
+    ['KE','Kenya','+254'],['GH','Ghana','+233'],['MA','Morocco','+212'],['BR','Brazil','+55'],['MX','Mexico','+52'],
+    ['AR','Argentina','+54'],['CL','Chile','+56'],['CO','Colombia','+57'],['PE','Peru','+51'],['VE','Venezuela','+58'],
+    ['NZ','New Zealand','+64'],['JP','Japan','+81'],['KR','South Korea','+82'],['CN','China','+86'],['HK','Hong Kong','+852'],
+    ['TW','Taiwan','+886'],['TH','Thailand','+66'],['VN','Vietnam','+84'],['ID','Indonesia','+62'],['PH','Philippines','+63'],
+    ['PK','Pakistan','+92'],['BD','Bangladesh','+880'],['LK','Sri Lanka','+94'],['NP','Nepal','+977'],['BT','Bhutan','+975'],
+    ['QA','Qatar','+974'],['KW','Kuwait','+965'],['OM','Oman','+968'],['BH','Bahrain','+973'],['JO','Jordan','+962'],
+    ['IR','Iran','+98'],['IQ','Iraq','+964'],['ET','Ethiopia','+251'],['TZ','Tanzania','+255'],['UG','Uganda','+256'],
+    ['DZ','Algeria','+213'],['TN','Tunisia','+216'],['GH','Ghana','+233'],['FJ','Fiji','+679'],['IS','Iceland','+354']
+  ];
+
   const [otpSent, setOtpSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +56,12 @@ export const LoginPage: React.FC = () => {
     try {
       setError(null);
       setSuccessMessage(null);
-      const normalizedPhone = await requestPhoneOtp(phone.trim());
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 6 || digits.length > 15) {
+        setError('Please enter a valid mobile number.');
+        return;
+      }
+      const normalizedPhone = await requestPhoneOtp(`${countryCode}${digits}`);
       setPhone(normalizedPhone);
       setOtpSent(true);
       setCooldown(30);
@@ -131,11 +155,37 @@ export const LoginPage: React.FC = () => {
           <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Mobile Number</label>
-              <div className="relative">
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" disabled={otpSent} className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60 font-mono" required autoFocus={!otpSent} />
+              <div className="flex gap-2">
+                <div className="relative w-[150px] shrink-0">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    disabled={otpSent}
+                    aria-label="Country code"
+                    className="h-[42px] w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-8 text-xs font-semibold text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
+                  >
+                    {countries.map(([iso, name, code]) => (
+                      <option key={iso + code} value={code}>{name} ({code})</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                </div>
+                <div className="relative min-w-0 flex-1">
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))}
+                    placeholder="98765 43210"
+                    disabled={otpSent}
+                    className="h-[42px] w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-mono outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
+                    required
+                    autoFocus={!otpSent}
+                  />
+                </div>
               </div>
-              {!otpSent && <p className="text-[11px] text-slate-500 mt-1">Enter your mobile number. A real 6-digit SMS will be sent via 2Factor.</p>}
+              {!otpSent && <p className="text-[11px] text-slate-500 mt-1">Select your country, then enter your mobile number. The country code is added automatically.</p>
             </div>
 
             {otpSent && (
