@@ -14,11 +14,16 @@ async function authUser(req){
   const token=String(req.headers?.authorization||'').replace(/^Bearer\s+/i,'');
   if(!token) throw new Error('Not authenticated');
   const base=env('INSFORGE_URL')||env('VITE_INSFORGE_URL');
+  const anonKey=env('INSFORGE_ANON_KEY')||env('VITE_INSFORGE_ANON_KEY');
   if(!base) throw new Error('INSFORGE_URL is not configured');
-  const r=await fetch(base.replace(/\/+$/,'')+'/api/auth/me',{headers:{Authorization:'Bearer '+token,Accept:'application/json'}});
-  const data=await r.json().catch(()=>null);
-  if(!r.ok||!data) throw new Error('Your session has expired. Please sign in again.');
-  return {token,email:data.email||data.user?.email,base};
+  if(!anonKey) throw new Error('INSFORGE_ANON_KEY is not configured');
+  const {createClient}=await import('@insforge/sdk');
+  const client=createClient({baseUrl:base,anonKey,accessToken:token});
+  const result=await client.auth.getCurrentUser();
+  if(result.error||!result.data?.user) throw new Error('Your session has expired. Please sign in again.');
+  const email=result.data.user.email;
+  if(!email) throw new Error('Authenticated account has no email.');
+  return {token,email,base,client};
 }
 export default async function handler(req,res){
   if(req.method==='OPTIONS') return json(res,{ok:true});
