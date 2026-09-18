@@ -14,6 +14,17 @@ class ApiClient {
   }
 
   private async getAppUser() {
+    // Phone OTP sessions are intentionally access-token based and do not expose
+    // a refresh token to the browser. Avoid calling getCurrentUser() for those
+    // sessions because the SDK may attempt a refresh and show "No refresh token provided".
+    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
+    const phone = localStorage.getItem('skillbarter_phone');
+    if (phone && phoneUserId) {
+      const result = await insforge.database.from('users').select('*').eq('id', phoneUserId).maybeSingle();
+      if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
+      if (!result.data) throw new Error('Application profile not found');
+      return { authUser: { email: result.data.email, id: result.data.id }, appUser: result.data };
+    }
     const { data, error } = await insforge.auth.getCurrentUser();
     if (error) throw new Error(error.message || 'Unable to load current user');
     if (!data?.user?.email) throw new Error('Not authenticated');
@@ -186,6 +197,16 @@ class ApiClient {
   async demoSwitch(_userId: number) { throw new Error('Demo switching is not available until demo accounts are migrated to InsForge Auth.'); }
 
   async getMe() {
+    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
+    const phone = localStorage.getItem('skillbarter_phone');
+    if (phone && phoneUserId) {
+      const result = await insforge.database.from('users').select('*').eq('id', phoneUserId).maybeSingle();
+      if (result.error) throw new Error(result.error.message || 'Unable to load current user');
+      if (!result.data) throw new Error('Application profile not found');
+      const user = { ...result.data, id: Number(result.data.id) };
+      user.skills = await this.getUserSkills(user.id);
+      return user;
+    }
     const { data, error } = await insforge.auth.getCurrentUser();
     if (error) throw new Error(error.message || 'Unable to load current user');
     if (!data?.user) throw new Error('Not authenticated');
