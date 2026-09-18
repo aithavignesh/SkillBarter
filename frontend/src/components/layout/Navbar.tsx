@@ -6,7 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   Repeat, Compass, Sparkles, ArrowLeftRight, MessageSquare, Bell, Search,
   User as UserIcon, ShieldCheck, LogOut, Shield, Coins, Users, Settings,
-  HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy, Sun, Moon,
+  HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy, Sun, Moon, Menu, X,
 } from 'lucide-react';
 
 export const DEFAULT_AVATAR_URL = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160';
@@ -22,6 +22,7 @@ export const Navbar: React.FC = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -234,6 +235,76 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       </header>
+
+      <div className="lg:hidden">
+        <button
+          type="button"
+          onClick={() => setShowMobileMenu(v => !v)}
+          aria-label={showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'}
+          className="fixed right-5 top-[15px] z-50 flex h-9 w-9 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm"
+        >
+          {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+
+        {showMobileMenu && (
+          <div className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100vh-68px)] overflow-y-auto border-b border-[#e1e4e8] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(23,35,59,.12)]">
+            <div className="mb-4 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
+              <img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-10 w-10 rounded-full object-cover" />
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-bold text-[#17233b]">{currentUser.full_name}</p>
+                <p className="truncate text-[10px] text-[#8a92a0]">{currentUser.email}</p>
+              </div>
+              <button type="button" onClick={toggleTheme} className="ml-auto flex items-center gap-2 border border-[#e1e4e8] px-3 py-2 text-[11px] font-semibold text-[#4d5b72]">
+                {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {theme === 'light' ? 'Dark mode' : 'Light mode'}
+              </button>
+            </div>
+            {[...primary, ...community, ...support].map(item => {
+              const active = isActive(item.path);
+              const expanded = expandedNav === item.path || Boolean(item.features?.some(feature => isActive(feature.path)));
+              const Icon = item.icon;
+              return (
+                <div key={item.path} className="border-b border-[#f0f1f3] last:border-b-0">
+                  <div className="flex items-center">
+                    <Link
+                      to={item.path}
+                      onClick={() => setShowMobileMenu(false)}
+                      className={`flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#4d5b72]'}`}
+                    >
+                      <Icon className={`h-4 w-4 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
+                      {item.label}
+                    </Link>
+                    {item.features && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)}
+                        className="flex h-9 w-9 items-center justify-center text-[#8a92a0]"
+                        aria-label={`Show ${item.label} features`}
+                      >
+                        <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+                  </div>
+                  {expanded && item.features && (
+                    <div className="ml-9 border-l border-[#edf0f2] pb-2 pl-2">
+                      {item.features.map(feature => (
+                        <Link
+                          key={feature.path}
+                          to={feature.path}
+                          onClick={() => setShowMobileMenu(false)}
+                          className={`block px-3 py-2 text-[11px] ${isActive(feature.path) ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}
+                        >
+                          {feature.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </>
   );
 };
