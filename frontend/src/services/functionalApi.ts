@@ -162,7 +162,27 @@ class FunctionalApi {
     const me = await this.appUser(); const e = await insforge.database.from('exchanges').select('*').eq('id', id).maybeSingle(); if (e.error || !e.data) fail(e.error, 'Exchange not found');
     const uid = Number(me.id); if (uid !== Number(e.data.requester_id) && uid !== Number(e.data.receiver_id)) throw new Error('Not authorized.'); if (e.data.status !== 'ACTIVE') throw new Error('Only active exchanges can be completed.');
     const patch: any = uid === Number(e.data.requester_id) ? { requester_completed: true } : { receiver_completed: true }; const both = uid === Number(e.data.requester_id) ? e.data.receiver_completed : e.data.requester_completed; if (both) patch.status = 'COMPLETED';
-    const r = await insforge.database.from('exchanges').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (r.error) fail(r.error, 'Unable to complete exchange'); return r.data;
+    const r = await insforge.database.from('exchanges').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (r.error) fail(r.error, 'Unable to complete exchange');
+    if (patch.status === 'COMPLETED') {
+      const partnerId = uid === Number(e.data.requester_id) ? Number(e.data.receiver_id) : Number(e.data.requester_id);
+      await insforge.database.from('notifications').insert({
+        user_id: partnerId,
+        type: 'EXCHANGE_COMPLETED',
+        title: 'Exchange completed',
+        message: 'Both participants confirmed completion. You can now leave a review.',
+        link: `/exchanges/${id}`,
+      });
+    } else {
+      const partnerId = uid === Number(e.data.requester_id) ? Number(e.data.receiver_id) : Number(e.data.requester_id);
+      await insforge.database.from('notifications').insert({
+        user_id: partnerId,
+        type: 'EXCHANGE_COMPLETION_CONFIRMED',
+        title: 'Completion confirmed',
+        message: `${me.full_name} confirmed completion of the exchange.`,
+        link: `/exchanges/${id}`,
+      });
+    }
+    return r.data;
   }
 
   async getNotifications() { const me = await this.appUser(); const r = await insforge.database.from('notifications').select('*').eq('user_id', me.id).order('created_at', { ascending: false }).limit(50); if (r.error) fail(r.error, 'Unable to load notifications'); return r.data || []; }
