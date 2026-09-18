@@ -124,3 +124,71 @@ header.sticky.top-0.z-30 .text-slate-600 { color: #66738a !important; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd1d8; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: #aeb7c1; }
+
+
+/* Dark mode: product-wide theme layer for legacy Tailwind and hard-coded Ricoz surfaces. */
+.dark body { background: #10141c; color: #edf2f7; }
+.dark .ricoz-theme {
+  --ricoz-bg: #10141c;
+  --ricoz-surface: #171c26;
+  --ricoz-soft: #1d2430;
+  --ricoz-border: #2b3442;
+  --ricoz-navy: #f2f5f8;
+  --ricoz-muted: #aab4c2;
+}
+.dark .ricoz-theme { background-color: #10141c !important; color: #edf2f7 !important; }
+.dark .ricoz-theme .bg-white,
+.dark .ricoz-theme main .bg-white { background-color: #171c26 !important; color: #edf2f7 !important; }
+.dark .ricoz-theme .bg-slate-50,
+.dark .ricoz-theme main .bg-slate-50 { background-color: #10141c !important; }
+.dark .ricoz-theme .bg-slate-100 { background-color: #1d2430 !important; }
+.dark .ricoz-theme .bg-slate-200 { background-color: #27303d !important; }
+.dark .ricoz-theme .text-slate-900,
+.dark .ricoz-theme .text-slate-800,
+.dark .ricoz-theme main .bg-white .text-slate-900 { color: #f2f5f8 !important; }
+.dark .ricoz-theme .text-slate-700 { color: #c3ccd7 !important; }
+.dark .ricoz-theme .text-slate-600 { color: #aab4c2 !important; }
+.dark .ricoz-theme .text-slate-500 { color: #929eae !important; }
+.dark .ricoz-theme .text-slate-400 { color: #7f8b9c !important; }
+.dark .ricoz-theme .border-slate-200,
+.dark .ricoz-theme .border-slate-100,
+.dark .ricoz-theme .border-slate-300 { border-color: #2b3442 !important; }
+.dark .ricoz-theme main .bg-white.border,
+.dark .ricoz-theme main .border.bg-white,
+.dark .ricoz-theme main .bg-white[class*="border-"] { border-color: #2b3442 !important; box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+.dark .ricoz-theme input,
+.dark .ricoz-theme textarea,
+.dark .ricoz-theme select,
+.dark header.sticky.top-0.z-30 input { color: #edf2f7 !important; background-color: #1b222d !important; border-color: #354050 !important; }
+.dark .ricoz-theme input::placeholder,
+.dark .ricoz-theme textarea::placeholder { color: #7f8b9c !important; }
+.dark .ricoz-theme input:focus,
+.dark .ricoz-theme textarea:focus,
+.dark .ricoz-theme select:focus { background-color: #202936 !important; }
+.dark header.sticky.top-0.z-30,
+.dark header.sticky.top-0.z-30 .bg-white,
+.dark header.sticky.top-0.z-30 .bg-slate-50\/50 { background: rgba(23,28,38,.98) !important; }
+.dark header.sticky.top-0.z-30,
+.dark .ricoz-theme aside { border-color: #2b3442 !important; }
+.dark .ricoz-theme aside { background: #171c26 !important; }
+.dark header.sticky.top-0.z-30 .text-slate-900,
+.dark header.sticky.top-0.z-30 .text-slate-700,
+.dark header.sticky.top-0.z-30 .text-slate-600 { color: #c3ccd7 !important; }
+.dark .ricoz-theme [class*="bg-emerald-50"] { background-color: #2b2022 !important; }
+.dark .ricoz-theme [class*="bg-emerald-100"] { background-color: #352326 !important; }
+.dark .ricoz-theme [class*="bg-teal-"] { background-color: #2b2022 !important; }
+.dark .ricoz-theme [class*="bg-violet-"] { background-color: #2a2023 !important; }
+.dark .ricoz-theme [class*="bg-emerald-400"],
+.dark .ricoz-theme [class*="bg-emerald-500"],
+.dark .ricoz-theme [class*="bg-emerald-600"] { background-color: var(--ricoz-red) !important; }
+.dark .ricoz-theme .hover\:bg-emerald-700:hover { background-color: var(--ricoz-red-dark) !important; }
+.dark .ricoz-theme [class*="text-emerald-"],
+.dark .ricoz-theme [class*="text-teal-"],
+.dark .ricoz-theme [class*="text-violet-"] { color: #ff6b70 !important; }
+.dark .ricoz-theme header.sticky.top-0.z-30 button:hover,
+.dark .ricoz-theme header.sticky.top-0.z-30 nav a:hover { background: #202733 !important; color: #f2f5f8 !important; }
+.dark .ricoz-theme header.sticky.top-0.z-30 .bg-white,
+.dark .ricoz-theme aside .bg-white { color: #edf2f7 !important; }
+.dark ::selection { background: rgba(255,107,112,.22); color: #fff; }
+.dark ::-webkit-scrollbar-thumb { background: #3a4555; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #4a5668; }
