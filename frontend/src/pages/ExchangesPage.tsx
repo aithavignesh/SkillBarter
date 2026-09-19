@@ -82,7 +82,7 @@ export const ExchangesPage: React.FC = () => {
                     <Link to={`/exchanges/${ex.id}`}><Button size="sm" variant="ghost" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>Open</Button></Link>
                   </div>
                   {ex.status === 'COMPLETED' && ex.has_reviewed && <div className="md:col-span-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#e1e4e8] pt-3"><p className="text-[11px] text-slate-500"><CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-[#d31d24]" />Session complete. Your feedback is helping build a trusted learning network.</p><Link to="/matches" className="text-[11px] font-bold text-[#d31d24] hover:underline">Continue learning →</Link></div>}
-                  {old2} className="md:col-span-4 border-t border-[#e1e4e8] pt-3 text-[11px] text-slate-500">Completion: <b className="text-slate-700">You {myCompleted ? 'confirmed' : 'pending'}</b> · <b className="text-slate-700">{partner.full_name} {partnerCompleted ? 'confirmed' : 'pending'}</b></div>}
+                  {ex.status === 'ACTIVE' && <div className="md:col-span-4 border-t border-[#e1e4e8] pt-3 text-[11px] text-slate-500">Completion: <b className="text-slate-700">You {myCompleted ? 'confirmed' : 'pending'}</b> · <b className="text-slate-700">{partner.full_name} {partnerCompleted ? 'confirmed' : 'pending'}</b></div>}
                 </div>
               );
             })}
