@@ -210,7 +210,7 @@ export const FeedPage: React.FC = () => {
 
               <input
                 type="text"
-                placeholder={postType === 'OFFER' ? "What can you offer neighbors this week?" : "What local assistance do you need?"}
+                placeholder={postType === 'OFFER' ? "What can you teach other students?" : "What do you want to learn?"}
                 value={postTitle}
                 onChange={(e) => setPostTitle(e.target.value)}
                 className="w-full text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -219,7 +219,7 @@ export const FeedPage: React.FC = () => {
 
               <textarea
                 rows={2}
-                placeholder="Share details, available times, and what kind of barter exchange you're looking for..."
+                placeholder="Share what you want to practice, build, or exchange with a peer..."
                 value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
                 className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
@@ -229,13 +229,13 @@ export const FeedPage: React.FC = () => {
               <div className="flex items-center justify-between pt-1">
                 <input
                   type="text"
-                  placeholder="Tag a skill (e.g. Plumbing)..."
+                  placeholder="Tag a skill (e.g. React, Python)..."
                   value={postSkill}
                   onChange={(e) => setPostSkill(e.target.value)}
                   className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg max-w-[180px]"
                 />
                 <Button type="submit" size="sm" loading={isPosting} icon={<Send className="w-3.5 h-3.5" />}>
-                  Post to Community
+                  Share with Learners
                 </Button>
               </div>
             </form>
@@ -245,7 +245,7 @@ export const FeedPage: React.FC = () => {
           <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-xs">
             <div className="flex items-center gap-1.5">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-700">Feed:</span>
+              <span className="text-xs font-semibold text-slate-700">Community:</span>
             </div>
             <div className="flex gap-1">
               {[
@@ -272,11 +272,11 @@ export const FeedPage: React.FC = () => {
           {/* Posts List */}
           {loading ? (
             <div className="text-center py-12 text-slate-400 text-xs">
-              Loading neighborhood updates...
+              Loading peer-learning updates...
             </div>
           ) : posts.length === 0 ? (
             <Card className="p-8 text-center text-xs text-slate-500">
-              No posts found in this category. Be the first to share an offer or request!
+              No updates yet. Be the first to share a skill or ask for help!
             </Card>
           ) : (
             posts.map((post) => (
@@ -357,7 +357,7 @@ export const FeedPage: React.FC = () => {
                       onClick={() => openProposeModal(post.author, post.skill?.name)}
                       icon={<Repeat className="w-3.5 h-3.5" />}
                     >
-                      Propose Exchange
+                      Start Exchange
                     </Button>
                   )}
                 </div>
@@ -373,7 +373,7 @@ export const FeedPage: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-[#d31d24] animate-pulse" />
-                <h3 className="text-xs font-bold text-slate-900">Matches Near You</h3>
+                <h3 className="text-xs font-bold text-slate-900">People Who Match Your Learning Goals</h3>
               </div>
               <Link to="/matches" className="text-[11px] font-semibold text-emerald-700 hover:underline">
                 View all
@@ -382,7 +382,7 @@ export const FeedPage: React.FC = () => {
 
             {matches.length === 0 ? (
               <p className="text-xs text-slate-400 py-3 text-center">
-                Add more offered & needed skills to find reciprocal neighbors!
+                Add more skills to discover peers who can teach what you want to learn.
               </p>
             ) : (
               <div className="space-y-3">
@@ -406,9 +406,9 @@ export const FeedPage: React.FC = () => {
 
                     <div className="text-[11px] text-slate-600 mb-2">
                       <p className="truncate">
-                        <strong>Offers:</strong> {match.they_offer?.join(', ') || 'Skills'}
+                        <strong>They can teach:</strong> {match.they_offer?.join(', ') || 'Skills'}
                       </p>
-                      <p className="text-emerald-700 font-semibold">{match.distance_display}</p>
+                      <p className="text-emerald-700 font-semibold"><span className="block">{match.distance_display}</span><span className="block text-slate-500 mt-0.5">Skill match • peer learning</span></p>
                     </div>
 
                     <Button
@@ -417,7 +417,7 @@ export const FeedPage: React.FC = () => {
                       onClick={() => openProposeModal(match.candidate, match.they_offer?.[0])}
                       icon={<Repeat className="w-3 h-3" />}
                     >
-                      Propose Barter
+                      Start Exchange
                     </Button>
                   </div>
                 ))}
