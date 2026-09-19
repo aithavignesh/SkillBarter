@@ -8,7 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { ExchangeReviewModal } from '../components/exchange/ExchangeReviewModal';
-import { ArrowLeft, Repeat, CheckCircle2, Send, Star, X, MessageSquare, Calendar, Clock, MapPin, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Repeat, CheckCircle2, Send, Star, X, MessageSquare, Calendar, Clock, MapPin, ShieldCheck, BadgeCheck, Crown, Rocket } from 'lucide-react';
 
 export const ExchangeWorkspacePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -146,7 +146,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
               <div className="flex items-start justify-between gap-4 border-b border-[#e1e4e8] pb-4">
                 <div className="flex items-center gap-3">
                   <img src={partner.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'} alt={partner.full_name} className="h-12 w-12 rounded-full border border-[#e1e4e8] object-cover" />
-                  <div><h2 className="text-sm font-bold text-[#17233b]">{partner.full_name}</h2><p className="mt-0.5 text-xs text-[#697386]">{partner.headline || 'Community partner'}</p></div>
+                  <div><h2 className="text-sm font-bold text-[#17233b]">{partner.full_name}</h2><p className="mt-0.5 text-xs text-[#697386]">{partner.headline || 'Community partner'}</p><div className="mt-1 flex flex-wrap gap-2">{partner.verified&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#17233b]"><BadgeCheck className="h-3 w-3"/>Verified</span>}{partner.premium&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Crown className="h-3 w-3"/>Premium</span>}{partner.featured&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Rocket className="h-3 w-3"/>Featured</span>}</div></div>
                 </div>
                 <span className="inline-flex items-center gap-1 border border-[#e1e4e8] bg-[#f7f8f7] px-2 py-1 text-[10px] font-bold text-[#697386]"><ShieldCheck className="h-3.5 w-3.5 text-[#d31d24]" /> {Math.round(partner.trust_score || 0)} Trust</span>
               </div>
