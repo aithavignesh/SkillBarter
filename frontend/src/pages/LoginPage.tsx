@@ -120,14 +120,14 @@ export const LoginPage: React.FC = () => {
               <Repeat className="w-5 h-5" />
             </div>
           </Link>
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Welcome to SkillBarter</h2>
-          <p className="text-xs text-slate-500 mt-1">Log in securely with your mobile phone and real SMS OTP</p>
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Welcome back to SkillBarter</h2>
+          <p className="text-xs text-slate-500 mt-1">Sign in to continue learning, teaching and finding your next peer</p>
         </div>
 
         <Card className="p-4 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border-emerald-200/80">
           <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-2.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Fast 1-Click Demo Login</span>
+            <span>Quick demo access</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => handleQuickLogin(1)} className="text-xs justify-start bg-white border-emerald-300 hover:bg-emerald-50"><strong>Arjun Sharma</strong> (Web)</Button>
@@ -140,7 +140,7 @@ export const LoginPage: React.FC = () => {
         <Card className="p-6 border-emerald-200 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Phone className="w-4 h-4 text-emerald-600" />
-            <span className="text-xs font-bold text-emerald-800">Mobile SMS OTP Login</span>
+            <span className="text-xs font-bold text-emerald-800">Sign in with mobile OTP</span>
           </div>
 
           {error && <div className="p-3 mb-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">{error}</div>}
