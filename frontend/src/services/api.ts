@@ -543,11 +543,146 @@ class ApiClient {
     return await this.serializeExchange(data, requesterId);
   }
 
-  async acceptExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Only the recipient can accept this request.'); if (e.status !== 'PENDING') throw new Error(`This exchange is already ${String(e.status).toLowerCase()}.`); const { data, error } = await insforge.database.from('exchanges').update({ status: 'ACTIVE', updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to accept exchange'); await insforge.database.from('notifications').insert({ user_id: Number(e.requester_id), type: 'EXCHANGE_ACCEPTED', title: 'Exchange accepted', message: `${appUser.full_name} accepted your skill exchange.`, link: `/exchanges/${id}` }); return data; }
-  async rejectExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Only the recipient can decline this request.'); if (e.status !== 'PENDING') throw new Error(`This exchange is already ${String(e.status).toLowerCase()}.`); const { data, error } = await insforge.database.from('exchanges').update({ status: 'REJECTED', updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to decline exchange'); await insforge.database.from('notifications').insert({ user_id: Number(e.requester_id), type: 'EXCHANGE_REJECTED', title: 'Exchange declined', message: `${appUser.full_name} declined your skill exchange proposal.`, link: `/exchanges/${id}` }); return data; }
-  async withdrawExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.requester_id) !== Number(appUser.id)) throw new Error('Only the requester can withdraw this proposal.'); if (e.status !== 'PENDING') throw new Error(`This proposal is already ${String(e.status).toLowerCase()}.`); const { data, error } = await insforge.database.from('exchanges').update({ status: 'CANCELLED', cancellation_reason: 'Withdrawn by requester', cancelled_by_id: appUser.id, updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to withdraw proposal'); await insforge.database.from('notifications').insert({ user_id: Number(e.receiver_id), type: 'EXCHANGE_WITHDRAWN', title: 'Exchange withdrawn', message: `${appUser.full_name} withdrew the exchange proposal.`, link: `/exchanges/${id}` }); return data; }
-  async cancelExchange(id: number, reason: string) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.requester_id) !== Number(appUser.id) && Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Not authorized to cancel this exchange.'); if (e.status !== 'ACTIVE') throw new Error('Only active exchanges can be cancelled.'); const clean = String(reason || '').trim(); if (!clean) throw new Error('Please provide a cancellation reason.'); const { data, error } = await insforge.database.from('exchanges').update({ status: 'CANCELLED', cancellation_reason: clean, cancelled_by_id: appUser.id, updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to cancel exchange'); const partnerId = Number(e.requester_id) === Number(appUser.id) ? Number(e.receiver_id) : Number(e.requester_id); await insforge.database.from('notifications').insert({ user_id: partnerId, type: 'EXCHANGE_CANCELLED', title: 'Exchange cancelled', message: `${appUser.full_name} cancelled the exchange. Reason: ${clean}`, link: `/exchanges/${id}` }); return data; }
-  async startExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.requester_id) !== Number(appUser.id) && Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Not authorized.'); if (e.status !== 'ACCEPTED' && e.status !== 'ACTIVE') throw new Error('This exchange is not ready to start.'); const { data, error } = await insforge.database.from('exchanges').update({ status: 'ACTIVE', updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to start exchange'); return data; }
+  async acceptExchange(id: number) {
+    const { appUser } = await this.getAppUser();
+    const e = await this.getExchangeRow(id);
+    if (Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Only the recipient can accept this request.');
+    if (e.status !== 'PENDING') throw new Error(`This exchange is already ${String(e.status).toLowerCase()}.`);
+
+    const { data, error } = await insforge.database
+      .from('exchanges')
+      .update({ status: 'ACTIVE', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('receiver_id', appUser.id)
+      .eq('status', 'PENDING')
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message || 'Unable to accept exchange');
+    if (!data) throw new Error('This learning request is no longer pending.');
+    await insforge.database.from('notifications').insert({
+      user_id: Number(e.requester_id),
+      type: 'EXCHANGE_ACCEPTED',
+      title: 'Learning request accepted',
+      message: `${appUser.full_name} accepted your learning request.`,
+      link: `/exchanges/${id}`,
+    });
+    return this.serializeExchange(data, Number(appUser.id));
+  }
+
+  async rejectExchange(id: number) {
+    const { appUser } = await this.getAppUser();
+    const e = await this.getExchangeRow(id);
+    if (Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Only the recipient can decline this request.');
+    if (e.status !== 'PENDING') throw new Error(`This exchange is already ${String(e.status).toLowerCase()}.`);
+
+    const { data, error } = await insforge.database
+      .from('exchanges')
+      .update({ status: 'REJECTED', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('receiver_id', appUser.id)
+      .eq('status', 'PENDING')
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message || 'Unable to decline exchange');
+    if (!data) throw new Error('This learning request is no longer pending.');
+    await insforge.database.from('notifications').insert({
+      user_id: Number(e.requester_id),
+      type: 'EXCHANGE_REJECTED',
+      title: 'Learning request declined',
+      message: `${appUser.full_name} declined your learning request.`,
+      link: `/exchanges/${id}`,
+    });
+    return this.serializeExchange(data, Number(appUser.id));
+  }
+
+  async withdrawExchange(id: number) {
+    const { appUser } = await this.getAppUser();
+    const e = await this.getExchangeRow(id);
+    if (Number(e.requester_id) !== Number(appUser.id)) throw new Error('Only the requester can withdraw this proposal.');
+    if (e.status !== 'PENDING') throw new Error(`This proposal is already ${String(e.status).toLowerCase()}.`);
+
+    const { data, error } = await insforge.database
+      .from('exchanges')
+      .update({
+        status: 'CANCELLED',
+        cancellation_reason: 'Withdrawn by requester',
+        cancelled_by_id: appUser.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .eq('requester_id', appUser.id)
+      .eq('status', 'PENDING')
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message || 'Unable to withdraw proposal');
+    if (!data) throw new Error('This learning request is no longer pending.');
+    await insforge.database.from('notifications').insert({
+      user_id: Number(e.receiver_id),
+      type: 'EXCHANGE_WITHDRAWN',
+      title: 'Learning request withdrawn',
+      message: `${appUser.full_name} withdrew the learning request.`,
+      link: `/exchanges/${id}`,
+    });
+    return this.serializeExchange(data, Number(appUser.id));
+  }
+
+  async cancelExchange(id: number, reason: string) {
+    const { appUser } = await this.getAppUser();
+    const e = await this.getExchangeRow(id);
+    if (Number(e.requester_id) !== Number(appUser.id) && Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Not authorized to cancel this exchange.');
+    if (e.status !== 'ACTIVE') throw new Error('Only active exchanges can be cancelled.');
+    const clean = String(reason || '').trim();
+    if (!clean) throw new Error('Please provide a cancellation reason.');
+    if (clean.length > 500) throw new Error('Cancellation reason must be 500 characters or less.');
+
+    const { data, error } = await insforge.database
+      .from('exchanges')
+      .update({
+        status: 'CANCELLED',
+        cancellation_reason: clean,
+        cancelled_by_id: appUser.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .in('status', ['ACTIVE'])
+      .or(`requester_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`)
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message || 'Unable to cancel exchange');
+    if (!data) throw new Error('This learning exchange is no longer active.');
+    const partnerId = Number(e.requester_id) === Number(appUser.id) ? Number(e.receiver_id) : Number(e.requester_id);
+    await insforge.database.from('notifications').insert({
+      user_id: partnerId,
+      type: 'EXCHANGE_CANCELLED',
+      title: 'Learning exchange cancelled',
+      message: `${appUser.full_name} cancelled the learning exchange. Reason: ${clean}`,
+      link: `/exchanges/${id}`,
+    });
+    return this.serializeExchange(data, Number(appUser.id));
+  }
+
+  async startExchange(id: number) {
+    const { appUser } = await this.getAppUser();
+    const e = await this.getExchangeRow(id);
+    const uid = Number(appUser.id);
+    if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Not authorized.');
+    if (e.status !== 'ACTIVE' && e.status !== 'ACCEPTED') throw new Error('This exchange is not ready to start.');
+
+    if (e.status === 'ACTIVE') return this.serializeExchange(e, uid);
+
+    const { data, error } = await insforge.database
+      .from('exchanges')
+      .update({ status: 'ACTIVE', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .in('status', ['ACCEPTED'])
+      .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
+      .select('*')
+      .maybeSingle();
+    if (error) throw new Error(error.message || 'Unable to start exchange');
+    if (!data) throw new Error('This learning exchange is no longer ready to start.');
+    return this.serializeExchange(data, uid);
+  }
+
   async updateExchangeSchedule(id: number, payload: { preferred_date?: string; estimated_hours?: number; location_area?: string }) {
     const { appUser } = await this.getAppUser();
     const e = await this.getExchangeRow(id);
@@ -558,16 +693,71 @@ class ApiClient {
     const location = String(payload.location_area || '').trim();
     const hours = Number(payload.estimated_hours);
     if (!preferredDate) throw new Error('Please choose a preferred date or time.');
-    if (!Number.isFinite(hours) || hours <= 0 || hours > 24) throw new Error('Estimated hours must be between 0.5 and 24.');
-    const patch = { preferred_date: preferredDate, estimated_hours: hours, location_area: location || e.location_area || 'Local', updated_at: new Date().toISOString() };
-    const { data, error } = await insforge.database.from('exchanges').update(patch).eq('id', id).select('*').single();
+    if (!Number.isFinite(hours) || hours < 0.5 || hours > 24) throw new Error('Estimated hours must be between 0.5 and 24.');
+    if (preferredDate.length > 200) throw new Error('Preferred session time must be 200 characters or less.');
+    if (location.length > 200) throw new Error('Session location must be 200 characters or less.');
+
+    const patch = {
+      preferred_date: preferredDate,
+      estimated_hours: hours,
+      location_area: location || e.location_area || 'Online or a shared campus space',
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await insforge.database
+      .from('exchanges')
+      .update(patch)
+      .eq('id', id)
+      .in('status', ['PENDING', 'ACTIVE'])
+      .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
+      .select('*')
+      .maybeSingle();
     if (error) throw new Error(error.message || 'Unable to update exchange schedule');
+    if (!data) throw new Error('This learning exchange is no longer editable.');
     const partnerId = uid === Number(e.requester_id) ? Number(e.receiver_id) : Number(e.requester_id);
-    await insforge.database.from('notifications').insert({ user_id: partnerId, type: 'EXCHANGE_SCHEDULE_UPDATED', title: 'Exchange schedule updated', message: `${appUser.full_name} updated the exchange schedule to ${preferredDate}.`, link: `/exchanges/${id}` });
-    return data;
+    await insforge.database.from('notifications').insert({
+      user_id: partnerId,
+      type: 'EXCHANGE_SCHEDULE_UPDATED',
+      title: 'Learning session updated',
+      message: `${appUser.full_name} updated the session schedule to ${preferredDate}.`,
+      link: `/exchanges/${id}`,
+    });
+    return this.serializeExchange(data, uid);
   }
 
-  async completeExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); const uid = Number(appUser.id); if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Not authorized.'); if (e.status !== 'ACTIVE') throw new Error('Only active exchanges can be completed.'); const patch: any = uid === Number(e.requester_id) ? { requester_completed: true } : { receiver_completed: true }; const both = uid === Number(e.requester_id) ? e.receiver_completed : e.requester_completed; if (both) patch.status = 'COMPLETED'; const { data, error } = await insforge.database.from('exchanges').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to complete exchange'); const partnerId = uid === Number(e.requester_id) ? Number(e.receiver_id) : Number(e.requester_id); await insforge.database.from('notifications').insert({ user_id: partnerId, type: patch.status === 'COMPLETED' ? 'EXCHANGE_COMPLETED' : 'EXCHANGE_COMPLETION_PENDING', title: patch.status === 'COMPLETED' ? 'Exchange completed' : 'Completion confirmed', message: patch.status === 'COMPLETED' ? `${appUser.full_name} confirmed the exchange and it is now completed.` : `${appUser.full_name} confirmed their side of the exchange.`, link: `/exchanges/${id}` }); return data; }
+  async completeExchange(id: number) {
+    const { appUser } = await this.getAppUser();
+    const e = await this.getExchangeRow(id);
+    const uid = Number(appUser.id);
+    if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Not authorized.');
+    if (e.status !== 'ACTIVE') throw new Error('Only active exchanges can be completed.');
+
+    const alreadyCompleted = uid === Number(e.requester_id) ? Boolean(e.requester_completed) : Boolean(e.receiver_completed);
+    if (alreadyCompleted) throw new Error('You have already confirmed completion for this learning session.');
+
+    const patch: any = uid === Number(e.requester_id) ? { requester_completed: true } : { receiver_completed: true };
+    const both = uid === Number(e.requester_id) ? Boolean(e.receiver_completed) : Boolean(e.requester_completed);
+    if (both) patch.status = 'COMPLETED';
+
+    let query: any = insforge.database.from('exchanges').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).eq('status', 'ACTIVE');
+    query = uid === Number(e.requester_id) ? query.eq('requester_completed', false) : query.eq('receiver_completed', false);
+    query = query.or(`requester_id.eq.${uid},receiver_id.eq.${uid}`);
+    const { data, error } = await query.select('*').maybeSingle();
+    if (error) throw new Error(error.message || 'Unable to confirm completion');
+    if (!data) throw new Error('Completion was already confirmed or the learning exchange changed state.');
+
+    const partnerId = uid === Number(e.requester_id) ? Number(e.receiver_id) : Number(e.requester_id);
+    await insforge.database.from('notifications').insert({
+      user_id: partnerId,
+      type: patch.status === 'COMPLETED' ? 'EXCHANGE_COMPLETED' : 'EXCHANGE_COMPLETION_PENDING',
+      title: patch.status === 'COMPLETED' ? 'Learning exchange completed' : 'Completion confirmed',
+      message: patch.status === 'COMPLETED'
+        ? `${appUser.full_name} confirmed the learning session and it is now completed.`
+        : `${appUser.full_name} confirmed their side of the learning session.`,
+      link: `/exchanges/${id}`,
+    });
+    return this.serializeExchange(data, uid);
+  }
+
   async getExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.requester_id) !== Number(appUser.id) && Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Not authorized.'); return this.serializeExchange(e, Number(appUser.id)); }
 
   async getNotifications() { const { appUser } = await this.getAppUser(); const r = await insforge.database.from('notifications').select('*').eq('user_id', appUser.id).order('created_at', { ascending: false }).limit(50); if (r.error) throw new Error(r.error.message || 'Unable to load notifications'); return r.data || []; }
