@@ -201,8 +201,55 @@ class FunctionalApi {
 
   async sendMessage(payload: any) { const me = await this.appUser(); const receiverId = Number(payload.receiver_id); const content = String(payload.content || '').trim(); const exchangeId = payload.exchange_id ? Number(payload.exchange_id) : null; if (!receiverId || receiverId === Number(me.id)) throw new Error('Choose a valid recipient.'); if (!content) throw new Error('Message cannot be empty.'); if (exchangeId) { const exchange = await insforge.database.from('exchanges').select('id,requester_id,receiver_id,status').eq('id', exchangeId).maybeSingle(); if (exchange.error || !exchange.data) fail(exchange.error, 'Exchange not found'); const participant = Number(exchange.data.requester_id) === Number(me.id) || Number(exchange.data.receiver_id) === Number(me.id); const partner = Number(exchange.data.requester_id) === receiverId || Number(exchange.data.receiver_id) === receiverId; if (!participant || !partner) throw new Error('You can only send exchange messages to a participant.'); if (['CANCELLED','REJECTED'].includes(String(exchange.data.status))) throw new Error('This exchange is no longer active.'); } const r = await insforge.database.from('messages').insert({ sender_id: me.id, receiver_id: receiverId, content, exchange_id: exchangeId }).select('*').single(); if (r.error) fail(r.error, 'Unable to send message'); await insforge.database.from('notifications').insert({ user_id: receiverId, type: 'MESSAGE', title: 'New message', message: `${me.full_name} sent you a message.`, link: `/messages/${me.id}` }); return r.data; }
 
-  async getFeed(postType?: string) { let q: any = insforge.database.from('posts').select('*').order('created_at', { ascending: false }).limit(50); if (postType) q = q.eq('post_type', postType); const r = await q; if (r.error) fail(r.error, 'Unable to load feed'); return r.data || []; }
-  async createPost(payload: any) { const me = await this.appUser(); const title = String(payload.title || '').trim(); const content = String(payload.content || '').trim(); if (!content) throw new Error('Post content cannot be empty.'); const r = await insforge.database.from('posts').insert({ author_id: me.id, post_type: payload.post_type || 'COMMUNITY', title: title || null, content, likes_count: 0 }).select('*').single(); if (r.error) fail(r.error, 'Unable to publish post'); return r.data; }
+  async getFeed(postType?: string) {
+    const me = await this.appUser();
+    let q: any = insforge.database.from('posts').select('*').order('created_at', { ascending: false }).limit(50);
+    if (postType) q = q.eq('post_type', postType);
+    const r = await q;
+    if (r.error) fail(r.error, 'Unable to load feed');
+    return Promise.all((r.data || []).map(async (post: any) => {
+      const [author, skill] = await Promise.all([
+        insforge.database.from('users').select('id,full_name,avatar_url,headline,address_display,trust_score,reliability_score,verified,premium,featured_until').eq('id', post.author_id).maybeSingle(),
+        post.skill_id ? insforge.database.from('skills').select('id,name,category,icon').eq('id', post.skill_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      ]);
+      if (author.error) fail(author.error, 'Unable to load post author');
+      if (skill.error) fail(skill.error, 'Unable to load post skill');
+      const a = author.data;
+      return {
+        ...post,
+        author: a ? { ...a, verified: Boolean(a.verified), premium: Boolean(a.premium), featured: Boolean(a.featured_until && new Date(a.featured_until).getTime() > Date.now()) } : null,
+        skill: skill.data || null,
+        distance_display: Number(post.author_id) === Number(me.id) ? 'You' : undefined,
+      };
+    }));
+  }
+
+  async createPost(payload: any) {
+    const me = await this.appUser();
+    const title = String(payload.title || '').trim();
+    const content = String(payload.content || '').trim();
+    const postType = String(payload.post_type || 'COMMUNITY').toUpperCase();
+    const allowedTypes = ['OFFER', 'REQUEST', 'COMPLETED_EXCHANGE', 'COMMUNITY', 'RECOMMENDATION', 'WORKSHOP'];
+    if (!allowedTypes.includes(postType)) throw new Error('Unsupported post type.');
+    if (!title) throw new Error('Post title is required.');
+    if (!content) throw new Error('Post content cannot be empty.');
+    let skillId: number | null = null;
+    if (payload.skill_name) {
+      const skillName = String(payload.skill_name).trim();
+      const existing = await insforge.database.from('skills').select('id').ilike('name', skillName).maybeSingle();
+      if (existing.error) fail(existing.error, 'Unable to find skill');
+      if (existing.data) skillId = Number(existing.data.id);
+      else {
+        const createdSkill = await insforge.database.from('skills').insert({ name: skillName, category: 'Other', icon: 'Sparkles', popularity: 0 }).select('id').single();
+        if (createdSkill.error) fail(createdSkill.error, 'Unable to create skill');
+        skillId = Number(createdSkill.data.id);
+      }
+    }
+    const r = await insforge.database.from('posts').insert({ author_id: me.id, post_type: postType, title, content, skill_id: skillId, likes_count: 0 }).select('*').single();
+    if (r.error) fail(r.error, 'Unable to publish post');
+    return r.data;
+  }
+
   async likePost(id: number) { const r = await insforge.database.from('posts').select('likes_count').eq('id', id).maybeSingle(); if (r.error || !r.data) fail(r.error, 'Post not found'); const u = await insforge.database.from('posts').update({ likes_count: Number(r.data.likes_count || 0) + 1 }).eq('id', id).select('likes_count').single(); if (u.error) fail(u.error, 'Unable to save like'); return u.data; }
 }
 
