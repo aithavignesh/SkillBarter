@@ -53,11 +53,12 @@ class ExchangeFunctionalApi {
     const row: any = e.data;
     const uid = Number(me.id);
     if (uid !== Number(row.requester_id) && uid !== Number(row.receiver_id)) throw new Error('You do not have access to this exchange.');
-    const [requester, receiver, requesterSkill, receiverSkill] = await Promise.all([
-      insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,verified,premium,featured_until').eq('id', row.requester_id).maybeSingle(),
-      insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', row.receiver_id).maybeSingle(),
+    const [requester, receiver, requesterSkill, receiverSkill, review] = await Promise.all([
+      insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,verified,premium,featured_until,badges').eq('id', row.requester_id).maybeSingle(),
+      insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,verified,premium,featured_until,badges').eq('id', row.receiver_id).maybeSingle(),
       row.requester_skill_id ? insforge.database.from('skills').select('name').eq('id', row.requester_skill_id).maybeSingle() : Promise.resolve({ data: null }),
       row.receiver_skill_id ? insforge.database.from('skills').select('name').eq('id', row.receiver_skill_id).maybeSingle() : Promise.resolve({ data: null }),
+      insforge.database.from('reviews').select('id').eq('exchange_id', id).eq('reviewer_id', uid).maybeSingle(),
     ]);
     return {
       ...row,
@@ -65,7 +66,8 @@ class ExchangeFunctionalApi {
       receiver: receiver.data,
       requester_skill_name: requesterSkill.data?.name || 'Skill exchange',
       receiver_skill_name: receiverSkill.data?.name || 'Skill exchange',
-      user_can_review: row.status === 'COMPLETED',
+      user_can_review: row.status === 'COMPLETED' && !review.data,
+      has_reviewed: Boolean(review.data),
     };
   }
 }
