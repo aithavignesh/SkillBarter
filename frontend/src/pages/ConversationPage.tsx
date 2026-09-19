@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MessageSquare, Send, Repeat } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Send, Repeat, BadgeCheck, Crown, Rocket } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../services/api';
@@ -79,7 +79,7 @@ export const ConversationPage: React.FC = () => {
               <img src={partner?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'} className="h-11 w-11 rounded-full object-cover" alt="" />
               <div className="min-w-0">
                 <h1 className="truncate text-sm font-extrabold text-[#17233b]">{partner?.full_name || 'Member conversation'}</h1>
-                <p className="truncate text-xs text-[#697386]">{partner?.headline || 'SkillBarter member'}</p>
+                <p className="truncate text-xs text-[#697386]">{partner?.headline || 'SkillBarter member'}</p><div className="mt-1 flex gap-2">{partner?.verified&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#17233b]"><BadgeCheck className="h-3 w-3"/>Verified</span>}{partner?.premium&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Crown className="h-3 w-3"/>Premium</span>}{partner?.featured&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Rocket className="h-3 w-3"/>Featured</span>}</div>
               </div>
             </div>
             <div className="flex gap-2">
