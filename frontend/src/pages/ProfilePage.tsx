@@ -128,7 +128,7 @@ export const ProfilePage: React.FC = () => {
             />
             <div>
               <h1 className="text-2xl font-extrabold text-slate-900">{profile.full_name}</h1>
-              <p className="text-sm text-slate-600 mt-0.5">{profile.headline || 'Community Member'}</p>
+              <p className="text-sm text-slate-600 mt-0.5">{profile.headline || 'Student & Peer Learner'}</p>
 
               <div className="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-500">
                 <span className="flex items-center gap-1 font-semibold text-emerald-700">
@@ -164,16 +164,16 @@ export const ProfilePage: React.FC = () => {
           {!isOwnProfile ? (
             <div className="flex items-center gap-2">
               <Button size="sm" onClick={() => setIsProposeOpen(true)} icon={<Repeat className="w-3.5 h-3.5" />}>
-                Start Exchange
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleConnect} icon={<UserPlus className="w-3.5 h-3.5" />}>
-                Connect
+                Start Learning Exchange
               </Button>
               <Link to="/messages">
                 <Button size="sm" variant="outline" icon={<MessageSquare className="w-3.5 h-3.5" />}>
-                  Chat
+                  Message Partner
                 </Button>
               </Link>
+              <Button size="sm" variant="outline" onClick={handleConnect} icon={<UserPlus className="w-3.5 h-3.5" />}>
+                Add to Learning Network
+              </Button>
               <Button size="sm" variant="ghost" onClick={handleReport} className="text-slate-400 hover:text-rose-600">
                 <Flag className="w-4 h-4" />
               </Button>
