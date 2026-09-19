@@ -110,7 +110,7 @@ export const ProfilePage: React.FC = () => {
   if (loading || !profile) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center text-xs text-slate-400">
-        Loading user profile...
+        Loading peer profile...
       </div>
     );
   }
@@ -133,7 +133,7 @@ export const ProfilePage: React.FC = () => {
               <div className="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-500">
                 <span className="flex items-center gap-1 font-semibold text-emerald-700">
                   <MapPin className="w-3.5 h-3.5" />
-                  {profile.address_display || 'Local Neighborhood'}
+                  {profile.address_display || 'Student / Learner'}
                   {profile.distance_display && ` (${profile.distance_display})`}
                 </span>
                 <span>•</span>
@@ -164,7 +164,7 @@ export const ProfilePage: React.FC = () => {
           {!isOwnProfile ? (
             <div className="flex items-center gap-2">
               <Button size="sm" onClick={() => setIsProposeOpen(true)} icon={<Repeat className="w-3.5 h-3.5" />}>
-                Propose Exchange
+                Start Exchange
               </Button>
               <Button size="sm" variant="outline" onClick={handleConnect} icon={<UserPlus className="w-3.5 h-3.5" />}>
                 Connect
@@ -217,23 +217,46 @@ export const ProfilePage: React.FC = () => {
         </Card>
       )}
 
+      {/* Why this match matters */}
+      {!isOwnProfile && (
+        <Card className="p-6 bg-gradient-to-br from-emerald-50/70 to-white border-emerald-200/80">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h3 className="text-sm font-bold text-slate-900">Why connect?</h3>
+          </div>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Compare what you want to learn with what this peer can teach, then start an exchange that helps both of you build practical skills.
+          </p>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="p-3 bg-white rounded-xl border border-slate-200">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">They can teach</p>
+              <p className="text-xs font-semibold text-emerald-800 mt-1">{profile.skills_offered?.slice(0, 2).join(', ') || 'Skills listed on profile'}</p>
+            </div>
+            <div className="p-3 bg-white rounded-xl border border-slate-200">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">They want to learn</p>
+              <p className="text-xs font-semibold text-teal-800 mt-1">{profile.skills_needed?.slice(0, 2).join(', ') || 'Learning goals'}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Skills Offered & Skills Needed Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Offered */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-emerald-600" />
-            <h3 className="text-sm font-bold text-slate-900">Skills I Offer (For Barter)</h3>
+            <h3 className="text-sm font-bold text-slate-900">What I Can Teach</h3>
           </div>
           <div className="space-y-2">
             {profile.skills_offered?.length === 0 ? (
-              <p className="text-xs text-slate-400">No skills listed yet.</p>
+              <p className="text-xs text-slate-400">No teaching skills listed yet.</p>
             ) : (
               profile.skills_offered?.map((s) => (
                 <div key={s} className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80 flex items-center justify-between text-xs">
                   <span className="font-bold text-emerald-950">{s}</span>
                   <span className="text-[10px] bg-white text-emerald-700 font-semibold px-2 py-0.5 rounded-md border border-emerald-200">
-                    Available
+                    Can Teach
                   </span>
                 </div>
               ))
@@ -245,17 +268,17 @@ export const ProfilePage: React.FC = () => {
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Repeat className="w-4 h-4 text-teal-600" />
-            <h3 className="text-sm font-bold text-slate-900">Skills I Need (Looking For)</h3>
+            <h3 className="text-sm font-bold text-slate-900">What I Want to Learn</h3>
           </div>
           <div className="space-y-2">
             {profile.skills_needed?.length === 0 ? (
-              <p className="text-xs text-slate-400">Open to all community trades.</p>
+              <p className="text-xs text-slate-400">No learning goals listed yet.</p>
             ) : (
               profile.skills_needed?.map((s) => (
                 <div key={s} className="p-3 bg-teal-50/60 rounded-xl border border-teal-200/80 flex items-center justify-between text-xs">
                   <span className="font-bold text-teal-950">{s}</span>
                   <span className="text-[10px] bg-white text-teal-700 font-semibold px-2 py-0.5 rounded-md border border-teal-200">
-                    Seeking Help
+                    Wants to Learn
                   </span>
                 </div>
               ))
@@ -264,12 +287,12 @@ export const ProfilePage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Community Reviews & Ratings Section */}
+      {/* Peer Learning Reviews & Ratings Section */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
           <div>
             <h3 className="text-sm font-bold text-slate-900">Community Reviews</h3>
-            <p className="text-xs text-slate-500">Verified feedback from completed barter exchanges</p>
+            <p className="text-xs text-slate-500">Feedback from completed skill exchanges</p>
           </div>
           <span className="text-xs font-bold text-slate-700">
             {reviews.length} Total Reviews
@@ -278,7 +301,7 @@ export const ProfilePage: React.FC = () => {
 
         {reviews.length === 0 ? (
           <p className="text-center py-8 text-xs text-slate-400">
-            No reviews yet. Complete a skill exchange to receive your first community review!
+            No reviews yet. Complete a skill exchange to build trust with your next learning partner!
           </p>
         ) : (
           <div className="space-y-4">
@@ -317,7 +340,7 @@ export const ProfilePage: React.FC = () => {
         partner={profile}
         defaultPartnerSkill={profile.skills_offered?.[0] || ''}
         onSuccess={() => {
-          alert('Barter request sent successfully!');
+          alert('Exchange request sent successfully!');
         }}
       />
     </div>
