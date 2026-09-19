@@ -52,6 +52,12 @@ export const ExchangesPage: React.FC = () => {
         <div className="bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">2. PLAN</p><p className="mt-1 text-xs font-semibold text-[#17233b]">Schedule the session</p><p className="mt-1 text-[10px] text-slate-500">Pick a time, duration and format before you meet.</p></div>
         <div className="bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">3. LEARN</p><p className="mt-1 text-xs font-semibold text-[#17233b]">Complete the session</p><p className="mt-1 text-[10px] text-slate-500">Complete the session, confirm the outcome and leave a peer review.</p></div>
       </div>
+      {!loading && exchanges.length > 0 && <div className="mt-4 border border-emerald-200 bg-emerald-50/50 px-4 py-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">After you send a request</p><p className="mt-1 text-xs font-semibold text-slate-800">Wait for your partner to accept, then agree on one small learning outcome and a session time.</p><p className="mt-1 text-[10px] text-slate-500">Keep the first exchange simple. You can refine the learning plan after they respond.</p></div>
+          <Link to="/matches"><Button size="sm" variant="outline" icon={<Repeat className="h-3.5 w-3.5" />}>Find another partner</Button></Link>
+        </div>
+      </div>}
       {loading ? (
         <div className="mt-5 border border-[#e1e4e8] bg-white py-20 text-center text-sm text-slate-400">Loading exchange workspace…</div>
       ) : exchanges.length === 0 ? (
