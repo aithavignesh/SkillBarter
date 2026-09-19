@@ -21,10 +21,10 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [scheduleDate, setScheduleDate] = useState('');
-  const [scheduleHours, setScheduleHours] = useState('2');
-  const [scheduleArea, setScheduleArea] = useState('');
+  const [scheduleOpen, setScheduleOpen] = useState<boolean>(false);
+  const [scheduleDate, setScheduleDate] = useState<string>('');
+  const [scheduleHours, setScheduleHours] = useState<string>('2');
+  const [scheduleArea, setScheduleArea] = useState<string>('');
   const [scheduleSaving, setScheduleSaving] = useState(false);
 
   const exchangeId = Number(id || 0);
