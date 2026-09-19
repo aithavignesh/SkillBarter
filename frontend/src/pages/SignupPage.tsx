@@ -9,7 +9,7 @@ export const SignupPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [addressDisplay, setAddressDisplay] = useState('Madhapur, Hyderabad');
+  const [addressDisplay, setAddressDisplay] = useState('Campus / city');
   const [primarySkill, setPrimarySkill] = useState('');
   const [primaryCategory, setPrimaryCategory] = useState('Technology');
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export const SignupPage: React.FC = () => {
             Start learning with SkillBarter
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Create your learning profile, find student peers, and start your first skill exchange.
+            Set up your profile in under a minute, then find a student who can teach what you want to learn.
           </p>
         </div>
 
@@ -150,7 +150,7 @@ export const SignupPage: React.FC = () => {
 
             <div className="pt-2 border-t border-slate-100">
               <label className="block text-xs font-bold text-emerald-900 mb-2">
-                Start with one skill you can teach
+                Add one skill you can teach
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
@@ -174,7 +174,7 @@ export const SignupPage: React.FC = () => {
             </div>
 
             <div className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-              Your location helps us surface relevant learning partners. Exact GPS coordinates are never made public.
+              Why we ask: your campus/city helps us find relevant learning partners. You can change it later, and exact GPS coordinates are never shown publicly.
             </div>
 
             <Button
@@ -183,7 +183,7 @@ export const SignupPage: React.FC = () => {
               className="w-full"
               icon={<ArrowRight className="w-4 h-4" />}
             >
-              Continue to Learning Setup
+              Continue to Find My Learning Partners
             </Button>
           </form>
 
