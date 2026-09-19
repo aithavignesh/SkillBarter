@@ -303,7 +303,7 @@ class ApiClient {
   }
 
   async getUserProfile(userId: number) {
-    const { data, error } = await insforge.database.from('users').select('*').eq('id', userId).maybeSingle();
+    const { data, error } = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,onboarding_completed,primary_intent,created_at').eq('id', userId).maybeSingle();
     if (error) throw new Error(error.message || 'Unable to load user profile');
     if (!data) throw new Error('User not found');
     const skills = await this.getUserSkills(userId);
@@ -312,9 +312,10 @@ class ApiClient {
 
   async getNearbyUsers(radiusKm = 10) {
     const { appUser } = await this.getAppUser();
-    const centerLat = Number(appUser.latitude ?? 17.4485);
-    const centerLon = Number(appUser.longitude ?? 78.3748);
-    const { data, error } = await insforge.database.from('users').select('*').eq('is_active', true).limit(100);
+    if (appUser.latitude == null || appUser.longitude == null) return [];
+    const centerLat = Number(appUser.latitude);
+    const centerLon = Number(appUser.longitude);
+    const { data, error } = await insforge.database.from('users').select('id,full_name,avatar_url,headline,latitude,longitude,address_display,exchange_radius_km,availability,trust_score,reliability_score,completed_exchanges_count,badges,is_active').eq('is_active', true).limit(100);
     if (error) throw new Error(error.message || 'Unable to load nearby users');
     const distance = (lat: number, lon: number) => {
       const toRad = (v: number) => v * Math.PI / 180;
@@ -342,7 +343,7 @@ class ApiClient {
     const blocked = await insforge.database.from('blocks').select('blocker_id, blocked_id').or(`blocker_id.eq.${appUser.id},blocked_id.eq.${appUser.id}`);
     const excluded = new Set<number>([Number(appUser.id)]);
     for (const b of blocked.data ?? []) { excluded.add(Number(b.blocker_id)); excluded.add(Number(b.blocked_id)); }
-    const users = await insforge.database.from('users').select('*').eq('is_active', true).limit(100);
+    const users = await insforge.database.from('users').select('id,full_name,avatar_url,headline,latitude,longitude,address_display,exchange_radius_km,availability,trust_score,reliability_score,completed_exchanges_count,badges,is_active').eq('is_active', true).limit(100);
     if (users.error) throw new Error(users.error.message || 'Unable to load members');
     const distFn = (aLat: number, aLon: number, bLat: number, bLon: number) => {
       const toRad = (v: number) => v * Math.PI / 180;
@@ -350,7 +351,7 @@ class ApiClient {
       const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
       return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
-    const myLat = Number(appUser.latitude ?? 17.4485), myLon = Number(appUser.longitude ?? 78.3748);
+    const myLat = Number(appUser.latitude), myLon = Number(appUser.longitude);
     const results: any[] = [];
     for (const candidate of users.data ?? []) {
       const cid = Number(candidate.id);
@@ -407,7 +408,7 @@ class ApiClient {
       const availability = myAvail.includes('flexible') || theirAvail.includes('flexible') || myAvail === theirAvail ? 10 : (myAvail.split(/\s+/).some((w: string) => theirAvail.includes(w)) ? 7 : 4);
       const score = Math.min(Math.max(Math.round(skillScore + proximityFactor * 20 + trust + availability), 10), 99);
       const reasons: string[] = [];
-      if (reciprocal) reasons.push(`Direct 2-way barter match: You can trade '${youOfferTheyNeed[0]}' for '${theyOfferYouNeed[0]}'`);
+      if (reciprocal) reasons.push(`Strong peer-learning fit: You can teach '${youOfferTheyNeed[0]}' while learning '${theyOfferYouNeed[0]}'`);
       else if (theyOfferYouNeed.length) reasons.push(`They offer '${theyOfferYouNeed[0]}' which you need`);
       else reasons.push(`You offer '${youOfferTheyNeed[0]}' which they need`);
       if (distance == null) reasons.push('Location not set yet — open to online learning');
@@ -430,8 +431,8 @@ class ApiClient {
   }
 
   private async serializeExchange(exchange: any, currentUserId: number) {
-    const requesterResult = await insforge.database.from('users').select('*').eq('id', exchange.requester_id).maybeSingle();
-    const receiverResult = await insforge.database.from('users').select('*').eq('id', exchange.receiver_id).maybeSingle();
+    const requesterResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', exchange.requester_id).maybeSingle();
+    const receiverResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', exchange.receiver_id).maybeSingle();
     const requesterSkill = exchange.requester_skill_id ? await insforge.database.from('skills').select('*').eq('id', exchange.requester_skill_id).maybeSingle() : { data: null, error: null };
     const receiverSkill = exchange.receiver_skill_id ? await insforge.database.from('skills').select('*').eq('id', exchange.receiver_skill_id).maybeSingle() : { data: null, error: null };
     const review = await insforge.database.from('reviews').select('id').eq('exchange_id', exchange.id).eq('reviewer_id', currentUserId).maybeSingle();
