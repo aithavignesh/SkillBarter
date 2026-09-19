@@ -104,6 +104,33 @@ export const FeedPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* First-session activation */}
+      <Card className="mb-6 overflow-hidden border-slate-200 bg-gradient-to-r from-slate-900 via-slate-900 to-[#17233b] text-white">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">Start your SkillBarter journey</p>
+              <h1 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">Learn one skill. Teach one skill. Make your first connection.</h1>
+              <p className="mt-2 text-xs leading-relaxed text-slate-300">
+                The fastest path to your first exchange is simple: complete your learning profile, find a peer who can teach you, then start a learning session.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[430px]">
+              {[
+                { step: '01', label: 'Set your skills', path: `/profile/${currentUser?.id}` },
+                { step: '02', label: 'Find a partner', path: '/discover' },
+                { step: '03', label: 'Start exchange', path: '/matches' },
+              ].map(item => (
+                <Link key={item.step} to={item.path} className="rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10">
+                  <span className="text-[10px] font-black text-emerald-300">{item.step}</span>
+                  <span className="mt-1 block text-[11px] font-semibold leading-tight text-white">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: Profile & Trust Summary */}
         <div className="lg:col-span-3 space-y-4">
@@ -118,7 +145,7 @@ export const FeedPage: React.FC = () => {
                 />
               </div>
               <h3 className="text-sm font-bold text-slate-900">{currentUser?.full_name}</h3>
-              <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{currentUser?.headline || 'Community Member'}</p>
+              <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{currentUser?.headline || 'Student & Peer Learner'}</p>
               <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-1">
                 <MapPin className="w-3 h-3 text-[#d31d24]" />
                 <span>{currentUser?.address_display || 'Hyderabad'}</span>
@@ -143,7 +170,7 @@ export const FeedPage: React.FC = () => {
             <div className="mt-5 pt-4 border-t border-slate-100 space-y-2 text-xs text-left">
               <div>
                 <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wider mb-1">
-                  You Offer:
+                  You Can Teach:
                 </span>
                 <div className="flex flex-wrap gap-1">
                   {currentUser?.skills?.filter(s => s.skill_type === 'OFFERED').map(s => (
@@ -156,7 +183,7 @@ export const FeedPage: React.FC = () => {
 
               <div className="pt-2">
                 <span className="font-bold text-slate-700 block text-[10px] uppercase tracking-wider mb-1">
-                  You Need:
+                  You Want to Learn:
                 </span>
                 <div className="flex flex-wrap gap-1">
                   {currentUser?.skills?.filter(s => s.skill_type === 'NEEDED').map(s => (
@@ -171,7 +198,7 @@ export const FeedPage: React.FC = () => {
             <div className="mt-5 pt-3 border-t border-slate-100">
               <Link to={`/profile/${currentUser?.id}`}>
                 <Button variant="outline" size="sm" className="w-full text-xs">
-                  View Full Profile
+                  Complete Learning Profile
                 </Button>
               </Link>
             </div>
@@ -245,13 +272,13 @@ export const FeedPage: React.FC = () => {
           <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-xs">
             <div className="flex items-center gap-1.5">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-700">Community:</span>
+              <span className="text-xs font-semibold text-slate-700">Learning Feed:</span>
             </div>
             <div className="flex gap-1">
               {[
-                { id: 'ALL', label: 'All Updates' },
-                { id: 'OFFER', label: 'Offers' },
-                { id: 'REQUEST', label: 'Requests' },
+                { id: 'ALL', label: 'All Learning' },
+                { id: 'OFFER', label: 'Can Teach' },
+                { id: 'REQUEST', label: 'Want to Learn' },
                 { id: 'COMPLETED_EXCHANGE', label: 'Completed' },
               ].map((f) => (
                 <button
@@ -429,13 +456,13 @@ export const FeedPage: React.FC = () => {
           <Card className="p-4 bg-slate-900 text-white">
             <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs mb-2">
               <ShieldCheck className="w-4 h-4" />
-              <span>SkillBarter Covenant</span>
+              <span>SkillBarter Learning Promise</span>
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
-              "No currency. No prices. No middleman cuts. Pure skill reciprocity governed by community trust."
+              "Learn from peers, share what you know, and build trust through real learning exchanges."
             </p>
             <Link to="/trust" className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
-              Learn how trust score works <ArrowRight className="w-3 h-3" />
+              See how peer trust works <ArrowRight className="w-3 h-3" />
             </Link>
           </Card>
         </div>
@@ -449,7 +476,7 @@ export const FeedPage: React.FC = () => {
           partner={selectedPartner}
           defaultPartnerSkill={defaultPartnerSkill}
           onSuccess={() => {
-            alert('Skill barter proposal sent! Redirecting to your exchanges.');
+            alert('Learning exchange request sent! Redirecting to your exchanges.');
             navigate('/exchanges');
           }}
         />
