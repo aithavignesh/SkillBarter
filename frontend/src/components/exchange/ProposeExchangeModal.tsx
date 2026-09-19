@@ -35,9 +35,11 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   React.useEffect(() => {
-    if (defaultMySkill) setMySkill(defaultMySkill);
-    if (defaultPartnerSkill) setPartnerSkill(defaultPartnerSkill);
-  }, [defaultMySkill, defaultPartnerSkill]);
+    setMySkill(defaultMySkill || '');
+    setPartnerSkill(defaultPartnerSkill || '');
+    setMessage('');
+    setMessageTouched(false);
+  }, [defaultMySkill, defaultPartnerSkill, isOpen]);
 
   if (!partner) return null;
 
