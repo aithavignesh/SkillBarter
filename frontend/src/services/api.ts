@@ -781,6 +781,21 @@ class ApiClient {
       if (!isParticipant) throw new Error('You are not a participant in this learning exchange.');
       const partnerId = senderId === Number(exchange.requester_id) ? Number(exchange.receiver_id) : Number(exchange.requester_id);
       if (receiverId !== partnerId) throw new Error('Messages for this exchange can only be sent to your learning partner.');
+      if (!['PENDING', 'COUNTERED', 'ACTIVE', 'ACCEPTED', 'COMPLETED'].includes(String(exchange.status).toUpperCase())) {
+        throw new Error('Messaging is unavailable for this exchange.');
+      }
+    } else {
+      const relationship = await insforge.database
+        .from('exchanges')
+        .select('id,status,requester_id,receiver_id')
+        .or(`requester_id.eq.${senderId},receiver_id.eq.${senderId}`);
+      if (relationship.error) throw new Error(relationship.error.message || 'Unable to verify learning relationship.');
+      const allowed = (relationship.data ?? []).some((exchange: any) =>
+        (Number(exchange.requester_id) === senderId && Number(exchange.receiver_id) === receiverId ||
+         Number(exchange.requester_id) === receiverId && Number(exchange.receiver_id) === senderId) &&
+        ['PENDING', 'COUNTERED', 'ACTIVE', 'ACCEPTED', 'COMPLETED'].includes(String(exchange.status).toUpperCase())
+      );
+      if (!allowed) throw new Error('Start a learning exchange before messaging this member.');
     }
 
     const r = await insforge.database.from('messages').insert({
@@ -798,6 +813,158 @@ class ApiClient {
       link: `/messages/${appUser.id}`,
     });
     return r.data;
+  }
+
+  async getConversations() {
+    const { appUser } = await this.getAppUser();
+    const uid = Number(appUser.id);
+
+    const [messagesResult, exchangesResult, blocksResult] = await Promise.all([
+      insforge.database
+        .from('messages')
+        .select('id,sender_id,receiver_id,content,is_read,created_at,exchange_id')
+        .or(`sender_id.eq.${uid},receiver_id.eq.${uid}`)
+        .order('created_at', { ascending: false })
+        .limit(500),
+      insforge.database
+        .from('exchanges')
+        .select('id,requester_id,receiver_id,status,created_at')
+        .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
+        .order('created_at', { ascending: false }),
+      insforge.database
+        .from('blocks')
+        .select('blocker_id,blocked_id')
+        .or(`blocker_id.eq.${uid},blocked_id.eq.${uid}`),
+    ]);
+
+    if (messagesResult.error) throw new Error(messagesResult.error.message || 'Unable to load conversations');
+    if (exchangesResult.error) throw new Error(exchangesResult.error.message || 'Unable to load learning exchanges');
+    if (blocksResult.error) throw new Error(blocksResult.error.message || 'Unable to load communication settings');
+
+    const blocked = new Set<number>();
+    for (const block of blocksResult.data ?? []) {
+      const blocker = Number(block.blocker_id), blockedId = Number(block.blocked_id);
+      if (blocker === uid) blocked.add(blockedId);
+      if (blockedId === uid) blocked.add(blocker);
+    }
+
+    const partnerIds = new Set<number>();
+    for (const message of messagesResult.data ?? []) {
+      const partnerId = Number(message.sender_id) === uid ? Number(message.receiver_id) : Number(message.sender_id);
+      if (partnerId && partnerId !== uid && !blocked.has(partnerId)) partnerIds.add(partnerId);
+    }
+    for (const exchange of exchangesResult.data ?? []) {
+      const partnerId = Number(exchange.requester_id) === uid ? Number(exchange.receiver_id) : Number(exchange.requester_id);
+      if (partnerId && partnerId !== uid && !blocked.has(partnerId)) partnerIds.add(partnerId);
+    }
+
+    const conversations: any[] = [];
+    for (const partnerId of partnerIds) {
+      const partnerResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,is_active').eq('id', partnerId).eq('is_active', true).maybeSingle();
+      if (partnerResult.error) throw new Error(partnerResult.error.message || 'Unable to load conversation partner');
+      if (!partnerResult.data) continue;
+
+      const pairMessages = (messagesResult.data ?? []).filter((message: any) =>
+        (Number(message.sender_id) === uid && Number(message.receiver_id) === partnerId) ||
+        (Number(message.sender_id) === partnerId && Number(message.receiver_id) === uid)
+      );
+      const lastMessage = pairMessages[0] ?? null;
+      const unreadCount = pairMessages.filter((message: any) => Number(message.sender_id) === partnerId && Number(message.receiver_id) === uid && !message.is_read).length;
+
+      const pairExchanges = (exchangesResult.data ?? []).filter((exchange: any) =>
+        (Number(exchange.requester_id) === uid && Number(exchange.receiver_id) === partnerId) ||
+        (Number(exchange.requester_id) === partnerId && Number(exchange.receiver_id) === uid)
+      );
+      const activeExchange = pairExchanges.find((exchange: any) => ['PENDING', 'COUNTERED', 'ACTIVE', 'ACCEPTED'].includes(String(exchange.status).toUpperCase()))
+        ?? pairExchanges[0]
+        ?? null;
+
+      conversations.push({
+        partner: {
+          id: partnerResult.data.id,
+          full_name: partnerResult.data.full_name,
+          avatar_url: partnerResult.data.avatar_url,
+          headline: partnerResult.data.headline,
+          trust_score: partnerResult.data.trust_score,
+        },
+        last_message: lastMessage ? { id: lastMessage.id, content: lastMessage.content, created_at: lastMessage.created_at } : null,
+        last_message_at: lastMessage?.created_at ?? activeExchange?.created_at ?? null,
+        unread_count: unreadCount,
+        active_exchange_id: activeExchange?.id ?? null,
+        active_exchange_status: activeExchange?.status ?? null,
+      });
+    }
+
+    return conversations.sort((a, b) =>
+      new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime()
+    );
+  }
+
+  async getMessages(partnerId: number) {
+    const { appUser } = await this.getAppUser();
+    const uid = Number(appUser.id);
+    const pid = Number(partnerId);
+    if (!Number.isInteger(pid) || pid <= 0 || pid === uid) throw new Error('Choose a valid learning partner.');
+
+    const blocksResult = await insforge.database
+      .from('blocks')
+      .select('blocker_id,blocked_id')
+      .or(`blocker_id.eq.${uid},blocked_id.eq.${uid}`);
+    if (blocksResult.error) throw new Error(blocksResult.error.message || 'Unable to check communication settings.');
+    if ((blocksResult.data ?? []).some((block: any) => {
+      const a = Number(block.blocker_id), b = Number(block.blocked_id);
+      return (a === uid && b === pid) || (a === pid && b === uid);
+    })) {
+      throw new Error('Communication is not available with this member.');
+    }
+
+    const [exchangeResult, existingMessagesResult] = await Promise.all([
+      insforge.database
+        .from('exchanges')
+        .select('id,status,requester_id,receiver_id')
+        .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`),
+      insforge.database
+        .from('messages')
+        .select('id,sender_id,receiver_id,content,is_read,created_at,exchange_id')
+        .or(`sender_id.eq.${uid},receiver_id.eq.${uid}`)
+        .order('created_at', { ascending: true })
+        .limit(500),
+    ]);
+    if (exchangeResult.error) throw new Error(exchangeResult.error.message || 'Unable to check learning relationship.');
+    if (existingMessagesResult.error) throw new Error(existingMessagesResult.error.message || 'Unable to load messages.');
+
+    const pairExchanges = (exchangeResult.data ?? []).filter((exchange: any) =>
+      (Number(exchange.requester_id) === uid && Number(exchange.receiver_id) === pid) ||
+      (Number(exchange.requester_id) === pid && Number(exchange.receiver_id) === uid)
+    );
+    const hasLearningRelationship = pairExchanges.some((exchange: any) =>
+      ['PENDING', 'COUNTERED', 'ACTIVE', 'ACCEPTED', 'COMPLETED'].includes(String(exchange.status).toUpperCase())
+    );
+    const pairMessages = (existingMessagesResult.data ?? []).filter((message: any) =>
+      (Number(message.sender_id) === uid && Number(message.receiver_id) === pid) ||
+      (Number(message.sender_id) === pid && Number(message.receiver_id) === uid)
+    );
+
+    if (!hasLearningRelationship && pairMessages.length === 0) {
+      throw new Error('Start a learning exchange before messaging this member.');
+    }
+
+    const unreadIds = pairMessages
+      .filter((message: any) => Number(message.sender_id) === pid && Number(message.receiver_id) === uid && !message.is_read)
+      .map((message: any) => message.id);
+    if (unreadIds.length) {
+      const readResult = await insforge.database
+        .from('messages')
+        .update({ is_read: true })
+        .in('id', unreadIds)
+        .eq('receiver_id', uid);
+      if (readResult.error) throw new Error(readResult.error.message || 'Unable to mark messages as read.');
+      for (const message of pairMessages) {
+        if (unreadIds.includes(message.id)) message.is_read = true;
+      }
+    }
+
+    return pairMessages;
   }
 
   async getFeed(type?: string) { const me = await this.getAppUser(); let q: any = insforge.database.from('posts').select('*').order('created_at', { ascending: false }).limit(50); if (type) q = q.eq('post_type', type); const r = await q; if (r.error) throw new Error(r.error.message || 'Unable to load feed'); return r.data || []; }
