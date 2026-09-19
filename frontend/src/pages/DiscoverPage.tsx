@@ -42,8 +42,15 @@ export const DiscoverPage: React.FC = () => {
 
   const filteredNeighbors = useMemo(() => {
     const categorySkills: Record<string,string[]> = {
-      'Home Repair':['Plumbing','Carpentry','Electrical Work','Painting','Bike Repair'],
-      Technology:['Web Development','Mobile App Dev','Python Tutoring'], Design:['UI Design','Graphic Design'], Photography:['Photography','Video Editing'], Cooking:['Cooking','Baking'],
+      'AI / ML':['AI / ML','Machine Learning','Deep Learning','Artificial Intelligence'],
+      'Web Development':['Web Development','React','Frontend','Backend','Full Stack'],
+      Programming:['Python','Java','C++','JavaScript','Data Structures & Algorithms'],
+      Design:['UI Design','Graphic Design','Figma','UX Design'],
+      'Data Science':['Data Science','Python','SQL','Machine Learning','Data Analytics'],
+      'Interview Prep':['Interview Preparation','DSA','Resume Review','Mock Interviews'],
+      Photography:['Photography'],
+      'Video Editing':['Video Editing'],
+      Communication:['Public Speaking','Communication','English'],
     };
     const q = searchQuery.toLowerCase();
     const results = nearbyUsers.filter((u) => {
