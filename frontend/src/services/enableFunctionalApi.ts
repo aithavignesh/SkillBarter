@@ -11,7 +11,7 @@ for (const name of [
   'getMe','getUserProfile','updateMe','getNearbyUsers','addUserSkill','deleteUserSkill',
   'getMatches','connectNeighbor','disconnectNeighbor','proposeExchange','getExchanges',
   'acceptExchange','completeExchange','updateExchangeSchedule','getNotifications','markNotificationRead',
-  'markAllNotificationsRead','sendMessage','getFeed','createPost','likePost'
+  'markAllNotificationsRead','sendMessage','getFeed','createPost','likePost','getReviews','submitReview','getTrustDetails'
 ]) {
   if (typeof (functionalApi as any)[name] === 'function') target[name] = (functionalApi as any)[name].bind(functionalApi);
 }
