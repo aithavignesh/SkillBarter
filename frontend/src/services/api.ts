@@ -439,7 +439,7 @@ class ApiClient {
     if (receiverResult.error) throw new Error(receiverResult.error.message);
     if (review.error) throw new Error(review.error.message);
     const reqUser = requesterResult.data, recUser = receiverResult.data;
-    return { ...exchange, requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill', receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill', estimated_hours: exchange.estimated_hours ?? 2, requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: reqUser.address_display } : { id: exchange.requester_id, full_name: 'Member', trust_score: 80 }, receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: recUser.address_display } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 80 }, user_can_review: exchange.status === 'COMPLETED', has_reviewed: Boolean(review.data) };
+    return { ...exchange, requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill', receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill', estimated_hours: exchange.estimated_hours ?? 2, requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: reqUser.address_display } : { id: exchange.requester_id, full_name: 'Member', trust_score: 80 }, receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: recUser.address_display } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 80 }, user_can_review: exchange.status === 'COMPLETED' && !review.data, has_reviewed: Boolean(review.data) };
   }
 
   async getExchanges() {
@@ -519,6 +519,68 @@ class ApiClient {
   async getFeed(type?: string) { const me = await this.getAppUser(); let q: any = insforge.database.from('posts').select('*').order('created_at', { ascending: false }).limit(50); if (type) q = q.eq('post_type', type); const r = await q; if (r.error) throw new Error(r.error.message || 'Unable to load feed'); return r.data || []; }
   async createPost(payload: any) { const { appUser } = await this.getAppUser(); const title = String(payload.title || '').trim(); const content = String(payload.content || '').trim(); if (!content) throw new Error('Post content cannot be empty.'); const r = await insforge.database.from('posts').insert({ author_id: appUser.id, post_type: payload.post_type || 'COMMUNITY', title: title || null, content, likes_count: 0 }).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to publish post'); return r.data; }
   async likePost(id: number) { const r = await insforge.database.from('posts').select('id,likes_count').eq('id', id).maybeSingle(); if (r.error || !r.data) throw new Error(r.error?.message || 'Post not found'); const updated = await insforge.database.from('posts').update({ likes_count: Number(r.data.likes_count || 0) + 1 }).eq('id', id).select('*').single(); if (updated.error) throw new Error(updated.error.message || 'Unable to like post'); return updated.data; }
+  private async recalculateTrustScore(userId: number) {
+    const [reviewsResult, exchangesResult] = await Promise.all([
+      insforge.database.from('reviews').select('rating,reliability_score,skill_quality_score,would_exchange_again').eq('reviewee_id', userId),
+      insforge.database.from('exchanges').select('status,cancelled_by_id,requester_id,receiver_id').or(`requester_id.eq.${userId},receiver_id.eq.${userId}`),
+    ]);
+    if (reviewsResult.error) throw new Error(reviewsResult.error.message || 'Unable to recalculate trust score');
+    if (exchangesResult.error) throw new Error(exchangesResult.error.message || 'Unable to recalculate trust score');
+
+    const reviews = reviewsResult.data ?? [];
+    const exchanges = exchangesResult.data ?? [];
+    const reviewsCount = reviews.length;
+    const avgRating = reviewsCount ? reviews.reduce((sum: number, r: any) => sum + Number(r.rating || 0), 0) / reviewsCount : 4.5;
+    const avgSkillQuality = reviewsCount ? reviews.reduce((sum: number, r: any) => sum + Number(r.skill_quality_score || 0), 0) / reviewsCount : 4.5;
+    const avgReliability = reviewsCount ? reviews.reduce((sum: number, r: any) => sum + Number(r.reliability_score || 0), 0) / reviewsCount : 4.5;
+    const wouldAgainRatio = reviewsCount ? reviews.filter((r: any) => Boolean(r.would_exchange_again)).length / reviewsCount : 1;
+    const reviewQualityScore = reviewsCount ? ((avgRating / 5) * 30) + (wouldAgainRatio * 10) : 36;
+
+    const completedCount = exchanges.filter((e: any) => e.status === 'COMPLETED').length;
+    const cancelledByUserCount = exchanges.filter((e: any) => e.status === 'CANCELLED' && Number(e.cancelled_by_id) === userId).length;
+    const totalSettled = completedCount + cancelledByUserCount;
+    const completionRatio = totalSettled ? completedCount / totalSettled : 1;
+    const reliabilityScorePts = totalSettled ? completionRatio * 25 : 22.5;
+
+    const receivedProposals = exchanges.filter((e: any) => Number(e.receiver_id) === userId);
+    const answeredProposals = receivedProposals.filter((e: any) => e.status !== 'PENDING');
+    const responseRatio = receivedProposals.length ? answeredProposals.length / receivedProposals.length : 1;
+    const responseRatePts = receivedProposals.length ? responseRatio * 15 : 14;
+
+    const volumePts = completedCount > 0 ? Math.min(10, (Math.log(1 + completedCount) / Math.log(11)) * 10) : 7;
+
+    const reportsResult = await insforge.database.from('safety_reports').select('id').eq('reported_user_id', userId).eq('status', 'RESOLVED');
+    if (reportsResult.error) throw new Error(reportsResult.error.message || 'Unable to recalculate safety standing');
+    const safetyPenalty = Math.min(10, (reportsResult.data?.length ?? 0) * 5);
+    const safetyPts = Math.max(0, 10 - safetyPenalty);
+
+    const finalScore = Math.min(Math.max(Math.round(reviewQualityScore + reliabilityScorePts + responseRatePts + volumePts + safetyPts), 10), 100);
+    const calcReliability = Math.round((completionRatio * 0.6 + (avgReliability / 5) * 0.4) * 100);
+    const calcSkillQuality = Math.round((avgSkillQuality / 5) * 100);
+    const calcResponseRate = Math.round(responseRatio * 100);
+
+    const currentSkills = await this.getUserSkills(userId);
+    const categories = new Set(currentSkills.map((skill: any) => skill.category));
+    const badges: string[] = ['Verified Member'];
+    if (completedCount >= 5 && avgRating >= 4.5) badges.push('Reliable Exchanger');
+    if (categories.size >= 3) badges.push('Community Helper');
+    if (finalScore >= 90 && completedCount >= 5) badges.push('Top Contributor');
+    if (completedCount >= 10) badges.push('10+ Successful Exchanges');
+
+    const { data, error } = await insforge.database.from('users').update({
+      trust_score: finalScore,
+      reliability_score: calcReliability,
+      response_rate: calcResponseRate,
+      skill_quality_score: calcSkillQuality,
+      completed_exchanges_count: completedCount,
+      reviews_count: reviewsCount,
+      badges,
+      updated_at: new Date().toISOString(),
+    }).eq('id', userId).select('*').single();
+    if (error) throw new Error(error.message || 'Unable to update trust score');
+    return data;
+  }
+
   async submitReview(payload: any) {
     const { appUser } = await this.getAppUser();
     const exchangeId = Number(payload.exchange_id);
@@ -535,6 +597,7 @@ class ApiClient {
     if (![rating, reliabilityScore, skillQualityScore].every((value) => Number.isInteger(value) && value >= 1 && value <= 5)) throw new Error('Ratings must be between 1 and 5.');
     const { data, error } = await insforge.database.from('reviews').insert({ exchange_id: exchangeId, reviewer_id: uid, reviewee_id: revieweeId, rating, reliability_score: reliabilityScore, skill_quality_score: skillQualityScore, would_exchange_again: Boolean(payload.would_exchange_again), comment: String(payload.comment || '').trim() || null }).select('*').single();
     if (error) throw new Error(error.message || 'Unable to submit review');
+    await this.recalculateTrustScore(revieweeId);
     await insforge.database.from('notifications').insert({ user_id: revieweeId, type: 'NEW_REVIEW', title: 'New learning review', message: appUser.full_name + ' left you a ' + rating + '-star learning review.', link: '/profile/' + revieweeId });
     return data;
   }
