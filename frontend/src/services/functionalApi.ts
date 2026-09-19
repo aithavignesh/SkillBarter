@@ -30,7 +30,7 @@ class FunctionalApi {
     const result = await insforge.database.from('users').select('*').eq('id', id).maybeSingle();
     if (result.error || !result.data) fail(result.error, 'User not found');
     const skills = await this.skillsFor(id);
-    return { ...result.data, skills, skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name) };
+    return { ...result.data, premium: Boolean((result.data as any).premium), verified: Boolean((result.data as any).verified), featured: Boolean((result.data as any).featured_until && new Date((result.data as any).featured_until).getTime() > Date.now()), featured_until: (result.data as any).featured_until ?? null, skills, skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name) };
   }
 
   async updateMe(payload: any) {
@@ -57,7 +57,7 @@ class FunctionalApi {
       const d = u.latitude == null || u.longitude == null ? 999 : distance(Number(u.latitude), Number(u.longitude));
       if (d > radiusKm) continue;
       const skills = await this.skillsFor(Number(u.id));
-      rows.push({ id: u.id, full_name: u.full_name, avatar_url: u.avatar_url, headline: u.headline, address_display: u.address_display, distance_km: d, distance_display: d === 999 ? 'Local' : `${d.toFixed(1)} km`, trust_score: u.trust_score, reliability_score: u.reliability_score, skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), availability: u.availability });
+      rows.push({ id: u.id, full_name: u.full_name, avatar_url: u.avatar_url, headline: u.headline, address_display: u.address_display, distance_km: d, distance_display: d === 999 ? 'Local' : `${d.toFixed(1)} km`, trust_score: u.trust_score, reliability_score: u.reliability_score, premium: Boolean(u.premium), verified: Boolean(u.verified), featured: Boolean(u.featured_until && new Date(u.featured_until).getTime() > Date.now()), featured_until: u.featured_until ?? null, skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), availability: u.availability });
     }
     return rows.sort((a, b) => a.distance_km - b.distance_km);
   }
