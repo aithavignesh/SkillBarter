@@ -9,7 +9,7 @@ const currentUser = async () => {
 };
 
 const publicUser = async (id: number) => {
-  const row = await insforge.database.from('users').select('id,full_name,avatar_url,headline,address_display,trust_score,reliability_score,completed_exchanges_count').eq('id', id).maybeSingle();
+  const row = await insforge.database.from('users').select('id,full_name,avatar_url,headline,address_display,trust_score,reliability_score,completed_exchanges_count,verified,premium,featured_until').eq('id', id).maybeSingle();
   if (row.error || !row.data) throw new Error(row.error?.message || 'User not found');
   return row.data;
 };
