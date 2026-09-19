@@ -8,7 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
 import { getMonetizationState } from '../services/monetization';
-import { MapPin, MessageSquare, Plus, Repeat, Save, ShieldCheck, Sparkles, Trash2, UserPlus, BadgeCheck, Rocket, Crown, Camera, Loader2, Users, Activity, CheckCircle2, PencilLine, ArrowUpRight } from 'lucide-react';
+import { MapPin, MessageSquare, Plus, Repeat, Save, ShieldCheck, ShieldOff, Sparkles, Trash2, UserPlus, BadgeCheck, Rocket, Crown, Camera, Loader2, Users, Activity, CheckCircle2, PencilLine, ArrowUpRight } from 'lucide-react';
 
 export const ProfileWorkspacePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +28,8 @@ export const ProfileWorkspacePage: React.FC = () => {
   const [skillType, setSkillType] = useState<'OFFERED' | 'NEEDED'>('OFFERED');
   const [proposeOpen, setProposeOpen] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [blocking, setBlocking] = useState(false);
   const [monetizationTick, setMonetizationTick] = useState(0);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +48,7 @@ export const ProfileWorkspacePage: React.FC = () => {
       if (exchanges.error) throw new Error(exchanges.error.message || 'Unable to load activity');
       setProfile(p); setReviews(r); setConnectionCount((connections.data || []).length);
       setActivity([...(posts.data || []).map((x:any)=>({...x, activity_type:'POST'})), ...(exchanges.data || []).map((x:any)=>({...x, activity_type:'EXCHANGE'}))].sort((a:any,b:any)=>new Date(b.updated_at || b.created_at).getTime()-new Date(a.updated_at || a.created_at).getTime()).slice(0,5));
-      if (!own) { try { const status = await api.getConnectionStatus(targetId); setConnected(Boolean(status.connected)); } catch { setConnected(false); } }
+      if (!own) { try { const status = await api.getConnectionStatus(targetId); setConnected(Boolean(status.connected)); } catch { setConnected(false); } try { setBlocked(Boolean(await (api as any).getBlockStatus?.(targetId))); } catch { setBlocked(false); } }
     } catch (e: any) { setMessage(e?.message || 'Unable to load profile.'); }
     finally { setLoading(false); }
   };
@@ -98,6 +100,23 @@ export const ProfileWorkspacePage: React.FC = () => {
     try { setSaving(true); await api.deleteUserSkill(skillId); await refreshUser(); await load(); setMessage('Skill removed.'); }
     catch (e: any) { setMessage(e?.message || 'Unable to remove skill.'); }
     finally { setSaving(false); }
+  };
+
+  const toggleBlock = async () => {
+    if (own || blocking) return;
+    const confirmed = window.confirm(blocked ? 'Unblock this member?' : 'Block this member? They will no longer appear in your matching flow.');
+    if (!confirmed) return;
+    try {
+      setBlocking(true);
+      if (blocked) await (api as any).unblockUser(targetId);
+      else await (api as any).blockUser(targetId);
+      setBlocked(!blocked);
+      setMessage(blocked ? 'Member unblocked.' : 'Member blocked.');
+    } catch (e: any) {
+      setMessage(e?.message || 'Unable to update block status.');
+    } finally {
+      setBlocking(false);
+    }
   };
 
   const connect = async () => {
