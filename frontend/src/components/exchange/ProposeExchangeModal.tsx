@@ -29,7 +29,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
   const [message, setMessage] = useState('');
   const [preferredDate, setPreferredDate] = useState('This Saturday afternoon');
   const [estimatedHours, setEstimatedHours] = useState('2.0');
-  const [locationArea, setLocationArea] = useState('Public neighborhood meetup / workspace');
+  const [locationArea, setLocationArea] = useState('Campus / coworking space / online');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +43,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) {
-      setError('Please add a message introducing your barter proposal');
+      setError('Please describe what you want to learn and exchange');
       return;
     }
 
@@ -63,7 +63,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to send barter proposal');
+      setError(err.message || 'Failed to send exchange request');
     } finally {
       setLoading(false);
     }
@@ -75,8 +75,8 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Propose Skill Barter"
-      subtitle={`Initiate a zero-cash exchange with ${partner.full_name}`}
+      title="Start a Skill Exchange"
+      subtitle={`Set up a practical peer-learning exchange with ${partner.full_name}`}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -105,7 +105,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-emerald-50/70 rounded-xl border border-emerald-200">
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800 mb-1">
-              You Offer:
+              You Can Teach:
             </label>
             {offeredOptions.length > 0 ? (
               <select
@@ -121,7 +121,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
             ) : (
               <input
                 type="text"
-                placeholder="e.g. Web Development"
+                placeholder="e.g. React or Python"
                 value={mySkill}
                 onChange={(e) => setMySkill(e.target.value)}
                 className="w-full text-xs bg-white border border-emerald-300 rounded-lg p-2 font-medium text-slate-800"
@@ -132,11 +132,11 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
 
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800 mb-1">
-              You Request / Need:
+              You Want to Learn:
             </label>
             <input
               type="text"
-              placeholder="e.g. Plumbing or Repair"
+              placeholder="e.g. AI / Machine Learning"
               value={partnerSkill}
               onChange={(e) => setPartnerSkill(e.target.value)}
               className="w-full text-xs bg-white border border-emerald-300 rounded-lg p-2 font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -148,11 +148,11 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
         {/* Proposal Message */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Proposal Details & Description <span className="text-rose-500">*</span>
+            What do you want to accomplish? <span className="text-rose-500">*</span>
           </label>
           <textarea
             rows={3}
-            placeholder="Explain what you can build or teach, and what specific help you need (e.g. 'I can build your landing page in exchange for help fixing my kitchen sink.')"
+            placeholder="Describe the learning session or project you want to work on together (e.g. 'I can help with React in exchange for guidance on ML basics.')"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             className="w-full text-xs border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400"
@@ -164,7 +164,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div>
             <label className="flex items-center gap-1 text-[11px] font-medium text-slate-600 mb-1">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" /> Preferred Date
+              <Calendar className="w-3.5 h-3.5 text-slate-400" /> Preferred Session
             </label>
             <input
               type="text"
@@ -176,7 +176,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
 
           <div>
             <label className="flex items-center gap-1 text-[11px] font-medium text-slate-600 mb-1">
-              <Clock className="w-3.5 h-3.5 text-slate-400" /> Est. Duration (Hours)
+              <Clock className="w-3.5 h-3.5 text-slate-400" /> Session Length (Hours)
             </label>
             <input
               type="number"
@@ -191,7 +191,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
 
           <div>
             <label className="flex items-center gap-1 text-[11px] font-medium text-slate-600 mb-1">
-              <MapPin className="w-3.5 h-3.5 text-slate-400" /> Meetup Location
+              <MapPin className="w-3.5 h-3.5 text-slate-400" /> Session Location
             </label>
             <input
               type="text"
@@ -206,7 +206,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
         <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
           <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <p>
-            <strong>Zero-Cash Guarantee:</strong> SkillBarter is strictly skill-for-skill. Never offer or request cash, tokens, or digital currencies.
+            <strong>Skill-for-skill:</strong> Keep the exchange focused on practical learning. No cash or paid tutoring is required.
           </p>
         </div>
 
@@ -221,7 +221,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
             Cancel
           </Button>
           <Button type="submit" loading={loading} icon={<Repeat className="w-4 h-4" />}>
-            Send Barter Proposal
+            Send Exchange Request
           </Button>
         </div>
       </form>
