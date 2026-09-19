@@ -27,7 +27,7 @@ export const SignupPage: React.FC = () => {
         address_display: addressDisplay.trim(),
         primary_skill: primarySkill.trim() || undefined,
         primary_category: primaryCategory,
-        primary_intent: 'EXCHANGE',
+        primary_intent: 'LEARNING',
         latitude: 17.4485,
         longitude: 78.3748,
       });
@@ -38,16 +38,15 @@ export const SignupPage: React.FC = () => {
   };
 
   const categories = [
-    'Home Repair',
     'Technology',
+    'AI / Machine Learning',
+    'Web Development',
+    'Data Science',
     'Design',
     'Education',
     'Photography',
-    'Cooking',
-    'Fitness',
-    'Automotive',
-    'Gardening',
-    'Creative',
+    'Video Editing',
+    'Communication',
     'Other'
   ];
 
@@ -61,10 +60,10 @@ export const SignupPage: React.FC = () => {
             </div>
           </Link>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Join SkillBarter Community
+            Start learning with SkillBarter
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            "Your Skills. Your Community. Your Currency." — Zero cash required.
+            Create your learning profile, find student peers, and start your first skill exchange.
           </p>
         </div>
 
@@ -133,7 +132,7 @@ export const SignupPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Neighborhood / City
+                  Campus / City
                 </label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -141,7 +140,7 @@ export const SignupPage: React.FC = () => {
                     type="text"
                     value={addressDisplay}
                     onChange={(e) => setAddressDisplay(e.target.value)}
-                    placeholder="e.g. Hitech City, Hyderabad"
+                    placeholder="e.g. Gachibowli, Hyderabad"
                     className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     required
                   />
@@ -151,14 +150,14 @@ export const SignupPage: React.FC = () => {
 
             <div className="pt-2 border-t border-slate-100">
               <label className="block text-xs font-bold text-emerald-900 mb-2">
-                Primary Skill You Can Offer Neighbors
+                Start with one skill you can teach
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   type="text"
                   value={primarySkill}
                   onChange={(e) => setPrimarySkill(e.target.value)}
-                  placeholder="e.g. Electrical Repair or Tutoring"
+                  placeholder="e.g. Python, React, Figma, Public Speaking"
                   className="text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 />
@@ -175,7 +174,7 @@ export const SignupPage: React.FC = () => {
             </div>
 
             <div className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-              By creating an account, you agree to the <strong>SkillBarter Zero-Cash Policy</strong> and community safety guidelines. Exact GPS coordinates are never made public.
+              Your location helps us surface relevant learning partners. Exact GPS coordinates are never made public.
             </div>
 
             <Button
@@ -184,7 +183,7 @@ export const SignupPage: React.FC = () => {
               className="w-full"
               icon={<ArrowRight className="w-4 h-4" />}
             >
-              Continue to Neighborhood Setup
+              Continue to Learning Setup
             </Button>
           </form>
 
