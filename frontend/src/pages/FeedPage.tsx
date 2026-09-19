@@ -169,7 +169,7 @@ export const FeedPage: React.FC = () => {
 
             {/* Trust Ring */}
             <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col items-center">
-              <TrustScoreRing score={currentUser?.trust_score || 94} size="md" />
+              <TrustScoreRing score={currentUser?.trust_score ?? 0} size="md" />
             </div>
 
             {/* Badges */}
@@ -340,7 +340,7 @@ export const FeedPage: React.FC = () => {
                         {post.author?.premium && <Crown className="h-3.5 w-3.5 text-amber-500" />}
                         {post.author?.featured && <span className="text-[9px] font-bold uppercase tracking-wider text-[#d31d24]">Featured</span>}
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                          ★ {Math.round(post.author?.trust_score || 90)}
+                          ★ {Math.round(post.author?.trust_score ?? 0)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-slate-400">
