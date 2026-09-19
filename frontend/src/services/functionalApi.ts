@@ -213,6 +213,129 @@ class FunctionalApi {
     return r.data;
   }
 
+  async getReviews(userId: number) {
+    const r = await insforge.database.from('reviews').select('*').eq('reviewee_id', userId).order('created_at', { ascending: false });
+    if (r.error) fail(r.error, 'Unable to load reviews');
+    return Promise.all((r.data || []).map(async (review: any) => {
+      const reviewer = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,verified,premium,featured_until').eq('id', review.reviewer_id).maybeSingle();
+      return {
+        ...review,
+        reviewer: reviewer.data ? {
+          ...reviewer.data,
+          verified: Boolean(reviewer.data.verified),
+          premium: Boolean(reviewer.data.premium),
+          featured: Boolean(reviewer.data.featured_until && new Date(reviewer.data.featured_until).getTime() > Date.now()),
+        } : { id: review.reviewer_id, full_name: 'Community Member', trust_score: 0 },
+      };
+    }));
+  }
+
+  async submitReview(payload: any) {
+    const me = await this.appUser();
+    const exchangeId = Number(payload.exchange_id);
+    if (!exchangeId) throw new Error('Exchange is required.');
+    const exchange = await insforge.database.from('exchanges').select('*').eq('id', exchangeId).maybeSingle();
+    if (exchange.error || !exchange.data) fail(exchange.error, 'Exchange not found');
+    const e: any = exchange.data;
+    if (e.status !== 'COMPLETED') throw new Error('Reviews can only be submitted after both participants confirm completion.');
+    const uid = Number(me.id);
+    if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Only exchange participants can review this exchange.');
+    const existing = await insforge.database.from('reviews').select('id').eq('exchange_id', exchangeId).eq('reviewer_id', uid).maybeSingle();
+    if (existing.error) fail(existing.error, 'Unable to check existing review');
+    if (existing.data) throw new Error('You have already submitted a review for this exchange.');
+
+    const rating = Math.max(1, Math.min(5, Number(payload.rating || 0)));
+    const reliability = Math.max(1, Math.min(5, Number(payload.reliability_score || 0)));
+    const skillQuality = Math.max(1, Math.min(5, Number(payload.skill_quality_score || 0)));
+    const revieweeId = uid === Number(e.requester_id) ? Number(e.receiver_id) : Number(e.requester_id);
+    const inserted = await insforge.database.from('reviews').insert({
+      exchange_id: exchangeId,
+      reviewer_id: uid,
+      reviewee_id: revieweeId,
+      rating,
+      reliability_score: reliability,
+      skill_quality_score: skillQuality,
+      would_exchange_again: Boolean(payload.would_exchange_again),
+      comment: String(payload.comment || '').trim() || null,
+    }).select('*').single();
+    if (inserted.error) fail(inserted.error, 'Unable to submit review');
+
+    await this.recalculateTrust(revieweeId);
+    await insforge.database.from('notifications').insert({
+      user_id: revieweeId,
+      type: 'NEW_REVIEW',
+      title: 'New community review',
+      message: `${me.full_name} gave you ${rating} stars after your completed exchange.`,
+      link: `/profile/${revieweeId}`,
+    });
+    return inserted.data;
+  }
+
+  private async recalculateTrust(userId: number) {
+    const reviewsRes = await insforge.database.from('reviews').select('*').eq('reviewee_id', userId);
+    if (reviewsRes.error) fail(reviewsRes.error, 'Unable to calculate trust');
+    const reviews: any[] = reviewsRes.data || [];
+    const exchangesRes = await insforge.database.from('exchanges').select('*').or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+    if (exchangesRes.error) fail(exchangesRes.error, 'Unable to calculate exchange history');
+    const exchanges: any[] = exchangesRes.data || [];
+    const completed = exchanges.filter(e => e.status === 'COMPLETED').length;
+    const cancelledByUser = exchanges.filter(e => e.status === 'CANCELLED' && Number(e.cancelled_by_id) === Number(userId)).length;
+    const received = exchanges.filter(e => Number(e.receiver_id) === Number(userId));
+    const answered = received.filter(e => e.status !== 'PENDING').length;
+
+    const avgRating = reviews.length ? reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviews.length : 4.5;
+    const avgReliability = reviews.length ? reviews.reduce((s, r) => s + Number(r.reliability_score || 0), 0) / reviews.length : 4.5;
+    const avgSkill = reviews.length ? reviews.reduce((s, r) => s + Number(r.skill_quality_score || 0), 0) / reviews.length : 4.5;
+    const wouldAgain = reviews.length ? reviews.filter(r => r.would_exchange_again).length / reviews.length : 1;
+    const reviewQuality = reviews.length ? ((avgRating / 5) * 30) + (wouldAgain * 10) : 36;
+    const settled = completed + cancelledByUser;
+    const completionRatio = settled ? completed / settled : 1;
+    const completionPts = settled ? completionRatio * 25 : 22.5;
+    const responseRatio = received.length ? answered / received.length : 1;
+    const responsePts = received.length ? responseRatio * 15 : 14;
+    const volumePts = completed > 0 ? Math.min(10, (Math.log(1 + completed) / Math.log(11)) * 10) : 7;
+    const safetyPts = 10;
+    const trustScore = Math.min(100, Math.max(10, Math.round(reviewQuality + completionPts + responsePts + volumePts + safetyPts)));
+    const skillRows = await insforge.database.from('user_skills').select('skill_id').eq('user_id', userId);
+    const skillIds = (skillRows.data || []).map((x: any) => Number(x.skill_id)).filter(Boolean);
+    let categoryCount = 0;
+    if (skillIds.length) {
+      const cats = await insforge.database.from('skills').select('category').in('id', skillIds);
+      categoryCount = new Set((cats.data || []).map((x: any) => x.category)).size;
+    }
+    const badges = ['Verified Member'];
+    if (completed >= 5 && avgRating >= 4.5) badges.push('Reliable Exchanger');
+    if (categoryCount >= 3) badges.push('Community Helper');
+    if (trustScore >= 90 && completed >= 5) badges.push('Top Contributor');
+    if (completed >= 10) badges.push('10+ Successful Exchanges');
+    const updated = await insforge.database.from('users').update({
+      trust_score: trustScore,
+      reliability_score: Math.round((completionRatio * 0.6 + (avgReliability / 5) * 0.4) * 100),
+      response_rate: Math.round(responseRatio * 100),
+      skill_quality_score: Math.round((avgSkill / 5) * 100),
+      completed_exchanges_count: completed,
+      reviews_count: reviews.length,
+      badges,
+      updated_at: new Date().toISOString(),
+    }).eq('id', userId).select('*').single();
+    if (updated.error) fail(updated.error, 'Unable to update trust score');
+    return { user: updated.data, breakdown: { review_quality: Number(reviewQuality.toFixed(1)), completion_reliability: Number(completionPts.toFixed(1)), response_rate: Number(responsePts.toFixed(1)), exchange_history: Number(volumePts.toFixed(1)), safety_standing: safetyPts } };
+  }
+
+  async getTrustDetails(userId: number) {
+    const result = await this.recalculateTrust(userId);
+    return {
+      ...result.user,
+      breakdown: result.breakdown,
+      trust_score: Number(result.user.trust_score || 0),
+      reliability_score: Number(result.user.reliability_score || 0),
+      response_rate: Number(result.user.response_rate || 0),
+      skill_quality_score: Number(result.user.skill_quality_score || 0),
+      completed_exchanges_count: Number(result.user.completed_exchanges_count || 0),
+      reviews_count: Number(result.user.reviews_count || 0),
+    };
+  }
+
   async getNotifications() { const me = await this.appUser(); const r = await insforge.database.from('notifications').select('*').eq('user_id', me.id).order('created_at', { ascending: false }).limit(50); if (r.error) fail(r.error, 'Unable to load notifications'); return r.data || []; }
   async markNotificationRead(id: number) { const me = await this.appUser(); const r = await insforge.database.from('notifications').update({ is_read: true }).eq('id', id).eq('user_id', me.id).select('*').single(); if (r.error) fail(r.error, 'Unable to mark notification'); return r.data; }
   async markAllNotificationsRead() { const me = await this.appUser(); const r = await insforge.database.from('notifications').update({ is_read: true }).eq('user_id', me.id).eq('is_read', false); if (r.error) fail(r.error, 'Unable to update notifications'); return true; }
