@@ -602,7 +602,6 @@ class ApiClient {
     return data;
   }
   async getReviews(userId: number) { const r = await insforge.database.from('reviews').select('*').eq('reviewee_id', userId).order('created_at', { ascending: false }); if (r.error) throw new Error(r.error.message || 'Unable to load reviews'); return r.data || []; }
-  async createReview(payload: any) { const { appUser } = await this.getAppUser(); const r = await insforge.database.from('reviews').insert({ ...payload, reviewer_id: appUser.id }).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to submit review'); return r.data; }
 }
 
 export const api = new ApiClient();
