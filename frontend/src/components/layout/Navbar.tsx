@@ -37,22 +37,22 @@ export const Navbar: React.FC = () => {
     {
       label: 'Find a Learning Partner', path: '/discover', icon: Compass,
       features: [
-        { label: 'Search Learning Skills', path: '/discover/search' },
-        { label: 'Learning Filters', path: '/discover/advanced-search' },
-        { label: 'Recommended Learning Partners', path: '/discover/recommended' },
+        { label: 'Search Skills & People', path: '/discover/search' },
+        { label: 'Filter Learning Partners', path: '/discover/advanced-search' },
+        { label: 'Recommended Partners', path: '/discover/recommended' },
       ],
     },
     {
       label: 'My Learning Matches', path: '/matches', icon: Sparkles,
       features: [
-        { label: 'Smart Learning Matching', path: '/matches/ai-matching' },
+        { label: 'Smart Learning Matches', path: '/matches/ai-matching' },
         { label: 'Match Details', path: '/matches/match-details' },
       ],
     },
     {
       label: 'Learning Exchanges', path: '/exchanges', icon: ArrowLeftRight,
       features: [
-        { label: 'Start Exchange Request', path: '/requests/send-request' },
+        { label: 'Start Learning Request', path: '/requests/send-request' },
         { label: 'Incoming Learning Requests', path: '/requests/incoming-requests' },
         { label: 'Sent Exchange Requests', path: '/requests/sent-requests' },
         { label: 'Request Details', path: '/requests/request-details' },
@@ -97,7 +97,7 @@ export const Navbar: React.FC = () => {
         { label: 'Create Learning Session', path: '/workshops/create-workshop' },
         { label: 'Workshop Details', path: '/workshops/workshop-details' },
         { label: 'My Workshops', path: '/workshops/my-workshops' },
-        { label: 'Learning Credits', path: '/learning/credits' },
+        { label: 'Learning Progress', path: '/learning/credits' },
       ],
     },
     {
