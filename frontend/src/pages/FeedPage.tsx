@@ -20,7 +20,7 @@ import {
   Clock,
   ArrowRight,
   Filter,
-  Users
+  Users, BadgeCheck, Crown
 } from 'lucide-react';
 
 export const FeedPage: React.FC = () => {
@@ -114,13 +114,13 @@ export const FeedPage: React.FC = () => {
                 <img
                   src={currentUser?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                   alt={currentUser?.full_name}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-emerald-400 shadow-md"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-[#d31d24] shadow-md"
                 />
               </div>
               <h3 className="text-sm font-bold text-slate-900">{currentUser?.full_name}</h3>
               <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{currentUser?.headline || 'Community Member'}</p>
               <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-1">
-                <MapPin className="w-3 h-3 text-emerald-600" />
+                <MapPin className="w-3 h-3 text-[#d31d24]" />
                 <span>{currentUser?.address_display || 'Hyderabad'}</span>
               </div>
             </div>
@@ -147,7 +147,7 @@ export const FeedPage: React.FC = () => {
                 </span>
                 <div className="flex flex-wrap gap-1">
                   {currentUser?.skills?.filter(s => s.skill_type === 'OFFERED').map(s => (
-                    <span key={s.id} className="text-[11px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md font-medium">
+                    <span key={s.id} className="text-[11px] bg-red-50 text-[#9f171c] px-2 py-0.5 rounded-md font-medium">
                       {s.skill_name}
                     </span>
                   )) || <span className="text-slate-400">No skills listed</span>}
@@ -160,7 +160,7 @@ export const FeedPage: React.FC = () => {
                 </span>
                 <div className="flex flex-wrap gap-1">
                   {currentUser?.skills?.filter(s => s.skill_type === 'NEEDED').map(s => (
-                    <span key={s.id} className="text-[11px] bg-teal-50 text-teal-800 px-2 py-0.5 rounded-md font-medium">
+                    <span key={s.id} className="text-[11px] bg-slate-100 text-[#17233b] px-2 py-0.5 rounded-md font-medium">
                       {s.skill_name}
                     </span>
                   )) || <span className="text-slate-400">No skills listed</span>}
@@ -291,16 +291,19 @@ export const FeedPage: React.FC = () => {
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <Link to={`/profile/${post.author?.id}`} className="text-xs font-bold text-slate-900 hover:text-emerald-700">
+                        <Link to={`/profile/${post.author?.id}`} className="text-xs font-bold text-[#17233b] hover:text-[#d31d24]">
                           {post.author?.full_name}
                         </Link>
+                        {post.author?.verified && <BadgeCheck className="h-3.5 w-3.5 text-[#d31d24]" />}
+                        {post.author?.premium && <Crown className="h-3.5 w-3.5 text-amber-500" />}
+                        {post.author?.featured && <span className="text-[9px] font-bold uppercase tracking-wider text-[#d31d24]">Featured</span>}
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                           ★ {Math.round(post.author?.trust_score || 90)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-slate-400">
                         {post.distance_display && (
-                          <span className="font-semibold text-emerald-600">
+                          <span className="font-semibold text-[#d31d24]">
                             {post.distance_display}
                           </span>
                         )}
@@ -333,7 +336,7 @@ export const FeedPage: React.FC = () => {
                 {/* Skill tag */}
                 {post.skill && (
                   <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
-                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                    <Sparkles className="w-3 h-3 text-[#d31d24]" />
                     <span>Skill: {post.skill.name}</span>
                   </div>
                 )}
@@ -369,7 +372,7 @@ export const FeedPage: React.FC = () => {
           <Card className="p-4 bg-gradient-to-br from-white to-emerald-50/30">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
+                <Sparkles className="w-4 h-4 text-[#d31d24] animate-pulse" />
                 <h3 className="text-xs font-bold text-slate-900">Matches Near You</h3>
               </div>
               <Link to="/matches" className="text-[11px] font-semibold text-emerald-700 hover:underline">
