@@ -5,7 +5,7 @@ import { ArrowRight, ArrowUpRight, Check, Compass, MessageCircle, Repeat, Shield
 const steps = [
   ['01', 'Tell us what you know', 'Add the skills you can teach and the skills you want to learn.'],
   ['02', 'Find the right person', 'Discover people by skill, interests, location and trust signals.'],
-  ['03', 'Make an exchange', 'Talk, agree on the session and exchange knowledge without cash.'],
+  ['03', 'Start learning', 'Talk, agree on a session and learn together.'],
 ];
 
 const features = [
@@ -34,12 +34,12 @@ export const LandingPage: React.FC = () => (
       <div className="mx-auto max-w-7xl px-5 pb-16 pt-12 sm:px-8 lg:px-10 lg:pb-24 lg:pt-16">
         <div className="grid items-end gap-12 lg:grid-cols-[1.08fr_.92fr] lg:gap-20">
           <div>
-            <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]"><span className="h-px w-8 bg-[#d31d24]" />Student skill exchange</div>
-            <h1 className="mt-7 max-w-4xl text-[clamp(3rem,7vw,6.8rem)] font-semibold leading-[0.92] tracking-[-0.065em] text-[#17233b]">Learn by exchange.<br /><span className="text-[#d31d24]">Teach what you know.</span></h1>
-            <p className="mt-8 max-w-xl text-[16px] leading-7 text-[#5d6675] sm:text-[18px]">You know something someone wants to learn. They know something you want to learn. SkillBarter helps students and early-career learners find each other and exchange practical skills.</p>
+            <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]"><span className="h-px w-8 bg-[#d31d24]" />Built for students & early-career learners</div>
+            <h1 className="mt-7 max-w-4xl text-[clamp(3rem,7vw,6.8rem)] font-semibold leading-[0.92] tracking-[-0.065em] text-[#17233b]">Find someone who can teach you.<br /><span className="text-[#d31d24]">Teach what you know.</span></h1>
+            <p className="mt-8 max-w-xl text-[16px] leading-7 text-[#5d6675] sm:text-[18px]">SkillBarter helps students and early-career learners find peers who can teach what they want to learn — while giving them a way to share the skills they already know.</p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Link to="/signup" className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Start exchanging <ArrowRight className="h-4 w-4" /></Link>
-              <Link to="/discover" className="inline-flex items-center gap-2 border border-[#cfd2d1] bg-transparent px-5 py-3 text-[13px] font-bold text-[#17233b] hover:border-[#17233b]">Explore skills <Compass className="h-4 w-4" /></Link>
+              <Link to="/signup" className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Find a learning partner <ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/discover" className="inline-flex items-center gap-2 border border-[#cfd2d1] bg-transparent px-5 py-3 text-[13px] font-bold text-[#17233b] hover:border-[#17233b]">Explore learning skills <Compass className="h-4 w-4" /></Link>
             </div>
             <div className="mt-10 flex flex-wrap gap-x-7 gap-y-2 text-[11px] font-medium text-[#7a8290]">
               <span className="inline-flex items-center gap-2"><Users className="h-3.5 w-3.5" /> People first</span>
@@ -51,7 +51,7 @@ export const LandingPage: React.FC = () => (
           <div className="lg:pb-2">
             <div className="border border-[#d9dbd9] bg-white">
               <div className="flex items-center justify-between border-b border-[#e8e9e7] px-5 py-4">
-                <div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a9099]">A typical exchange</p><p className="mt-1 text-[15px] font-semibold text-[#17233b]">One student teaches. One student learns.</p></div>
+                <div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a9099]">A typical exchange</p><p className="mt-1 text-[15px] font-semibold text-[#17233b]">One student learns. One student contributes.</p></div>
                 <span className="text-[10px] font-bold text-[#d31d24]">SKILLBARTER</span>
               </div>
               <div className="divide-y divide-[#ececea]">
@@ -59,7 +59,7 @@ export const LandingPage: React.FC = () => (
                 <div className="flex items-center gap-3 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9aa0a8]"><span className="h-px flex-1 bg-[#e4e5e3]" /><Repeat className="h-4 w-4 text-[#d31d24]" /><span className="h-px flex-1 bg-[#e4e5e3]" /></div>
                 <div className="flex gap-4 p-5 sm:p-6"><div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#fff0f0] text-[#d31d24]"><Sparkles className="h-4 w-4" /></div><div><p className="text-[12px] font-bold text-[#17233b]">Another student can offer UI/UX feedback</p><p className="mt-1 text-[12px] leading-5 text-[#6d7582]">SkillBarter helps them discover the match, start a conversation and plan the exchange.</p></div></div>
               </div>
-              <div className="border-t border-[#e8e9e7] bg-[#fafaf8] px-5 py-4"><div className="flex items-center justify-between"><span className="text-[11px] text-[#7a8290]">No cash required to start</span><span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#17233b]"><Check className="h-3.5 w-3.5 text-[#d31d24]" /> Mutual value</span></div></div>
+              <div className="border-t border-[#e8e9e7] bg-[#fafaf8] px-5 py-4"><div className="flex items-center justify-between"><span className="text-[11px] text-[#7a8290]">Start with a learning goal</span><span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#17233b]"><Check className="h-3.5 w-3.5 text-[#d31d24]" /> Mutual value</span></div></div>
             </div>
           </div>
         </div>
@@ -86,7 +86,7 @@ export const LandingPage: React.FC = () => (
 
     <section className="border-b border-[#dedfdd] bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-        <div className="max-w-2xl"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">What can you do here?</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Start with one skill. Let the network grow from there.</h2><p className="mt-4 text-[13px] leading-6 text-[#707884]">Start with career-relevant skills: development, AI/data, design, communication and interview preparation. Bring one skill you know and find someone who can help you learn the next one.</p></div>
+        <div className="max-w-2xl"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">What can you do here?</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Start with the skill you need next.</h2><p className="mt-4 text-[13px] leading-6 text-[#707884]">Choose a career-relevant learning goal — development, AI/data, design, communication or interview preparation. Then add one skill you can teach so your profile can find complementary peers.</p></div>
         <div className="mt-10 grid gap-px border border-[#dfe1df] bg-[#dfe1df] md:grid-cols-3">
           {exchangeTypes.map(({ icon: Icon, title, text }) => <div key={title} className="bg-white p-7 sm:p-8"><Icon className="h-5 w-5 text-[#d31d24]" /><h3 className="mt-7 text-[16px] font-semibold">{title}</h3><p className="mt-2 text-[12px] leading-5 text-[#747c87]">{text}</p><Link to="/signup" className="mt-6 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#17233b] hover:text-[#d31d24]">Create your profile <ArrowUpRight className="h-3.5 w-3.5" /></Link></div>)}
         </div>
