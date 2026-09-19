@@ -6,6 +6,13 @@ const fail = (error: any, fallback: string): never => {
 
 class ExchangeFunctionalApi {
   private async appUser() {
+    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
+    const phone = localStorage.getItem('skillbarter_phone');
+    if (phone && phoneUserId) {
+      const result = await insforge.database.from('users').select('*').eq('id', phoneUserId).maybeSingle();
+      if (result.error || !result.data) fail(result.error, 'Application profile not found');
+      return result.data;
+    }
     const auth = await insforge.auth.getCurrentUser();
     if (auth.error || !auth.data?.user?.email) fail(auth.error, 'Not authenticated');
     const result = await insforge.database.from('users').select('*').eq('email', auth.data.user.email).maybeSingle();
@@ -47,7 +54,7 @@ class ExchangeFunctionalApi {
     const uid = Number(me.id);
     if (uid !== Number(row.requester_id) && uid !== Number(row.receiver_id)) throw new Error('You do not have access to this exchange.');
     const [requester, receiver, requesterSkill, receiverSkill] = await Promise.all([
-      insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', row.requester_id).maybeSingle(),
+      insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,verified,premium,featured_until').eq('id', row.requester_id).maybeSingle(),
       insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', row.receiver_id).maybeSingle(),
       row.requester_skill_id ? insforge.database.from('skills').select('name').eq('id', row.requester_skill_id).maybeSingle() : Promise.resolve({ data: null }),
       row.receiver_skill_id ? insforge.database.from('skills').select('name').eq('id', row.receiver_skill_id).maybeSingle() : Promise.resolve({ data: null }),
