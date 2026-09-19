@@ -15,6 +15,7 @@ export const ConversationPage: React.FC = () => {
   const partnerId = Number(id || 0);
   const [partner, setPartner] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
+  const [activeExchange, setActiveExchange] = useState<any>(null);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -25,12 +26,27 @@ export const ConversationPage: React.FC = () => {
     if (!partnerId) { setError('Invalid member.'); setLoading(false); return; }
     try {
       setLoading(true);
-      const [profile, thread] = await Promise.all([
+      const [profile, thread, conversations] = await Promise.all([
         api.getUserProfile(partnerId),
         api.getMessages(partnerId),
+        api.getConversations(),
       ]);
       setPartner(profile);
       setMessages(thread);
+      const conversation = (conversations || []).find((item: any) => Number(item.partner?.id) === partnerId);
+      if (conversation?.active_exchange_id) {
+        try {
+          const exchange = await (api as any).getExchangeDetails(conversation.active_exchange_id);
+          setActiveExchange(exchange);
+        } catch {
+          setActiveExchange({
+            id: conversation.active_exchange_id,
+            status: conversation.active_exchange_status,
+          });
+        }
+      } else {
+        setActiveExchange(null);
+      }
       setError('');
     } catch (e: any) {
       setError(e?.message || 'Unable to load conversation.');
@@ -54,7 +70,11 @@ export const ConversationPage: React.FC = () => {
     if (!value || !partnerId || sending) return;
     try {
       setSending(true);
-      const sent = await api.sendMessage({ receiver_id: partnerId, content: value });
+      const sent = await api.sendMessage({
+        receiver_id: partnerId,
+        content: value,
+        ...(activeExchange?.id ? { exchange_id: activeExchange.id } : {}),
+      });
       setMessages(prev => prev.some(m => m.id === sent.id) ? prev : [...prev, sent]);
       setText('');
     } catch (e: any) {
@@ -63,6 +83,8 @@ export const ConversationPage: React.FC = () => {
       setSending(false);
     }
   };
+
+  const exchangeLabel = activeExchange?.status === 'ACTIVE' ? 'Exchange in progress' : 'Exchange proposal';
 
   return (
     <main className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
@@ -89,9 +111,24 @@ export const ConversationPage: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              {activeExchange?.id && <Link to={`/exchanges/${activeExchange.id}`}><Button size="sm" variant="outline" icon={<Repeat className="h-4 w-4" />}>Exchange</Button></Link>}
               <Link to={`/profile/${partnerId}`}><Button size="sm" variant="ghost">Profile</Button></Link>
             </div>
           </header>
+
+          {activeExchange?.id && (
+            <div className="flex items-center justify-between gap-3 border-b border-[#e1e4e8] bg-[#fff7f7] px-5 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-red-100 bg-white text-[#d31d24]"><Repeat className="h-4 w-4" /></div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#d31d24]">{exchangeLabel}</p>
+                  <p className="truncate text-xs text-[#697386]">Messages in this thread are linked to exchange #{activeExchange.id}.</p>
+                </div>
+              </div>
+              <Link className="shrink-0" to={`/exchanges/${activeExchange.id}`}><span className="text-[10px] font-extrabold uppercase tracking-wider text-[#17233b] hover:text-[#d31d24]">Open workspace →</span></Link>
+            </div>
+          )}
+
           <section className="flex h-[min(68vh,680px)] flex-col bg-[#fbfbfa]">
             <div className="flex-1 space-y-3 overflow-y-auto p-5 sm:p-7">
               {loading ? <div className="flex h-full items-center justify-center text-xs text-[#697386]">Loading conversation…</div> : messages.length ? messages.map((m: any) => {
