@@ -8,7 +8,7 @@ import './enableSocialApi';
 // Override those guards with direct InsForge implementations while keeping existing imports stable.
 const target = api as any;
 for (const name of [
-  'getMe','getUserProfile','updateMe','getNearbyUsers','addUserSkill','deleteUserSkill',
+  'getMe','getUserProfile','updateMe','getNearbyUsers','addUserSkill','deleteUserSkill','getBlockStatus','blockUser','unblockUser',
   'getMatches','connectNeighbor','disconnectNeighbor','proposeExchange','getExchanges',
   'acceptExchange','completeExchange','updateExchangeSchedule','getNotifications','markNotificationRead',
   'markAllNotificationsRead','sendMessage','getFeed','createPost','likePost','getReviews','submitReview','getTrustDetails'
