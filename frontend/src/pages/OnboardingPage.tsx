@@ -27,15 +27,15 @@ export const OnboardingPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   // Form State
-  const [locationName, setLocationName] = useState(currentUser?.address_display || 'Hitech City, Hyderabad');
+  const [locationName, setLocationName] = useState(currentUser?.address_display || '');
   const [headline, setHeadline] = useState(currentUser?.headline || '');
   const [bio, setBio] = useState(currentUser?.bio || '');
   const [exchangeRadius, setExchangeRadius] = useState<number>(currentUser?.exchange_radius_km || 10);
   const [primaryIntent, setPrimaryIntent] = useState<string>(currentUser?.primary_intent || 'EXCHANGE');
 
   // Skill tags
-  const [offeredSkills, setOfferedSkills] = useState<string[]>(['Web Development', 'Photography']);
-  const [neededSkills, setNeededSkills] = useState<string[]>(['Plumbing', 'Carpentry']);
+  const [offeredSkills, setOfferedSkills] = useState<string[]>(['Web Development', 'Python']);
+  const [neededSkills, setNeededSkills] = useState<string[]>(['AI / Machine Learning', 'Interview Preparation']);
   const [newOfferSkill, setNewOfferSkill] = useState('');
   const [newNeedSkill, setNewNeedSkill] = useState('');
 
@@ -58,8 +58,8 @@ export const OnboardingPage: React.FC = () => {
       setLoading(true);
       await api.updateMe({
         address_display: locationName,
-        headline: headline || `${offeredSkills[0] || 'Skill'} Enthusiast`,
-        bio: bio || 'Excited to exchange skills with trusted local neighbors without money.',
+        headline: headline || `${offeredSkills[0] || 'Skill'} learner & contributor`,
+        bio: bio || 'Student building practical skills through peer learning and skill exchange.',
         exchange_radius_km: exchangeRadius,
         primary_intent: primaryIntent,
         onboarding_completed: true,
@@ -92,11 +92,11 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const stepTitles = [
-    { num: 1, title: 'Location', desc: 'Where are you based?' },
-    { num: 2, title: 'Skills You Offer', desc: 'What can you trade or teach?' },
-    { num: 3, title: 'Skills You Need', desc: 'What local help do you want?' },
-    { num: 4, title: 'Your Goal', desc: 'What is your primary intent?' },
-    { num: 5, title: 'Radius & Preview', desc: 'Set exchange distance' },
+    { num: 1, title: 'Location', desc: 'Where do you study or work?' },
+    { num: 2, title: 'Teach', desc: 'What can you teach?' },
+    { num: 3, title: 'Learn', desc: 'What do you want to learn?' },
+    { num: 4, title: 'Goal', desc: 'What are you here for?' },
+    { num: 5, title: 'Finish', desc: 'Review your profile' },
   ];
 
   return (
@@ -142,15 +142,15 @@ export const OnboardingPage: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 1 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">Confirm Your Neighborhood</h2>
+                <h2 className="text-xl font-bold text-slate-900 mt-0.5">Where should we find your matches?</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  SkillBarter uses approximate neighborhood geo-fencing. Your exact coordinates are never shown to neighbors.
+                  Use your campus, neighborhood or work area so we can surface relevant nearby exchanges. Your exact address is not shown.
                 </p>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Neighborhood / Area Name
+                  Campus / Area
                 </label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -158,7 +158,7 @@ export const OnboardingPage: React.FC = () => {
                     type="text"
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
-                    placeholder="e.g. Hitech City, Hyderabad"
+                    placeholder="e.g. Gachibowli, Hyderabad"
                     className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
@@ -169,7 +169,7 @@ export const OnboardingPage: React.FC = () => {
                 <div>
                   <p className="font-semibold">Privacy First</p>
                   <p className="text-[11px] text-emerald-800 mt-0.5">
-                    Other neighbors will see "1.8 km away" or "Hitech City", but will never see your home street or exact residence.
+                    People see an approximate area or distance, not your exact residence.
                   </p>
                 </div>
               </div>
@@ -181,16 +181,16 @@ export const OnboardingPage: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 2 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">What Skills Can You Offer?</h2>
+                <h2 className="text-xl font-bold text-slate-900 mt-0.5">What can you teach?</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Add skills or services you can trade (e.g. Web Development, Plumbing, Cooking, Piano, Yoga).
+                  Start with skills you can confidently teach or help someone with. Think coding, AI, design, editing, communication, languages or hobbies.
                 </p>
               </div>
 
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Enter a skill (e.g. Bike Repair, Guitar, UI Design)..."
+                  placeholder="e.g. React, Python, Figma, Excel, Public Speaking..."
                   value={newOfferSkill}
                   onChange={(e) => setNewOfferSkill(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOffer())}
@@ -203,7 +203,7 @@ export const OnboardingPage: React.FC = () => {
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                  Skills You Offer:
+                  Skills I can teach:
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {offeredSkills.map((skill) => (
@@ -226,9 +226,9 @@ export const OnboardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Quick Add Suggestions:</label>
+                <label className="block text-[11px] text-slate-400 mb-1">Popular student skills:</label>
                 <div className="flex flex-wrap gap-1.5">
-                  {['Web Development', 'Plumbing', 'Electrical Work', 'Graphic Design', 'Photography', 'Italian Cooking', 'Yoga'].map((s) => (
+                  {['Python', 'React', 'AI / ML', 'Figma', 'Video Editing', 'Public Speaking', 'Excel'].map((s) => (
                     <button
                       key={s}
                       type="button"
@@ -248,16 +248,16 @@ export const OnboardingPage: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 3 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">What Skills Do You Need?</h2>
+                <h2 className="text-xl font-bold text-slate-900 mt-0.5">What do you want to learn?</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  List what services or knowledge you would love to barter for from nearby neighbors.
+                  Choose skills that would help with your studies, projects, portfolio or career.
                 </p>
               </div>
 
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Enter a skill you need (e.g. Carpentry, Gardening, Python)..."
+                  placeholder="e.g. Machine Learning, DSA, UI Design, Resume Review..."
                   value={newNeedSkill}
                   onChange={(e) => setNewNeedSkill(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNeed())}
@@ -270,7 +270,7 @@ export const OnboardingPage: React.FC = () => {
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                  Skills You Need:
+                  Skills I want to learn:
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {neededSkills.map((skill) => (
@@ -299,19 +299,19 @@ export const OnboardingPage: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 4 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">What is Your Primary Goal?</h2>
+                <h2 className="text-xl font-bold text-slate-900 mt-0.5">What are you here to achieve?</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  How do you plan to interact with your local neighborhood?
+                  This helps us personalize your first matches.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { id: 'EXCHANGE', label: 'Skill Barter', desc: 'Reciprocal 1-for-1 skill trade with zero cash' },
-                  { id: 'LEARN', label: 'Learn a New Skill', desc: 'Find mentors and experienced practitioners nearby' },
-                  { id: 'TEACH', label: 'Teach & Mentor', desc: 'Share your craft, hobby, or professional skills' },
-                  { id: 'HELP', label: 'Community Service', desc: 'Lend a helping hand to neighbors in need' },
-                  { id: 'MEET', label: 'Meet Neighbors', desc: 'Connect locally with friendly, skilled residents' },
+                  { id: 'EXCHANGE', label: 'Skill Barter', desc: 'Exchange one useful skill for another' },
+                  { id: 'LEARN', label: 'Learn a New Skill', desc: 'Build a practical skill from someone experienced' },
+                  { id: 'TEACH', label: 'Teach & Mentor', desc: 'Help another student learn what you know' },
+                  { id: 'HELP', label: 'Community Service', desc: 'Use your skills to help your community' },
+                  { id: 'MEET', label: 'Meet Neighbors', desc: 'Meet peers around shared skills and projects' },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -336,9 +336,9 @@ export const OnboardingPage: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 5 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">Set Exchange Radius</h2>
+                <h2 className="text-xl font-bold text-slate-900 mt-0.5">How far should your matches be?</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Choose how far you are willing to travel for physical and hands-on skill exchanges.
+                  Choose a practical distance for in-person exchanges. You can also connect remotely.
                 </p>
               </div>
 
@@ -420,7 +420,7 @@ export const OnboardingPage: React.FC = () => {
                 onClick={handleCompleteOnboarding}
                 icon={<CheckCircle2 className="w-4 h-4" />}
               >
-                Enter My Community
+                Find My First Matches
               </Button>
             )}
           </div>
