@@ -105,6 +105,11 @@ class FunctionalApi {
       const distance = Number(u.distance_km || 999);
       const locationProximity = distance >= 100 ? 0 : Math.max(0, Math.min(20, Math.round(20 - (distance / 5))));
       const trust = Math.max(0, Math.min(20, Math.round(Number(u.trust_score || 0) / 5)));
+      const myAvailability = String(me.availability || '').trim().toLowerCase();
+      const theirAvailability = String(u.availability || '').trim().toLowerCase();
+      const availability = myAvailability && theirAvailability
+        ? (myAvailability === theirAvailability ? 10 : 5)
+        : 5;
       const bonus = (u.featured ? 5 : 0) + (u.verified ? 3 : 0) + (u.premium ? 2 : 0);
       const matchScore = Math.max(1, Math.min(99, skillCompatibility + locationProximity + trust + availability + bonus));
       const reasons = [
@@ -133,18 +138,30 @@ class FunctionalApi {
     return row.data;
   }
 
-  async getExchanges() {
+  async getExchanges(status?: string) {
     const me = await this.appUser();
     const r = await insforge.database.from('exchanges').select('*').or(`requester_id.eq.${me.id},receiver_id.eq.${me.id}`).order('created_at', { ascending: false });
     if (r.error) fail(r.error, 'Unable to load exchanges');
-    return Promise.all((r.data || []).map(async (e: any) => {
+    const rows = status
+      ? (r.data || []).filter((e: any) => status === 'PENDING' ? ['PENDING', 'COUNTERED'].includes(String(e.status)) : String(e.status) === status)
+      : (r.data || []);
+    return Promise.all(rows.map(async (e: any) => {
       const [a, b, requesterSkill, receiverSkill] = await Promise.all([
-        insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score').eq('id', e.requester_id).maybeSingle(),
-        insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score').eq('id', e.receiver_id).maybeSingle(),
+        insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,verified,premium,featured_until').eq('id', e.requester_id).maybeSingle(),
+        insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,verified,premium,featured_until').eq('id', e.receiver_id).maybeSingle(),
         e.requester_skill_id ? insforge.database.from('skills').select('name').eq('id', e.requester_skill_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
         e.receiver_skill_id ? insforge.database.from('skills').select('name').eq('id', e.receiver_skill_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
       ]);
-      return { ...e, requester: a.data, receiver: b.data, requester_skill_name: requesterSkill.data?.name || 'Skill exchange', receiver_skill_name: receiverSkill.data?.name || 'Skill exchange' };
+      const reviewer = await insforge.database.from('reviews').select('id').eq('exchange_id', e.id).eq('reviewer_id', me.id).maybeSingle();
+      return {
+        ...e,
+        requester: a.data ? { ...a.data, verified: Boolean(a.data.verified), premium: Boolean(a.data.premium), featured: Boolean(a.data.featured_until && new Date(a.data.featured_until).getTime() > Date.now()) } : a.data,
+        receiver: b.data ? { ...b.data, verified: Boolean(b.data.verified), premium: Boolean(b.data.premium), featured: Boolean(b.data.featured_until && new Date(b.data.featured_until).getTime() > Date.now()) } : b.data,
+        requester_skill_name: requesterSkill.data?.name || 'Skill exchange',
+        receiver_skill_name: receiverSkill.data?.name || 'Skill exchange',
+        has_reviewed: Boolean(reviewer.data),
+        user_can_review: String(e.status) === 'COMPLETED' && !reviewer.data,
+      };
     }));
   }
 
