@@ -31,7 +31,7 @@ export const OnboardingPage: React.FC = () => {
   const [headline, setHeadline] = useState(currentUser?.headline || '');
   const [bio, setBio] = useState(currentUser?.bio || '');
   const [exchangeRadius, setExchangeRadius] = useState<number>(currentUser?.exchange_radius_km || 10);
-  const [primaryIntent, setPrimaryIntent] = useState<string>(currentUser?.primary_intent || 'EXCHANGE');
+  const [primaryIntent, setPrimaryIntent] = useState<string>(currentUser?.primary_intent || 'LEARN');
 
   // Skill tags
   const [offeredSkills, setOfferedSkills] = useState<string[]>(['Web Development', 'Python']);
@@ -58,7 +58,7 @@ export const OnboardingPage: React.FC = () => {
       setLoading(true);
       await api.updateMe({
         address_display: locationName,
-        headline: headline || `${offeredSkills[0] || 'Skill'} learner & contributor`,
+        headline: headline || `${neededSkills[0] || 'Skill'} learner • ${offeredSkills[0] || 'Skill'} contributor`,
         bio: bio || 'Student building practical skills through peer learning and skill exchange.',
         exchange_radius_km: exchangeRadius,
         primary_intent: primaryIntent,
@@ -142,9 +142,9 @@ export const OnboardingPage: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 1 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">Where should we find your matches?</h2>
+                <h2 className="text-xl font-bold text-slate-900 mt-0.5">Where do you want to find learning partners?</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Use your campus, neighborhood or work area so we can surface relevant nearby exchanges. Your exact address is not shown.
+                  Use your campus or city so we can surface relevant student peers. Your exact address is not shown.
                 </p>
               </div>
 
@@ -307,11 +307,11 @@ export const OnboardingPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { id: 'EXCHANGE', label: 'Skill Barter', desc: 'Exchange one useful skill for another' },
-                  { id: 'LEARN', label: 'Learn a New Skill', desc: 'Build a practical skill from someone experienced' },
-                  { id: 'TEACH', label: 'Teach & Mentor', desc: 'Help another student learn what you know' },
-                  { id: 'HELP', label: 'Community Service', desc: 'Use your skills to help your community' },
-                  { id: 'MEET', label: 'Meet Neighbors', desc: 'Meet peers around shared skills and projects' },
+                  { id: 'LEARN', label: 'Learn for My Goals', desc: 'Learn a practical skill for studies, projects or career' },
+                  { id: 'EXCHANGE', label: 'Learn & Teach', desc: 'Exchange your skills with another student' },
+                  { id: 'TEACH', label: 'Teach & Share', desc: 'Help another student learn what you know' },
+                  { id: 'HELP', label: 'Help a Peer', desc: 'Use your skills to help another learner' },
+                  { id: 'MEET', label: 'Build My Network', desc: 'Meet peers around shared skills and projects' },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -336,9 +336,9 @@ export const OnboardingPage: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 5 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">How far should your matches be?</h2>
+                <h2 className="text-xl font-bold text-slate-900 mt-0.5">Where should we look for your learning partners?</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Choose a practical distance for in-person exchanges. You can also connect remotely.
+                  Choose a practical distance for nearby learning partners. You can also connect remotely.
                 </p>
               </div>
 
@@ -377,11 +377,11 @@ export const OnboardingPage: React.FC = () => {
 
                 <div className="pt-2 border-t border-slate-200/80 text-xs">
                   <div className="mb-2">
-                    <span className="font-semibold text-slate-700">Offers: </span>
+                    <span className="font-semibold text-slate-700">Can teach: </span>
                     <span className="text-emerald-700 font-medium">{offeredSkills.join(', ')}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-slate-700">Needs: </span>
+                    <span className="font-semibold text-slate-700">Wants to learn: </span>
                     <span className="text-teal-700 font-medium">{neededSkills.join(', ')}</span>
                   </div>
                 </div>
@@ -420,7 +420,7 @@ export const OnboardingPage: React.FC = () => {
                 onClick={handleCompleteOnboarding}
                 icon={<CheckCircle2 className="w-4 h-4" />}
               >
-                Find My First Matches
+                Find My First Learning Partners
               </Button>
             )}
           </div>
