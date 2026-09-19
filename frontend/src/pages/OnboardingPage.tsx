@@ -54,6 +54,9 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const handleCompleteOnboarding = async () => {
+    if (!locationName.trim()) { setStep(1); return; }
+    if (offeredSkills.length === 0) { setStep(2); return; }
+    if (neededSkills.length === 0) { setStep(3); return; }
     try {
       setLoading(true);
       await api.updateMe({
@@ -407,7 +410,12 @@ export const OnboardingPage: React.FC = () => {
               <Button
                 type="button"
                 size="sm"
-                onClick={() => setStep(step + 1)}
+                onClick={() => {
+                  if (step === 1 && !locationName.trim()) return;
+                  if (step === 2 && offeredSkills.length === 0) return;
+                  if (step === 3 && neededSkills.length === 0) return;
+                  setStep(step + 1);
+                }}
                 icon={<ArrowRight className="w-4 h-4" />}
               >
                 Next Step
