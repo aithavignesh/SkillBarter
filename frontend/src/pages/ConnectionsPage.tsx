@@ -20,7 +20,8 @@ export const ConnectionsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<UserSummary | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
-  const [busyId, setBusyId] = useState<number | null>(null);\n  const [notice, setNotice] = useState('');
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [notice, setNotice] = useState('');
 
   const loadData = async () => {
     try {
@@ -109,7 +110,9 @@ export const ConnectionsPage: React.FC = () => {
         <div className="bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Network mode</p><p className="mt-1 text-sm font-bold text-[#d31d24]">Local first</p></div>
       </div>
 
-      {notice && <div className="mt-4 flex items-center justify-between border border-[#ead0d1] bg-[#fff6f6] px-4 py-3 text-xs font-semibold text-[#b8171d]"><span>{notice}</span><button onClick={()=>setNotice('')} className="font-bold underline">Dismiss</button></div>}\n\n      <div className="mt-5 border-b border-[#e1e4e8] bg-white px-2"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} /></div>
+      {notice && <div className="mt-4 flex items-center justify-between border border-[#ead0d1] bg-[#fff6f6] px-4 py-3 text-xs font-semibold text-[#b8171d]"><span>{notice}</span><button onClick={()=>setNotice('')} className="font-bold underline">Dismiss</button></div>}
+
+      <div className="mt-5 border-b border-[#e1e4e8] bg-white px-2"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} /></div>
 
       {loading ? (
         <div className="border border-[#e1e4e8] bg-white py-20 text-center text-sm text-slate-400">Loading your network…</div>
