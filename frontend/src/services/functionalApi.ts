@@ -106,7 +106,7 @@ class FunctionalApi {
       const locationProximity = distance >= 100 ? 0 : Math.max(0, Math.min(20, Math.round(20 - (distance / 5))));
       const trust = Math.max(0, Math.min(20, Math.round(Number(u.trust_score || 0) / 5)));
       const bonus = (u.featured ? 5 : 0) + (u.verified ? 3 : 0) + (u.premium ? 2 : 0);
-      const matchScore = Math.max(1, Math.min(99, skillCompatibility + locationProximity + trust + bonus));
+      const matchScore = Math.max(1, Math.min(99, skillCompatibility + locationProximity + trust + availability + bonus));
       const reasons = [
         reciprocal ? 'Two-way skill compatibility' : (youCanHelp.length ? 'They need a skill you offer' : 'They offer a skill you need'),
         youCanHelp.length ? 'You can help with ' + youCanHelp.slice(0, 2).join(', ') : 'Add an offered skill they need for a reciprocal match',
@@ -114,7 +114,7 @@ class FunctionalApi {
       ];
       if (u.featured) reasons.push('Featured profile');
       if (u.verified) reasons.push('Verified profile');
-      return { candidate: u, match_score: matchScore, distance_display: u.distance_display, is_reciprocal: reciprocal, matched_you_offer: youCanHelp, they_offer: theyCanHelp, reasons, score_breakdown: { skill_compatibility: skillCompatibility, location_proximity: locationProximity, trust } };
+      return { candidate: u, match_score: matchScore, distance_display: u.distance_display, is_reciprocal: reciprocal, matched_you_offer: youCanHelp, they_offer: theyCanHelp, reasons, score_breakdown: { skill_compatibility: skillCompatibility, location_proximity: locationProximity, trust, availability } };
     }).filter(Boolean).sort((a: any, b: any) => b.match_score - a.match_score);
   }
 
