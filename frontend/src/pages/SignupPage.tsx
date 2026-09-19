@@ -33,6 +33,10 @@ export const SignupPage: React.FC = () => {
         setError('Please complete all required fields.');
         return;
       }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError('Please enter a valid email address.');
+        return;
+      }
       await register({
         full_name: fullName.trim(),
         email: email.trim(),
