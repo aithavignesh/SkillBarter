@@ -480,7 +480,41 @@ class ApiClient {
   async markNotificationRead(id: number) { const { appUser } = await this.getAppUser(); const r = await insforge.database.from('notifications').update({ is_read: true }).eq('id', id).eq('user_id', appUser.id).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to mark notification'); return r.data; }
   async markAllNotificationsRead() { const { appUser } = await this.getAppUser(); const r = await insforge.database.from('notifications').update({ is_read: true }).eq('user_id', appUser.id).eq('is_read', false); if (r.error) throw new Error(r.error.message || 'Unable to update notifications'); return true; }
 
-  async sendMessage(payload: any) { const { appUser } = await this.getAppUser(); const receiverId = Number(payload.receiver_id); const content = String(payload.content || '').trim(); if (!receiverId || receiverId === Number(appUser.id)) throw new Error('Choose a valid recipient.'); if (!content) throw new Error('Message cannot be empty.'); const r = await insforge.database.from('messages').insert({ sender_id: appUser.id, receiver_id: receiverId, content, exchange_id: payload.exchange_id || null }).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to send message'); await insforge.database.from('notifications').insert({ user_id: receiverId, type: 'MESSAGE', title: 'New message', message: `${appUser.full_name} sent you a message.`, link: `/messages/${appUser.id}` }); return r.data; }
+  async sendMessage(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const senderId = Number(appUser.id);
+    const receiverId = Number(payload.receiver_id);
+    const content = String(payload.content || '').trim();
+    const exchangeId = payload.exchange_id == null || payload.exchange_id === '' ? null : Number(payload.exchange_id);
+    if (!receiverId || receiverId === senderId) throw new Error('Choose a valid recipient.');
+    if (!content) throw new Error('Message cannot be empty.');
+    if (content.length > 2000) throw new Error('Message is too long. Keep it under 2000 characters.');
+
+    if (exchangeId !== null) {
+      if (!Number.isInteger(exchangeId) || exchangeId <= 0) throw new Error('Choose a valid learning exchange.');
+      const exchange = await this.getExchangeRow(exchangeId);
+      const isParticipant = senderId === Number(exchange.requester_id) || senderId === Number(exchange.receiver_id);
+      if (!isParticipant) throw new Error('You are not a participant in this learning exchange.');
+      const partnerId = senderId === Number(exchange.requester_id) ? Number(exchange.receiver_id) : Number(exchange.requester_id);
+      if (receiverId !== partnerId) throw new Error('Messages for this exchange can only be sent to your learning partner.');
+    }
+
+    const r = await insforge.database.from('messages').insert({
+      sender_id: senderId,
+      receiver_id: receiverId,
+      content,
+      exchange_id: exchangeId,
+    }).select('*').single();
+    if (r.error) throw new Error(r.error.message || 'Unable to send message');
+    await insforge.database.from('notifications').insert({
+      user_id: receiverId,
+      type: 'MESSAGE',
+      title: 'New message',
+      message: `${appUser.full_name} sent you a message.`,
+      link: `/messages/${appUser.id}`,
+    });
+    return r.data;
+  }
 
   async getFeed(type?: string) { const me = await this.getAppUser(); let q: any = insforge.database.from('posts').select('*').order('created_at', { ascending: false }).limit(50); if (type) q = q.eq('post_type', type); const r = await q; if (r.error) throw new Error(r.error.message || 'Unable to load feed'); return r.data || []; }
   async createPost(payload: any) { const { appUser } = await this.getAppUser(); const title = String(payload.title || '').trim(); const content = String(payload.content || '').trim(); if (!content) throw new Error('Post content cannot be empty.'); const r = await insforge.database.from('posts').insert({ author_id: appUser.id, post_type: payload.post_type || 'COMMUNITY', title: title || null, content, likes_count: 0 }).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to publish post'); return r.data; }
