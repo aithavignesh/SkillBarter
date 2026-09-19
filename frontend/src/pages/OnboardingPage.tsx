@@ -82,7 +82,7 @@ export const OnboardingPage: React.FC = () => {
       }
 
       await refreshUser();
-      navigate('/feed');
+      navigate('/matches');
     } catch (err) {
       console.error(err);
       navigate('/feed');
@@ -141,7 +141,7 @@ export const OnboardingPage: React.FC = () => {
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 1 of 5</span>
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 1 of 5 · Quick setup</span>
                 <h2 className="text-xl font-bold text-slate-900 mt-0.5">Where do you want to find learning partners?</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Use your campus or city so we can surface relevant student peers. Your exact address is not shown.
@@ -250,7 +250,7 @@ export const OnboardingPage: React.FC = () => {
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 3 of 5</span>
                 <h2 className="text-xl font-bold text-slate-900 mt-0.5">What do you want to learn?</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Choose skills that would help with your studies, projects, portfolio or career.
+                  Choose skills that would help with your studies, projects, portfolio or career. Add at least one so we can find a useful match.
                 </p>
               </div>
 
@@ -420,7 +420,7 @@ export const OnboardingPage: React.FC = () => {
                 onClick={handleCompleteOnboarding}
                 icon={<CheckCircle2 className="w-4 h-4" />}
               >
-                Find My First Learning Partners
+                Show My Learning Matches
               </Button>
             )}
           </div>
