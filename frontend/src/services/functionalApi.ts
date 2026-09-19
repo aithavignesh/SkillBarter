@@ -217,7 +217,7 @@ class FunctionalApi {
     const r = await insforge.database.from('reviews').select('*').eq('reviewee_id', userId).order('created_at', { ascending: false });
     if (r.error) fail(r.error, 'Unable to load reviews');
     return Promise.all((r.data || []).map(async (review: any) => {
-      const reviewer = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,verified,premium,featured_until').eq('id', review.reviewer_id).maybeSingle();
+      const reviewer = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,verified,premium,featured_until,badges').eq('id', review.reviewer_id).maybeSingle();
       return {
         ...review,
         reviewer: reviewer.data ? {
