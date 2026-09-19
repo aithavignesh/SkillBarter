@@ -33,33 +33,33 @@ export const Navbar: React.FC = () => {
   };
 
   const primary: NavItem[] = [
-    { label: 'Overview', path: '/feed', icon: Repeat },
+    { label: 'Home', path: '/feed', icon: Repeat },
     {
-      label: 'Discover', path: '/discover', icon: Compass,
+      label: 'Find a Learning Partner', path: '/discover', icon: Compass,
       features: [
-        { label: 'Skill Search', path: '/discover/search' },
-        { label: 'Advanced Search & Filters', path: '/discover/advanced-search' },
-        { label: 'Recommended Users', path: '/discover/recommended' },
+        { label: 'Search Learning Skills', path: '/discover/search' },
+        { label: 'Learning Filters', path: '/discover/advanced-search' },
+        { label: 'Recommended Learning Partners', path: '/discover/recommended' },
       ],
     },
     {
-      label: 'Skill Matches', path: '/matches', icon: Sparkles,
+      label: 'My Learning Matches', path: '/matches', icon: Sparkles,
       features: [
-        { label: 'AI Skill Matching', path: '/matches/ai-matching' },
+        { label: 'Smart Learning Matching', path: '/matches/ai-matching' },
         { label: 'Match Details', path: '/matches/match-details' },
       ],
     },
     {
-      label: 'Exchanges', path: '/exchanges', icon: ArrowLeftRight,
+      label: 'Learning Exchanges', path: '/exchanges', icon: ArrowLeftRight,
       features: [
-        { label: 'Send Skill Request', path: '/requests/send-request' },
-        { label: 'Incoming Requests', path: '/requests/incoming-requests' },
-        { label: 'Sent Requests', path: '/requests/sent-requests' },
+        { label: 'Start Exchange Request', path: '/requests/send-request' },
+        { label: 'Incoming Learning Requests', path: '/requests/incoming-requests' },
+        { label: 'Sent Exchange Requests', path: '/requests/sent-requests' },
         { label: 'Request Details', path: '/requests/request-details' },
-        { label: 'Active Skill Exchange', path: '/exchanges/active-exchange' },
-        { label: 'Exchange History', path: '/exchanges/exchange-history' },
-        { label: 'Exchange Rating', path: '/exchanges/exchange-rating' },
-        { label: 'Schedule Exchange', path: '/exchanges/schedule' },
+        { label: 'Active Learning Session', path: '/exchanges/active-exchange' },
+        { label: 'Learning History', path: '/exchanges/exchange-history' },
+        { label: 'Peer Reviews', path: '/exchanges/exchange-rating' },
+        { label: 'Schedule Learning Session', path: '/exchanges/schedule' },
         { label: 'Calendar', path: '/exchanges/calendar' },
       ],
     },
@@ -81,23 +81,23 @@ export const Navbar: React.FC = () => {
         { label: 'Public Profile', path: '/profile/public-profile' },
         { label: 'Skills Management', path: '/profile/skills' },
         { label: 'Add New Skill', path: '/profile/add-skill' },
-        { label: 'Learning Goals', path: '/learning/learning-goals' },
-        { label: 'Teaching Skills', path: '/learning/teaching-skills' },
+        { label: 'What I Want to Learn', path: '/learning/learning-goals' },
+        { label: 'What I Can Teach', path: '/learning/teaching-skills' },
       ],
     },
-    { label: 'Connections', path: '/connections', icon: Users },
+    { label: 'Learning Network', path: '/connections', icon: Users },
     {
-      label: 'Community', path: '/community', icon: Users,
+      label: 'Student Community', path: '/community', icon: Users,
       features: [
-        { label: 'Create Community Post', path: '/community/create-post' },
+        { label: 'Share Learning Update', path: '/community/create-post' },
         { label: 'Post Details', path: '/community/post-details' },
         { label: 'Community Groups', path: '/community/groups' },
         { label: 'Group Details', path: '/community/group-details' },
-        { label: 'Workshops', path: '/workshops/workshops' },
-        { label: 'Create Workshop', path: '/workshops/create-workshop' },
+        { label: 'Learning Sessions', path: '/workshops/workshops' },
+        { label: 'Create Learning Session', path: '/workshops/create-workshop' },
         { label: 'Workshop Details', path: '/workshops/workshop-details' },
         { label: 'My Workshops', path: '/workshops/my-workshops' },
-        { label: 'Skill Credits', path: '/learning/credits' },
+        { label: 'Learning Credits', path: '/learning/credits' },
       ],
     },
     {
@@ -217,7 +217,7 @@ export const Navbar: React.FC = () => {
         <div className="flex h-full items-center gap-4 px-5 sm:px-7 lg:px-8">
           <div className="min-w-0 flex-1">
             <div className="hidden items-center gap-2 text-[11px] text-[#8a92a0] md:flex"><span>SkillBarter</span><span>/</span><span className="font-semibold text-[#17233b]">{primary.find((x) => isActive(x.path))?.label || 'Community'}</span></div>
-            <form onSubmit={handleSearchSubmit} className="relative mt-0.5 max-w-[520px]"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search people, skills or exchanges" className="h-9 w-full border border-[#e2e5e9] bg-[#fafbfc] pl-9 pr-4 text-[12px] text-[#17233b] outline-none transition focus:border-[#c8cdd5] focus:bg-white focus:ring-0" /></form>
+            <form onSubmit={handleSearchSubmit} className="relative mt-0.5 max-w-[520px]"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search learning skills or people" className="h-9 w-full border border-[#e2e5e9] bg-[#fafbfc] pl-9 pr-4 text-[12px] text-[#17233b] outline-none transition focus:border-[#c8cdd5] focus:bg-white focus:ring-0" /></form>
           </div>
           <div className="flex items-center gap-1">
             <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Dark mode' : 'Light mode'} className="flex h-9 items-center gap-2 border border-[#e1e4e8] bg-white px-3 text-[11px] font-semibold text-[#4d5b72] hover:border-[#cbd1d8] hover:text-[#17233b]">
