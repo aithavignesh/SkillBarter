@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { MatchResult, UserSummary } from '../types';
@@ -11,6 +11,7 @@ import { Sparkles, Repeat, MapPin, ShieldCheck, CheckCircle, ArrowRight, Sliders
 
 export const SkillMatchesPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const userId = Number(currentUser?.id ?? 0);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,8 @@ export const SkillMatchesPage: React.FC = () => {
     setUsageTick(v => v + 1);
     setIsProposeOpen(false);
     setPriorityProposal(false);
-    setNotice(priorityProposal ? 'Priority exchange request sent. One priority action was used.' : 'Exchange request sent successfully.');
+    setNotice(priorityProposal ? 'Priority learning request sent.' : 'Learning request sent.');
+    navigate('/exchanges');
   };
 
   return (
