@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MessageSquare, Send, Repeat, BadgeCheck, Crown, Rocket } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Send, Repeat, BadgeCheck, Crown, Rocket, ShieldOff, ShieldCheck } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../services/api';
@@ -16,6 +16,8 @@ export const ConversationPage: React.FC = () => {
   const [partner, setPartner] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [activeExchange, setActiveExchange] = useState<any>(null);
+  const [blocked, setBlocked] = useState(false);
+  const [blocking, setBlocking] = useState(false);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -33,6 +35,7 @@ export const ConversationPage: React.FC = () => {
       ]);
       setPartner(profile);
       setMessages(thread);
+      setBlocked(Boolean(await (api as any).getBlockStatus?.(partnerId)));
       const conversation = (conversations || []).find((item: any) => Number(item.partner?.id) === partnerId);
       if (conversation?.active_exchange_id) {
         try {
@@ -86,6 +89,22 @@ export const ConversationPage: React.FC = () => {
 
   const exchangeLabel = activeExchange?.status === 'ACTIVE' ? 'Exchange in progress' : 'Exchange proposal';
 
+  const toggleBlock = async () => {
+    if (!partnerId || blocking) return;
+    const confirmed = window.confirm(blocked ? 'Unblock this member?' : 'Block this member? They will no longer appear in your matching flow.');
+    if (!confirmed) return;
+    try {
+      setBlocking(true);
+      if (blocked) await (api as any).unblockUser(partnerId);
+      else await (api as any).blockUser(partnerId);
+      setBlocked(!blocked);
+    } catch (e: any) {
+      setError(e?.message || 'Unable to update block status.');
+    } finally {
+      setBlocking(false);
+    }
+  };
+
   return (
     <main className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
       <div className="mx-auto w-full max-w-[1100px]">
@@ -113,6 +132,7 @@ export const ConversationPage: React.FC = () => {
             <div className="flex gap-2">
               {activeExchange?.id && <Link to={`/exchanges/${activeExchange.id}`}><Button size="sm" variant="outline" icon={<Repeat className="h-4 w-4" />}>Exchange</Button></Link>}
               <Link to={`/profile/${partnerId}`}><Button size="sm" variant="ghost">Profile</Button></Link>
+              <Button size="sm" variant="ghost" onClick={toggleBlock} disabled={blocking} icon={blocked ? <ShieldCheck className="h-4 w-4" /> : <ShieldOff className="h-4 w-4" />}>{blocking ? 'Updating…' : blocked ? 'Unblock' : 'Block'}</Button>
             </div>
           </header>
 
