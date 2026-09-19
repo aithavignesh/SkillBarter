@@ -88,15 +88,33 @@ class FunctionalApi {
   async disconnectNeighbor(id: number) { const me = await this.appUser(); const a = await insforge.database.from('connections').delete().eq('user_id', me.id).eq('connected_user_id', id); const b = await insforge.database.from('connections').delete().eq('user_id', id).eq('connected_user_id', me.id); if (a.error && b.error) fail(a.error, 'Unable to remove connection'); return true; }
 
   async getMatches() {
-    const me = await this.appUser(); const mine = await this.skillsFor(Number(me.id));
-    const offered = mine.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => String(s.skill_name).toLowerCase());
-    const needed = mine.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => String(s.skill_name).toLowerCase());
+    const me = await this.appUser();
+    const mine = await this.skillsFor(Number(me.id));
+    const offered = mine.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => String(s.skill_name).trim().toLowerCase());
+    const needed = mine.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => String(s.skill_name).trim().toLowerCase());
     const users = await this.getNearbyUsers(100);
+    const overlap = (a: string[], b: string[]) => a.filter(v => b.includes(v));
     return users.map((u: any) => {
-      const theirOffer = (u.skills_offered || []).map((s: string) => s.toLowerCase()); const theirNeed = (u.skills_needed || []).map((s: string) => s.toLowerCase());
-      const a = offered.filter((s: string) => theirNeed.includes(s)); const b = theirOffer.filter((s: string) => needed.includes(s)); const reciprocal = a.length > 0 && b.length > 0;
-      if (!a.length && !b.length) return null;
-      return { candidate: u, match_score: Math.min(99, reciprocal ? 90 : 70), distance_display: u.distance_display, is_reciprocal: reciprocal, reasons: [reciprocal ? 'Two-way skill compatibility' : 'One-way skill compatibility', u.distance_display] };
+      const theirOffer = (u.skills_offered || []).map((s: string) => s.trim().toLowerCase());
+      const theirNeed = (u.skills_needed || []).map((s: string) => s.trim().toLowerCase());
+      const youCanHelp = overlap(offered, theirNeed);
+      const theyCanHelp = overlap(theirOffer, needed);
+      if (!youCanHelp.length && !theyCanHelp.length) return null;
+      const reciprocal = youCanHelp.length > 0 && theyCanHelp.length > 0;
+      const skillCompatibility = Math.min(50, (youCanHelp.length * 25) + (theyCanHelp.length * 25));
+      const distance = Number(u.distance_km || 999);
+      const locationProximity = distance >= 100 ? 0 : Math.max(0, Math.min(20, Math.round(20 - (distance / 5))));
+      const trust = Math.max(0, Math.min(20, Math.round(Number(u.trust_score || 0) / 5)));
+      const bonus = (u.featured ? 5 : 0) + (u.verified ? 3 : 0) + (u.premium ? 2 : 0);
+      const matchScore = Math.max(1, Math.min(99, skillCompatibility + locationProximity + trust + bonus));
+      const reasons = [
+        reciprocal ? 'Two-way skill compatibility' : (youCanHelp.length ? 'They need a skill you offer' : 'They offer a skill you need'),
+        youCanHelp.length ? 'You can help with ' + youCanHelp.slice(0, 2).join(', ') : 'Add an offered skill they need for a reciprocal match',
+        theyCanHelp.length ? 'They can help with ' + theyCanHelp.slice(0, 2).join(', ') : 'They do not currently match one of your needed skills',
+      ];
+      if (u.featured) reasons.push('Featured profile');
+      if (u.verified) reasons.push('Verified profile');
+      return { candidate: u, match_score: matchScore, distance_display: u.distance_display, is_reciprocal: reciprocal, matched_you_offer: youCanHelp, they_offer: theyCanHelp, reasons, score_breakdown: { skill_compatibility: skillCompatibility, location_proximity: locationProximity, trust } };
     }).filter(Boolean).sort((a: any, b: any) => b.match_score - a.match_score);
   }
 
