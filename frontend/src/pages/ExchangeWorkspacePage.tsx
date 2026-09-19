@@ -8,7 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { ExchangeReviewModal } from '../components/exchange/ExchangeReviewModal';
-import { ArrowLeft, Repeat, CheckCircle2, Send, Star, X, MessageSquare, Calendar, Clock, MapPin, ShieldCheck, BadgeCheck, Crown, Rocket } from 'lucide-react';
+import { ArrowLeft, Repeat, CheckCircle2, Send, Circle, Star, X, MessageSquare, Calendar, Clock, MapPin, ShieldCheck, BadgeCheck, Crown, Rocket } from 'lucide-react';
 
 export const ExchangeWorkspacePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -96,9 +96,22 @@ export const ExchangeWorkspacePage: React.FC = () => {
     if (!exchange) return;
     try {
       const updated = await api.completeExchange(exchange.id);
-      setExchange(updated);
-      if (updated.status === 'COMPLETED' && updated.user_can_review) setReviewModalOpen(true);
+      setExchange(previous => previous ? { ...previous, ...updated, user_can_review: updated.status === 'COMPLETED' } : updated);
+      if (updated.status === 'COMPLETED') setReviewModalOpen(true);
+      else await loadExchangeData();
     } catch (e: any) { alert(e?.message || 'Unable to confirm completion'); }
+  };
+
+  const handleAccept = async () => {
+    if (!exchange) return;
+    try { const updated = await api.acceptExchange(exchange.id); setExchange(previous => previous ? { ...previous, ...updated } : updated); }
+    catch (e: any) { alert(e?.message || 'Unable to accept exchange'); }
+  };
+
+  const handleDecline = async () => {
+    if (!exchange) return;
+    try { const updated = await api.rejectExchange(exchange.id); setExchange(previous => previous ? { ...previous, ...updated } : updated); }
+    catch (e: any) { alert(e?.message || 'Unable to decline exchange'); }
   };
 
   const handleCancel = async () => {
@@ -132,6 +145,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
               <p className="mt-1.5 text-sm text-[#697386]">Coordinate the exchange, confirm delivery and keep the conversation in one place.</p>
             </div>
             <div className="flex flex-wrap gap-2">
+              {exchange.status === 'PENDING' && !isRequester && <><Button size="sm" onClick={handleAccept} icon={<CheckCircle2 className="h-4 w-4" />}>Accept exchange</Button><Button size="sm" variant="outline" onClick={handleDecline} icon={<X className="h-4 w-4" />}>Decline</Button></>}
               {exchange.status === 'ACTIVE' && !myCompleted && <Button size="sm" onClick={handleComplete} icon={<CheckCircle2 className="h-4 w-4" />}>Confirm completion</Button>}
               {exchange.status === 'COMPLETED' && exchange.user_can_review && <Button size="sm" onClick={() => setReviewModalOpen(true)} icon={<Star className="h-4 w-4" />}>Leave review</Button>}
               {['PENDING','ACTIVE'].includes(exchange.status) && <Button size="sm" variant="outline" onClick={openScheduleEditor} icon={<Calendar className="h-4 w-4" />}>Schedule</Button>}
@@ -142,6 +156,10 @@ export const ExchangeWorkspacePage: React.FC = () => {
 
         <div className="grid gap-5 pt-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-5">
+            <Card className="p-5">
+              <div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#d31d24]">Lifecycle</p><h3 className="mt-1 text-sm font-bold text-[#17233b]">Exchange progress</h3></div><span className="text-[10px] font-bold text-[#697386]">{exchange.status}</span></div>
+              <div className="mt-5 grid gap-2 sm:grid-cols-3">{[["PENDING","Proposal"],["ACTIVE","In progress"],["COMPLETED","Completed"]].map(([key,label])=>{const order:any={PENDING:1,ACTIVE:2,COMPLETED:3};const current=order[exchange.status]||0;const done=current>=order[key];return <div key={key} className={"border px-3 py-3 "+(done?"border-[#ead0d1] bg-[#fff6f6]":"border-[#e1e4e8] bg-[#f7f8f7]")}><div className="flex items-center gap-2">{done?<CheckCircle2 className="h-4 w-4 text-[#d31d24]"/>:<Circle className="h-4 w-4 text-slate-300"/>}<span className="text-xs font-bold text-[#17233b]">{label}</span></div><p className="mt-1 pl-6 text-[10px] text-slate-400">{key==="PENDING"?"Proposal sent":key==="ACTIVE"?"Both sides can coordinate":"Both sides confirmed"}</p></div>})}</div>
+            </Card>
             <Card className="p-5">
               <div className="flex items-start justify-between gap-4 border-b border-[#e1e4e8] pb-4">
                 <div className="flex items-center gap-3">
