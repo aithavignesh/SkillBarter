@@ -27,9 +27,9 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
   const [mySkill, setMySkill] = useState(defaultMySkill);
   const [partnerSkill, setPartnerSkill] = useState(defaultPartnerSkill);
   const [message, setMessage] = useState('');
-  const [preferredDate, setPreferredDate] = useState('This Saturday afternoon');
+  const [preferredDate, setPreferredDate] = useState('This weekend');
   const [estimatedHours, setEstimatedHours] = useState('2.0');
-  const [locationArea, setLocationArea] = useState('Campus / coworking space / online');
+  const [locationArea, setLocationArea] = useState('Online or a shared campus space');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +43,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) {
-      setError('Please describe what you want to learn and exchange');
+      setError('Tell them what you want to learn and what you can teach');
       return;
     }
 
@@ -75,8 +75,8 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Start a Skill Exchange"
-      subtitle={`Set up a practical peer-learning exchange with ${partner.full_name}`}
+      title="Start your first learning exchange"
+      subtitle={`Send ${partner.full_name} a clear, low-friction learning plan`}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -89,7 +89,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
           />
           <div className="flex-1 min-w-0">
             <h4 className="text-xs font-bold text-slate-900 truncate">{partner.full_name}</h4>
-            <p className="text-[11px] text-slate-500 truncate">{partner.headline || 'Community Member'}</p>
+            <p className="text-[11px] text-slate-500 truncate">{partner.headline || 'Student & Peer Learner'}</p>
           </div>
           <div className="text-right shrink-0">
             <span className="inline-block text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
@@ -148,11 +148,11 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
         {/* Proposal Message */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            What do you want to accomplish? <span className="text-rose-500">*</span>
+            What would you like to learn together? <span className="text-rose-500">*</span>
           </label>
           <textarea
             rows={3}
-            placeholder="Describe the learning session or project you want to work on together (e.g. 'I can help with React in exchange for guidance on ML basics.')"
+            placeholder="Keep it simple: mention what you want to learn, what you can teach, and what you hope to build or practice together."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             className="w-full text-xs border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400"
@@ -206,7 +206,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
         <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
           <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <p>
-            <strong>Skill-for-skill:</strong> Keep the exchange focused on practical learning. No cash or paid tutoring is required.
+            <strong>Keep it practical:</strong> Suggest a clear learning outcome and a comfortable session format. SkillBarter is designed for peer learning, not paid tutoring.
           </p>
         </div>
 
@@ -221,7 +221,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
             Cancel
           </Button>
           <Button type="submit" loading={loading} icon={<Repeat className="w-4 h-4" />}>
-            Send Exchange Request
+            Send Learning Request
           </Button>
         </div>
       </form>
