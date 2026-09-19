@@ -225,8 +225,12 @@ export const ProfilePage: React.FC = () => {
             <h3 className="text-sm font-bold text-slate-900">Why connect?</h3>
           </div>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Compare what you want to learn with what this peer can teach, then start an exchange that helps both of you build practical skills.
+            Start with the skill you want to learn, then see what you can teach in return. A small, specific learning goal is enough for your first request.
           </p>
+          <div className="mt-4 border border-emerald-200 bg-white p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Good first request</p>
+            <p className="mt-1 text-xs font-semibold text-slate-700">“I’d like to learn one practical part of your skill, and I can help you with one of mine.”</p>
+          </div>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="p-3 bg-white rounded-xl border border-slate-200">
               <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">They can teach</p>
@@ -291,7 +295,7 @@ export const ProfilePage: React.FC = () => {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Community Reviews</h3>
+            <h3 className="text-sm font-bold text-slate-900">Peer Learning Reviews</h3>
             <p className="text-xs text-slate-500">Feedback from completed skill exchanges</p>
           </div>
           <span className="text-xs font-bold text-slate-700">
