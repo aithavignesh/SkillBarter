@@ -17,7 +17,6 @@ import {
   Repeat,
   ShieldCheck,
   MessageSquare,
-  UserPlus,
   Flag,
   CheckCircle,
   Plus,
@@ -77,16 +76,6 @@ export const ProfilePage: React.FC = () => {
       setIsAddingSkill(false);
       await refreshUser();
       await loadProfile();
-    } catch (e: any) {
-      alert(e.message);
-    }
-  };
-
-  const handleConnect = async () => {
-    if (!profile) return;
-    try {
-      await api.connectNeighbor(profile.id);
-      alert(`Connected with ${profile.full_name}!`);
     } catch (e: any) {
       alert(e.message);
     }
@@ -171,9 +160,6 @@ export const ProfilePage: React.FC = () => {
                   Message Partner
                 </Button>
               </Link>
-              <Button size="sm" variant="outline" onClick={handleConnect} icon={<UserPlus className="w-3.5 h-3.5" />}>
-                Add to Learning Network
-              </Button>
               <Button size="sm" variant="ghost" onClick={handleReport} className="text-slate-400 hover:text-rose-600">
                 <Flag className="w-4 h-4" />
               </Button>
