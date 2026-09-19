@@ -50,6 +50,7 @@ export const TrustSystemPage: React.FC = () => {
   ];
 
   return (
+    <AppPageShell eyebrow="Trust & reputation" title="Your community trust" description="A transparent view of your completed exchanges, reviews and trust factors." icon={<ShieldCheck className="h-3.5 w-3.5" />}>
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
       <div>
@@ -164,7 +165,7 @@ export const TrustSystemPage: React.FC = () => {
           ))}
         </div>
       </Card>
-      </div>
-      </AppPageShell>
+    </div>
+    </AppPageShell>
   );
 };
