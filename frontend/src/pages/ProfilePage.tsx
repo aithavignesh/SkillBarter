@@ -176,7 +176,7 @@ export const ProfilePage: React.FC = () => {
           <form onSubmit={handleAddSkillSubmit} className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap gap-2 text-xs">
             <input
               type="text"
-              placeholder="Skill name (e.g. Italian Cooking, Guitar, Electrical)..."
+              placeholder="e.g. Python, React, AI / ML, Figma..."
               value={newSkillName}
               onChange={(e) => setNewSkillName(e.target.value)}
               className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg"
