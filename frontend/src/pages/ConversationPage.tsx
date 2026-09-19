@@ -79,7 +79,13 @@ export const ConversationPage: React.FC = () => {
               <img src={partner?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'} className="h-11 w-11 rounded-full object-cover" alt="" />
               <div className="min-w-0">
                 <h1 className="truncate text-sm font-extrabold text-[#17233b]">{partner?.full_name || 'Member conversation'}</h1>
-                <p className="truncate text-xs text-[#697386]">{partner?.headline || 'SkillBarter member'}</p><div className="mt-1 flex gap-2">{partner?.verified&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#17233b]"><BadgeCheck className="h-3 w-3"/>Verified</span>}{partner?.premium&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Crown className="h-3 w-3"/>Premium</span>}{partner?.featured&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Rocket className="h-3 w-3"/>Featured</span>}</div>
+                <p className="truncate text-xs text-[#697386]">{partner?.headline || 'SkillBarter member'}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  {partner?.verified&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#17233b]"><BadgeCheck className="h-3 w-3"/>Verified</span>}
+                  {partner?.premium&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Crown className="h-3 w-3"/>Premium</span>}
+                  {partner?.featured&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Rocket className="h-3 w-3"/>Featured</span>}
+                  {typeof partner?.trust_score === 'number' && <span className="text-[9px] font-bold uppercase tracking-wider text-[#697386]">Trust {Math.round(partner.trust_score)}/100</span>}
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
@@ -101,7 +107,7 @@ export const ConversationPage: React.FC = () => {
             </div>
             {error && <div className="border-t border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">{error}</div>}
             <form onSubmit={send} className="flex gap-2 border-t border-[#e1e4e8] bg-white p-3">
-              <input value={text} onChange={e => setText(e.target.value)} placeholder="Write a message…" className="h-10 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" />
+              <input value={text} onChange={e => setText(e.target.value)} placeholder="Write a message…" aria-label="Message" maxLength={2000} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} className="h-10 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" />
               <Button type="submit" size="sm" disabled={sending || !text.trim()} icon={<Send className="h-4 w-4" />}>{sending ? 'Sending…' : 'Send'}</Button>
             </form>
           </section>
