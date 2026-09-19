@@ -485,6 +485,25 @@ class ApiClient {
   async getFeed(type?: string) { const me = await this.getAppUser(); let q: any = insforge.database.from('posts').select('*').order('created_at', { ascending: false }).limit(50); if (type) q = q.eq('post_type', type); const r = await q; if (r.error) throw new Error(r.error.message || 'Unable to load feed'); return r.data || []; }
   async createPost(payload: any) { const { appUser } = await this.getAppUser(); const title = String(payload.title || '').trim(); const content = String(payload.content || '').trim(); if (!content) throw new Error('Post content cannot be empty.'); const r = await insforge.database.from('posts').insert({ author_id: appUser.id, post_type: payload.post_type || 'COMMUNITY', title: title || null, content, likes_count: 0 }).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to publish post'); return r.data; }
   async likePost(id: number) { const r = await insforge.database.from('posts').select('id,likes_count').eq('id', id).maybeSingle(); if (r.error || !r.data) throw new Error(r.error?.message || 'Post not found'); const updated = await insforge.database.from('posts').update({ likes_count: Number(r.data.likes_count || 0) + 1 }).eq('id', id).select('*').single(); if (updated.error) throw new Error(updated.error.message || 'Unable to like post'); return updated.data; }
+  async submitReview(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const exchangeId = Number(payload.exchange_id);
+    if (!exchangeId) throw new Error('Exchange is required.');
+    const exchange = await this.getExchangeRow(exchangeId);
+    const uid = Number(appUser.id);
+    if (uid !== Number(exchange.requester_id) && uid !== Number(exchange.receiver_id)) throw new Error('Only participants can review this learning exchange.');
+    if (exchange.status !== 'COMPLETED') throw new Error('Reviews can only be submitted after both participants complete the learning session.');
+    const existing = await insforge.database.from('reviews').select('id').eq('exchange_id', exchangeId).eq('reviewer_id', uid).maybeSingle();
+    if (existing.error) throw new Error(existing.error.message || 'Unable to check existing review');
+    if (existing.data) throw new Error('You have already submitted a review for this learning exchange.');
+    const revieweeId = uid === Number(exchange.requester_id) ? Number(exchange.receiver_id) : Number(exchange.requester_id);
+    const rating = Number(payload.rating), reliabilityScore = Number(payload.reliability_score), skillQualityScore = Number(payload.skill_quality_score);
+    if (![rating, reliabilityScore, skillQualityScore].every((value) => Number.isInteger(value) && value >= 1 && value <= 5)) throw new Error('Ratings must be between 1 and 5.');
+    const { data, error } = await insforge.database.from('reviews').insert({ exchange_id: exchangeId, reviewer_id: uid, reviewee_id: revieweeId, rating, reliability_score: reliabilityScore, skill_quality_score: skillQualityScore, would_exchange_again: Boolean(payload.would_exchange_again), comment: String(payload.comment || '').trim() || null }).select('*').single();
+    if (error) throw new Error(error.message || 'Unable to submit review');
+    await insforge.database.from('notifications').insert({ user_id: revieweeId, type: 'NEW_REVIEW', title: 'New learning review', message: appUser.full_name + ' left you a ' + rating + '-star learning review.', link: '/profile/' + revieweeId });
+    return data;
+  }
   async getReviews(userId: number) { const r = await insforge.database.from('reviews').select('*').eq('reviewee_id', userId).order('created_at', { ascending: false }); if (r.error) throw new Error(r.error.message || 'Unable to load reviews'); return r.data || []; }
   async createReview(payload: any) { const { appUser } = await this.getAppUser(); const r = await insforge.database.from('reviews').insert({ ...payload, reviewer_id: appUser.id }).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to submit review'); return r.data; }
 }
