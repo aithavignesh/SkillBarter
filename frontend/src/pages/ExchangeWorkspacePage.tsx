@@ -156,6 +156,10 @@ export const ExchangeWorkspacePage: React.FC = () => {
           </div>
         </section>
 
+        {exchange.status === 'PENDING' && isRequester && <Card className="mt-5 border-amber-200 bg-amber-50/60 p-4"><div className="flex items-start gap-3"><Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" /><div><p className="text-xs font-bold text-amber-900">Waiting for your learning partner</p><p className="mt-1 text-[11px] leading-5 text-amber-800">Your request is sent. You can message them with any extra context, then wait for them to accept before planning the session.</p></div></div></Card>}
+        {exchange.status === 'PENDING' && !isRequester && <Card className="mt-5 border-emerald-200 bg-emerald-50/60 p-4"><div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" /><div><p className="text-xs font-bold text-emerald-900">Your response starts the learning session</p><p className="mt-1 text-[11px] leading-5 text-emerald-800">Review the learning goal, accept if it works for you, then use the workspace to agree on a time and format.</p></div></div></Card>}
+        {exchange.status === 'ACTIVE' && <Card className="mt-5 border-blue-200 bg-blue-50/60 p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold text-blue-900">Next: schedule your learning session</p><p className="mt-1 text-[11px] leading-5 text-blue-800">Agree on one small outcome, choose a time and confirm whether you will meet online or on campus.</p></div><Button size="sm" variant="outline" onClick={openScheduleEditor} icon={<Calendar className="h-3.5 w-3.5" />}>Schedule now</Button></div></Card>}
+
         <div className="grid gap-5 pt-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-5">
             <Card className="p-5">
