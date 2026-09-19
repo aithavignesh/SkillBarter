@@ -261,7 +261,7 @@ export const FeedPage: React.FC = () => {
 
               <textarea
                 rows={2}
-                placeholder="Share what you want to practice, build, or exchange with a peer..."
+                placeholder="Share what you are learning, building, or ready to teach..."
                 value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
                 className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
@@ -318,7 +318,7 @@ export const FeedPage: React.FC = () => {
             </div>
           ) : posts.length === 0 ? (
             <Card className="p-8 text-center text-xs text-slate-500">
-              No updates yet. Be the first to share a skill or ask for help!
+              No learning updates yet. Share what you are learning or a skill you can teach.
             </Card>
           ) : (
             posts.map((post) => (
