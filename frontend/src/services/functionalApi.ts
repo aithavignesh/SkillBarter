@@ -82,7 +82,7 @@ class FunctionalApi {
     if (exists.error) fail(exists.error, 'Unable to check connection'); if (exists.data) return exists.data;
     const reverse = await insforge.database.from('connections').select('*').eq('user_id', id).eq('connected_user_id', me.id).maybeSingle();
     if (reverse.error) fail(reverse.error, 'Unable to check connection'); if (reverse.data) return reverse.data;
-    const created = await insforge.database.from('connections').insert({ user_id: me.id, connected_user_id: id, status: 'ACCEPTED' }).select('*').single(); if (created.error) fail(created.error, 'Unable to create connection'); return created.data;
+    const created = await insforge.database.from('connections').insert({ user_id: me.id, connected_user_id: id, status: 'ACCEPTED' }).select('*').single(); if (created.error) fail(created.error, 'Unable to create connection'); await insforge.database.from('notifications').insert({ user_id: Number(id), type: 'CONNECTION_ACCEPTED', title: 'New connection', message: `${me.full_name} connected with you on SkillBarter.`, link: `/profile/${me.id}` }); return created.data;
   }
 
   async disconnectNeighbor(id: number) { const me = await this.appUser(); const a = await insforge.database.from('connections').delete().eq('user_id', me.id).eq('connected_user_id', id); const b = await insforge.database.from('connections').delete().eq('user_id', id).eq('connected_user_id', me.id); if (a.error && b.error) fail(a.error, 'Unable to remove connection'); return true; }
