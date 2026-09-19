@@ -27,6 +27,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
   const [mySkill, setMySkill] = useState(defaultMySkill);
   const [partnerSkill, setPartnerSkill] = useState(defaultPartnerSkill);
   const [message, setMessage] = useState('');
+  const [messageTouched, setMessageTouched] = useState(false);
   const [preferredDate, setPreferredDate] = useState('This weekend');
   const [estimatedHours, setEstimatedHours] = useState('2.0');
   const [locationArea, setLocationArea] = useState('Online or a shared campus space');
@@ -148,17 +149,21 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
         {/* Proposal Message */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            What would you like to learn together? <span className="text-rose-500">*</span>
+            What would you like to learn together? <span className="text-rose-500">*</span><span className="ml-2 font-normal text-slate-400">One short message is enough.</span>
           </label>
           <textarea
             rows={3}
-            placeholder="Keep it simple: mention what you want to learn, what you can teach, and what you hope to build or practice together."
+            placeholder={`Hi ${partner.full_name.split(' ')[0]}, I’d like to learn ${partnerSkill || 'this skill'} and I can teach ${mySkill || 'a skill I know'}. Would you be open to a short session?`}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => { setMessage(e.target.value); setMessageTouched(true); }}
             className="w-full text-xs border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-400"
             required
           />
         </div>
+
+        {!messageTouched && (
+          <button type="button" onClick={() => { setMessage(`Hi ${partner.full_name.split(' ')[0]}, I’d like to learn ${partnerSkill || 'this skill'} and I can teach ${mySkill || 'a skill I know'}. Would you be open to a short session?`); setMessageTouched(true); }} className="-mt-2 text-left text-[11px] font-semibold text-emerald-700 hover:underline">Use a suggested message</button>
+        )}
 
         {/* Logistics row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
@@ -202,11 +207,11 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
           </div>
         </div>
 
-        {/* Zero-cash rule notification */}
+        {/* Learning-first guidance */}
         <div className="flex items-start gap-2.5 p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
           <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <p>
-            <strong>Keep it practical:</strong> Suggest a clear learning outcome and a comfortable session format. SkillBarter is designed for peer learning, not paid tutoring.
+            <strong>Keep the first request simple:</strong> agree on one small learning outcome and a comfortable session format. You can refine the plan after they accept.
           </p>
         </div>
 
