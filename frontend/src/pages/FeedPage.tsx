@@ -131,6 +131,21 @@ export const FeedPage: React.FC = () => {
         </div>
       </Card>
 
+      {/* Returning-user next step */}
+      <Card className="mb-6 border-emerald-200 bg-emerald-50/50">
+        <div className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Your next learning step</p>
+            <h2 className="mt-1 text-sm font-bold text-slate-900">Have a skill in mind? Start with one learning partner.</h2>
+            <p className="mt-1 text-xs text-slate-600">Check your matches first, then send a short request. You can plan the session after they accept.</p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Link to="/matches"><Button size="sm" icon={<ArrowRight className="w-3.5 h-3.5" />}>View My Matches</Button></Link>
+            <Link to="/discover"><Button size="sm" variant="outline">Browse Skills</Button></Link>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: Profile & Trust Summary */}
         <div className="lg:col-span-3 space-y-4">
