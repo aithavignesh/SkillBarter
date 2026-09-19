@@ -84,7 +84,7 @@ export const AdminDashboardPage: React.FC = () => {
         <div className="mt-2 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <h1 className="text-3xl font-black tracking-tight text-slate-950">Admin Dashboard</h1>
-            <p className="mt-1 text-sm text-slate-500">Monitor platform metrics, resolve safety flags, and moderate community users.</p>
+            <p className="mt-1 text-sm text-slate-500">Track student activation, learning exchanges, trust signals, and safety so we can see where the learning journey needs improvement.</p>
           </div>
           <span className="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-sm">
             Live platform view
@@ -94,9 +94,9 @@ export const AdminDashboardPage: React.FC = () => {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
-          { label: 'Total members', value: stats?.total_users || 0, sub: `${stats?.active_users || 0} active`, icon: Users, tone: 'emerald' },
-          { label: 'Total exchanges', value: stats?.total_exchanges || 0, sub: `${stats?.completed_exchanges || 0} completed`, icon: Repeat, tone: 'slate' },
-          { label: 'Pending reports', value: stats?.pending_reports || 0, sub: 'Needs review', icon: AlertTriangle, tone: 'rose' },
+          { label: 'Learners', value: stats?.total_users || 0, sub: `${stats?.active_users || 0} active`, icon: Users, tone: 'emerald' },
+          { label: 'Learning exchanges', value: stats?.total_exchanges || 0, sub: `${stats?.completed_exchanges || 0} completed`, icon: Repeat, tone: 'slate' },
+          { label: 'Safety reports', value: stats?.pending_reports || 0, sub: 'Needs review', icon: AlertTriangle, tone: 'rose' },
           { label: 'Avg trust score', value: stats?.average_trust_score || 94, sub: 'Platform-wide', icon: Shield, tone: 'emerald' },
         ].map(({ label, value, sub, icon: Icon, tone }) => (
           <Card key={label} className="p-4 sm:p-5">
@@ -117,32 +117,32 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">Platform chart</p>
-              <h2 className="mt-1 text-lg font-black text-slate-950">Community health overview</h2>
+              <h2 className="mt-1 text-lg font-black text-slate-950">Student activation overview</h2>
             </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-500">Current totals</div>
+            <div className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-500">Current platform signals</div>
           </div>
 
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">Active members</span>
+                <span className="text-xs font-bold text-slate-700">Active learners</span>
                 <span className="text-sm font-black text-emerald-700">{activeRate}%</span>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
                 <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${activeRate}%` }} />
               </div>
-              <p className="mt-2 text-[10px] text-slate-400">{stats?.active_users || 0} of {stats?.total_users || 0} members currently active</p>
+              <p className="mt-2 text-[10px] text-slate-400">{stats?.active_users || 0} of {stats?.total_users || 0} learners currently active</p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">Exchange completion</span>
+                <span className="text-xs font-bold text-slate-700">Learning completion</span>
                 <span className="text-sm font-black text-slate-800">{completionRate}%</span>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
                 <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: `${completionRate}%` }} />
               </div>
-              <p className="mt-2 text-[10px] text-slate-400">{stats?.completed_exchanges || 0} of {stats?.total_exchanges || 0} exchanges completed</p>
+              <p className="mt-2 text-[10px] text-slate-400">{stats?.completed_exchanges || 0} of {stats?.total_exchanges || 0} learning exchanges completed</p>
             </div>
           </div>
 
@@ -167,7 +167,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <Card className="p-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Trust signal</p>
-          <h2 className="mt-1 text-lg font-black text-slate-950">Community trust</h2>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Learner trust</h2>
           <div className="mt-7 flex items-center justify-center">
             <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-[conic-gradient(#10b981_0_94%,#e2e8f0_94%_100%)]">
               <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-white shadow-inner">
@@ -215,7 +215,7 @@ export const AdminDashboardPage: React.FC = () => {
         </Card>
       ) : activeTab === 'REPORTS' ? (
         reports.length === 0 ? (
-          <Card className="p-12 text-center text-xs text-slate-400">No safety reports on record. Neighborhood behavior is healthy!</Card>
+          <Card className="p-12 text-center text-xs text-slate-400">No safety reports on record. Keep reviewing reports as the student community grows.</Card>
         ) : (
           <div className="space-y-4">
             {reports.map((r) => (
