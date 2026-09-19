@@ -354,17 +354,53 @@ class ApiClient {
     const results: any[] = [];
     for (const candidate of users.data ?? []) {
       const cid = Number(candidate.id);
-      if (excluded.has(cid) || candidate.latitude == null || candidate.longitude == null) continue;
+      if (excluded.has(cid)) continue;
+
+      // Match common student skill aliases instead of requiring exact text equality.
+      // This keeps useful matches working when users write equivalent names such as
+      // "AI / ML" vs "AI / Machine Learning" or "DSA" vs "Data Structures & Algorithms".
+      const normalizeSkill = (value: string) => {
+        const key = value.trim().toLowerCase().replace(/&/g, 'and').replace(/[._/-]+/g, ' ').replace(/\s+/g, ' ');
+        const aliases: Record<string, string> = {
+          'ai ml': 'artificial intelligence machine learning',
+          'ai machine learning': 'artificial intelligence machine learning',
+          'machine learning': 'machine learning',
+          'artificial intelligence': 'artificial intelligence machine learning',
+          'dsa': 'data structures algorithms',
+          'data structures algorithms': 'data structures algorithms',
+          'data structures and algorithms': 'data structures algorithms',
+          'web development': 'web development',
+          'frontend': 'frontend web development',
+          'front end': 'frontend web development',
+          'backend': 'backend web development',
+          'back end': 'backend web development',
+          'full stack': 'full stack web development',
+          'fullstack': 'full stack web development',
+        };
+        return aliases[key] ?? key;
+      };
       const skills = await this.getUserSkills(cid);
-      const theirOffered = skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => String(s.skill_name).toLowerCase());
-      const theirNeeded = skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => String(s.skill_name).toLowerCase());
-      const youOfferTheyNeed = myOffered.filter((s: string) => theirNeeded.includes(s));
-      const theyOfferYouNeed = theirOffered.filter((s: string) => myNeeded.includes(s));
+      const theirOffered = skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => normalizeSkill(String(s.skill_name)));
+      const theirNeeded = skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => normalizeSkill(String(s.skill_name)));
+      const normalizedMyOffered = myOffered.map(normalizeSkill);
+      const normalizedMyNeeded = myNeeded.map(normalizeSkill);
+      const youOfferTheyNeed = normalizedMyOffered.filter((s: string) => theirNeeded.includes(s));
+      const theyOfferYouNeed = theirOffered.filter((s: string) => normalizedMyNeeded.includes(s));
       const reciprocal = youOfferTheyNeed.length > 0 && theyOfferYouNeed.length > 0;
       if (!youOfferTheyNeed.length && !theyOfferYouNeed.length) continue;
-      const distance = distFn(myLat, myLon, Number(candidate.latitude), Number(candidate.longitude));
+
+      const hasMyLocation = appUser.latitude != null && appUser.longitude != null;
+      const hasCandidateLocation = candidate.latitude != null && candidate.longitude != null;
+      const hasDistance = hasMyLocation && hasCandidateLocation;
+      const distance = hasDistance
+        ? distFn(myLat, myLon, Number(candidate.latitude), Number(candidate.longitude))
+        : null;
       const maxRadius = Math.max(Number(appUser.exchange_radius_km ?? 10), Number(candidate.exchange_radius_km ?? 10), 1);
-      const proximityFactor = distance > maxRadius ? Math.max(0, 1 - distance / (maxRadius * 1.5)) : Math.max(0, 1 - distance / maxRadius);
+      // Location is optional at signup. Missing coordinates should not hide a
+      // valid learning match; treat it as neutral proximity until location is set.
+      const proximityFactor = hasDistance
+        ? (distance! > maxRadius ? Math.max(0, 1 - distance! / (maxRadius * 1.5)) : Math.max(0, 1 - distance! / maxRadius))
+        : 0.5;
       const skillScore = reciprocal ? 50 : 25;
       const trust = Math.min(Math.max(Number(candidate.trust_score ?? 80), 0), 100) / 100 * 20;
       const myAvail = String(appUser.availability ?? 'flexible').toLowerCase(), theirAvail = String(candidate.availability ?? 'flexible').toLowerCase();
@@ -374,13 +410,14 @@ class ApiClient {
       if (reciprocal) reasons.push(`Direct 2-way barter match: You can trade '${youOfferTheyNeed[0]}' for '${theyOfferYouNeed[0]}'`);
       else if (theyOfferYouNeed.length) reasons.push(`They offer '${theyOfferYouNeed[0]}' which you need`);
       else reasons.push(`You offer '${youOfferTheyNeed[0]}' which they need`);
-      if (distance <= 3) reasons.push(`Hyperlocal neighbor (${distance.toFixed(1)} km)`);
-      else if (distance <= maxRadius) reasons.push(`Within your ${maxRadius.toFixed(0)} km exchange zone (${distance.toFixed(1)} km)`);
-      else reasons.push(`${distance.toFixed(1)} km`);
+      if (distance == null) reasons.push('Location not set yet — open to online learning');
+      else if (distance <= 3) reasons.push(`Nearby learning partner (${distance.toFixed(1)} km)`);
+      else if (distance <= maxRadius) reasons.push(`Within your ${maxRadius.toFixed(0)} km learning zone (${distance.toFixed(1)} km)`);
+      else reasons.push(`${distance.toFixed(1)} km away`);
       if (Number(candidate.trust_score ?? 80) >= 90) reasons.push(`High community trust score (${Math.round(Number(candidate.trust_score))}/100)`);
       else if (Number(candidate.trust_score ?? 80) >= 80) reasons.push(`Good community standing (${Math.round(Number(candidate.trust_score))}/100`);
       if (availability >= 7) reasons.push(`Compatible availability (${candidate.availability ?? 'Flexible'})`);
-      results.push({ candidate: { id: candidate.id, full_name: candidate.full_name, avatar_url: candidate.avatar_url, headline: candidate.headline, address_display: candidate.address_display, trust_score: candidate.trust_score, reliability_score: candidate.reliability_score, completed_exchanges_count: candidate.completed_exchanges_count, badges: candidate.badges ?? [] }, match_score: score, distance_km: distance, distance_display: `${distance.toFixed(1)} km`, is_reciprocal: reciprocal, they_offer: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), they_need: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), matched_you_offer: youOfferTheyNeed, matched_they_offer: theyOfferYouNeed, reasons, score_breakdown: { skill_compatibility: Math.round(skillScore), location_proximity: Math.round(proximityFactor * 20), trust: Math.round(trust), availability: Math.round(availability) } });
+      results.push({ candidate: { id: candidate.id, full_name: candidate.full_name, avatar_url: candidate.avatar_url, headline: candidate.headline, address_display: candidate.address_display, trust_score: candidate.trust_score, reliability_score: candidate.reliability_score, completed_exchanges_count: candidate.completed_exchanges_count, badges: candidate.badges ?? [] }, match_score: score, distance_km: distance, distance_display: distance == null ? 'Online / location not set' : `${distance.toFixed(1)} km`, is_reciprocal: reciprocal, they_offer: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), they_need: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), matched_you_offer: youOfferTheyNeed, matched_they_offer: theyOfferYouNeed, reasons, score_breakdown: { skill_compatibility: Math.round(skillScore), location_proximity: Math.round(proximityFactor * 20), trust: Math.round(trust), availability: Math.round(availability) } });
     }
     return results.sort((a, b) => b.match_score - a.match_score || a.distance_km - b.distance_km).slice(0, 20);
   }
