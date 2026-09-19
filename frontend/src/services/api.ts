@@ -449,6 +449,100 @@ class ApiClient {
     return Promise.all((data || []).map((e: any) => this.serializeExchange(e, Number(appUser.id))));
   }
 
+  async proposeExchange(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const requesterId = Number(appUser.id);
+    const receiverId = Number(payload.receiver_id);
+    if (!Number.isInteger(receiverId) || receiverId <= 0) throw new Error('Choose a valid learning partner.');
+    if (receiverId === requesterId) throw new Error('You cannot send a learning request to yourself.');
+
+    const receiverResult = await insforge.database
+      .from('users')
+      .select('*')
+      .eq('id', receiverId)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (receiverResult.error) throw new Error(receiverResult.error.message || 'Unable to load learning partner.');
+    if (!receiverResult.data) throw new Error('Learning partner not found or inactive.');
+
+    const blocked = await insforge.database
+      .from('blocks')
+      .select('blocker_id,blocked_id')
+      .or(`blocker_id.eq.${requesterId},blocked_id.eq.${requesterId}`);
+    if (blocked.error) throw new Error(blocked.error.message || 'Unable to check connection safety.');
+    if ((blocked.data ?? []).some((b: any) => {
+      const blocker = Number(b.blocker_id), blockedId = Number(b.blocked_id);
+      return (blocker === requesterId && blockedId === receiverId) || (blocker === receiverId && blockedId === requesterId);
+    })) {
+      throw new Error('You cannot send a learning request to this member.');
+    }
+
+    const existingResult = await insforge.database
+      .from('exchanges')
+      .select('id,status,requester_id,receiver_id')
+      .or(`requester_id.eq.${requesterId},receiver_id.eq.${requesterId}`);
+    if (existingResult.error) throw new Error(existingResult.error.message || 'Unable to check existing learning requests.');
+    const hasOpenExchange = (existingResult.data ?? []).some((exchange: any) => {
+      const isSamePair =
+        (Number(exchange.requester_id) === requesterId && Number(exchange.receiver_id) === receiverId) ||
+        (Number(exchange.requester_id) === receiverId && Number(exchange.receiver_id) === requesterId);
+      return isSamePair && ['PENDING', 'COUNTERED', 'ACTIVE'].includes(String(exchange.status).toUpperCase());
+    });
+    if (hasOpenExchange) {
+      throw new Error('You already have an open learning request with this member.');
+    }
+
+    const requesterSkillName = String(payload.requester_skill_name ?? '').trim();
+    const receiverSkillName = String(payload.receiver_skill_name ?? '').trim();
+    const proposalMessage = String(payload.proposal_message ?? '').trim();
+    const preferredDate = String(payload.preferred_date ?? '').trim();
+    const locationArea = String(payload.location_area ?? '').trim();
+    const estimatedHours = Number(payload.estimated_hours ?? 2);
+
+    if (!requesterSkillName) throw new Error('Choose a skill you can teach.');
+    if (!receiverSkillName) throw new Error('Choose a skill you want to learn.');
+    if (!proposalMessage) throw new Error('Tell your learning partner what you want to learn.');
+    if (proposalMessage.length > 2000) throw new Error('Your learning request is too long. Keep it under 2000 characters.');
+    if (!Number.isFinite(estimatedHours) || estimatedHours < 0.5 || estimatedHours > 24) throw new Error('Session length must be between 0.5 and 24 hours.');
+
+    const requesterSkills = await this.getUserSkills(requesterId);
+    const receiverSkills = await this.getUserSkills(receiverId);
+    const requesterSkill = requesterSkills.find((skill: any) =>
+      skill.skill_type === 'OFFERED' && String(skill.skill_name).trim().toLowerCase() === requesterSkillName.toLowerCase()
+    );
+    const receiverSkill = receiverSkills.find((skill: any) =>
+      skill.skill_type === 'OFFERED' && String(skill.skill_name).trim().toLowerCase() === receiverSkillName.toLowerCase()
+    );
+    if (!requesterSkill) throw new Error('The selected teaching skill is not in your offered skills.');
+    if (!receiverSkill) throw new Error('That learning skill is not currently offered by this partner.');
+
+    const { data, error } = await insforge.database.from('exchanges').insert({
+      requester_id: requesterId,
+      receiver_id: receiverId,
+      requester_skill_id: Number(requesterSkill.skill_id),
+      receiver_skill_id: Number(receiverSkill.skill_id),
+      status: 'PENDING',
+      proposal_message: proposalMessage,
+      preferred_date: preferredDate || 'This week',
+      estimated_hours: estimatedHours,
+      location_area: locationArea || 'Online or a shared campus space',
+      requester_completed: false,
+      receiver_completed: false,
+    }).select('*').single();
+    if (error) throw new Error(error.message || 'Unable to send learning request.');
+
+    const notification = await insforge.database.from('notifications').insert({
+      user_id: receiverId,
+      type: 'EXCHANGE_REQUEST',
+      title: 'New learning request',
+      message: `${appUser.full_name} wants to learn ${receiverSkillName} and can teach ${requesterSkillName}.`,
+      link: `/exchanges/${data.id}`,
+    });
+    if (notification.error) console.warn('Learning request notification warning:', notification.error);
+
+    return await this.serializeExchange(data, requesterId);
+  }
+
   async acceptExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Only the recipient can accept this request.'); if (e.status !== 'PENDING') throw new Error(`This exchange is already ${String(e.status).toLowerCase()}.`); const { data, error } = await insforge.database.from('exchanges').update({ status: 'ACTIVE', updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to accept exchange'); await insforge.database.from('notifications').insert({ user_id: Number(e.requester_id), type: 'EXCHANGE_ACCEPTED', title: 'Exchange accepted', message: `${appUser.full_name} accepted your skill exchange.`, link: `/exchanges/${id}` }); return data; }
   async rejectExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Only the recipient can decline this request.'); if (e.status !== 'PENDING') throw new Error(`This exchange is already ${String(e.status).toLowerCase()}.`); const { data, error } = await insforge.database.from('exchanges').update({ status: 'REJECTED', updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to decline exchange'); await insforge.database.from('notifications').insert({ user_id: Number(e.requester_id), type: 'EXCHANGE_REJECTED', title: 'Exchange declined', message: `${appUser.full_name} declined your skill exchange proposal.`, link: `/exchanges/${id}` }); return data; }
   async withdrawExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.requester_id) !== Number(appUser.id)) throw new Error('Only the requester can withdraw this proposal.'); if (e.status !== 'PENDING') throw new Error(`This proposal is already ${String(e.status).toLowerCase()}.`); const { data, error } = await insforge.database.from('exchanges').update({ status: 'CANCELLED', cancellation_reason: 'Withdrawn by requester', cancelled_by_id: appUser.id, updated_at: new Date().toISOString() }).eq('id', id).select('*').single(); if (error) throw new Error(error.message || 'Unable to withdraw proposal'); await insforge.database.from('notifications').insert({ user_id: Number(e.receiver_id), type: 'EXCHANGE_WITHDRAWN', title: 'Exchange withdrawn', message: `${appUser.full_name} withdrew the exchange proposal.`, link: `/exchanges/${id}` }); return data; }
