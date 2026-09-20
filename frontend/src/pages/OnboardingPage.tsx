@@ -190,14 +190,14 @@ export const OnboardingPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"
                   placeholder="e.g. React, Python, Figma, Excel, Public Speaking..."
                   value={newOfferSkill}
                   onChange={(e) => setNewOfferSkill(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOffer())}
-                  className="flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
                 <Button type="button" size="sm" onClick={handleAddOffer} icon={<Plus className="w-4 h-4" />}>
                   Add Skill
@@ -393,7 +393,7 @@ export const OnboardingPage: React.FC = () => {
           )}
 
           {/* Navigation Controls */}
-          <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-100">
+          <div className="flex flex-col-reverse gap-3 pt-6 mt-6 border-t border-slate-100 sm:flex-row sm:items-center sm:justify-between">
             {step > 1 ? (
               <Button
                 type="button"
