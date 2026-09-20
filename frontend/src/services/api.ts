@@ -20,7 +20,7 @@ class ApiClient {
     const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
     const phone = localStorage.getItem('skillbarter_phone');
     if (phone && phoneUserId) {
-      const result = await insforge.database.from('users').select('*').eq('id', phoneUserId).maybeSingle();
+      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('id', phoneUserId).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
       if (!result.data) throw new Error('Application profile not found');
       return { authUser: { email: result.data.email, id: result.data.id }, appUser: result.data };
@@ -28,7 +28,7 @@ class ApiClient {
     const { data, error } = await insforge.auth.getCurrentUser();
     if (error) throw new Error(error.message || 'Unable to load current user');
     if (!data?.user?.email) throw new Error('Not authenticated');
-    const result = await insforge.database.from('users').select('*').eq('email', data.user.email).maybeSingle();
+    const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', data.user.email).maybeSingle();
     if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
     if (!result.data) throw new Error('Application profile not found');
     return { authUser: data.user, appUser: result.data };
@@ -37,7 +37,7 @@ class ApiClient {
   private async syncAppUser(authUser: any, profile: any = {}) {
     const email = authUser?.email ?? '';
     if (!email) throw new Error('Authenticated user has no email.');
-    const existing = await insforge.database.from('users').select('*').eq('email', email).maybeSingle();
+    const existing = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', email).maybeSingle();
     if (existing.error) console.warn('App profile lookup warning:', existing.error);
     if (existing.data) {
       const updates = {
@@ -200,7 +200,7 @@ class ApiClient {
     const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
     const phone = localStorage.getItem('skillbarter_phone');
     if (phone && phoneUserId) {
-      const result = await insforge.database.from('users').select('*').eq('id', phoneUserId).maybeSingle();
+      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('id', phoneUserId).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load current user');
       if (!result.data) throw new Error('Application profile not found');
       const user = { ...result.data, id: Number(result.data.id) };
@@ -251,6 +251,8 @@ class ApiClient {
   async logout() {
     const { error } = await insforge.auth.signOut();
     this.clearToken();
+    localStorage.removeItem('skillbarter_user_id');
+    localStorage.removeItem('skillbarter_phone');
     if (error) throw new Error(error.message || 'Logout failed');
   }
 
