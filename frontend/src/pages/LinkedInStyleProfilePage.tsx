@@ -102,12 +102,6 @@ export const LinkedInStyleProfilePage: React.FC = () => {
     finally { setSaving(false); }
   };
 
-  const toggleConnection = async () => {
-    try { setSaving(true); if (connected) await api.disconnectNeighbor(targetId); else await api.connectNeighbor(targetId); setConnected(!connected); }
-    catch (e: any) { setMessage(e?.message || 'Unable to update connection.'); }
-    finally { setSaving(false); }
-  };
-
   if (loading) return <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-400">Loading profile…</div>;
   if (!profile) return <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-500">Profile unavailable.</div>;
 
@@ -134,7 +128,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
               <p className="mt-1 text-base text-[#384860]">{profile.headline || 'SkillBarter community member'}</p>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#697386]"><span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5"/>{profile.address_display || 'Local community'}</span><span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5"/>{profile.connections_count || 0} connections</span><span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 text-[#d31d24]"/>{averageReview ? averageReview.toFixed(1) : 'New'} rating</span></div>
             </div>
-            <div className="flex flex-wrap gap-2 pb-1">{own ? <Button size="sm" variant="outline" onClick={() => setEditing(!editing)} icon={<Edit3 className="h-3.5 w-3.5"/>}>{editing ? 'Close' : 'Edit profile'}</Button> : <><Button size="sm" onClick={() => setProposeOpen(true)} icon={<Repeat className="h-3.5 w-3.5"/>}>Propose exchange</Button><Button size="sm" variant="outline" onClick={toggleConnection} disabled={saving} icon={<UserPlus className="h-3.5 w-3.5"/>}>{connected ? 'Connected' : 'Connect'}</Button><Link to={`/messages/${targetId}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5"/>}>Message</Button></Link></>}</div>
+            <div className="flex flex-wrap gap-2 pb-1">{own ? <Button size="sm" variant="outline" onClick={() => setEditing(!editing)} icon={<Edit3 className="h-3.5 w-3.5"/>}>{editing ? 'Close' : 'Edit profile'}</Button> : <><Button size="sm" onClick={() => setProposeOpen(true)} icon={<Repeat className="h-3.5 w-3.5"/>}>Propose exchange</Button><Link to={`/messages/${targetId}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5"/>}>Message</Button></Link></>}</div>
           </div>
         </div>
       </section>
@@ -157,7 +151,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
         </aside>
       </div>
     </div>
-    {proposeOpen && <ProposeExchangeModal targetUser={profile} onClose={()=>setProposeOpen(false)} onSuccess={()=>{setProposeOpen(false); setMessage('Exchange proposal sent.');}} />}
+    {proposeOpen && <ProposeExchangeModal isOpen={proposeOpen} onClose={()=>setProposeOpen(false)} partner={profile} defaultPartnerSkill={profile.skills_offered?.[0] || ''} defaultMySkill={currentUser?.skills?.find((s:any)=>s.skill_type==='OFFERED')?.skill_name || ''} onSuccess={()=>{setProposeOpen(false); setMessage('Exchange proposal sent.');}} />}
   </div>;
 };
 
