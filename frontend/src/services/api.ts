@@ -469,8 +469,8 @@ class ApiClient {
   }
 
   private async serializeExchange(exchange: any, currentUserId: number) {
-    const requesterResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', exchange.requester_id).maybeSingle();
-    const receiverResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', exchange.receiver_id).maybeSingle();
+    const requesterResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,location_visibility').eq('id', exchange.requester_id).maybeSingle();
+    const receiverResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,location_visibility').eq('id', exchange.receiver_id).maybeSingle();
     const requesterSkill = exchange.requester_skill_id ? await insforge.database.from('skills').select('id,name,category,icon').eq('id', exchange.requester_skill_id).maybeSingle() : { data: null, error: null };
     const receiverSkill = exchange.receiver_skill_id ? await insforge.database.from('skills').select('id,name,category,icon').eq('id', exchange.receiver_skill_id).maybeSingle() : { data: null, error: null };
     const review = await insforge.database.from('reviews').select('id').eq('exchange_id', exchange.id).eq('reviewer_id', currentUserId).maybeSingle();
@@ -478,7 +478,17 @@ class ApiClient {
     if (receiverResult.error) throw new Error(receiverResult.error.message);
     if (review.error) throw new Error(review.error.message);
     const reqUser = requesterResult.data, recUser = receiverResult.data;
-    return { ...exchange, requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill', receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill', estimated_hours: exchange.estimated_hours ?? 2, requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: reqUser.address_display } : { id: exchange.requester_id, full_name: 'Member', trust_score: 0 }, receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: recUser.address_display } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 0 }, user_can_review: exchange.status === 'COMPLETED' && !review.data, has_reviewed: Boolean(review.data) };
+    const safeAddress = (user: any) => Number(user?.id) === Number(currentUserId) || user?.location_visibility !== false ? user?.address_display : null;
+    return {
+      ...exchange,
+      requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill',
+      receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill',
+      estimated_hours: exchange.estimated_hours ?? 2,
+      requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: safeAddress(reqUser) } : { id: exchange.requester_id, full_name: 'Member', trust_score: 0 },
+      receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: safeAddress(recUser) } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 0 },
+      user_can_review: exchange.status === 'COMPLETED' && !review.data,
+      has_reviewed: Boolean(review.data),
+    };
   }
 
   async getExchanges(status?: string) {
@@ -898,7 +908,7 @@ class ApiClient {
       type: 'MESSAGE',
       title: 'New message',
       message: `${appUser.full_name} sent you a message.`,
-      link: `/messages/${appUser.id}`,
+      link: `/messages/${senderId}`,
     });
     return r.data;
   }
