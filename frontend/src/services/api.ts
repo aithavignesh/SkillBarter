@@ -435,19 +435,19 @@ class ApiClient {
   private async serializeExchange(exchange: any, currentUserId: number) {
     const requesterResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', exchange.requester_id).maybeSingle();
     const receiverResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', exchange.receiver_id).maybeSingle();
-    const requesterSkill = exchange.requester_skill_id ? await insforge.database.from('skills').select('*').eq('id', exchange.requester_skill_id).maybeSingle() : { data: null, error: null };
-    const receiverSkill = exchange.receiver_skill_id ? await insforge.database.from('skills').select('*').eq('id', exchange.receiver_skill_id).maybeSingle() : { data: null, error: null };
+    const requesterSkill = exchange.requester_skill_id ? await insforge.database.from('skills').select('id,name,category,icon').eq('id', exchange.requester_skill_id).maybeSingle() : { data: null, error: null };
+    const receiverSkill = exchange.receiver_skill_id ? await insforge.database.from('skills').select('id,name,category,icon').eq('id', exchange.receiver_skill_id).maybeSingle() : { data: null, error: null };
     const review = await insforge.database.from('reviews').select('id').eq('exchange_id', exchange.id).eq('reviewer_id', currentUserId).maybeSingle();
     if (requesterResult.error) throw new Error(requesterResult.error.message);
     if (receiverResult.error) throw new Error(receiverResult.error.message);
     if (review.error) throw new Error(review.error.message);
     const reqUser = requesterResult.data, recUser = receiverResult.data;
-    return { ...exchange, requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill', receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill', estimated_hours: exchange.estimated_hours ?? 2, requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: reqUser.address_display } : { id: exchange.requester_id, full_name: 'Member', trust_score: 80 }, receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: recUser.address_display } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 80 }, user_can_review: exchange.status === 'COMPLETED' && !review.data, has_reviewed: Boolean(review.data) };
+    return { ...exchange, requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill', receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill', estimated_hours: exchange.estimated_hours ?? 2, requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: reqUser.address_display } : { id: exchange.requester_id, full_name: 'Member', trust_score: 0 }, receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: recUser.address_display } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 80 }, user_can_review: exchange.status === 'COMPLETED' && !review.data, has_reviewed: Boolean(review.data) };
   }
 
   async getExchanges() {
     const { appUser } = await this.getAppUser();
-    const { data, error } = await insforge.database.from('exchanges').select('*').or(`requester_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`).order('created_at', { ascending: false });
+    const { data, error } = await insforge.database.from('exchanges').select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at').or(`requester_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`).order('created_at', { ascending: false });
     if (error) throw new Error(error.message || 'Unable to load exchanges');
     return Promise.all((data || []).map((e: any) => this.serializeExchange(e, Number(appUser.id))));
   }
