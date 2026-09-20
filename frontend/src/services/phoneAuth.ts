@@ -142,7 +142,7 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
   const token = data.accessToken || data.token;
   if (!token) throw new Error('OTP verified, but no login session was returned. Please try again.');
   insforge.setAccessToken(token);
-  localStorage.setItem('skillbarter_token', token);
+  sessionStorage.setItem('skillbarter_token', token);
 
   const user = data.user;
   if (user?.id) localStorage.setItem('skillbarter_user_id', String(user.id));
