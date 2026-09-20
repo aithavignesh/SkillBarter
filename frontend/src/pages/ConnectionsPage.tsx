@@ -21,6 +21,8 @@ export const ConnectionsPage: React.FC = () => {
   const [nearby, setNearby] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPartner, setSelectedPartner] = useState<NetworkPerson | null>(null);
+  const [defaultPartnerSkill, setDefaultPartnerSkill] = useState('');
+  const [defaultMySkill, setDefaultMySkill] = useState('');
   const [isProposeOpen, setIsProposeOpen] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [notice, setNotice] = useState('');
@@ -55,6 +57,8 @@ export const ConnectionsPage: React.FC = () => {
 
   const openProposal = (user: NetworkPerson) => {
     setSelectedPartner(user);
+    setDefaultPartnerSkill(user.skills_offered?.[0] || '');
+    setDefaultMySkill(currentUser?.skills?.find((s: any) => s.skill_type === 'OFFERED')?.skill_name || '');
     setIsProposeOpen(true);
   };
 
@@ -152,7 +156,7 @@ export const ConnectionsPage: React.FC = () => {
         </div>
       )}
 
-      {selectedPartner && <ProposeExchangeModal isOpen={isProposeOpen} onClose={() => setIsProposeOpen(false)} partner={selectedPartner} onSuccess={() => { setIsProposeOpen(false); setNotice('Learning request sent. Check Learning Exchanges for the next step.'); loadData(); }} />}
+      {selectedPartner && <ProposeExchangeModal isOpen={isProposeOpen} onClose={() => setIsProposeOpen(false)} partner={selectedPartner} defaultPartnerSkill={defaultPartnerSkill} defaultMySkill={defaultMySkill} onSuccess={() => { setIsProposeOpen(false); setNotice('Learning request sent. Check Learning Exchanges for the next step.'); loadData(); }} />}
     </AppPageShell>
   );
 };
