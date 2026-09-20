@@ -208,6 +208,17 @@ class ApiClient {
 
     try {
       const appUser = await this.syncAppUser(authUser, profile);
+      if (appUser && typeof payload.primary_skill === 'string' && payload.primary_skill.trim()) {
+        try {
+          await this.addUserSkill({
+            skill_name: payload.primary_skill.trim(),
+            skill_type: 'OFFERED',
+            category: typeof payload.primary_category === 'string' ? payload.primary_category.trim().slice(0, 80) : 'Other',
+          });
+        } catch (skillError) {
+          console.warn('Initial skill setup warning:', skillError);
+        }
+      }
       const user = this.authUserToLegacyUser(authUser, appUser);
       return { access_token: accessToken ?? '', user_id: user.id, email: user.email, full_name: user.full_name, is_admin: false };
     } catch (syncError: any) {
