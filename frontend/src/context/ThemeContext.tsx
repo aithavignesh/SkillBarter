@@ -15,7 +15,8 @@ function getInitialTheme(): ThemeMode {
   if (typeof window === 'undefined') return 'light';
   const saved = window.localStorage.getItem(STORAGE_KEY);
   if (saved === 'dark' || saved === 'light') return saved;
-  // SkillBarter starts in light mode by default; users can switch manually.\n  return 'light';
+  // SkillBarter starts in light mode by default; users can switch manually.
+  return 'light';
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
