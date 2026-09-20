@@ -549,6 +549,7 @@ class ApiClient {
 
   async acceptExchange(id: number) {
     const { appUser } = await this.getAppUser();
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot modify learning exchanges.');
     const e = await this.getExchangeRow(id);
     if (Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Only the recipient can accept this request.');
     if (e.status !== 'PENDING') throw new Error(`This exchange is already ${String(e.status).toLowerCase()}.`);
@@ -559,7 +560,7 @@ class ApiClient {
       .eq('id', id)
       .eq('receiver_id', appUser.id)
       .eq('status', 'PENDING')
-      .select('*')
+      .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
       .maybeSingle();
     if (error) throw new Error(error.message || 'Unable to accept exchange');
     if (!data) throw new Error('This learning request is no longer pending.');
@@ -575,6 +576,7 @@ class ApiClient {
 
   async rejectExchange(id: number) {
     const { appUser } = await this.getAppUser();
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot modify learning exchanges.');
     const e = await this.getExchangeRow(id);
     if (Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Only the recipient can decline this request.');
     if (e.status !== 'PENDING') throw new Error(`This exchange is already ${String(e.status).toLowerCase()}.`);
@@ -585,7 +587,7 @@ class ApiClient {
       .eq('id', id)
       .eq('receiver_id', appUser.id)
       .eq('status', 'PENDING')
-      .select('*')
+      .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
       .maybeSingle();
     if (error) throw new Error(error.message || 'Unable to decline exchange');
     if (!data) throw new Error('This learning request is no longer pending.');
@@ -601,6 +603,7 @@ class ApiClient {
 
   async withdrawExchange(id: number) {
     const { appUser } = await this.getAppUser();
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot modify learning exchanges.');
     const e = await this.getExchangeRow(id);
     if (Number(e.requester_id) !== Number(appUser.id)) throw new Error('Only the requester can withdraw this proposal.');
     if (e.status !== 'PENDING') throw new Error(`This proposal is already ${String(e.status).toLowerCase()}.`);
@@ -616,7 +619,7 @@ class ApiClient {
       .eq('id', id)
       .eq('requester_id', appUser.id)
       .eq('status', 'PENDING')
-      .select('*')
+      .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
       .maybeSingle();
     if (error) throw new Error(error.message || 'Unable to withdraw proposal');
     if (!data) throw new Error('This learning request is no longer pending.');
@@ -632,6 +635,7 @@ class ApiClient {
 
   async cancelExchange(id: number, reason: string) {
     const { appUser } = await this.getAppUser();
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot modify learning exchanges.');
     const e = await this.getExchangeRow(id);
     if (Number(e.requester_id) !== Number(appUser.id) && Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Not authorized to cancel this exchange.');
     if (e.status !== 'ACTIVE') throw new Error('Only active exchanges can be cancelled.');
@@ -650,7 +654,7 @@ class ApiClient {
       .eq('id', id)
       .in('status', ['ACTIVE'])
       .or(`requester_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`)
-      .select('*')
+      .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
       .maybeSingle();
     if (error) throw new Error(error.message || 'Unable to cancel exchange');
     if (!data) throw new Error('This learning exchange is no longer active.');
@@ -667,6 +671,7 @@ class ApiClient {
 
   async startExchange(id: number) {
     const { appUser } = await this.getAppUser();
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot modify learning exchanges.');
     const e = await this.getExchangeRow(id);
     const uid = Number(appUser.id);
     if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Not authorized.');
@@ -680,7 +685,7 @@ class ApiClient {
       .eq('id', id)
       .in('status', ['ACCEPTED'])
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
-      .select('*')
+      .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
       .maybeSingle();
     if (error) throw new Error(error.message || 'Unable to start exchange');
     if (!data) throw new Error('This learning exchange is no longer ready to start.');
@@ -689,6 +694,7 @@ class ApiClient {
 
   async updateExchangeSchedule(id: number, payload: { preferred_date?: string; estimated_hours?: number; location_area?: string }) {
     const { appUser } = await this.getAppUser();
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot modify learning exchanges.');
     const e = await this.getExchangeRow(id);
     const uid = Number(appUser.id);
     if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Not authorized.');
@@ -713,7 +719,7 @@ class ApiClient {
       .eq('id', id)
       .in('status', ['PENDING', 'ACTIVE'])
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
-      .select('*')
+      .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
       .maybeSingle();
     if (error) throw new Error(error.message || 'Unable to update exchange schedule');
     if (!data) throw new Error('This learning exchange is no longer editable.');
@@ -730,6 +736,7 @@ class ApiClient {
 
   async completeExchange(id: number) {
     const { appUser } = await this.getAppUser();
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot modify learning exchanges.');
     const e = await this.getExchangeRow(id);
     const uid = Number(appUser.id);
     if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Not authorized.');
@@ -745,7 +752,7 @@ class ApiClient {
     let query: any = insforge.database.from('exchanges').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).eq('status', 'ACTIVE');
     query = uid === Number(e.requester_id) ? query.eq('requester_completed', false) : query.eq('receiver_completed', false);
     query = query.or(`requester_id.eq.${uid},receiver_id.eq.${uid}`);
-    const { data, error } = await query.select('*').maybeSingle();
+    const { data, error } = await query.select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at').maybeSingle();
     if (error) throw new Error(error.message || 'Unable to confirm completion');
     if (!data) throw new Error('Completion was already confirmed or the learning exchange changed state.');
 
