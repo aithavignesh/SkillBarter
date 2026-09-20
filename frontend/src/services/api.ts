@@ -1259,7 +1259,7 @@ class ApiClient {
   async submitReview(payload: any) {
     const { appUser } = await this.getAppUser();
     const exchangeId = Number(payload.exchange_id);
-    if (!exchangeId) throw new Error('Exchange is required.');
+    if (!Number.isInteger(exchangeId) || exchangeId <= 0) throw new Error('Exchange is required.');
     const exchange = await this.getExchangeRow(exchangeId);
     const uid = Number(appUser.id);
     if (uid !== Number(exchange.requester_id) && uid !== Number(exchange.receiver_id)) throw new Error('Only participants can review this learning exchange.');
@@ -1269,8 +1269,10 @@ class ApiClient {
     if (existing.data) throw new Error('You have already submitted a review for this learning exchange.');
     const revieweeId = uid === Number(exchange.requester_id) ? Number(exchange.receiver_id) : Number(exchange.requester_id);
     const rating = Number(payload.rating), reliabilityScore = Number(payload.reliability_score), skillQualityScore = Number(payload.skill_quality_score);
+    const comment = String(payload.comment || '').trim();
+    if (comment.length > 2000) throw new Error('Review comment must be 2000 characters or less.');
     if (![rating, reliabilityScore, skillQualityScore].every((value) => Number.isInteger(value) && value >= 1 && value <= 5)) throw new Error('Ratings must be between 1 and 5.');
-    const { data, error } = await insforge.database.from('reviews').insert({ exchange_id: exchangeId, reviewer_id: uid, reviewee_id: revieweeId, rating, reliability_score: reliabilityScore, skill_quality_score: skillQualityScore, would_exchange_again: Boolean(payload.would_exchange_again), comment: String(payload.comment || '').trim() || null }).select('*').single();
+    const { data, error } = await insforge.database.from('reviews').insert({ exchange_id: exchangeId, reviewer_id: uid, reviewee_id: revieweeId, rating, reliability_score: reliabilityScore, skill_quality_score: skillQualityScore, would_exchange_again: Boolean(payload.would_exchange_again), comment: comment || null }).select('id,exchange_id,reviewer_id,reviewee_id,rating,reliability_score,skill_quality_score,would_exchange_again,comment,created_at').single();
     if (error) throw new Error(error.message || 'Unable to submit review');
     await this.recalculateTrustScore(revieweeId);
     await insforge.database.from('notifications').insert({ user_id: revieweeId, type: 'NEW_REVIEW', title: 'New learning review', message: appUser.full_name + ' left you a ' + rating + '-star learning review.', link: '/profile/' + revieweeId });
