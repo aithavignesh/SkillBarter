@@ -303,11 +303,14 @@ class ApiClient {
   }
 
   async getUserProfile(userId: number) {
-    const { data, error } = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,onboarding_completed,primary_intent,created_at').eq('id', userId).maybeSingle();
+    const { appUser } = await this.getAppUser();
+    const { data, error } = await insforge.database.from('users').select('id,full_name,avatar_url,bio,headline,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,onboarding_completed,primary_intent,created_at').eq('id', userId).maybeSingle();
     if (error) throw new Error(error.message || 'Unable to load user profile');
     if (!data) throw new Error('User not found');
     const skills = await this.getUserSkills(userId);
-    return { ...data, skills, skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), skills_detail: skills };
+    const isSelf = Number(appUser.id) === Number(userId);
+    const safeProfile = { ...data, address_display: isSelf || data.location_visibility !== false ? data.address_display : null };
+    return { ...safeProfile, skills, skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), skills_detail: skills };
   }
 
   async getNearbyUsers(radiusKm = 10) {
@@ -315,7 +318,7 @@ class ApiClient {
     if (appUser.latitude == null || appUser.longitude == null) return [];
     const centerLat = Number(appUser.latitude);
     const centerLon = Number(appUser.longitude);
-    const { data, error } = await insforge.database.from('users').select('id,full_name,avatar_url,headline,latitude,longitude,address_display,exchange_radius_km,availability,trust_score,reliability_score,completed_exchanges_count,badges,is_active').eq('is_active', true).limit(100);
+    const { data, error } = await insforge.database.from('users').select('id,full_name,avatar_url,headline,latitude,longitude,address_display,location_visibility,exchange_radius_km,availability,trust_score,reliability_score,completed_exchanges_count,badges,is_active').eq('is_active', true).limit(100);
     if (error) throw new Error(error.message || 'Unable to load nearby users');
     const distance = (lat: number, lon: number) => {
       const toRad = (v: number) => v * Math.PI / 180;
@@ -329,7 +332,7 @@ class ApiClient {
       const dist = distance(Number(user.latitude), Number(user.longitude));
       if (dist > radiusKm) continue;
       const skills = await this.getUserSkills(Number(user.id));
-      results.push({ id: user.id, full_name: user.full_name, avatar_url: user.avatar_url, headline: user.headline, address_display: user.address_display, distance_km: dist, distance_display: `${dist.toFixed(1)} km`, trust_score: user.trust_score, reliability_score: user.reliability_score, completed_exchanges_count: user.completed_exchanges_count, badges: user.badges ?? [], skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), availability: user.availability });
+      results.push({ id: user.id, full_name: user.full_name, avatar_url: user.avatar_url, headline: user.headline, address_display: user.location_visibility === false ? null : user.address_display, distance_km: dist, distance_display: `${dist.toFixed(1)} km`, trust_score: user.trust_score, reliability_score: user.reliability_score, completed_exchanges_count: user.completed_exchanges_count, badges: user.badges ?? [], skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), availability: user.availability });
     }
     return results.sort((a, b) => a.distance_km - b.distance_km);
   }
@@ -403,7 +406,7 @@ class ApiClient {
         ? (distance! > maxRadius ? Math.max(0, 1 - distance! / (maxRadius * 1.5)) : Math.max(0, 1 - distance! / maxRadius))
         : 0.5;
       const skillScore = reciprocal ? 50 : 25;
-      const trust = Math.min(Math.max(Number(candidate.trust_score ?? 80), 0), 100) / 100 * 20;
+      const trust = Math.min(Math.max(Number(candidate.trust_score ?? 0), 0), 100) / 100 * 20;
       const myAvail = String(appUser.availability ?? 'flexible').toLowerCase(), theirAvail = String(candidate.availability ?? 'flexible').toLowerCase();
       const availability = myAvail.includes('flexible') || theirAvail.includes('flexible') || myAvail === theirAvail ? 10 : (myAvail.split(/\s+/).some((w: string) => theirAvail.includes(w)) ? 7 : 4);
       const score = Math.min(Math.max(Math.round(skillScore + proximityFactor * 20 + trust + availability), 10), 99);
@@ -418,7 +421,7 @@ class ApiClient {
       if (Number(candidate.trust_score ?? 80) >= 90) reasons.push(`High community trust score (${Math.round(Number(candidate.trust_score))}/100)`);
       else if (Number(candidate.trust_score ?? 80) >= 80) reasons.push(`Good community standing (${Math.round(Number(candidate.trust_score))}/100`);
       if (availability >= 7) reasons.push(`Compatible availability (${candidate.availability ?? 'Flexible'})`);
-      results.push({ candidate: { id: candidate.id, full_name: candidate.full_name, avatar_url: candidate.avatar_url, headline: candidate.headline, address_display: candidate.address_display, trust_score: candidate.trust_score, reliability_score: candidate.reliability_score, completed_exchanges_count: candidate.completed_exchanges_count, badges: candidate.badges ?? [] }, match_score: score, distance_km: distance, distance_display: distance == null ? 'Online / location not set' : `${distance.toFixed(1)} km`, is_reciprocal: reciprocal, they_offer: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), they_need: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), matched_you_offer: youOfferTheyNeed, matched_they_offer: theyOfferYouNeed, reasons, score_breakdown: { skill_compatibility: Math.round(skillScore), location_proximity: Math.round(proximityFactor * 20), trust: Math.round(trust), availability: Math.round(availability) } });
+      results.push({ candidate: { id: candidate.id, full_name: candidate.full_name, avatar_url: candidate.avatar_url, headline: candidate.headline, address_display: candidate.location_visibility === false ? null : candidate.address_display, trust_score: candidate.trust_score, reliability_score: candidate.reliability_score, completed_exchanges_count: candidate.completed_exchanges_count, badges: candidate.badges ?? [] }, match_score: score, distance_km: distance, distance_display: distance == null ? 'Online / location not set' : `${distance.toFixed(1)} km`, is_reciprocal: reciprocal, they_offer: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), they_need: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), matched_you_offer: youOfferTheyNeed, matched_they_offer: theyOfferYouNeed, reasons, score_breakdown: { skill_compatibility: Math.round(skillScore), location_proximity: Math.round(proximityFactor * 20), trust: Math.round(trust), availability: Math.round(availability) } });
     }
     return results.sort((a, b) => b.match_score - a.match_score || a.distance_km - b.distance_km).slice(0, 20);
   }
