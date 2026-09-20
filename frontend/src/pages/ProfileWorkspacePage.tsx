@@ -119,16 +119,10 @@ export const ProfileWorkspacePage: React.FC = () => {
     }
   };
 
-  const connect = async () => {
-    try { setSaving(true); if (connected) await api.disconnectNeighbor(targetId); else await api.connectNeighbor(targetId); setConnected(!connected); setMessage(connected ? 'Connection removed.' : 'Connection created.'); }
-    catch (e: any) { setMessage(e?.message || 'Unable to update connection.'); }
-    finally { setSaving(false); }
-  };
-
   if (loading) return <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-400">Loading profile…</div>;
   if (!profile) return <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-500">Profile unavailable.</div>;
 
-  return <AppPageShell eyebrow={own ? 'My profile' : 'Member profile'} title={profile.full_name || 'Profile'} description={profile.headline || 'SkillBarter community member'} icon={<ShieldCheck className="h-3.5 w-3.5" />} actions={own ? <Button size="sm" variant="outline" onClick={() => setEditing(!editing)}>{editing ? 'Close editor' : 'Edit profile'}</Button> : <div className="flex gap-2"><Button size="sm" onClick={() => setProposeOpen(true)} icon={<Repeat className="h-3.5 w-3.5" />}>Propose</Button><Button size="sm" variant="outline" onClick={connect} disabled={saving} icon={<UserPlus className="h-3.5 w-3.5" />}>{connected ? 'Disconnect' : 'Connect'}</Button><Link to={`/messages/${targetId}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5" />}>Message</Button></Link></div>}>
+  return <AppPageShell eyebrow={own ? 'My profile' : 'Member profile'} title={profile.full_name || 'Profile'} description={profile.headline || 'SkillBarter community member'} icon={<ShieldCheck className="h-3.5 w-3.5" />} actions={own ? <Button size="sm" variant="outline" onClick={() => setEditing(!editing)}>{editing ? 'Close editor' : 'Edit profile'}</Button> : <div className="flex gap-2"><Button size="sm" onClick={() => setProposeOpen(true)} icon={<Repeat className="h-3.5 w-3.5" />}>Propose</Button><Link to={`/messages/${targetId}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5" />}>Message</Button></Link></div>}>
     {message && <div className="mb-4 border border-[#e1e4e8] bg-white px-4 py-3 text-xs font-semibold text-[#17233b]">{message}</div>}
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_280px]">
       <div className="space-y-4">
