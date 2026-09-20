@@ -1206,7 +1206,7 @@ class ApiClient {
 
     const volumePts = completedCount > 0 ? Math.min(10, (Math.log(1 + completedCount) / Math.log(11)) * 10) : 7;
 
-    const reportsResult = await insforge.database.from('safety_reports').select('id').eq('reported_user_id', userId).eq('status', 'RESOLVED');
+    const reportsResult = await insforge.database.from('reports').select('id').eq('reported_user_id', userId).eq('status', 'RESOLVED');
     if (reportsResult.error) throw new Error(reportsResult.error.message || 'Unable to recalculate safety standing');
     const safetyPenalty = Math.min(10, (reportsResult.data?.length ?? 0) * 5);
     const safetyPts = Math.max(0, 10 - safetyPenalty);
