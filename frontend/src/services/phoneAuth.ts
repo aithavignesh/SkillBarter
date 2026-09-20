@@ -161,13 +161,13 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
     phone,
     avatar_url: user?.avatar_url,
     bio: user?.bio,
-    trust_score: Number(user?.trust_score ?? 85),
-    reliability_score: Number(user?.reliability_score ?? 90),
-    response_rate: Number(user?.response_rate ?? 95),
-    skill_quality_score: Number(user?.skill_quality_score ?? 90),
+    trust_score: Number(user?.trust_score ?? 0),
+    reliability_score: Number(user?.reliability_score ?? 0),
+    response_rate: Number(user?.response_rate ?? 0),
+    skill_quality_score: Number(user?.skill_quality_score ?? 0),
     completed_exchanges_count: Number(user?.completed_exchanges_count ?? 0),
     reviews_count: Number(user?.reviews_count ?? 0),
-    badges: Array.isArray(user?.badges) ? user.badges : ['Verified Member', 'Mobile Verified'],
+    badges: Array.isArray(user?.badges) ? user.badges : [],
     is_active: user?.is_active !== false,
     is_admin: user?.is_admin === true,
     onboarding_completed: user?.onboarding_completed ?? false,
@@ -187,7 +187,7 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
   if (userId) {
     const { data: dbUser } = await insforge.database
       .from('users')
-      .select('*')
+      .select('id,email,full_name,avatar_url,bio,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent')
       .eq('id', parseInt(userId, 10))
       .maybeSingle();
     appUser = dbUser;
@@ -200,13 +200,13 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
     phone,
     avatar_url: appUser?.avatar_url,
     bio: appUser?.bio,
-    trust_score: Number(appUser?.trust_score ?? 85),
-    reliability_score: Number(appUser?.reliability_score ?? 90),
-    response_rate: Number(appUser?.response_rate ?? 95),
-    skill_quality_score: Number(appUser?.skill_quality_score ?? 90),
+    trust_score: Number(appUser?.trust_score ?? 0),
+    reliability_score: Number(appUser?.reliability_score ?? 0),
+    response_rate: Number(appUser?.response_rate ?? 0),
+    skill_quality_score: Number(appUser?.skill_quality_score ?? 0),
     completed_exchanges_count: Number(appUser?.completed_exchanges_count ?? 0),
     reviews_count: Number(appUser?.reviews_count ?? 0),
-    badges: Array.isArray(appUser?.badges) ? appUser.badges : ['Verified Member', 'Mobile Verified'],
+    badges: Array.isArray(appUser?.badges) ? appUser.badges : [],
     is_active: appUser?.is_active !== false,
     is_admin: appUser?.is_admin === true,
     onboarding_completed: appUser?.onboarding_completed ?? false,
