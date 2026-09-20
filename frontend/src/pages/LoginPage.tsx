@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';\nimport { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Repeat, Lock, Mail, ArrowRight, Phone, ShieldCheck, RotateCcw, KeyRound, CheckCircle2, ChevronDown } from 'lucide-react';
@@ -33,7 +34,8 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState<number>(0);
-  const [emailFallback, setEmailFallback] = useState(false);\n  const [resetSending, setResetSending] = useState(false);
+  const [emailFallback, setEmailFallback] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
 
   const { login, requestPhoneOtp, verifyPhoneOtp, demoSwitchUser, loading } = useAuth();
   const navigate = useNavigate();
@@ -97,7 +99,13 @@ export const LoginPage: React.FC = () => {
       await login(email.trim(), password);
       navigate('/feed');
     } catch (err: any) {
-      const message = String(err.message || 'Invalid credentials');\n      if (/compromised|breach|found in.*records|change.*password|password.*(leak|leaked|compromised)/i.test(message)) {\n        setEmailFallback(true);\n        setError('For your security, this password cannot be used. Enter your email below and use “Forgot password?” to create a new password.');\n      } else {\n        setError(message);\n      }
+      const message = String(err.message || 'Invalid credentials');
+      if (/compromised|breach|found in.*records|change.*password|password.*(leak|leaked|compromised)/i.test(message)) {
+        setEmailFallback(true);
+        setError('For your security, this password cannot be used. Enter your email below and use “Forgot password?” to create a new password.');
+      } else {
+        setError(message);
+      }
     }
   };
 
