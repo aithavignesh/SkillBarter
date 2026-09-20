@@ -24,7 +24,7 @@ export const TrustSystemPage: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      Promise.all([api.getTrustDetails(currentUser.id), api.getReviews(currentUser.id)]).then(([data, reviewData]) => {
+      Promise.all([api.getUserProfile(currentUser.id), api.getReviews(currentUser.id)]).then(([data, reviewData]) => {
         setTrustData(data);
         setReviews(reviewData || []);
       }).catch((error) => console.error(error)).finally(() => setLoading(false));
