@@ -11,7 +11,7 @@ if (!baseUrl || !anonKey) {
 // This is especially important for the phone OTP flow because the OTP
 // verification itself runs in a Vercel serverless function.
 const persistedToken =
-  typeof window !== 'undefined' ? localStorage.getItem('skillbarter_token') ?? undefined : undefined;
+  typeof window !== 'undefined' ? sessionStorage.getItem('skillbarter_token') ?? undefined : undefined;
 
 // The SDK's generated database query types are project-schema dependent and
 // can become incompatible with this legacy application's dynamic table schema.
