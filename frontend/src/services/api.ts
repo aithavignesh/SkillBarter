@@ -764,8 +764,28 @@ class ApiClient {
 
   async getExchange(id: number) { const { appUser } = await this.getAppUser(); const e = await this.getExchangeRow(id); if (Number(e.requester_id) !== Number(appUser.id) && Number(e.receiver_id) !== Number(appUser.id)) throw new Error('Not authorized.'); return this.serializeExchange(e, Number(appUser.id)); }
 
-  async getNotifications() { const { appUser } = await this.getAppUser(); const r = await insforge.database.from('notifications').select('*').eq('user_id', appUser.id).order('created_at', { ascending: false }).limit(50); if (r.error) throw new Error(r.error.message || 'Unable to load notifications'); return r.data || []; }
-  async markNotificationRead(id: number) { const { appUser } = await this.getAppUser(); const r = await insforge.database.from('notifications').update({ is_read: true }).eq('id', id).eq('user_id', appUser.id).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to mark notification'); return r.data; }
+  async getNotifications() {
+    const { appUser } = await this.getAppUser();
+    const r = await insforge.database.from('notifications')
+      .select('id,user_id,type,title,message,link,is_read,created_at')
+      .eq('user_id', appUser.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (r.error) throw new Error(r.error.message || 'Unable to load notifications');
+    return r.data || [];
+  }
+  async markNotificationRead(id: number) {
+    const { appUser } = await this.getAppUser();
+    if (!Number.isInteger(Number(id)) || Number(id) <= 0) throw new Error('Invalid notification.');
+    const r = await insforge.database.from('notifications')
+      .update({ is_read: true })
+      .eq('id', Number(id))
+      .eq('user_id', appUser.id)
+      .select('id,user_id,type,title,message,link,is_read,created_at')
+      .single();
+    if (r.error) throw new Error(r.error.message || 'Unable to mark notification');
+    return r.data;
+  }
   async markAllNotificationsRead() { const { appUser } = await this.getAppUser(); const r = await insforge.database.from('notifications').update({ is_read: true }).eq('user_id', appUser.id).eq('is_read', false); if (r.error) throw new Error(r.error.message || 'Unable to update notifications'); return true; }
 
   async sendMessage(payload: any) {
