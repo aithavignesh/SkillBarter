@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { UserSummary } from '../types';
 import { Button } from '../components/ui/Button';
@@ -22,6 +22,7 @@ export const DiscoverPage: React.FC = () => {
   const [selectedPartner, setSelectedPartner] = useState<UserSummary | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
   const [defaultPartnerSkill, setDefaultPartnerSkill] = useState('');
+  const [defaultMySkill, setDefaultMySkill] = useState('');
   const [priorityDiscovery, setPriorityDiscovery] = useState(false);
   const [notice, setNotice] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
