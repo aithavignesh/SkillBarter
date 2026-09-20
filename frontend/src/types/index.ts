@@ -11,6 +11,7 @@ export interface UserSummary {
   premium?: boolean;
   verified?: boolean;
   featured_until?: string | null;
+  featured?: boolean;
 }
 
 export interface UserSkill {
