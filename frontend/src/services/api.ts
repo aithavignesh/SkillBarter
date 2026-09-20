@@ -17,8 +17,8 @@ class ApiClient {
     // Phone OTP sessions are intentionally access-token based and do not expose
     // a refresh token to the browser. Avoid calling getCurrentUser() for those
     // sessions because the SDK may attempt a refresh and show "No refresh token provided".
-    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
-    const phone = localStorage.getItem('skillbarter_phone');
+    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
+    const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone && phoneUserId) {
       const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('id', phoneUserId).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
@@ -222,8 +222,8 @@ class ApiClient {
   async demoSwitch(_userId: number) { throw new Error('Demo switching is not available until demo accounts are migrated to InsForge Auth.'); }
 
   async getMe() {
-    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
-    const phone = localStorage.getItem('skillbarter_phone');
+    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
+    const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone && phoneUserId) {
       const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('id', phoneUserId).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load current user');
@@ -251,8 +251,8 @@ class ApiClient {
       location_visibility: typeof payload.location_visibility === 'boolean' ? payload.location_visibility : undefined,
     };
     // Keep privileged account fields out of profile-form updates.
-    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
-    const phone = localStorage.getItem('skillbarter_phone');
+    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
+    const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone && phoneUserId > 0) {
       const { data, error } = await insforge.database
         .from('users')
@@ -274,8 +274,8 @@ class ApiClient {
   async logout() {
     const { error } = await insforge.auth.signOut();
     this.clearToken();
-    localStorage.removeItem('skillbarter_user_id');
-    localStorage.removeItem('skillbarter_phone');
+    sessionStorage.removeItem('skillbarter_user_id');
+    sessionStorage.removeItem('skillbarter_phone');
     // Remove any in-progress phone OTP challenge so a signed-out session cannot reuse it.
     sessionStorage.removeItem('skillbarter_otp_challenge');
     if (error) throw new Error(error.message || 'Logout failed');
