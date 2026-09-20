@@ -328,7 +328,7 @@ class ApiClient {
     };
     const results: any[] = [];
     for (const user of data ?? []) {
-      if (Number(user.id) === Number(appUser.id) || user.latitude == null || user.longitude == null) continue;
+      if (Number(user.id) === Number(appUser.id) || user.latitude == null || user.longitude == null || user.location_visibility === false) continue;
       const dist = distance(Number(user.latitude), Number(user.longitude));
       if (dist > radiusKm) continue;
       const skills = await this.getUserSkills(Number(user.id));
@@ -394,7 +394,7 @@ class ApiClient {
       if (!youOfferTheyNeed.length && !theyOfferYouNeed.length) continue;
 
       const hasMyLocation = appUser.latitude != null && appUser.longitude != null;
-      const hasCandidateLocation = candidate.latitude != null && candidate.longitude != null;
+      const hasCandidateLocation = candidate.location_visibility !== false && candidate.latitude != null && candidate.longitude != null;
       const hasDistance = hasMyLocation && hasCandidateLocation;
       const distance = hasDistance
         ? distFn(myLat, myLon, Number(candidate.latitude), Number(candidate.longitude))
