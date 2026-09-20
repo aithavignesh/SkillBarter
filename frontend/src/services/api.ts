@@ -51,7 +51,7 @@ class ApiClient {
         primary_intent: profile.primary_intent ?? existing.data.primary_intent ?? 'EXCHANGE',
         onboarding_completed: profile.onboarding_completed ?? existing.data.onboarding_completed,
       };
-      const { data, error } = await insforge.database.from('users').update(updates).eq('id', existing.data.id).select('*').single();
+      const { data, error } = await insforge.database.from('users').update(updates).eq('id', existing.data.id).select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').single();
       if (error) console.warn('App profile sync warning:', error);
       return data ?? existing.data;
     }
@@ -68,7 +68,7 @@ class ApiClient {
       primary_intent: profile.primary_intent ?? 'EXCHANGE',
       onboarding_completed: profile.onboarding_completed ?? false,
       is_active: true,
-    }).select('*').single();
+    }).select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').single();
     if (error) { console.warn('App profile creation warning:', error); return null; }
     return data;
   }
@@ -89,13 +89,13 @@ class ApiClient {
       location_visibility: appUser?.location_visibility ?? metadata.location_visibility ?? 'APPROXIMATE',
       availability: appUser?.availability ?? metadata.availability ?? 'Weekends & Evenings',
       primary_intent: appUser?.primary_intent ?? metadata.primary_intent ?? 'EXCHANGE',
-      trust_score: Number(appUser?.trust_score ?? metadata.trust_score ?? 85),
-      reliability_score: Number(appUser?.reliability_score ?? metadata.reliability_score ?? 90),
-      response_rate: Number(appUser?.response_rate ?? metadata.response_rate ?? 95),
-      skill_quality_score: Number(appUser?.skill_quality_score ?? metadata.skill_quality_score ?? 90),
+      trust_score: Number(appUser?.trust_score ?? metadata.trust_score ?? 0),
+      reliability_score: Number(appUser?.reliability_score ?? metadata.reliability_score ?? 0),
+      response_rate: Number(appUser?.response_rate ?? metadata.response_rate ?? 0),
+      skill_quality_score: Number(appUser?.skill_quality_score ?? metadata.skill_quality_score ?? 0),
       completed_exchanges_count: Number(appUser?.completed_exchanges_count ?? metadata.completed_exchanges_count ?? 0),
       reviews_count: Number(appUser?.reviews_count ?? metadata.reviews_count ?? 0),
-      badges: Array.isArray(appUser?.badges) ? appUser.badges : (Array.isArray(metadata.badges) ? metadata.badges : ['Verified Member']),
+      badges: Array.isArray(appUser?.badges) ? appUser.badges : (Array.isArray(metadata.badges) ? metadata.badges : []),
       is_active: appUser?.is_active !== false && metadata.is_active !== false,
       is_admin: appUser?.is_admin === true || metadata.is_admin === true,
       onboarding_completed: appUser?.onboarding_completed !== false && metadata.onboarding_completed !== false,
@@ -235,7 +235,7 @@ class ApiClient {
           updated_at: new Date().toISOString(),
         })
         .eq('id', phoneUserId)
-        .select('*')
+        .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
         .single();
       if (error) throw new Error(error.message || 'Unable to update profile');
       return { user: data };
