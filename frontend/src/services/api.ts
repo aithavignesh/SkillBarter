@@ -1032,10 +1032,40 @@ class ApiClient {
     }
     const existing = await insforge.database.from('post_likes').select('id').eq('post_id', postId).eq('user_id', appUser.id).maybeSingle();
     if (!existing.error && existing.data) throw new Error('You already liked this update.');
-    if (existing.error && !String(existing.error.message || '').toLowerCase().includes('relation')) throw new Error(existing.error.message || 'Unable to check like status');
-    const updated = await insforge.database.from('posts').update({ likes_count: Number(post.data.likes_count || 0) + 1 }).eq('id', postId).select('id,likes_count').single();
-    if (updated.error) throw new Error(updated.error.message || 'Unable to like post');
-    if (!existing.error || existing.data) return updated.data;
+    if (existing.error) {
+      const message = String(existing.error.message || '').toLowerCase();
+      // If the likes table is missing, do not silently mutate a denormalized
+      // counter that cannot enforce one-like-per-user safely.
+      if (message.includes('relation') || message.includes('does not exist') || message.includes('not found')) {
+        throw new Error('Likes are temporarily unavailable while community reactions are being secured.');
+      }
+      throw new Error(existing.error.message || 'Unable to check like status');
+    }
+
+    const like = await insforge.database.from('post_likes').insert({
+      post_id: postId,
+      user_id: appUser.id,
+    }).select('id,post_id,user_id').single();
+    if (like.error) {
+      if (/duplicate|unique|already exists/i.test(String(like.error.message || ''))) {
+        throw new Error('You already liked this update.');
+      }
+      throw new Error(like.error.message || 'Unable to like post');
+    }
+
+    // Only increment the visible counter after the durable like record exists.
+    const updated = await insforge.database
+      .from('posts')
+      .update({ likes_count: Number(post.data.likes_count || 0) + 1 })
+      .eq('id', postId)
+      .select('id,likes_count')
+      .single();
+    if (updated.error) {
+      // Keep the durable reaction from being presented as successful if the
+      // denormalized counter cannot be updated.
+      await insforge.database.from('post_likes').delete().eq('id', like.data.id).eq('user_id', appUser.id);
+      throw new Error(updated.error.message || 'Unable to update like count');
+    }
     return updated.data;
   }
   private async recalculateTrustScore(userId: number) {
