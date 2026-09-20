@@ -37,6 +37,12 @@ class ApiClient {
   private async syncAppUser(authUser: any, profile: any = {}) {
     const email = authUser?.email ?? '';
     if (!email) throw new Error('Authenticated user has no email.');
+    const rawLatitude = profile.latitude;
+    const rawLongitude = profile.longitude;
+    const latitude = rawLatitude === null || rawLatitude === undefined || rawLatitude === '' ? undefined : Number(rawLatitude);
+    const longitude = rawLongitude === null || rawLongitude === undefined || rawLongitude === '' ? undefined : Number(rawLongitude);
+    if (latitude !== undefined && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) throw new Error('Invalid latitude.');
+    if (longitude !== undefined && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180)) throw new Error('Invalid longitude.');
     const existing = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', email).maybeSingle();
     if (existing.error) console.warn('App profile lookup warning:', existing.error);
     if (existing.data) {
@@ -46,8 +52,8 @@ class ApiClient {
         bio: profile.bio ?? existing.data.bio,
         headline: profile.headline ?? existing.data.headline,
         address_display: profile.address_display ?? existing.data.address_display,
-        latitude: profile.latitude ?? existing.data.latitude,
-        longitude: profile.longitude ?? existing.data.longitude,
+        latitude: latitude ?? existing.data.latitude,
+        longitude: longitude ?? existing.data.longitude,
         primary_intent: profile.primary_intent ?? existing.data.primary_intent ?? 'EXCHANGE',
         onboarding_completed: profile.onboarding_completed ?? existing.data.onboarding_completed,
       };
@@ -63,8 +69,8 @@ class ApiClient {
       bio: profile.bio,
       headline: profile.headline,
       address_display: profile.address_display,
-      latitude: profile.latitude,
-      longitude: profile.longitude,
+      latitude,
+      longitude,
       primary_intent: profile.primary_intent ?? 'EXCHANGE',
       onboarding_completed: profile.onboarding_completed ?? false,
       is_active: true,
