@@ -5,9 +5,9 @@ import { insforge } from '../lib/insforge';
  * Production data access is direct from the browser to InsForge.
  */
 class ApiClient {
-  private getToken(): string | null { return localStorage.getItem('skillbarter_token'); }
-  public setToken(token: string) { localStorage.setItem('skillbarter_token', token); }
-  public clearToken() { localStorage.removeItem('skillbarter_token'); }
+  private getToken(): string | null { return sessionStorage.getItem('skillbarter_token'); }
+  public setToken(token: string) { sessionStorage.setItem('skillbarter_token', token); }
+  public clearToken() { sessionStorage.removeItem('skillbarter_token'); }
 
   private async request<T>(_endpoint: string, _options: RequestInit = {}): Promise<T> {
     throw new Error('This API endpoint has not yet been migrated to InsForge.');
