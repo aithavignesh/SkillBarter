@@ -10,7 +10,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider: React.FC<{children:React.ReactNode}> = ({children}) => {
   const {currentUser}=useAuth(); const {lastMessageEvent}=useSocket();
   const [notifications,setNotifications]=useState<NotificationItem[]>([]); const [unreadCount,setUnreadCount]=useState(0); const [loading,setLoading]=useState(false);
-  const refreshNotifications=async()=>{if(!currentUser){setNotifications([]);setUnreadCount(0);return;}try{setLoading(true);const [list,countRes]=await Promise.all([api.getNotifications(),api.getUnreadNotificationCount()]);setNotifications(list);setUnreadCount(Number((countRes as any)?.unread_count ?? (countRes as any)?.count ?? 0));}catch(e){console.error(e);}finally{setLoading(false);}};
+  const refreshNotifications=async()=>{if(!currentUser){setNotifications([]);setUnreadCount(0);return;}try{setLoading(true);const list=await api.getNotifications();setNotifications(list);setUnreadCount(list.filter((item:any)=>!item.is_read).length);}catch(e){console.error(e);}finally{setLoading(false);}};
   useEffect(()=>{refreshNotifications();},[currentUser?.id]);
   useEffect(()=>{if(lastMessageEvent)refreshNotifications();},[lastMessageEvent]);
   const markAsRead=async(id:number)=>{const item=notifications.find(n=>Number(n.id)===Number(id));if(!item)return;try{await api.markNotificationRead(id);setNotifications(p=>p.map(n=>n.id===id?{...n,is_read:true}:n));if(!item.is_read)setUnreadCount(p=>Math.max(0,p-1));}catch(e){console.error(e);}};
