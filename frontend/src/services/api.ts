@@ -9,10 +9,6 @@ class ApiClient {
   public setToken(token: string) { sessionStorage.setItem('skillbarter_token', token); }
   public clearToken() { sessionStorage.removeItem('skillbarter_token'); }
 
-  private async request<T>(_endpoint: string, _options: RequestInit = {}): Promise<T> {
-    throw new Error('This API endpoint has not yet been migrated to InsForge.');
-  }
-
   private async getAppUser() {
     // Phone OTP sessions are intentionally access-token based and do not expose
     // a refresh token to the browser. Avoid calling getCurrentUser() for those
@@ -333,7 +329,10 @@ class ApiClient {
     let { data: skill, error } = await insforge.database.from('skills').select('id,name,category,icon,description,popularity').ilike('name', skillName).maybeSingle();
     if (error) throw new Error(error.message || 'Unable to find skill');
     if (!skill) {
-      const created = await insforge.database.from('skills').insert({ name: skillName, category: payload.category ?? 'Other', icon: payload.icon ?? 'Sparkles', description: payload.description, popularity: 0 }).select('id,name,category,icon,description,popularity').single();
+      const category = String(payload.category ?? 'Other').trim().slice(0, 80) || 'Other';
+      const icon = String(payload.icon ?? 'Sparkles').trim().slice(0, 80) || 'Sparkles';
+      const description = typeof payload.description === 'string' ? payload.description.trim().slice(0, 500) : null;
+      const created = await insforge.database.from('skills').insert({ name: skillName, category, icon, description, popularity: 0 }).select('id,name,category,icon,description,popularity').single();
       if (created.error) throw new Error(created.error.message || 'Unable to create skill');
       skill = created.data;
     }
