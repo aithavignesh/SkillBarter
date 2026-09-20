@@ -819,7 +819,7 @@ class ApiClient {
     const receiverId = Number(payload.receiver_id);
     const content = String(payload.content || '').trim();
     const exchangeId = payload.exchange_id == null || payload.exchange_id === '' ? null : Number(payload.exchange_id);
-    if (!receiverId || receiverId === senderId) throw new Error('Choose a valid recipient.');
+    if (!Number.isInteger(receiverId) || receiverId <= 0 || receiverId === senderId) throw new Error('Choose a valid recipient.');
     if (appUser.is_active === false) throw new Error('Your account is inactive and cannot send messages.');
     if (!content) throw new Error('Message cannot be empty.');
 
