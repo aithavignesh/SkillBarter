@@ -968,9 +968,61 @@ class ApiClient {
     return pairMessages;
   }
 
-  async getFeed(type?: string) { const me = await this.getAppUser(); let q: any = insforge.database.from('posts').select('*').order('created_at', { ascending: false }).limit(50); if (type) q = q.eq('post_type', type); const r = await q; if (r.error) throw new Error(r.error.message || 'Unable to load feed'); return r.data || []; }
-  async createPost(payload: any) { const { appUser } = await this.getAppUser(); const title = String(payload.title || '').trim(); const content = String(payload.content || '').trim(); if (!content) throw new Error('Post content cannot be empty.'); const r = await insforge.database.from('posts').insert({ author_id: appUser.id, post_type: payload.post_type || 'COMMUNITY', title: title || null, content, likes_count: 0 }).select('*').single(); if (r.error) throw new Error(r.error.message || 'Unable to publish post'); return r.data; }
-  async likePost(id: number) { const r = await insforge.database.from('posts').select('id,likes_count').eq('id', id).maybeSingle(); if (r.error || !r.data) throw new Error(r.error?.message || 'Post not found'); const updated = await insforge.database.from('posts').update({ likes_count: Number(r.data.likes_count || 0) + 1 }).eq('id', id).select('*').single(); if (updated.error) throw new Error(updated.error.message || 'Unable to like post'); return updated.data; }
+  async getFeed(type?: string) {
+    const { appUser } = await this.getAppUser();
+    const q: any = insforge.database.from('posts')
+      .select('id,author_id,post_type,title,content,likes_count,created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (type) q.eq('post_type', type);
+    const r = await q;
+    if (r.error) throw new Error(r.error.message || 'Unable to load feed');
+    const blocked = await insforge.database.from('blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${appUser.id},blocked_id.eq.${appUser.id}`);
+    if (blocked.error) throw new Error(blocked.error.message || 'Unable to load community safety settings');
+    const excluded = new Set<number>();
+    for (const b of blocked.data ?? []) { excluded.add(Number(b.blocker_id)); excluded.add(Number(b.blocked_id)); }
+    return (r.data ?? []).filter((post: any) => !excluded.has(Number(post.author_id)));
+  }
+
+  async createPost(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const title = String(payload.title || '').trim();
+    const content = String(payload.content || '').trim();
+    if (!content) throw new Error('Post content cannot be empty.');
+    if (title.length > 120) throw new Error('Post title must be 120 characters or fewer.');
+    if (content.length > 2000) throw new Error('Post content must be 2000 characters or fewer.');
+    const postType = String(payload.post_type || 'COMMUNITY').trim().toUpperCase();
+    const allowedTypes = new Set(['COMMUNITY', 'SKILL_OFFER', 'SKILL_REQUEST', 'UPDATE']);
+    if (!allowedTypes.has(postType)) throw new Error('Unsupported community post type.');
+    const recent = await insforge.database.from('posts').select('id,created_at').eq('author_id', appUser.id).order('created_at', { ascending: false }).limit(5);
+    if (recent.error) throw new Error(recent.error.message || 'Unable to check posting limits');
+    const now = Date.now();
+    const recentCount = (recent.data ?? []).filter((p: any) => now - new Date(p.created_at).getTime() < 10 * 60 * 1000).length;
+    if (recentCount >= 5) throw new Error('Posting limit reached. Please wait a few minutes before sharing more updates.');
+    const r = await insforge.database.from('posts').insert({ author_id: appUser.id, post_type: postType, title: title || null, content, likes_count: 0 }).select('id,author_id,post_type,title,content,likes_count,created_at').single();
+    if (r.error) throw new Error(r.error.message || 'Unable to publish post');
+    return r.data;
+  }
+
+  async likePost(id: number) {
+    const { appUser } = await this.getAppUser();
+    const postId = Number(id);
+    if (!Number.isInteger(postId) || postId <= 0) throw new Error('Invalid post.');
+    const post = await insforge.database.from('posts').select('id,likes_count,author_id').eq('id', postId).maybeSingle();
+    if (post.error || !post.data) throw new Error(post.error?.message || 'Post not found');
+    const blocked = await insforge.database.from('blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${appUser.id},blocked_id.eq.${appUser.id}`);
+    if (blocked.error) throw new Error(blocked.error.message || 'Unable to check community safety settings');
+    if ((blocked.data ?? []).some((b: any) => Number(b.blocker_id) === Number(post.data.author_id) || Number(b.blocked_id) === Number(post.data.author_id))) {
+      throw new Error('You cannot interact with this member’s post.');
+    }
+    const existing = await insforge.database.from('post_likes').select('id').eq('post_id', postId).eq('user_id', appUser.id).maybeSingle();
+    if (!existing.error && existing.data) throw new Error('You already liked this update.');
+    if (existing.error && !String(existing.error.message || '').toLowerCase().includes('relation')) throw new Error(existing.error.message || 'Unable to check like status');
+    const updated = await insforge.database.from('posts').update({ likes_count: Number(post.data.likes_count || 0) + 1 }).eq('id', postId).select('id,likes_count').single();
+    if (updated.error) throw new Error(updated.error.message || 'Unable to like post');
+    if (!existing.error || existing.data) return updated.data;
+    return updated.data;
+  }
   private async recalculateTrustScore(userId: number) {
     const [reviewsResult, exchangesResult] = await Promise.all([
       insforge.database.from('reviews').select('rating,reliability_score,skill_quality_score,would_exchange_again').eq('reviewee_id', userId),
