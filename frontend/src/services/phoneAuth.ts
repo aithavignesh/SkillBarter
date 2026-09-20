@@ -182,13 +182,14 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
   const phone = sessionStorage.getItem('skillbarter_phone');
   if (!phone) return null;
 
-  const userId = sessionStorage.getItem('skillbarter_user_id');
+  // The application profile must be resolved from the authenticated session,
+  // not from a client-controlled sessionStorage user id.
   let appUser: any = null;
-  if (userId) {
+  if (data.user.email) {
     const { data: dbUser } = await insforge.database
       .from('users')
       .select('id,email,full_name,avatar_url,bio,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent')
-      .eq('id', parseInt(userId, 10))
+      .eq('email', data.user.email)
       .maybeSingle();
     appUser = dbUser;
   }
