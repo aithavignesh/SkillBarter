@@ -426,7 +426,9 @@ class ApiClient {
   }
 
   private async getExchangeRow(id: number) {
-    const { data, error } = await insforge.database.from('exchanges').select('*').eq('id', id).maybeSingle();
+    const exchangeId = Number(id);
+    if (!Number.isInteger(exchangeId) || exchangeId <= 0) throw new Error('Invalid exchange.');
+    const { data, error } = await insforge.database.from('exchanges').select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at').eq('id', exchangeId).maybeSingle();
     if (error) throw new Error(error.message || 'Unable to load exchange');
     if (!data) throw new Error('Exchange not found');
     return data;
@@ -455,13 +457,14 @@ class ApiClient {
   async proposeExchange(payload: any) {
     const { appUser } = await this.getAppUser();
     const requesterId = Number(appUser.id);
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot send learning requests.');
     const receiverId = Number(payload.receiver_id);
     if (!Number.isInteger(receiverId) || receiverId <= 0) throw new Error('Choose a valid learning partner.');
     if (receiverId === requesterId) throw new Error('You cannot send a learning request to yourself.');
 
     const receiverResult = await insforge.database
       .from('users')
-      .select('*')
+      .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
       .eq('id', receiverId)
       .eq('is_active', true)
       .maybeSingle();
