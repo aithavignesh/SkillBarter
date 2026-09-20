@@ -41,6 +41,9 @@ export const AdminDashboardPage: React.FC = () => {
   }, []);
 
   const handleToggleUser = async (userId: number) => {
+    const target = users.find((user) => Number(user.id) === Number(userId));
+    const action = target?.is_active ? 'deactivate' : 'reactivate';
+    if (!window.confirm(`Are you sure you want to ${action} this learner account?`)) return;
     try {
       await api.toggleAdminUserActive(userId);
       await loadAdminData();
@@ -50,8 +53,10 @@ export const AdminDashboardPage: React.FC = () => {
   };
 
   const handleResolveReport = async (reportId: number, status: 'RESOLVED' | 'DISMISSED') => {
+    const action = status === 'RESOLVED' ? 'resolve and penalize' : 'dismiss';
+    if (!window.confirm(`Are you sure you want to ${action} this safety report?`)) return;
     try {
-      await api.resolveAdminReport(reportId, status, 'Resolved by community moderator');
+      await api.resolveAdminReport(reportId, status, status === 'RESOLVED' ? 'Resolved by community moderator' : 'Dismissed by community moderator');
       await loadAdminData();
     } catch (e: any) {
       alert(e.message);
@@ -74,6 +79,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   const activeRate = stats?.total_users ? Math.round((stats.active_users / stats.total_users) * 100) : 0;
   const completionRate = stats?.total_exchanges ? Math.round((stats.completed_exchanges / stats.total_exchanges) * 100) : 0;
+  const trustScore = Math.max(0, Math.min(100, Number(stats?.average_trust_score ?? 0)));
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
@@ -169,7 +175,7 @@ export const AdminDashboardPage: React.FC = () => {
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Trust signal</p>
           <h2 className="mt-1 text-lg font-black text-slate-950">Learner trust</h2>
           <div className="mt-7 flex items-center justify-center">
-            <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-[conic-gradient(#10b981_0_94%,#e2e8f0_94%_100%)]">
+            <div className="relative flex h-40 w-40 items-center justify-center rounded-full" style={{ background: `conic-gradient(#10b981 0 ${trustScore}%, #e2e8f0 ${trustScore}% 100%)` }}>
               <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-white shadow-inner">
                 <span className="text-4xl font-black text-slate-950">{stats?.average_trust_score ?? 0}</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">score</span>
