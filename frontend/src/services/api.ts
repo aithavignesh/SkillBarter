@@ -1278,7 +1278,16 @@ class ApiClient {
     await insforge.database.from('notifications').insert({ user_id: revieweeId, type: 'NEW_REVIEW', title: 'New learning review', message: appUser.full_name + ' left you a ' + rating + '-star learning review.', link: '/profile/' + revieweeId });
     return data;
   }
-  async getReviews(userId: number) { const r = await insforge.database.from('reviews').select('*').eq('reviewee_id', userId).order('created_at', { ascending: false }); if (r.error) throw new Error(r.error.message || 'Unable to load reviews'); return r.data || []; }
+  async getReviews(userId: number) {
+    const targetUserId = Number(userId);
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0) throw new Error('Invalid user.');
+    const r = await insforge.database.from('reviews')
+      .select('id,exchange_id,reviewer_id,reviewee_id,rating,reliability_score,skill_quality_score,would_exchange_again,comment,created_at')
+      .eq('reviewee_id', targetUserId)
+      .order('created_at', { ascending: false });
+    if (r.error) throw new Error(r.error.message || 'Unable to load reviews');
+    return r.data || [];
+  }
 }
 
 export const api = new ApiClient();
