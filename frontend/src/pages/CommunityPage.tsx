@@ -11,7 +11,27 @@ export const CommunityPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [postLoading, setPostLoading] = useState(true);
-  useEffect(() => { api.getCommunityStats().then(setStats).catch(console.error).finally(() => setLoading(false)); api.getFeed().then(setPosts).catch(console.error).finally(() => setPostLoading(false)); }, []);
+  useEffect(() => {
+    Promise.all([api.getNearbyUsers(100), api.getFeed(), api.getExchanges()])
+      .then(([members, feed, exchanges]) => {
+        const offeredSkills = new Set<string>();
+        members.forEach((member: any) => (member.skills_offered || []).forEach((skill: string) => offeredSkills.add(String(skill).toLowerCase())));
+        const completed = exchanges.filter((exchange: any) => exchange.status === 'COMPLETED').length;
+        const trustScores = members.map((member: any) => Number(member.trust_score)).filter((score: number) => Number.isFinite(score) && score > 0);
+        setStats({
+          members_nearby: members.length,
+          skills_available: offeredSkills.size,
+          exchanges_completed: completed,
+          average_trust_score: trustScores.length ? trustScores.reduce((sum, score) => sum + score, 0) / trustScores.length : null,
+        });
+        setPosts(feed);
+      })
+      .catch(console.error)
+      .finally(() => {
+        setLoading(false);
+        setPostLoading(false);
+      });
+  }, []);
   const metrics = [
     ['Learners Nearby', stats?.members_nearby ?? stats?.posts ?? 0, Users],
     ['Skills Being Shared', stats?.skills_available ?? 0, Wrench],
