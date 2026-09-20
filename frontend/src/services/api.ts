@@ -132,6 +132,25 @@ class ApiClient {
     return { access_token: data.accessToken ?? '', user_id: user.id, email: user.email, full_name: user.full_name, is_admin: user.is_admin };
   }
 
+  async sendResetPasswordEmail(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+      throw new Error('Please enter a valid email address.');
+    }
+    const redirectTo = `${window.location.origin}/reset-password`;
+    const { error } = await insforge.auth.sendResetPasswordEmail({ email: normalizedEmail, redirectTo });
+    if (error) throw new Error(error.message || 'Unable to send password reset email.');
+    return true;
+  }
+
+  async resetPassword(newPassword: string, otp: string) {
+    if (!otp) throw new Error('This password reset link is missing or expired.');
+    if (newPassword.length < 8) throw new Error('Password must be at least 8 characters.');
+    const { error } = await insforge.auth.resetPassword({ newPassword, otp });
+    if (error) throw new Error(error.message || 'Unable to reset password.');
+    return true;
+  }
+
   async register(payload: any) {
     // Do not let an expired token from an older session contaminate signup.
     this.clearToken();
