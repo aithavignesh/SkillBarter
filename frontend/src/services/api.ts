@@ -290,7 +290,8 @@ class ApiClient {
     }
     const createdMapping = await insforge.database.from('user_skills').insert({ user_id: appUser.id, skill_id: skill.id, skill_type: skillType, experience_level: payload.experience_level ?? 'Intermediate', description: payload.description }).select('id,user_id,skill_id,skill_type,experience_level,description').single();
     if (createdMapping.error) throw new Error(createdMapping.error.message || 'Unable to add skill');
-    await insforge.database.from('skills').update({ popularity: Number(skill.popularity ?? 0) + 1 }).eq('id', skill.id);
+    // Skill popularity is derived data and must not be incremented from the browser;
+    // concurrent clients could otherwise inflate it. Keep the mapping creation authoritative.
     return { ...createdMapping.data, skill_name: skill.name, category: skill.category, icon: skill.icon };
   }
 
@@ -1107,7 +1108,7 @@ class ApiClient {
 
     const currentSkills = await this.getUserSkills(userId);
     const categories = new Set(currentSkills.map((skill: any) => skill.category));
-    const badges: string[] = ['Verified Member'];
+    const badges: string[] = [];
     if (completedCount >= 5 && avgRating >= 4.5) badges.push('Reliable Exchanger');
     if (categories.size >= 3) badges.push('Community Helper');
     if (finalScore >= 90 && completedCount >= 5) badges.push('Top Contributor');
@@ -1122,7 +1123,7 @@ class ApiClient {
       reviews_count: reviewsCount,
       badges,
       updated_at: new Date().toISOString(),
-    }).eq('id', userId).select('*').single();
+    }).eq('id', userId).select('id,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,updated_at').single();
     if (error) throw new Error(error.message || 'Unable to update trust score');
     return data;
   }
