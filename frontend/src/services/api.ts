@@ -282,6 +282,11 @@ class ApiClient {
     const skillName = String(payload.skill_name ?? '').trim();
     if (!skillName) throw new Error('Skill name is required');
     const skillType = String(payload.skill_type ?? 'OFFERED').toUpperCase();
+    if (skillType !== 'OFFERED' && skillType !== 'NEEDED') throw new Error('Invalid skill type.');
+    if (skillName.length > 120) throw new Error('Skill name must be 120 characters or less.');
+    const experienceLevel = String(payload.experience_level ?? 'Intermediate').trim();
+    if (experienceLevel.length > 50) throw new Error('Experience level is too long.');
+    const skillDescription = typeof payload.description === 'string' ? payload.description.trim().slice(0, 1000) : undefined;
     let { data: skill, error } = await insforge.database.from('skills').select('id,name,category,icon,description,popularity').ilike('name', skillName).maybeSingle();
     if (error) throw new Error(error.message || 'Unable to find skill');
     if (!skill) {
@@ -292,11 +297,11 @@ class ApiClient {
     const existing = await insforge.database.from('user_skills').select('id,user_id,skill_id,skill_type,experience_level,description').eq('user_id', appUser.id).eq('skill_id', skill.id).eq('skill_type', skillType).maybeSingle();
     if (existing.error) throw new Error(existing.error.message || 'Unable to check skill');
     if (existing.data) {
-      const updated = await insforge.database.from('user_skills').update({ experience_level: payload.experience_level ?? existing.data.experience_level, description: payload.description ?? existing.data.description }).eq('id', existing.data.id).eq('user_id', appUser.id).select('id,user_id,skill_id,skill_type,experience_level,description').single();
+      const updated = await insforge.database.from('user_skills').update({ experience_level: experienceLevel || existing.data.experience_level, description: skillDescription ?? existing.data.description }).eq('id', existing.data.id).eq('user_id', appUser.id).select('id,user_id,skill_id,skill_type,experience_level,description').single();
       if (updated.error) throw new Error(updated.error.message || 'Unable to update skill');
       return { ...updated.data, skill_name: skill.name, category: skill.category, icon: skill.icon };
     }
-    const createdMapping = await insforge.database.from('user_skills').insert({ user_id: appUser.id, skill_id: skill.id, skill_type: skillType, experience_level: payload.experience_level ?? 'Intermediate', description: payload.description }).select('id,user_id,skill_id,skill_type,experience_level,description').single();
+    const createdMapping = await insforge.database.from('user_skills').insert({ user_id: appUser.id, skill_id: skill.id, skill_type: skillType, experience_level: experienceLevel || 'Intermediate', description: skillDescription }).select('id,user_id,skill_id,skill_type,experience_level,description').single();
     if (createdMapping.error) throw new Error(createdMapping.error.message || 'Unable to add skill');
     // Skill popularity is derived data and must not be incremented from the browser;
     // concurrent clients could otherwise inflate it. Keep the mapping creation authoritative.
