@@ -32,7 +32,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const loadExchangeData = async () => {
     try {
       setLoading(true);
-      const data = await api.getExchangeDetails(exchangeId);
+      const data = await api.getExchange(exchangeId);
       setExchange(data);
       const partnerId = currentUser?.id === data.requester_id ? data.receiver_id : data.requester_id;
       setMessages(await api.getMessages(partnerId));
