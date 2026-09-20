@@ -37,14 +37,10 @@ export async function hydrateMonetizationState(userId:number):Promise<Monetizati
 }
 
 export async function persistMonetizationState(userId:number,state:MonetizationState):Promise<MonetizationState>{
-  if(!userId)return state;
-  write(stateKey(userId),state);
-  try{
-    const auth=await insforge.auth.getCurrentUser();
-    if(auth.error||!auth.data?.user?.email)return state;
-    const {error}=await insforge.database.from('users').update({premium:state.premium,premium_until:state.premiumUntil,verified:state.verified,verification_requested_at:state.verificationRequestedAt,featured_until:state.featuredUntil,priority_matching:state.priorityMatching,credits:state.credits,workshops_enabled:state.workshopsEnabled,corporate_interest:state.corporateInterest,sponsored_enabled:state.sponsoredEnabled,lead_generation_enabled:state.leadGenerationEnabled}).eq('email',auth.data.user.email);
-    if(error)console.warn('Monetization persistence warning:',error.message);
-  }catch(error){console.warn('Monetization persistence fallback:',error);}
+  // Entitlements are server-controlled. Keep this helper local-only until a
+  // trusted payment/verification endpoint exists; never let the browser write
+  // premium, verification, credits, boosts, or other privileged fields.
+  if(userId)write(stateKey(userId),state);
   return state;
 }
 
@@ -56,13 +52,21 @@ export function getMonetizationUsage(userId:number):MonetizationUsage{
   if(usage.priorityMatchesDate!==today){const reset={...usage,priorityMatchesUsed:0,priorityMatchesDate:today};write(usageKey(userId),reset);return reset;} return usage;
 }
 export function consumePriorityMatch(userId:number):MonetizationUsage{
-  const usage=getMonetizationUsage(userId); const next={...usage,priorityMatchesUsed:usage.priorityMatchesUsed+1}; write(usageKey(userId),next);
-  void syncUsage(userId,next); return next;
+  // Usage counters must be enforced server-side to prevent client-side
+  // tampering. Keep a local display counter only.
+  const usage=getMonetizationUsage(userId);
+  const next={...usage,priorityMatchesUsed:usage.priorityMatchesUsed+1};
+  write(usageKey(userId),next);
+  return next;
 }
-async function syncUsage(userId:number,usage:MonetizationUsage){try{const auth=await insforge.auth.getCurrentUser();if(auth.error||!auth.data?.user?.email)return;await insforge.database.from('users').update({priority_matches_used:usage.priorityMatchesUsed,priority_matches_date:usage.priorityMatchesDate,boosts_used:usage.boostsUsed,last_boost_at:usage.lastBoostAt}).eq('email',auth.data.user.email);}catch(error){console.warn('Monetization usage persistence warning:',error);}}
 
 export function canUse(userId:number,entitlement:Entitlement):boolean{const state=getMonetizationState(userId);switch(entitlement){case'premium':return state.premium;case'priority_matching':return state.premium&&state.priorityMatching;case'profile_boost':return state.credits>=50;case'verified_badge':return state.verified;case'workshops':return state.premium||state.workshopsEnabled;case'lead_generation':return state.premium||state.leadGenerationEnabled;case'sponsored':return state.premium||state.sponsoredEnabled;default:return false;}}
 export function getPriorityMatchLimit(userId:number){return getMonetizationState(userId).premium?20:0;}
 export function getPriorityMatchRemaining(userId:number){return Math.max(0,getPriorityMatchLimit(userId)-getMonetizationUsage(userId).priorityMatchesUsed);}
-export function recordBoost(userId:number,days=7):MonetizationState{const state=getMonetizationState(userId);if(state.credits<50)throw new Error('Not enough skill credits');const usage=getMonetizationUsage(userId);const nextUsage={...usage,boostsUsed:usage.boostsUsed+1,lastBoostAt:new Date().toISOString()};write(usageKey(userId),nextUsage);void syncUsage(userId,nextUsage);return updateMonetizationState(userId,{credits:state.credits-50,featuredUntil:new Date(Date.now()+days*86400000).toISOString()});}
-export function activatePremium(userId:number,months=1):MonetizationState{const until=new Date();until.setMonth(until.getMonth()+months);return updateMonetizationState(userId,{premium:true,premiumUntil:until.toISOString(),priorityMatching:true});}
+export function recordBoost(_userId:number,_days=7):MonetizationState{
+  throw new Error('Profile boosts are unavailable until credits and entitlements are enforced server-side.');
+}
+
+export function activatePremium(_userId:number,_months=1):MonetizationState{
+  throw new Error('Premium activation requires verified server-side payment.');
+}
