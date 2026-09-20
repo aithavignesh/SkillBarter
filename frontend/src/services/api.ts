@@ -248,6 +248,7 @@ class ApiClient {
       bio: typeof payload.bio === 'string' ? payload.bio.trim().slice(0, 2000) : undefined,
       address_display: typeof payload.address_display === 'string' ? payload.address_display.trim().slice(0, 200) : undefined,
       availability: typeof payload.availability === 'string' ? payload.availability.trim().slice(0, 500) : undefined,
+      location_visibility: typeof payload.location_visibility === 'boolean' ? payload.location_visibility : undefined,
     };
     // Keep privileged account fields out of profile-form updates.
     const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
