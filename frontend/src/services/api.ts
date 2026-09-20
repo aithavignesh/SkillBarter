@@ -217,34 +217,31 @@ class ApiClient {
   }
 
   async updateMe(payload: any) {
-    // Phone OTP sessions only expose an access token to the browser. Updating
-    // the InsForge Auth profile through setProfile() can therefore trigger an
-    // "Invalid token" / refresh-token flow. The application profile is stored
-    // in users, so update that record directly for phone sessions.
+    const profilePayload = {
+      full_name: typeof payload.full_name === 'string' ? payload.full_name.trim().slice(0, 120) : undefined,
+      headline: typeof payload.headline === 'string' ? payload.headline.trim().slice(0, 160) : undefined,
+      bio: typeof payload.bio === 'string' ? payload.bio.trim().slice(0, 2000) : undefined,
+      address_display: typeof payload.address_display === 'string' ? payload.address_display.trim().slice(0, 200) : undefined,
+      availability: typeof payload.availability === 'string' ? payload.availability.trim().slice(0, 500) : undefined,
+    };
+    // Keep privileged account fields out of profile-form updates.
     const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
     const phone = localStorage.getItem('skillbarter_phone');
-    if (phone && phoneUserId) {
+    if (phone && phoneUserId > 0) {
       const { data, error } = await insforge.database
         .from('users')
-        .update({
-          full_name: payload.full_name,
-          headline: payload.headline,
-          bio: payload.bio,
-          address_display: payload.address_display,
-          availability: payload.availability,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ ...profilePayload, updated_at: new Date().toISOString() })
         .eq('id', phoneUserId)
-        .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
+        .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
         .single();
       if (error) throw new Error(error.message || 'Unable to update profile');
       return { user: data };
     }
 
-    const { data, error } = await insforge.auth.setProfile(payload);
+    const { data, error } = await insforge.auth.setProfile(profilePayload);
     if (error) throw new Error(error.message || 'Unable to update profile');
     const authUser = data?.user ?? (await insforge.auth.getCurrentUser()).data?.user;
-    if (authUser) await this.syncAppUser(authUser, payload);
+    if (authUser) await this.syncAppUser(authUser, profilePayload);
     return data;
   }
 
