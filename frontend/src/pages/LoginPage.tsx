@@ -37,7 +37,7 @@ export const LoginPage: React.FC = () => {
   const [emailFallback, setEmailFallback] = useState(false);
   const [resetSending, setResetSending] = useState(false);
 
-  const { login, requestPhoneOtp, verifyPhoneOtp, demoSwitchUser, loading } = useAuth();
+  const { login, requestPhoneOtp, verifyPhoneOtp, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -126,15 +126,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = async (userId: number) => {
-    try {
-      setError(null);
-      await demoSwitchUser(userId);
-      navigate('/feed');
-    } catch (err: any) {
-      setError(err.message || 'Quick login failed');
-    }
-  };
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center p-4 bg-slate-50">
@@ -148,19 +139,6 @@ export const LoginPage: React.FC = () => {
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Welcome back to SkillBarter</h2>
           <p className="text-xs text-slate-500 mt-1">Sign in to continue learning, teaching and finding your next peer</p>
         </div>
-
-        <Card className="p-4 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border-emerald-200/80">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-2.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Quick demo access</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => handleQuickLogin(1)} className="text-xs justify-start bg-white border-emerald-300 hover:bg-emerald-50"><strong>Arjun Sharma</strong> (Web)</Button>
-            <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => handleQuickLogin(2)} className="text-xs justify-start bg-white border-emerald-300 hover:bg-emerald-50"><strong>Ravi Kumar</strong> (Plumber)</Button>
-            <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => handleQuickLogin(3)} className="text-xs justify-start bg-white border-slate-300 hover:bg-slate-50"><strong>Ananya Rao</strong> (Design)</Button>
-            <Button type="button" variant="outline" size="sm" disabled={loading} onClick={() => handleQuickLogin(5)} className="text-xs justify-start bg-white border-amber-300 hover:bg-amber-50 text-amber-900"><strong>Admin User</strong></Button>
-          </div>
-        </Card>
 
         <Card className="p-6 border-emerald-200 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
