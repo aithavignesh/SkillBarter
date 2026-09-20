@@ -32,7 +32,6 @@ import { MonetizationPage } from './pages/MonetizationPage';
 import { AdditionalScreen } from './pages/FunctionalAdditionalScreensPage2';
 import { WorkshopScreensPage } from './pages/WorkshopScreensPage';
 import './services/enableConnectionStatus';
-import './services/enableFunctionalApi';
 import './services/enableMonetizationPersistence';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => { const { currentUser, loading } = useAuth(); if (loading) return <div className="min-h-screen flex items-center justify-center text-xs text-slate-400">Authenticating community member...</div>; if (!currentUser) return <Navigate to="/login" replace />; return <>{children}</>; };
