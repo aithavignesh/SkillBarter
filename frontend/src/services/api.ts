@@ -777,7 +777,17 @@ class ApiClient {
     const content = String(payload.content || '').trim();
     const exchangeId = payload.exchange_id == null || payload.exchange_id === '' ? null : Number(payload.exchange_id);
     if (!receiverId || receiverId === senderId) throw new Error('Choose a valid recipient.');
+    if (appUser.is_active === false) throw new Error('Your account is inactive and cannot send messages.');
     if (!content) throw new Error('Message cannot be empty.');
+
+    const recipient = await insforge.database.from('users').select('id,is_active').eq('id', receiverId).maybeSingle();
+    if (recipient.error) throw new Error(recipient.error.message || 'Unable to verify recipient.');
+    if (!recipient.data || recipient.data.is_active === false) throw new Error('This member is inactive and cannot receive messages.');
+    const blockCheck = await insforge.database.from('blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${senderId},blocked_id.eq.${senderId}`);
+    if (blockCheck.error) throw new Error(blockCheck.error.message || 'Unable to check communication settings.');
+    if ((blockCheck.data ?? []).some((b: any) => (Number(b.blocker_id) === senderId && Number(b.blocked_id) === receiverId) || (Number(b.blocker_id) === receiverId && Number(b.blocked_id) === senderId))) {
+      throw new Error('Communication is not available with this member.');
+    }
     if (content.length > 2000) throw new Error('Message is too long. Keep it under 2000 characters.');
 
     if (exchangeId !== null) {
@@ -809,7 +819,7 @@ class ApiClient {
       receiver_id: receiverId,
       content,
       exchange_id: exchangeId,
-    }).select('*').single();
+    }).select('id,sender_id,receiver_id,content,is_read,created_at,exchange_id').single();
     if (r.error) throw new Error(r.error.message || 'Unable to send message');
     await insforge.database.from('notifications').insert({
       user_id: receiverId,
