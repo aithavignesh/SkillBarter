@@ -249,6 +249,9 @@ class ApiClient {
       address_display: typeof payload.address_display === 'string' ? payload.address_display.trim().slice(0, 200) : undefined,
       availability: typeof payload.availability === 'string' ? payload.availability.trim().slice(0, 500) : undefined,
       location_visibility: typeof payload.location_visibility === 'boolean' ? payload.location_visibility : undefined,
+      exchange_radius_km: payload.exchange_radius_km === undefined ? undefined : Math.min(100, Math.max(1, Number(payload.exchange_radius_km))),
+      onboarding_completed: typeof payload.onboarding_completed === 'boolean' ? payload.onboarding_completed : undefined,
+      primary_intent: typeof payload.primary_intent === 'string' ? payload.primary_intent.trim().slice(0, 30) : undefined,
     };
     // Keep privileged account fields out of profile-form updates.
     const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
