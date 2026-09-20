@@ -450,8 +450,9 @@ class ApiClient {
       else if (distance <= 3) reasons.push(`Nearby learning partner (${distance.toFixed(1)} km)`);
       else if (distance <= maxRadius) reasons.push(`Within your ${maxRadius.toFixed(0)} km learning zone (${distance.toFixed(1)} km)`);
       else reasons.push(`${distance.toFixed(1)} km away`);
-      if (Number(candidate.trust_score ?? 80) >= 90) reasons.push(`High community trust score (${Math.round(Number(candidate.trust_score))}/100)`);
-      else if (Number(candidate.trust_score ?? 80) >= 80) reasons.push(`Good community standing (${Math.round(Number(candidate.trust_score))}/100`);
+      const trustScore = Number(candidate.trust_score);
+      if (Number.isFinite(trustScore) && trustScore >= 90) reasons.push(`High community trust score (${Math.round(trustScore)}/100)`);
+      else if (Number.isFinite(trustScore) && trustScore >= 80) reasons.push(`Good community standing (${Math.round(trustScore)}/100`);
       if (availability >= 7) reasons.push(`Compatible availability (${candidate.availability ?? 'Flexible'})`);
       results.push({ candidate: { id: candidate.id, full_name: candidate.full_name, avatar_url: candidate.avatar_url, headline: candidate.headline, address_display: candidate.location_visibility === false ? null : candidate.address_display, trust_score: candidate.trust_score, reliability_score: candidate.reliability_score, completed_exchanges_count: candidate.completed_exchanges_count, badges: candidate.badges ?? [] }, match_score: score, distance_km: distance, distance_display: distance == null ? 'Online / location not set' : `${distance.toFixed(1)} km`, is_reciprocal: reciprocal, they_offer: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), they_need: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), matched_you_offer: youOfferTheyNeed, matched_they_offer: theyOfferYouNeed, reasons, score_breakdown: { skill_compatibility: Math.round(skillScore), location_proximity: Math.round(proximityFactor * 20), trust: Math.round(trust), availability: Math.round(availability) } });
     }
