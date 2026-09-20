@@ -115,13 +115,21 @@ export const ExchangeWorkspacePage: React.FC = () => {
   };
 
   const handleCancel = async () => {
-    if (!exchange || !cancelReason.trim()) return;
+    if (!exchange) return;
     try {
-      const updated = await api.cancelExchange(exchange.id, cancelReason.trim());
-      setExchange(updated);
+      if (exchange.status === 'PENDING' && isRequester) {
+        const updated = await api.withdrawExchange(exchange.id);
+        setExchange(updated);
+      } else if (exchange.status === 'ACTIVE') {
+        if (!cancelReason.trim()) return;
+        const updated = await api.cancelExchange(exchange.id, cancelReason.trim());
+        setExchange(updated);
+      } else {
+        return;
+      }
       setCancelModalOpen(false);
       setCancelReason('');
-    } catch (e: any) { alert(e?.message || 'Unable to cancel exchange'); }
+    } catch (e: any) { alert(e?.message || 'Unable to update learning exchange'); }
   };
 
   if (loading) return <main className="min-h-screen bg-[#f7f7f5] px-6 py-16 text-center text-sm text-slate-400">Loading exchange workspace…</main>;
@@ -150,8 +158,8 @@ export const ExchangeWorkspacePage: React.FC = () => {
               {exchange.status === 'COMPLETED' && exchange.user_can_review && <Button size="sm" onClick={() => setReviewModalOpen(true)} icon={<Star className="h-4 w-4" />}>Leave review</Button>}
               {exchange.status === 'COMPLETED' && exchange.has_reviewed && <span className="inline-flex items-center gap-1 border border-green-100 bg-green-50 px-3 py-2 text-[10px] font-bold uppercase text-green-700"><CheckCircle2 className="h-3.5 w-3.5" /> Review submitted</span>}
               {exchange.status === 'COMPLETED' && <Link to="/matches"><Button size="sm" icon={<Repeat className="h-4 w-4" />}>Find Your Next Learning Partner</Button></Link>}
-              {['PENDING','ACTIVE'].includes(exchange.status) && <Button size="sm" variant="outline" onClick={openScheduleEditor} icon={<Calendar className="h-4 w-4" />}>Schedule</Button>}
-              {['PENDING','ACTIVE'].includes(exchange.status) && <Button size="sm" variant="outline" onClick={() => setCancelModalOpen(true)} icon={<X className="h-4 w-4" />}>{exchange.status === 'PENDING' && isRequester ? 'Withdraw request' : 'Cancel exchange'}</Button>}
+              {exchange.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={openScheduleEditor} icon={<Calendar className="h-4 w-4" />}>Schedule</Button>}
+              {exchange.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={() => setCancelModalOpen(true)} icon={<X className="h-4 w-4" />}>Cancel exchange</Button>}
             </div>
           </div>
         </section>
@@ -204,7 +212,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       </div>
 
       {scheduleOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-lg border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">Schedule learning session</h3><p className="mt-1 text-xs text-[#697386]">Agree on the date, duration and session format with your learning partner.</p></div><button type="button" onClick={()=>setScheduleOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4"/></button></div><form onSubmit={saveSchedule} className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Session date / time<input required value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs" placeholder="e.g. Saturday, 4 PM"/></label><label className="text-xs font-semibold text-slate-600">Duration (hours)<input required type="number" min="0.5" max="24" step="0.5" value={scheduleHours} onChange={e=>setScheduleHours(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs"/></label><label className="text-xs font-semibold text-slate-600 sm:col-span-2">Session format / area<input required value={scheduleArea} onChange={e=>setScheduleArea(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs" placeholder="Online / campus / public shared space"/></label><div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" size="sm" variant="ghost" onClick={()=>setScheduleOpen(false)}>Cancel</Button><Button type="submit" size="sm" loading={scheduleSaving}>Save schedule</Button></div></form></div></div>}
-      {cancelModalOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-md border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">Cancel this exchange?</h3><p className="mt-1 text-xs text-[#697386]">The other participant will be notified.</p></div><button onClick={() => setCancelModalOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4" /></button></div><textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Reason for cancellation…" className="mt-4 min-h-24 w-full resize-none border border-[#d9dde2] p-3 text-xs outline-none focus:border-[#d31d24]" /><div className="mt-4 flex justify-end gap-2"><Button size="sm" variant="ghost" onClick={() => setCancelModalOpen(false)}>Keep exchange</Button><Button size="sm" onClick={handleCancel} disabled={!cancelReason.trim()}>Confirm cancellation</Button></div></div></div>}
+      {cancelModalOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-md border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">Cancel this exchange?</h3><p className="mt-1 text-xs text-[#697386]">The other participant will be notified.</p></div><button onClick={() => setCancelModalOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4" /></button></div><textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Reason for cancellation…" className="mt-4 min-h-24 w-full resize-none border border-[#d9dde2] p-3 text-xs outline-none focus:border-[#d31d24]" /><div className="mt-4 flex justify-end gap-2"><Button size="sm" variant="ghost" onClick={() => setCancelModalOpen(false)}>Keep exchange</Button><Button size="sm" onClick={handleCancel} disabled={exchange.status === 'ACTIVE' && !cancelReason.trim()}>{exchange.status === 'PENDING' && isRequester ? 'Withdraw request' : 'Confirm cancellation'}</Button></div></div></div>}
 
       {reviewModalOpen && <ExchangeReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} exchange={exchange} onSuccess={() => { setReviewModalOpen(false); loadExchangeData(); }} />}
     </main>
