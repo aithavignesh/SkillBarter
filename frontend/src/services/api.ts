@@ -1228,10 +1228,12 @@ class ApiClient {
   }
 
   async resolveAdminReport(reportId: number, status: 'RESOLVED' | 'DISMISSED', adminNote?: string) {
-    await this.requireAdmin();
+    const admin = await this.requireAdmin();
     const id = Number(reportId);
     if (!Number.isInteger(id) || id <= 0) throw new Error('Invalid report.');
-    const result = await insforge.database.from('reports').update({ status, admin_note: String(adminNote || '').trim() || null }).eq('id', id).eq('status', 'PENDING').select('id,reported_user_id,status').maybeSingle();
+    const cleanNote = String(adminNote || '').trim();
+    if (cleanNote.length > 2000) throw new Error('Admin note must be 2000 characters or less.');
+    const result = await insforge.database.from('reports').update({ status, admin_note: cleanNote || null }).eq('id', id).eq('status', 'PENDING').select('id,reporter_id,reported_user_id,status,admin_note,created_at').maybeSingle();
     if (result.error) throw new Error(result.error.message || 'Unable to resolve report');
     if (!result.data) throw new Error('Report is missing or has already been resolved.');
     if (status === 'RESOLVED' && result.data.reported_user_id) await this.recalculateTrustScore(Number(result.data.reported_user_id));
