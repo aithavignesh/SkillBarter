@@ -1087,6 +1087,100 @@ class ApiClient {
     return data;
   }
 
+  private async requireAdmin() {
+    const { appUser } = await this.getAppUser();
+    if (appUser?.is_admin !== true) throw new Error('Administrative privileges required.');
+    return appUser;
+  }
+
+  async getAdminStats() {
+    await this.requireAdmin();
+    const [users, exchanges, reports] = await Promise.all([
+      insforge.database.from('users').select('id,is_active,trust_score'),
+      insforge.database.from('exchanges').select('id,status'),
+      insforge.database.from('reports').select('id,status'),
+    ]);
+    if (users.error) throw new Error(users.error.message || 'Unable to load admin users');
+    if (exchanges.error) throw new Error(exchanges.error.message || 'Unable to load admin exchanges');
+    if (reports.error) throw new Error(reports.error.message || 'Unable to load safety reports');
+    const userRows = users.data ?? [];
+    const exchangeRows = exchanges.data ?? [];
+    const reportRows = reports.data ?? [];
+    const trustValues = userRows.map((u: any) => Number(u.trust_score)).filter((v: number) => Number.isFinite(v));
+    return {
+      total_users: userRows.length,
+      active_users: userRows.filter((u: any) => u.is_active !== false).length,
+      total_exchanges: exchangeRows.length,
+      completed_exchanges: exchangeRows.filter((e: any) => String(e.status).toUpperCase() === 'COMPLETED').length,
+      pending_reports: reportRows.filter((r: any) => String(r.status).toUpperCase() === 'PENDING').length,
+      average_trust_score: trustValues.length ? Math.round((trustValues.reduce((a: number, b: number) => a + b, 0) / trustValues.length) * 10) / 10 : 0,
+    };
+  }
+
+  async getAdminUsers() {
+    await this.requireAdmin();
+    const result = await insforge.database.from('users').select('id,email,full_name,headline,trust_score,completed_exchanges_count,is_active,is_admin,created_at').order('id', { ascending: true }).limit(100);
+    if (result.error) throw new Error(result.error.message || 'Unable to load admin users');
+    return result.data ?? [];
+  }
+
+  async toggleAdminUserActive(userId: number) {
+    const admin = await this.requireAdmin();
+    const targetId = Number(userId);
+    if (!Number.isInteger(targetId) || targetId <= 0) throw new Error('Invalid user.');
+    if (targetId === Number(admin.id)) throw new Error('You cannot deactivate your own admin account.');
+    const target = await insforge.database.from('users').select('id,is_active,is_admin').eq('id', targetId).maybeSingle();
+    if (target.error) throw new Error(target.error.message || 'Unable to load user');
+    if (!target.data) throw new Error('User not found.');
+    if (target.data.is_admin) throw new Error('Admin accounts cannot be deactivated from this view.');
+    const result = await insforge.database.from('users').update({ is_active: target.data.is_active === false }).eq('id', targetId).select('id,is_active').single();
+    if (result.error) throw new Error(result.error.message || 'Unable to change user status');
+    return result.data;
+  }
+
+  async getAdminReports() {
+    await this.requireAdmin();
+    const result = await insforge.database.from('reports').select('id,reporter_id,reported_user_id,category,details,status,admin_note,created_at').order('created_at', { ascending: false }).limit(100);
+    if (result.error) throw new Error(result.error.message || 'Unable to load safety reports');
+    const rows = result.data ?? [];
+    const ids = new Set<number>();
+    rows.forEach((r: any) => { if (r.reporter_id) ids.add(Number(r.reporter_id)); if (r.reported_user_id) ids.add(Number(r.reported_user_id)); });
+    const profiles = new Map<number, any>();
+    if (ids.size) {
+      const users = await insforge.database.from('users').select('id,full_name').in('id', [...ids]);
+      if (users.error) throw new Error(users.error.message || 'Unable to load report users');
+      (users.data ?? []).forEach((u: any) => profiles.set(Number(u.id), u));
+    }
+    return rows.map((r: any) => ({ ...r, reporter_name: profiles.get(Number(r.reporter_id))?.full_name ?? 'Unknown', reported_name: profiles.get(Number(r.reported_user_id))?.full_name ?? 'N/A' }));
+  }
+
+  async resolveAdminReport(reportId: number, status: 'RESOLVED' | 'DISMISSED', adminNote?: string) {
+    await this.requireAdmin();
+    const id = Number(reportId);
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Invalid report.');
+    const result = await insforge.database.from('reports').update({ status, admin_note: String(adminNote || '').trim() || null }).eq('id', id).eq('status', 'PENDING').select('id,reported_user_id,status').maybeSingle();
+    if (result.error) throw new Error(result.error.message || 'Unable to resolve report');
+    if (!result.data) throw new Error('Report is missing or has already been resolved.');
+    if (status === 'RESOLVED' && result.data.reported_user_id) await this.recalculateTrustScore(Number(result.data.reported_user_id));
+    return result.data;
+  }
+
+  async getAdminExchanges() {
+    await this.requireAdmin();
+    const result = await insforge.database.from('exchanges').select('id,requester_id,receiver_id,status,proposal_message,created_at').order('created_at', { ascending: false }).limit(30);
+    if (result.error) throw new Error(result.error.message || 'Unable to load exchange audit log');
+    const rows = result.data ?? [];
+    const ids = new Set<number>();
+    rows.forEach((e: any) => { ids.add(Number(e.requester_id)); ids.add(Number(e.receiver_id)); });
+    const profiles = new Map<number, any>();
+    if (ids.size) {
+      const users = await insforge.database.from('users').select('id,full_name').in('id', [...ids]);
+      if (users.error) throw new Error(users.error.message || 'Unable to load exchange users');
+      (users.data ?? []).forEach((u: any) => profiles.set(Number(u.id), u));
+    }
+    return rows.map((e: any) => ({ ...e, requester_name: profiles.get(Number(e.requester_id))?.full_name ?? 'User', receiver_name: profiles.get(Number(e.receiver_id))?.full_name ?? 'User' }));
+  }
+
   async submitReview(payload: any) {
     const { appUser } = await this.getAppUser();
     const exchangeId = Number(payload.exchange_id);
