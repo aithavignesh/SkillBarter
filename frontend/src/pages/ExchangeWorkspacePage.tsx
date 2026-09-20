@@ -138,7 +138,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const statusVariant: any = exchange.status === 'ACTIVE' ? 'emerald' : exchange.status === 'COMPLETED' ? 'emerald' : exchange.status === 'PENDING' ? 'amber' : 'slate';
 
   return (
-    <main className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+    <main className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 pb-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-5 xl:px-10">
       <div className="mx-auto w-full max-w-[1320px]">
         <div className="mb-5 flex items-center justify-between gap-4">
           <Link to="/exchanges" className="inline-flex items-center gap-2 text-xs font-bold text-[#697386] hover:text-[#17233b]"><ArrowLeft className="h-4 w-4" /> Back to exchanges</Link>
