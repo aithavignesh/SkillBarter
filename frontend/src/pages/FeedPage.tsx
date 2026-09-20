@@ -163,7 +163,7 @@ export const FeedPage: React.FC = () => {
               <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{currentUser?.headline || 'Student & Peer Learner'}</p>
               <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-1">
                 <MapPin className="w-3 h-3 text-[#d31d24]" />
-                <span>{currentUser?.address_display || 'Hyderabad'}</span>
+                <span>{currentUser?.address_display || 'Location not set'}</span>
               </div>
             </div>
 
@@ -174,7 +174,7 @@ export const FeedPage: React.FC = () => {
 
             {/* Badges */}
             <div className="mt-4 flex flex-wrap justify-center gap-1">
-              {(currentUser?.badges || ['Verified Member']).map((b) => (
+              {(currentUser?.badges || []).map((b) => (
                 <span key={b} className="text-[10px] bg-slate-100 text-slate-700 font-medium px-2 py-0.5 rounded-full border border-slate-200">
                   {b}
                 </span>

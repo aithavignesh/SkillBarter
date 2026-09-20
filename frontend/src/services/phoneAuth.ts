@@ -142,11 +142,11 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
   const token = data.accessToken || data.token;
   if (!token) throw new Error('OTP verified, but no login session was returned. Please try again.');
   insforge.setAccessToken(token);
-  localStorage.setItem('skillbarter_token', token);
+  sessionStorage.setItem('skillbarter_token', token);
 
   const user = data.user;
-  if (user?.id) localStorage.setItem('skillbarter_user_id', String(user.id));
-  localStorage.setItem('skillbarter_phone', phone);
+  if (user?.id) sessionStorage.setItem('skillbarter_user_id', String(user.id));
+  sessionStorage.setItem('skillbarter_phone', phone);
 
   sessionStorage.removeItem('skillbarter_otp_phone');
   sessionStorage.removeItem('skillbarter_otp_challenge');
@@ -179,10 +179,10 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
 export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
   const { data, error } = await insforge.auth.getCurrentUser();
   if (error || !data?.user) return null;
-  const phone = localStorage.getItem('skillbarter_phone');
+  const phone = sessionStorage.getItem('skillbarter_phone');
   if (!phone) return null;
 
-  const userId = localStorage.getItem('skillbarter_user_id');
+  const userId = sessionStorage.getItem('skillbarter_user_id');
   let appUser: any = null;
   if (userId) {
     const { data: dbUser } = await insforge.database
@@ -216,8 +216,8 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
 }
 
 export function clearPhoneSession() {
-  localStorage.removeItem('skillbarter_phone');
-  localStorage.removeItem('skillbarter_user_id');
+  sessionStorage.removeItem('skillbarter_phone');
+  sessionStorage.removeItem('skillbarter_user_id');
   sessionStorage.removeItem('skillbarter_otp_phone');
   sessionStorage.removeItem('skillbarter_otp_challenge');
   sessionStorage.removeItem('skillbarter_otp_sent_at');

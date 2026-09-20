@@ -5,9 +5,9 @@ import { insforge } from '../lib/insforge';
  * Production data access is direct from the browser to InsForge.
  */
 class ApiClient {
-  private getToken(): string | null { return localStorage.getItem('skillbarter_token'); }
-  public setToken(token: string) { localStorage.setItem('skillbarter_token', token); }
-  public clearToken() { localStorage.removeItem('skillbarter_token'); }
+  private getToken(): string | null { return sessionStorage.getItem('skillbarter_token'); }
+  public setToken(token: string) { sessionStorage.setItem('skillbarter_token', token); }
+  public clearToken() { sessionStorage.removeItem('skillbarter_token'); }
 
   private async request<T>(_endpoint: string, _options: RequestInit = {}): Promise<T> {
     throw new Error('This API endpoint has not yet been migrated to InsForge.');
@@ -17,8 +17,8 @@ class ApiClient {
     // Phone OTP sessions are intentionally access-token based and do not expose
     // a refresh token to the browser. Avoid calling getCurrentUser() for those
     // sessions because the SDK may attempt a refresh and show "No refresh token provided".
-    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
-    const phone = localStorage.getItem('skillbarter_phone');
+    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
+    const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone && phoneUserId) {
       const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('id', phoneUserId).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
@@ -222,8 +222,8 @@ class ApiClient {
   async demoSwitch(_userId: number) { throw new Error('Demo switching is not available until demo accounts are migrated to InsForge Auth.'); }
 
   async getMe() {
-    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
-    const phone = localStorage.getItem('skillbarter_phone');
+    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
+    const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone && phoneUserId) {
       const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('id', phoneUserId).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load current user');
@@ -248,10 +248,11 @@ class ApiClient {
       bio: typeof payload.bio === 'string' ? payload.bio.trim().slice(0, 2000) : undefined,
       address_display: typeof payload.address_display === 'string' ? payload.address_display.trim().slice(0, 200) : undefined,
       availability: typeof payload.availability === 'string' ? payload.availability.trim().slice(0, 500) : undefined,
+      location_visibility: typeof payload.location_visibility === 'boolean' ? payload.location_visibility : undefined,
     };
     // Keep privileged account fields out of profile-form updates.
-    const phoneUserId = Number(localStorage.getItem('skillbarter_user_id') || 0);
-    const phone = localStorage.getItem('skillbarter_phone');
+    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
+    const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone && phoneUserId > 0) {
       const { data, error } = await insforge.database
         .from('users')
@@ -273,8 +274,8 @@ class ApiClient {
   async logout() {
     const { error } = await insforge.auth.signOut();
     this.clearToken();
-    localStorage.removeItem('skillbarter_user_id');
-    localStorage.removeItem('skillbarter_phone');
+    sessionStorage.removeItem('skillbarter_user_id');
+    sessionStorage.removeItem('skillbarter_phone');
     // Remove any in-progress phone OTP challenge so a signed-out session cannot reuse it.
     sessionStorage.removeItem('skillbarter_otp_challenge');
     if (error) throw new Error(error.message || 'Logout failed');
@@ -450,8 +451,9 @@ class ApiClient {
       else if (distance <= 3) reasons.push(`Nearby learning partner (${distance.toFixed(1)} km)`);
       else if (distance <= maxRadius) reasons.push(`Within your ${maxRadius.toFixed(0)} km learning zone (${distance.toFixed(1)} km)`);
       else reasons.push(`${distance.toFixed(1)} km away`);
-      if (Number(candidate.trust_score ?? 80) >= 90) reasons.push(`High community trust score (${Math.round(Number(candidate.trust_score))}/100)`);
-      else if (Number(candidate.trust_score ?? 80) >= 80) reasons.push(`Good community standing (${Math.round(Number(candidate.trust_score))}/100`);
+      const trustScore = Number(candidate.trust_score);
+      if (Number.isFinite(trustScore) && trustScore >= 90) reasons.push(`High community trust score (${Math.round(trustScore)}/100)`);
+      else if (Number.isFinite(trustScore) && trustScore >= 80) reasons.push(`Good community standing (${Math.round(trustScore)}/100`);
       if (availability >= 7) reasons.push(`Compatible availability (${candidate.availability ?? 'Flexible'})`);
       results.push({ candidate: { id: candidate.id, full_name: candidate.full_name, avatar_url: candidate.avatar_url, headline: candidate.headline, address_display: candidate.location_visibility === false ? null : candidate.address_display, trust_score: candidate.trust_score, reliability_score: candidate.reliability_score, completed_exchanges_count: candidate.completed_exchanges_count, badges: candidate.badges ?? [] }, match_score: score, distance_km: distance, distance_display: distance == null ? 'Online / location not set' : `${distance.toFixed(1)} km`, is_reciprocal: reciprocal, they_offer: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), they_need: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), matched_you_offer: youOfferTheyNeed, matched_they_offer: theyOfferYouNeed, reasons, score_breakdown: { skill_compatibility: Math.round(skillScore), location_proximity: Math.round(proximityFactor * 20), trust: Math.round(trust), availability: Math.round(availability) } });
     }
@@ -468,8 +470,8 @@ class ApiClient {
   }
 
   private async serializeExchange(exchange: any, currentUserId: number) {
-    const requesterResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', exchange.requester_id).maybeSingle();
-    const receiverResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display').eq('id', exchange.receiver_id).maybeSingle();
+    const requesterResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,location_visibility').eq('id', exchange.requester_id).maybeSingle();
+    const receiverResult = await insforge.database.from('users').select('id,full_name,avatar_url,headline,trust_score,address_display,location_visibility').eq('id', exchange.receiver_id).maybeSingle();
     const requesterSkill = exchange.requester_skill_id ? await insforge.database.from('skills').select('id,name,category,icon').eq('id', exchange.requester_skill_id).maybeSingle() : { data: null, error: null };
     const receiverSkill = exchange.receiver_skill_id ? await insforge.database.from('skills').select('id,name,category,icon').eq('id', exchange.receiver_skill_id).maybeSingle() : { data: null, error: null };
     const review = await insforge.database.from('reviews').select('id').eq('exchange_id', exchange.id).eq('reviewer_id', currentUserId).maybeSingle();
@@ -477,12 +479,31 @@ class ApiClient {
     if (receiverResult.error) throw new Error(receiverResult.error.message);
     if (review.error) throw new Error(review.error.message);
     const reqUser = requesterResult.data, recUser = receiverResult.data;
-    return { ...exchange, requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill', receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill', estimated_hours: exchange.estimated_hours ?? 2, requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: reqUser.address_display } : { id: exchange.requester_id, full_name: 'Member', trust_score: 0 }, receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: recUser.address_display } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 80 }, user_can_review: exchange.status === 'COMPLETED' && !review.data, has_reviewed: Boolean(review.data) };
+    const safeAddress = (user: any) => Number(user?.id) === Number(currentUserId) || user?.location_visibility !== false ? user?.address_display : null;
+    return {
+      ...exchange,
+      requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill',
+      receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill',
+      estimated_hours: exchange.estimated_hours ?? 2,
+      requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: safeAddress(reqUser) } : { id: exchange.requester_id, full_name: 'Member', trust_score: 0 },
+      receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: safeAddress(recUser) } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 0 },
+      user_can_review: exchange.status === 'COMPLETED' && !review.data,
+      has_reviewed: Boolean(review.data),
+    };
   }
 
-  async getExchanges() {
+  async getExchanges(status?: string) {
     const { appUser } = await this.getAppUser();
-    const { data, error } = await insforge.database.from('exchanges').select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at').or(`requester_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`).order('created_at', { ascending: false });
+    const allowedStatuses = ['PENDING', 'ACCEPTED', 'ACTIVE', 'COUNTERED', 'COMPLETED', 'REJECTED', 'CANCELLED'];
+    const normalizedStatus = status ? String(status).toUpperCase() : '';
+    if (normalizedStatus && !allowedStatuses.includes(normalizedStatus)) throw new Error('Invalid exchange status.');
+    let query: any = insforge.database
+      .from('exchanges')
+      .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
+      .or(`requester_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`)
+      .order('created_at', { ascending: false });
+    if (normalizedStatus) query = query.eq('status', normalizedStatus);
+    const { data, error } = await query;
     if (error) throw new Error(error.message || 'Unable to load exchanges');
     return Promise.all((data || []).map((e: any) => this.serializeExchange(e, Number(appUser.id))));
   }
@@ -735,7 +756,7 @@ class ApiClient {
     const e = await this.getExchangeRow(id);
     const uid = Number(appUser.id);
     if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Not authorized.');
-    if (!['PENDING', 'ACTIVE'].includes(String(e.status))) throw new Error('Only pending or active exchanges can be scheduled.');
+    if (e.status !== 'ACTIVE') throw new Error('Schedule details can be updated after the learning request is accepted.');
     const preferredDate = String(payload.preferred_date || '').trim();
     const location = String(payload.location_area || '').trim();
     const hours = Number(payload.estimated_hours);
@@ -754,7 +775,7 @@ class ApiClient {
       .from('exchanges')
       .update(patch)
       .eq('id', id)
-      .in('status', ['PENDING', 'ACTIVE'])
+      .eq('status', 'ACTIVE')
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
       .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
       .maybeSingle();
@@ -888,7 +909,7 @@ class ApiClient {
       type: 'MESSAGE',
       title: 'New message',
       message: `${appUser.full_name} sent you a message.`,
-      link: `/messages/${appUser.id}`,
+      link: `/messages/${senderId}`,
     });
     return r.data;
   }
@@ -1310,6 +1331,49 @@ class ApiClient {
     await insforge.database.from('notifications').insert({ user_id: revieweeId, type: 'NEW_REVIEW', title: 'New learning review', message: appUser.full_name + ' left you a ' + rating + '-star learning review.', link: '/profile/' + revieweeId });
     return data;
   }
+  async getUserReviews(userId: number) {
+    return this.getReviews(userId);
+  }
+
+  async createReport(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const reportedUserId = Number(payload?.reported_user_id);
+    if (!Number.isInteger(reportedUserId) || reportedUserId <= 0) throw new Error('Invalid reported user.');
+    if (reportedUserId === Number(appUser.id)) throw new Error('You cannot report your own profile.');
+    const category = String(payload?.category || '').trim().slice(0, 120);
+    const details = String(payload?.details || '').trim();
+    if (!category) throw new Error('Report category is required.');
+    if (!details) throw new Error('Please provide details for the report.');
+    if (details.length > 2000) throw new Error('Report details must be 2000 characters or less.');
+
+    const target = await insforge.database.from('users').select('id,is_active').eq('id', reportedUserId).maybeSingle();
+    if (target.error) throw new Error(target.error.message || 'Unable to verify reported user.');
+    if (!target.data) throw new Error('User not found.');
+
+    const existing = await insforge.database.from('reports')
+      .select('id,status')
+      .eq('reporter_id', Number(appUser.id))
+      .eq('reported_user_id', reportedUserId)
+      .eq('status', 'PENDING')
+      .maybeSingle();
+    if (existing.error) throw new Error(existing.error.message || 'Unable to check existing report.');
+    if (existing.data) throw new Error('You already have a pending report for this user.');
+
+    const result = await insforge.database.from('reports')
+      .insert({
+        reporter_id: Number(appUser.id),
+        reported_user_id: reportedUserId,
+        category,
+        details,
+        status: 'PENDING',
+        admin_note: null,
+      })
+      .select('id,reporter_id,reported_user_id,category,details,status,admin_note,created_at')
+      .single();
+    if (result.error) throw new Error(result.error.message || 'Unable to submit report.');
+    return result.data;
+  }
+
   async getReviews(userId: number) {
     const targetUserId = Number(userId);
     if (!Number.isInteger(targetUserId) || targetUserId <= 0) throw new Error('Invalid user.');

@@ -32,7 +32,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const loadExchangeData = async () => {
     try {
       setLoading(true);
-      const data = await api.getExchangeDetails(exchangeId);
+      const data = await api.getExchange(exchangeId);
       setExchange(data);
       const partnerId = currentUser?.id === data.requester_id ? data.receiver_id : data.requester_id;
       setMessages(await api.getMessages(partnerId));
@@ -115,13 +115,21 @@ export const ExchangeWorkspacePage: React.FC = () => {
   };
 
   const handleCancel = async () => {
-    if (!exchange || !cancelReason.trim()) return;
+    if (!exchange) return;
     try {
-      const updated = await api.cancelExchange(exchange.id, cancelReason.trim());
-      setExchange(updated);
+      if (exchange.status === 'PENDING' && isRequester) {
+        const updated = await api.withdrawExchange(exchange.id);
+        setExchange(updated);
+      } else if (exchange.status === 'ACTIVE') {
+        if (!cancelReason.trim()) return;
+        const updated = await api.cancelExchange(exchange.id, cancelReason.trim());
+        setExchange(updated);
+      } else {
+        return;
+      }
       setCancelModalOpen(false);
       setCancelReason('');
-    } catch (e: any) { alert(e?.message || 'Unable to cancel exchange'); }
+    } catch (e: any) { alert(e?.message || 'Unable to update learning exchange'); }
   };
 
   if (loading) return <main className="min-h-screen bg-[#f7f7f5] px-6 py-16 text-center text-sm text-slate-400">Loading exchange workspace…</main>;
@@ -130,7 +138,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const statusVariant: any = exchange.status === 'ACTIVE' ? 'emerald' : exchange.status === 'COMPLETED' ? 'emerald' : exchange.status === 'PENDING' ? 'amber' : 'slate';
 
   return (
-    <main className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+    <main className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 pb-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-5 xl:px-10">
       <div className="mx-auto w-full max-w-[1320px]">
         <div className="mb-5 flex items-center justify-between gap-4">
           <Link to="/exchanges" className="inline-flex items-center gap-2 text-xs font-bold text-[#697386] hover:text-[#17233b]"><ArrowLeft className="h-4 w-4" /> Back to exchanges</Link>
@@ -150,8 +158,8 @@ export const ExchangeWorkspacePage: React.FC = () => {
               {exchange.status === 'COMPLETED' && exchange.user_can_review && <Button size="sm" onClick={() => setReviewModalOpen(true)} icon={<Star className="h-4 w-4" />}>Leave review</Button>}
               {exchange.status === 'COMPLETED' && exchange.has_reviewed && <span className="inline-flex items-center gap-1 border border-green-100 bg-green-50 px-3 py-2 text-[10px] font-bold uppercase text-green-700"><CheckCircle2 className="h-3.5 w-3.5" /> Review submitted</span>}
               {exchange.status === 'COMPLETED' && <Link to="/matches"><Button size="sm" icon={<Repeat className="h-4 w-4" />}>Find Your Next Learning Partner</Button></Link>}
-              {['PENDING','ACTIVE'].includes(exchange.status) && <Button size="sm" variant="outline" onClick={openScheduleEditor} icon={<Calendar className="h-4 w-4" />}>Schedule</Button>}
-              {['PENDING','ACTIVE'].includes(exchange.status) && <Button size="sm" variant="outline" onClick={() => setCancelModalOpen(true)} icon={<X className="h-4 w-4" />}>{exchange.status === 'PENDING' && isRequester ? 'Withdraw request' : 'Cancel exchange'}</Button>}
+              {exchange.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={openScheduleEditor} icon={<Calendar className="h-4 w-4" />}>Schedule</Button>}
+              {exchange.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={() => setCancelModalOpen(true)} icon={<X className="h-4 w-4" />}>Cancel exchange</Button>}
             </div>
           </div>
         </section>
@@ -167,8 +175,8 @@ export const ExchangeWorkspacePage: React.FC = () => {
               <div className="mt-5 grid gap-2 sm:grid-cols-3">{[["PENDING","Learning plan"],["ACTIVE","In progress"],["COMPLETED","Completed"]].map(([key,label])=>{const order:any={PENDING:1,ACTIVE:2,COMPLETED:3};const current=order[exchange.status]||0;const done=current>=order[key];return <div key={key} className={"border px-3 py-3 "+(done?"border-[#ead0d1] bg-[#fff6f6]":"border-[#e1e4e8] bg-[#f7f8f7]")}><div className="flex items-center gap-2">{done?<CheckCircle2 className="h-4 w-4 text-[#d31d24]"/>:<Circle className="h-4 w-4 text-slate-300"/>}<span className="text-xs font-bold text-[#17233b]">{label}</span></div><p className="mt-1 pl-6 text-[10px] text-slate-400">{key==="PENDING"?"Request sent":key==="ACTIVE"?"Plan the session together":"Session completed"}</p></div>})}</div>
             </Card>
             <Card className="p-5">
-              <div className="flex items-start justify-between gap-4 border-b border-[#e1e4e8] pb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-3 border-b border-[#e1e4e8] pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
                   <img src={partner.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'} alt={partner.full_name} className="h-12 w-12 rounded-full border border-[#e1e4e8] object-cover" />
                   <div><h2 className="text-sm font-bold text-[#17233b]">{partner.full_name}</h2><p className="mt-0.5 text-xs text-[#697386]">{partner.headline || 'Student & peer learner'}</p><div className="mt-1 flex flex-wrap gap-2">{partner.verified&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#17233b]"><BadgeCheck className="h-3 w-3"/>Verified</span>}{partner.premium&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Crown className="h-3 w-3"/>Premium</span>}{partner.featured&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Rocket className="h-3 w-3"/>Featured</span>}</div></div>
                 </div>
@@ -187,10 +195,10 @@ export const ExchangeWorkspacePage: React.FC = () => {
 
             <Card className="overflow-hidden">
               <div className="flex items-center justify-between border-b border-[#e1e4e8] bg-[#f7f8f7] px-4 py-3"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-[#d31d24]" /><span className="text-xs font-bold text-[#17233b]">Learning plan with {partner.full_name}</span></div><span className="text-[10px] text-slate-400">Exchange #{exchange.id}</span></div>
-              <div className="h-[390px] space-y-3 overflow-y-auto bg-white p-4">
-                {messages.length === 0 ? <div className="py-24 text-center text-xs text-slate-400">No messages yet. Send a quick note about your learning goal and preferred session time.</div> : messages.map(m => { const mine = Number(m.sender_id) === Number(currentUser?.id); return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[78%] px-3 py-2.5 text-xs ${mine ? 'bg-[#d31d24] text-white' : 'bg-[#f1f3f5] text-[#17233b]'}`}><p>{m.content}</p><span className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-slate-400'}`}>{new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>; })}
+              <div className="h-[390px] space-y-3 overflow-y-auto bg-white p-3 sm:p-4">
+                {messages.length === 0 ? <div className="py-24 text-center text-xs text-slate-400">No messages yet. Send a quick note about your learning goal and preferred session time.</div> : messages.map(m => { const mine = Number(m.sender_id) === Number(currentUser?.id); return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[90%] break-words px-3 py-2.5 text-xs sm:max-w-[78%] ${mine ? 'bg-[#d31d24] text-white' : 'bg-[#f1f3f5] text-[#17233b]'}`}><p>{m.content}</p><span className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-slate-400'}`}>{new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>; })}
               </div>
-              <form onSubmit={handleSendMessage} className="flex gap-2 border-t border-[#e1e4e8] bg-[#f7f8f7] p-3"><input value={newTextMessage} onChange={e => setNewTextMessage(e.target.value)} placeholder={`Message ${partner.full_name.split(' ')[0]}…`} className="h-10 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" /><Button type="submit" size="sm" icon={<Send className="h-3.5 w-3.5" />}>Send</Button></form>
+              <form onSubmit={handleSendMessage} className="flex flex-col gap-2 border-t border-[#e1e4e8] bg-[#f7f8f7] p-3 sm:flex-row"><input value={newTextMessage} onChange={e => setNewTextMessage(e.target.value)} placeholder={`Message ${partner.full_name.split(' ')[0]}…`} className="h-10 w-full min-w-0 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" /><Button type="submit" size="sm" className="w-full sm:w-auto" icon={<Send className="h-3.5 w-3.5" />}>Send</Button></form>
             </Card>
           </div>
 
@@ -204,7 +212,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       </div>
 
       {scheduleOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-lg border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">Schedule learning session</h3><p className="mt-1 text-xs text-[#697386]">Agree on the date, duration and session format with your learning partner.</p></div><button type="button" onClick={()=>setScheduleOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4"/></button></div><form onSubmit={saveSchedule} className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Session date / time<input required value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs" placeholder="e.g. Saturday, 4 PM"/></label><label className="text-xs font-semibold text-slate-600">Duration (hours)<input required type="number" min="0.5" max="24" step="0.5" value={scheduleHours} onChange={e=>setScheduleHours(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs"/></label><label className="text-xs font-semibold text-slate-600 sm:col-span-2">Session format / area<input required value={scheduleArea} onChange={e=>setScheduleArea(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs" placeholder="Online / campus / public shared space"/></label><div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" size="sm" variant="ghost" onClick={()=>setScheduleOpen(false)}>Cancel</Button><Button type="submit" size="sm" loading={scheduleSaving}>Save schedule</Button></div></form></div></div>}
-      {cancelModalOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-md border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">Cancel this exchange?</h3><p className="mt-1 text-xs text-[#697386]">The other participant will be notified.</p></div><button onClick={() => setCancelModalOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4" /></button></div><textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Reason for cancellation…" className="mt-4 min-h-24 w-full resize-none border border-[#d9dde2] p-3 text-xs outline-none focus:border-[#d31d24]" /><div className="mt-4 flex justify-end gap-2"><Button size="sm" variant="ghost" onClick={() => setCancelModalOpen(false)}>Keep exchange</Button><Button size="sm" onClick={handleCancel} disabled={!cancelReason.trim()}>Confirm cancellation</Button></div></div></div>}
+      {cancelModalOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-md border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">{exchange.status === 'PENDING' && isRequester ? 'Withdraw this learning request?' : 'Cancel this learning exchange?'}</h3><p className="mt-1 text-xs text-[#697386]">{exchange.status === 'PENDING' && isRequester ? 'Your partner will be notified that the request was withdrawn.' : 'The other participant will be notified.'}</p></div><button onClick={() => setCancelModalOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4" /></button></div>{exchange.status === 'ACTIVE' && <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Reason for cancellation…" className="mt-4 min-h-24 w-full resize-none border border-[#d9dde2] p-3 text-xs outline-none focus:border-[#d31d24]" />}<div className="mt-4 flex justify-end gap-2"><Button size="sm" variant="ghost" onClick={() => setCancelModalOpen(false)}>Keep exchange</Button><Button size="sm" onClick={handleCancel} disabled={exchange.status === 'ACTIVE' && !cancelReason.trim()}>{exchange.status === 'PENDING' && isRequester ? 'Withdraw request' : 'Confirm cancellation'}</Button></div></div></div>}
 
       {reviewModalOpen && <ExchangeReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} exchange={exchange} onSuccess={() => { setReviewModalOpen(false); loadExchangeData(); }} />}
     </main>

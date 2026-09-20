@@ -19,11 +19,17 @@ export const ExchangesPage: React.FC = () => {
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const loadExchanges = async () => {
-    try { setLoading(true); setExchanges(await api.getExchanges(activeTab !== 'ALL' ? activeTab : undefined)); }
+    try { setLoading(true); setExchanges(await api.getExchanges()); }
     catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
-  useEffect(() => { loadExchanges(); }, [activeTab]);
+  useEffect(() => { loadExchanges(); }, []);
+
+  const visibleExchanges = activeTab === 'ALL'
+    ? exchanges
+    : exchanges.filter((exchange) => activeTab === 'PENDING'
+      ? ['PENDING', 'COUNTERED'].includes(exchange.status)
+      : exchange.status === activeTab);
 
   const action = async (fn: () => Promise<any>) => {
     try { await fn(); await loadExchanges(); }
@@ -60,13 +66,13 @@ export const ExchangesPage: React.FC = () => {
       </div>}
       {loading ? (
         <div className="mt-5 border border-[#e1e4e8] bg-white py-20 text-center text-sm text-slate-400">Loading exchange workspace…</div>
-      ) : exchanges.length === 0 ? (
+      ) : visibleExchanges.length === 0 ? (
         <div className="mt-5 border border-[#e1e4e8] bg-white py-20 text-center"><Repeat className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No learning exchanges here yet</h3><p className="mt-1 text-xs text-slate-500">Find a peer who can teach what you want to learn and send a simple learning request.</p><Link to="/discover" className="mt-4 inline-block"><Button size="sm">Find learning partners</Button></Link></div>
       ) : (
         <div className="mt-5 overflow-hidden border border-[#e1e4e8] bg-white">
           <div className="hidden grid-cols-[minmax(230px,1.2fr)_minmax(220px,1fr)_180px_190px] border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 md:grid"><span>Learning partner</span><span>Learning plan</span><span>Status</span><span className="text-right">Actions</span></div>
           <div className="divide-y divide-[#e1e4e8]">
-            {exchanges.map((ex) => {
+            {visibleExchanges.map((ex) => {
               const isRequester = currentUser?.id === ex.requester_id;
               const partner = isRequester ? ex.receiver : ex.requester;
               const myOffer = isRequester ? ex.requester_skill_name : ex.receiver_skill_name;
@@ -78,9 +84,9 @@ export const ExchangesPage: React.FC = () => {
                   <div className="flex min-w-0 items-center gap-3"><img src={partner.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'} alt={partner.full_name} className="h-11 w-11 shrink-0 rounded-full border border-[#dfe3e8] object-cover" /><div className="min-w-0"><p className="truncate text-sm font-bold text-[#17233b]">{partner.full_name}</p><p className="truncate text-xs text-slate-500">You teach: <b>{myOffer || 'Your skill'}</b></p><p className="truncate text-xs text-slate-500">You learn: <b>{partnerOffer || 'Their skill'}</b></p><div className="mt-1 flex gap-2">{partner.verified&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#17233b]"><BadgeCheck className="h-3 w-3"/>Verified</span>}{partner.premium&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Crown className="h-3 w-3"/>Premium</span>}{partner.featured&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-[#d31d24]"><Rocket className="h-3 w-3"/>Featured</span>}</div><p className="mt-1 flex items-center gap-1 text-[10px] text-slate-400"><MapPin className="h-3 w-3" />{partner.address_display || 'Local meetup'}</p></div></div>
                   <div className="space-y-1 text-[11px] text-slate-500"><p className="line-clamp-2 italic">“{ex.proposal_message || 'Learning exchange plan'}”</p><p className="flex flex-wrap gap-3"><span><Calendar className="mr-1 inline h-3 w-3" />{ex.preferred_date || 'Flexible'}</span><span><Clock className="mr-1 inline h-3 w-3" />~{ex.estimated_hours || 2}h</span></p></div>
                   <div><Badge variant={statusColors[ex.status] || 'slate'} size="md">{ex.status === 'PENDING' ? (isRequester ? 'You sent this request' : 'You received this request') : ex.status === 'ACTIVE' ? 'Ready to learn' : ex.status}</Badge><p className="mt-1 text-[10px] text-slate-400">{new Date(ex.created_at).toLocaleDateString()}</p></div>
-                  <div className="flex flex-wrap gap-2 md:justify-end">
+                  <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-row sm:flex-wrap md:justify-end">
                     {ex.status === 'PENDING' && !isRequester && <><Button size="sm" variant="outline" onClick={() => action(()=>api.rejectExchange(ex.id))}>Decline</Button><Button size="sm" onClick={() => action(()=>api.acceptExchange(ex.id))}>Accept & Start Learning</Button></>}
-                    {ex.status === 'PENDING' && isRequester && <><span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">Waiting for partner</span><Button size="sm" variant="outline" onClick={() => action(()=>api.withdrawExchange(ex.id))} icon={<XCircle className="h-3.5 w-3.5" />}>Withdraw</Button></>}
+                    {ex.status === 'PENDING' && isRequester && <><span className="w-full text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-2 sm:w-auto">Waiting for partner</span><Button size="sm" variant="outline" onClick={() => action(()=>api.withdrawExchange(ex.id))} icon={<XCircle className="h-3.5 w-3.5" />}>Withdraw</Button></>}
                     {ex.status === 'ACTIVE' && !myCompleted && <Button size="sm" onClick={() => action(async()=>{ const updated=await api.completeExchange(ex.id); if(updated.status==='COMPLETED'){setReviewExchange(updated);setIsReviewOpen(true);} })} icon={<CheckCircle2 className="h-3.5 w-3.5" />}>Confirm Session Complete</Button>}
                     {ex.status === 'ACTIVE' && <><Link to={`/messages/${partner.id}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5" />}>Message partner</Button></Link><Button size="sm" variant="ghost" onClick={() => { const reason = window.prompt('Why are you cancelling this exchange?'); if (reason?.trim()) void action(()=>api.cancelExchange(ex.id, reason.trim())); }}>Cancel</Button></>}
                     {ex.status === 'COMPLETED' && ex.user_can_review && <Button size="sm" onClick={()=>{setReviewExchange(ex);setIsReviewOpen(true);}} icon={<Star className="h-3.5 w-3.5" />}>Leave Peer Review</Button>}
