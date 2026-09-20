@@ -250,6 +250,8 @@ class ApiClient {
     this.clearToken();
     localStorage.removeItem('skillbarter_user_id');
     localStorage.removeItem('skillbarter_phone');
+    // Remove any in-progress phone OTP challenge so a signed-out session cannot reuse it.
+    sessionStorage.removeItem('skillbarter_otp_challenge');
     if (error) throw new Error(error.message || 'Logout failed');
   }
 
