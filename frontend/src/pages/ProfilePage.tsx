@@ -141,7 +141,7 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* Action CTAs */}
-        <div className="pt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="pt-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3">
           <div className="flex flex-wrap gap-1.5">
             {profile.badges?.map((b) => (
               <Badge key={b} variant="emerald" size="sm">
@@ -151,7 +151,7 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           {!isOwnProfile ? (
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
               <Button size="sm" onClick={() => setIsProposeOpen(true)} icon={<Repeat className="w-3.5 h-3.5" />}>
                 Start Learning Exchange
               </Button>
@@ -179,7 +179,7 @@ export const ProfilePage: React.FC = () => {
               placeholder="e.g. Python, React, AI / ML, Figma..."
               value={newSkillName}
               onChange={(e) => setNewSkillName(e.target.value)}
-              className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg"
+              className="w-full min-w-0 flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg"
               required
             />
             <select
