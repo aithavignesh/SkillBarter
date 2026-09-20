@@ -2,7 +2,7 @@ name: SkillBarter Frontend CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, gtm-development]
   pull_request:
     branches: [main]
 
