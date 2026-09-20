@@ -256,7 +256,7 @@ class ApiClient {
   }
 
   async getSkills(category?: string) {
-    let query: any = insforge.database.from('skills').select('*').order('popularity', { ascending: false }).order('name', { ascending: true });
+    let query: any = insforge.database.from('skills').select('id,name,category,icon,description,popularity').order('popularity', { ascending: false }).order('name', { ascending: true });
     if (category && category !== 'All') query = query.eq('category', category);
     const { data, error } = await query;
     if (error) throw new Error(error.message || 'Unable to load skills');
@@ -264,7 +264,7 @@ class ApiClient {
   }
 
   async searchSkills(q: string) {
-    let query: any = insforge.database.from('skills').select('*').limit(20);
+    let query: any = insforge.database.from('skills').select('id,name,category,icon,description,popularity').limit(20);
     if (q?.trim()) query = query.ilike('name', `%${q.trim()}%`);
     const { data, error } = await query;
     if (error) throw new Error(error.message || 'Unable to search skills');
@@ -276,10 +276,10 @@ class ApiClient {
     const skillName = String(payload.skill_name ?? '').trim();
     if (!skillName) throw new Error('Skill name is required');
     const skillType = String(payload.skill_type ?? 'OFFERED').toUpperCase();
-    let { data: skill, error } = await insforge.database.from('skills').select('*').ilike('name', skillName).maybeSingle();
+    let { data: skill, error } = await insforge.database.from('skills').select('id,name,category,icon,description,popularity').ilike('name', skillName).maybeSingle();
     if (error) throw new Error(error.message || 'Unable to find skill');
     if (!skill) {
-      const created = await insforge.database.from('skills').insert({ name: skillName, category: payload.category ?? 'Other', icon: payload.icon ?? 'Sparkles', description: payload.description, popularity: 0 }).select('*').single();
+      const created = await insforge.database.from('skills').insert({ name: skillName, category: payload.category ?? 'Other', icon: payload.icon ?? 'Sparkles', description: payload.description, popularity: 0 }).select('id,name,category,icon,description,popularity').single();
       if (created.error) throw new Error(created.error.message || 'Unable to create skill');
       skill = created.data;
     }
