@@ -1331,6 +1331,49 @@ class ApiClient {
     await insforge.database.from('notifications').insert({ user_id: revieweeId, type: 'NEW_REVIEW', title: 'New learning review', message: appUser.full_name + ' left you a ' + rating + '-star learning review.', link: '/profile/' + revieweeId });
     return data;
   }
+  async getUserReviews(userId: number) {
+    return this.getReviews(userId);
+  }
+
+  async createReport(payload: any) {
+    const { appUser } = await this.getAppUser();
+    const reportedUserId = Number(payload?.reported_user_id);
+    if (!Number.isInteger(reportedUserId) || reportedUserId <= 0) throw new Error('Invalid reported user.');
+    if (reportedUserId === Number(appUser.id)) throw new Error('You cannot report your own profile.');
+    const category = String(payload?.category || '').trim().slice(0, 120);
+    const details = String(payload?.details || '').trim();
+    if (!category) throw new Error('Report category is required.');
+    if (!details) throw new Error('Please provide details for the report.');
+    if (details.length > 2000) throw new Error('Report details must be 2000 characters or less.');
+
+    const target = await insforge.database.from('users').select('id,is_active').eq('id', reportedUserId).maybeSingle();
+    if (target.error) throw new Error(target.error.message || 'Unable to verify reported user.');
+    if (!target.data) throw new Error('User not found.');
+
+    const existing = await insforge.database.from('reports')
+      .select('id,status')
+      .eq('reporter_id', Number(appUser.id))
+      .eq('reported_user_id', reportedUserId)
+      .eq('status', 'PENDING')
+      .maybeSingle();
+    if (existing.error) throw new Error(existing.error.message || 'Unable to check existing report.');
+    if (existing.data) throw new Error('You already have a pending report for this user.');
+
+    const result = await insforge.database.from('reports')
+      .insert({
+        reporter_id: Number(appUser.id),
+        reported_user_id: reportedUserId,
+        category,
+        details,
+        status: 'PENDING',
+        admin_note: null,
+      })
+      .select('id,reporter_id,reported_user_id,category,details,status,admin_note,created_at')
+      .single();
+    if (result.error) throw new Error(result.error.message || 'Unable to submit report.');
+    return result.data;
+  }
+
   async getReviews(userId: number) {
     const targetUserId = Number(userId);
     if (!Number.isInteger(targetUserId) || targetUserId <= 0) throw new Error('Invalid user.');
