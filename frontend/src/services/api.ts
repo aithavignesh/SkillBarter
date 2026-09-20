@@ -105,7 +105,7 @@ class ApiClient {
   }
 
   private async getUserSkills(userId: number) {
-    const { data, error } = await insforge.database.from('user_skills').select('*, skills(*)').eq('user_id', userId).order('created_at', { ascending: true });
+    const { data, error } = await insforge.database.from('user_skills').select('id,user_id,skill_id,skill_type,experience_level,description,created_at,skills(id,name,category,icon)').eq('user_id', userId).order('created_at', { ascending: true });
     if (error) throw new Error(error.message || 'Unable to load skills');
     return (data ?? []).map((row: any) => ({
       id: row.id, user_id: row.user_id, skill_id: row.skill_id,
@@ -284,14 +284,14 @@ class ApiClient {
       if (created.error) throw new Error(created.error.message || 'Unable to create skill');
       skill = created.data;
     }
-    const existing = await insforge.database.from('user_skills').select('*').eq('user_id', appUser.id).eq('skill_id', skill.id).eq('skill_type', skillType).maybeSingle();
+    const existing = await insforge.database.from('user_skills').select('id,user_id,skill_id,skill_type,experience_level,description').eq('user_id', appUser.id).eq('skill_id', skill.id).eq('skill_type', skillType).maybeSingle();
     if (existing.error) throw new Error(existing.error.message || 'Unable to check skill');
     if (existing.data) {
-      const updated = await insforge.database.from('user_skills').update({ experience_level: payload.experience_level ?? existing.data.experience_level, description: payload.description ?? existing.data.description }).eq('id', existing.data.id).select('*').single();
+      const updated = await insforge.database.from('user_skills').update({ experience_level: payload.experience_level ?? existing.data.experience_level, description: payload.description ?? existing.data.description }).eq('id', existing.data.id).eq('user_id', appUser.id).select('id,user_id,skill_id,skill_type,experience_level,description').single();
       if (updated.error) throw new Error(updated.error.message || 'Unable to update skill');
       return { ...updated.data, skill_name: skill.name, category: skill.category, icon: skill.icon };
     }
-    const createdMapping = await insforge.database.from('user_skills').insert({ user_id: appUser.id, skill_id: skill.id, skill_type: skillType, experience_level: payload.experience_level ?? 'Intermediate', description: payload.description }).select('*').single();
+    const createdMapping = await insforge.database.from('user_skills').insert({ user_id: appUser.id, skill_id: skill.id, skill_type: skillType, experience_level: payload.experience_level ?? 'Intermediate', description: payload.description }).select('id,user_id,skill_id,skill_type,experience_level,description').single();
     if (createdMapping.error) throw new Error(createdMapping.error.message || 'Unable to add skill');
     await insforge.database.from('skills').update({ popularity: Number(skill.popularity ?? 0) + 1 }).eq('id', skill.id);
     return { ...createdMapping.data, skill_name: skill.name, category: skill.category, icon: skill.icon };
@@ -299,7 +299,7 @@ class ApiClient {
 
   async deleteUserSkill(userSkillId: number) {
     const { appUser } = await this.getAppUser();
-    const { data, error } = await insforge.database.from('user_skills').delete().eq('id', userSkillId).eq('user_id', appUser.id).select('*');
+    const { data, error } = await insforge.database.from('user_skills').delete().eq('id', userSkillId).eq('user_id', appUser.id).select('id,user_id,skill_id,skill_type,experience_level,description');
     if (error) throw new Error(error.message || 'Unable to remove skill');
     return { message: 'Skill removed successfully', data };
   }
