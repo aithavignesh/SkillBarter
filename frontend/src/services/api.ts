@@ -508,6 +508,8 @@ class ApiClient {
     if (!proposalMessage) throw new Error('Tell your learning partner what you want to learn.');
     if (proposalMessage.length > 2000) throw new Error('Your learning request is too long. Keep it under 2000 characters.');
     if (!Number.isFinite(estimatedHours) || estimatedHours < 0.5 || estimatedHours > 24) throw new Error('Session length must be between 0.5 and 24 hours.');
+    if (preferredDate.length > 200) throw new Error('Preferred session time must be 200 characters or less.');
+    if (locationArea.length > 200) throw new Error('Session location must be 200 characters or less.');
 
     const requesterSkills = await this.getUserSkills(requesterId);
     const receiverSkills = await this.getUserSkills(receiverId);
@@ -532,7 +534,7 @@ class ApiClient {
       location_area: locationArea || 'Online or a shared campus space',
       requester_completed: false,
       receiver_completed: false,
-    }).select('*').single();
+    }).select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at').single();
     if (error) throw new Error(error.message || 'Unable to send learning request.');
 
     const notification = await insforge.database.from('notifications').insert({
