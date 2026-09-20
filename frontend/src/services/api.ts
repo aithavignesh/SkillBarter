@@ -17,13 +17,16 @@ class ApiClient {
     // Phone OTP sessions are intentionally access-token based and do not expose
     // a refresh token to the browser. Avoid calling getCurrentUser() for those
     // sessions because the SDK may attempt a refresh and show "No refresh token provided".
-    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
     const phone = sessionStorage.getItem('skillbarter_phone');
-    if (phone && phoneUserId) {
-      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('id', phoneUserId).maybeSingle();
+    if (phone) {
+      // Never trust the client-controlled sessionStorage user id as an identity
+      // selector. Bind the phone-authenticated session to its InsForge auth user.
+      const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
+      if (authError || !authData?.user?.email) throw new Error(authError?.message || 'Not authenticated');
+      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', authData.user.email).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
       if (!result.data) throw new Error('Application profile not found');
-      return { authUser: { email: result.data.email, id: result.data.id }, appUser: result.data };
+      return { authUser: authData.user, appUser: result.data };
     }
     const { data, error } = await insforge.auth.getCurrentUser();
     if (error) throw new Error(error.message || 'Unable to load current user');
@@ -233,10 +236,11 @@ class ApiClient {
   async demoSwitch(_userId: number) { throw new Error('Demo switching is not available until demo accounts are migrated to InsForge Auth.'); }
 
   async getMe() {
-    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
     const phone = sessionStorage.getItem('skillbarter_phone');
-    if (phone && phoneUserId) {
-      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('id', phoneUserId).maybeSingle();
+    if (phone) {
+      const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
+      if (authError || !authData?.user?.email) throw new Error(authError?.message || 'Not authenticated');
+      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', authData.user.email).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load current user');
       if (!result.data) throw new Error('Application profile not found');
       const user = { ...result.data, id: Number(result.data.id) };
@@ -265,13 +269,14 @@ class ApiClient {
       primary_intent: typeof payload.primary_intent === 'string' ? payload.primary_intent.trim().slice(0, 30) : undefined,
     };
     // Keep privileged account fields out of profile-form updates.
-    const phoneUserId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
     const phone = sessionStorage.getItem('skillbarter_phone');
-    if (phone && phoneUserId > 0) {
+    if (phone) {
+      const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
+      if (authError || !authData?.user?.email) throw new Error(authError?.message || 'Not authenticated');
       const { data, error } = await insforge.database
         .from('users')
         .update({ ...profilePayload, updated_at: new Date().toISOString() })
-        .eq('id', phoneUserId)
+        .eq('email', authData.user.email)
         .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
         .single();
       if (error) throw new Error(error.message || 'Unable to update profile');
