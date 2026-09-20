@@ -19,11 +19,17 @@ export const ExchangesPage: React.FC = () => {
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const loadExchanges = async () => {
-    try { setLoading(true); setExchanges(await api.getExchanges(activeTab !== 'ALL' ? activeTab : undefined)); }
+    try { setLoading(true); setExchanges(await api.getExchanges()); }
     catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
-  useEffect(() => { loadExchanges(); }, [activeTab]);
+  useEffect(() => { loadExchanges(); }, []);
+
+  const visibleExchanges = activeTab === 'ALL'
+    ? exchanges
+    : exchanges.filter((exchange) => activeTab === 'PENDING'
+      ? ['PENDING', 'COUNTERED'].includes(exchange.status)
+      : exchange.status === activeTab);
 
   const action = async (fn: () => Promise<any>) => {
     try { await fn(); await loadExchanges(); }
@@ -60,13 +66,13 @@ export const ExchangesPage: React.FC = () => {
       </div>}
       {loading ? (
         <div className="mt-5 border border-[#e1e4e8] bg-white py-20 text-center text-sm text-slate-400">Loading exchange workspace…</div>
-      ) : exchanges.length === 0 ? (
+      ) : visibleExchanges.length === 0 ? (
         <div className="mt-5 border border-[#e1e4e8] bg-white py-20 text-center"><Repeat className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No learning exchanges here yet</h3><p className="mt-1 text-xs text-slate-500">Find a peer who can teach what you want to learn and send a simple learning request.</p><Link to="/discover" className="mt-4 inline-block"><Button size="sm">Find learning partners</Button></Link></div>
       ) : (
         <div className="mt-5 overflow-hidden border border-[#e1e4e8] bg-white">
           <div className="hidden grid-cols-[minmax(230px,1.2fr)_minmax(220px,1fr)_180px_190px] border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 md:grid"><span>Learning partner</span><span>Learning plan</span><span>Status</span><span className="text-right">Actions</span></div>
           <div className="divide-y divide-[#e1e4e8]">
-            {exchanges.map((ex) => {
+            {visibleExchanges.map((ex) => {
               const isRequester = currentUser?.id === ex.requester_id;
               const partner = isRequester ? ex.receiver : ex.requester;
               const myOffer = isRequester ? ex.requester_skill_name : ex.receiver_skill_name;
