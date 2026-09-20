@@ -745,7 +745,7 @@ class ApiClient {
     const e = await this.getExchangeRow(id);
     const uid = Number(appUser.id);
     if (uid !== Number(e.requester_id) && uid !== Number(e.receiver_id)) throw new Error('Not authorized.');
-    if (!['PENDING', 'ACTIVE'].includes(String(e.status))) throw new Error('Only pending or active exchanges can be scheduled.');
+    if (e.status !== 'ACTIVE') throw new Error('Schedule details can be updated after the learning request is accepted.');
     const preferredDate = String(payload.preferred_date || '').trim();
     const location = String(payload.location_area || '').trim();
     const hours = Number(payload.estimated_hours);
@@ -764,7 +764,7 @@ class ApiClient {
       .from('exchanges')
       .update(patch)
       .eq('id', id)
-      .in('status', ['PENDING', 'ACTIVE'])
+      .eq('status', 'ACTIVE')
       .or(`requester_id.eq.${uid},receiver_id.eq.${uid}`)
       .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
       .maybeSingle();
