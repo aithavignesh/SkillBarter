@@ -97,7 +97,7 @@ export const AdminDashboardPage: React.FC = () => {
           { label: 'Learners', value: stats?.total_users || 0, sub: `${stats?.active_users || 0} active`, icon: Users, tone: 'emerald' },
           { label: 'Learning exchanges', value: stats?.total_exchanges || 0, sub: `${stats?.completed_exchanges || 0} completed`, icon: Repeat, tone: 'slate' },
           { label: 'Safety reports', value: stats?.pending_reports || 0, sub: 'Needs review', icon: AlertTriangle, tone: 'rose' },
-          { label: 'Avg trust score', value: stats?.average_trust_score || 94, sub: 'Platform-wide', icon: Shield, tone: 'emerald' },
+          { label: 'Avg trust score', value: stats?.average_trust_score ?? 0, sub: 'Platform-wide', icon: Shield, tone: 'emerald' },
         ].map(({ label, value, sub, icon: Icon, tone }) => (
           <Card key={label} className="p-4 sm:p-5">
             <div className="flex items-start justify-between gap-2">
@@ -171,7 +171,7 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="mt-7 flex items-center justify-center">
             <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-[conic-gradient(#10b981_0_94%,#e2e8f0_94%_100%)]">
               <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-white shadow-inner">
-                <span className="text-4xl font-black text-slate-950">{stats?.average_trust_score || 94}</span>
+                <span className="text-4xl font-black text-slate-950">{stats?.average_trust_score ?? 0}</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">score</span>
               </div>
             </div>
@@ -182,7 +182,7 @@ export const AdminDashboardPage: React.FC = () => {
               <span className="font-black text-rose-600">{stats?.pending_reports || 0}</span>
             </div>
             <div className="mt-3 h-1.5 rounded-full bg-slate-200">
-              <div className="h-full rounded-full bg-rose-500" style={{ width: `${Math.min((stats?.pending_reports || 0) * 10, 100)}%` }} />
+              <div className="h-full rounded-full bg-rose-500" style={{ width: `${Math.min((stats?.pending_reports ?? 0) * 10, 100)}%` }} />
             </div>
           </div>
         </Card>
