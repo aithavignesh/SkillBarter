@@ -481,9 +481,18 @@ class ApiClient {
     return { ...exchange, requester_skill_name: requesterSkill.data?.name ?? 'Custom Skill', receiver_skill_name: receiverSkill.data?.name ?? 'Custom Skill', estimated_hours: exchange.estimated_hours ?? 2, requester: reqUser ? { id: reqUser.id, full_name: reqUser.full_name, avatar_url: reqUser.avatar_url, headline: reqUser.headline, trust_score: reqUser.trust_score, address_display: reqUser.address_display } : { id: exchange.requester_id, full_name: 'Member', trust_score: 0 }, receiver: recUser ? { id: recUser.id, full_name: recUser.full_name, avatar_url: recUser.avatar_url, headline: recUser.headline, trust_score: recUser.trust_score, address_display: recUser.address_display } : { id: exchange.receiver_id, full_name: 'Member', trust_score: 0 }, user_can_review: exchange.status === 'COMPLETED' && !review.data, has_reviewed: Boolean(review.data) };
   }
 
-  async getExchanges() {
+  async getExchanges(status?: string) {
     const { appUser } = await this.getAppUser();
-    const { data, error } = await insforge.database.from('exchanges').select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at').or(`requester_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`).order('created_at', { ascending: false });
+    const allowedStatuses = ['PENDING', 'ACCEPTED', 'ACTIVE', 'COUNTERED', 'COMPLETED', 'REJECTED', 'CANCELLED'];
+    const normalizedStatus = status ? String(status).toUpperCase() : '';
+    if (normalizedStatus && !allowedStatuses.includes(normalizedStatus)) throw new Error('Invalid exchange status.');
+    let query: any = insforge.database
+      .from('exchanges')
+      .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
+      .or(`requester_id.eq.${appUser.id},receiver_id.eq.${appUser.id}`)
+      .order('created_at', { ascending: false });
+    if (normalizedStatus) query = query.eq('status', normalizedStatus);
+    const { data, error } = await query;
     if (error) throw new Error(error.message || 'Unable to load exchanges');
     return Promise.all((data || []).map((e: any) => this.serializeExchange(e, Number(appUser.id))));
   }
