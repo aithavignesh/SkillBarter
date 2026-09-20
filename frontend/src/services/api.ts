@@ -134,7 +134,7 @@ class ApiClient {
 
   async sendResetPasswordEmail(email: string) {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       throw new Error('Please enter a valid email address.');
     }
     const redirectTo = `${window.location.origin}/reset-password`;
