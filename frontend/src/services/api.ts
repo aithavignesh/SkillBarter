@@ -981,15 +981,21 @@ class ApiClient {
         (Number(message.sender_id) === uid && Number(message.receiver_id) === partnerId) ||
         (Number(message.sender_id) === partnerId && Number(message.receiver_id) === uid)
       );
-      const lastMessage = pairMessages[0] ?? null;
-      const unreadCount = pairMessages.filter((message: any) => Number(message.sender_id) === partnerId && Number(message.receiver_id) === uid && !message.is_read).length;
 
       const pairExchanges = (exchangesResult.data ?? []).filter((exchange: any) =>
         (Number(exchange.requester_id) === uid && Number(exchange.receiver_id) === partnerId) ||
         (Number(exchange.requester_id) === partnerId && Number(exchange.receiver_id) === uid)
       );
+      const hasMessagingRelationship = pairExchanges.some((exchange: any) =>
+        ['PENDING', 'COUNTERED', 'ACTIVE', 'ACCEPTED', 'COMPLETED'].includes(String(exchange.status).toUpperCase())
+      );
+      // Do not expose stale conversations after every learning relationship has ended.
+      if (!hasMessagingRelationship) continue;
+
+      const lastMessage = pairMessages[0] ?? null;
+      const unreadCount = pairMessages.filter((message: any) => Number(message.sender_id) === partnerId && Number(message.receiver_id) === uid && !message.is_read).length;
       const activeExchange = pairExchanges.find((exchange: any) => ['PENDING', 'COUNTERED', 'ACTIVE', 'ACCEPTED'].includes(String(exchange.status).toUpperCase()))
-        ?? pairExchanges[0]
+        ?? pairExchanges.find((exchange: any) => String(exchange.status).toUpperCase() === 'COMPLETED')
         ?? null;
 
       conversations.push({
@@ -1058,7 +1064,7 @@ class ApiClient {
       (Number(message.sender_id) === pid && Number(message.receiver_id) === uid)
     );
 
-    if (!hasLearningRelationship && pairMessages.length === 0) {
+    if (!hasLearningRelationship) {
       throw new Error('Start a learning exchange before messaging this member.');
     }
 
