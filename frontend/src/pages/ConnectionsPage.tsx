@@ -88,7 +88,7 @@ export const ConnectionsPage: React.FC = () => {
     : activeTab === 'NEARBY'
       ? nearby
       : activeTab === 'SUGGESTIONS'
-        ? suggestions.map((m: any) => m.candidate).filter(Boolean)
+        ? suggestions.map((m: any) => ({ ...m.candidate, skills_offered: m.they_offer || [], skills_needed: m.they_need || [] })).filter((person: any) => person.id)
         : pendingRequests.map((ex) => Number(ex.requester_id) === Number(currentUser?.id) ? ex.receiver : ex.requester).filter(Boolean);
 
   return (
