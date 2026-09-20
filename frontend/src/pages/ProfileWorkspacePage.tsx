@@ -48,7 +48,7 @@ export const ProfileWorkspacePage: React.FC = () => {
       if (exchanges.error) throw new Error(exchanges.error.message || 'Unable to load activity');
       setProfile(p); setReviews(r); setConnectionCount((connections.data || []).length);
       setActivity([...(posts.data || []).map((x:any)=>({...x, activity_type:'POST'})), ...(exchanges.data || []).map((x:any)=>({...x, activity_type:'EXCHANGE'}))].sort((a:any,b:any)=>new Date(b.updated_at || b.created_at).getTime()-new Date(a.updated_at || a.created_at).getTime()).slice(0,5));
-      if (!own) { try { const status = await api.getConnectionStatus(targetId); setConnected(Boolean(status.connected)); } catch { setConnected(false); } try { setBlocked(Boolean(await (api as any).getBlockStatus?.(targetId))); } catch { setBlocked(false); } }
+      if (!own) { try { setBlocked(Boolean(await (api as any).getBlockStatus?.(targetId))); } catch { setBlocked(false); } }
     } catch (e: any) { setMessage(e?.message || 'Unable to load profile.'); }
     finally { setLoading(false); }
   };
