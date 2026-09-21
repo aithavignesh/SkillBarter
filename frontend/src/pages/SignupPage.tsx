@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../services/analytics';
@@ -14,6 +14,11 @@ export const SignupPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { register, loading } = useAuth();
   const navigate = useNavigate();
+  const referralSource = new URLSearchParams(window.location.search).get('ref') || 'direct';
+
+  useEffect(() => {
+    trackEvent('signup_started', { referral_source: referralSource });
+  }, [referralSource]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +45,7 @@ export const SignupPage: React.FC = () => {
         email: email.trim(),
         password,
       });
+      trackEvent('signup_completed', { referral_source: referralSource });
       navigate('/onboarding');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
