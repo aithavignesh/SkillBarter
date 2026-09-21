@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { trackEvent } from '../services/analytics';
 import { useAuth } from '../context/AuthContext';
 import { MatchResult, UserSummary } from '../types';
 import { Button } from '../components/ui/Button';
@@ -36,7 +37,7 @@ export const SkillMatchesPage: React.FC = () => {
       setLoading(false);
     }
   };
-  useEffect(() => { loadMatches(); }, []);
+  useEffect(() => {\n    trackEvent('matches_viewed');\n    loadMatches();\n  }, []);
 
   const monetization = useMemo(() => getMonetizationState(userId), [userId, usageTick]);
   const priorityRemaining = useMemo(() => getPriorityMatchRemaining(userId), [userId, usageTick, monetization]);
@@ -73,7 +74,7 @@ export const SkillMatchesPage: React.FC = () => {
     setUsageTick(v => v + 1);
     setIsProposeOpen(false);
     setPriorityProposal(false);
-    setNotice(priorityProposal ? 'Priority learning request sent.' : 'Learning request sent.');
+    trackEvent('exchange_request_sent', { priority: priorityProposal });\n    setNotice(priorityProposal ? 'Priority learning request sent.' : 'Learning request sent.');
     navigate('/exchanges');
   };
 
