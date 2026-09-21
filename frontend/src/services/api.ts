@@ -1103,11 +1103,78 @@ class ApiClient {
     if (type) q.eq('post_type', type);
     const r = await q;
     if (r.error) throw new Error(r.error.message || 'Unable to load feed');
-    const blocked = await insforge.database.from('blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${appUser.id},blocked_id.eq.${appUser.id}`);
+
+    const blocked = await insforge.database
+      .from('blocks')
+      .select('blocker_id,blocked_id')
+      .or(`blocker_id.eq.${appUser.id},blocked_id.eq.${appUser.id}`);
     if (blocked.error) throw new Error(blocked.error.message || 'Unable to load community safety settings');
     const excluded = new Set<number>();
-    for (const b of blocked.data ?? []) { excluded.add(Number(b.blocker_id)); excluded.add(Number(b.blocked_id)); }
-    return (r.data ?? []).filter((post: any) => !excluded.has(Number(post.author_id)));
+    for (const b of blocked.data ?? []) {
+      excluded.add(Number(b.blocker_id));
+      excluded.add(Number(b.blocked_id));
+    }
+
+    const posts = (r.data ?? []).filter((post: any) => !excluded.has(Number(post.author_id)));
+    const authorIds = [...new Set(posts.map((post: any) => Number(post.author_id)).filter((id: number) => Number.isInteger(id) && id > 0))];
+    if (!authorIds.length) return posts;
+
+    const authorsResult = await insforge.database
+      .from('users')
+      .select('id,full_name,avatar_url,headline,latitude,longitude,location_visibility,trust_score,premium,verified,is_active,badges')
+      .in('id', authorIds);
+    if (authorsResult.error) throw new Error(authorsResult.error.message || 'Unable to load feed authors');
+
+    const authors = new Map<number, any>((authorsResult.data ?? []).map((user: any) => [Number(user.id), user]));
+    const authorSkillResult = await insforge.database
+      .from('user_skills')
+      .select('user_id,skill_id,skill_type,skills(id,name,category,icon)')
+      .in('user_id', authorIds);
+    if (authorSkillResult.error) throw new Error(authorSkillResult.error.message || 'Unable to load feed skills');
+
+    const skillsByUser = new Map<number, any[]>();
+    for (const row of authorSkillResult.data ?? []) {
+      const uid = Number(row.user_id);
+      const list = skillsByUser.get(uid) ?? [];
+      list.push(row);
+      skillsByUser.set(uid, list);
+    }
+
+    const distanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const toRad = (v: number) => v * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    return posts.map((post: any) => {
+      const author = authors.get(Number(post.author_id));
+      if (!author) return post;
+      const authorSkills = skillsByUser.get(Number(post.author_id)) ?? [];
+      const firstSkill = authorSkills.find((row: any) => row.skill_type === 'OFFERED')?.skills;
+      const distance = appUser.latitude != null && appUser.longitude != null &&
+        author.latitude != null && author.longitude != null &&
+        author.location_visibility !== false
+        ? distanceKm(Number(appUser.latitude), Number(appUser.longitude), Number(author.latitude), Number(author.longitude))
+        : null;
+      return {
+        ...post,
+        author: {
+          id: author.id,
+          full_name: author.full_name,
+          avatar_url: author.avatar_url,
+          headline: author.headline,
+          trust_score: author.trust_score,
+          premium: author.premium === true,
+          verified: author.verified === true,
+          badges: Array.isArray(author.badges) ? author.badges : [],
+        },
+        skill: firstSkill ? { name: firstSkill.name, category: firstSkill.category, icon: firstSkill.icon } : null,
+        distance_km: distance,
+        distance_display: distance == null ? undefined : `${distance.toFixed(1)} km`,
+      };
+    });
   }
 
   async createPost(payload: any) {
@@ -1118,7 +1185,16 @@ class ApiClient {
     if (title.length > 120) throw new Error('Post title must be 120 characters or fewer.');
     if (content.length > 2000) throw new Error('Post content must be 2000 characters or fewer.');
     const postType = String(payload.post_type || 'COMMUNITY').trim().toUpperCase();
-    const allowedTypes = new Set(['COMMUNITY', 'SKILL_OFFER', 'SKILL_REQUEST', 'UPDATE']);
+    const allowedTypes = new Set([
+      'COMMUNITY',
+      'SKILL_OFFER',
+      'SKILL_REQUEST',
+      'OFFER',
+      'REQUEST',
+      'UPDATE',
+      'COMPLETED_EXCHANGE',
+      'WORKSHOP',
+    ]);
     if (!allowedTypes.has(postType)) throw new Error('Unsupported community post type.');
     const recent = await insforge.database.from('posts').select('id,created_at').eq('author_id', appUser.id).order('created_at', { ascending: false }).limit(5);
     if (recent.error) throw new Error(recent.error.message || 'Unable to check posting limits');
