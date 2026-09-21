@@ -98,8 +98,7 @@ export const OnboardingPage: React.FC = () => {
     { num: 1, title: 'Location', desc: 'Where do you study or work?' },
     { num: 2, title: 'Teach', desc: 'What can you teach?' },
     { num: 3, title: 'Learn', desc: 'What do you want to learn?' },
-    { num: 4, title: 'Goal', desc: 'What are you here for?' },
-    { num: 5, title: 'Finish', desc: 'Review your profile' },
+    { num: 4, title: 'Preferences', desc: 'Set your learning preferences' },
   ];
 
   return (
@@ -133,7 +132,7 @@ export const OnboardingPage: React.FC = () => {
           <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
             <div
               className="bg-emerald-600 h-full transition-all duration-300 rounded-full"
-              style={{ width: `${(step / 5) * 100}%` }}
+              style={{ width: `${(step / 4) * 100}%` }}
             />
           </div>
         </div>
@@ -297,97 +296,36 @@ export const OnboardingPage: React.FC = () => {
             </div>
           )}
 
-          {/* STEP 4: Primary Intent */}
+          {/* STEP 4: Goal, radius & profile preview */}
           {step === 4 && (
             <div className="space-y-6">
               <div>
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 4 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">What are you here to achieve?</h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  This helps us personalize your first matches.
-                </p>
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 4 of 4 · Almost there</span>
+                <h2 className="text-xl font-bold text-slate-900 mt-0.5">Set your learning preferences</h2>
+                <p className="text-xs text-slate-500 mt-1">These are optional and help us make your first matches more relevant.</p>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  { id: 'LEARN', label: 'Learn for My Goals', desc: 'Learn a practical skill for studies, projects or career' },
-                  { id: 'EXCHANGE', label: 'Learn & Teach', desc: 'Exchange your skills with another student' },
-                  { id: 'TEACH', label: 'Teach & Share', desc: 'Help another student learn what you know' },
-                  { id: 'HELP', label: 'Help a Peer', desc: 'Use your skills to help another learner' },
-                  { id: 'MEET', label: 'Build My Network', desc: 'Meet peers around shared skills and projects' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setPrimaryIntent(item.id)}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                      primaryIntent === item.id
-                        ? 'border-emerald-500 bg-emerald-50/70 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <h4 className="text-xs font-bold text-slate-900">{item.label}</h4>
-                    <p className="text-[11px] text-slate-500 mt-1">{item.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* STEP 5: Radius & Profile Preview */}
-          {step === 5 && (
-            <div className="space-y-6">
               <div>
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 5 of 5</span>
-                <h2 className="text-xl font-bold text-slate-900 mt-0.5">Where should we look for your learning partners?</h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Choose a practical distance for nearby learning partners. You can also connect remotely.
-                </p>
-              </div>
-
-              {/* Radius Options */}
-              <div className="grid grid-cols-4 gap-3">
-                {[2, 5, 10, 25].map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setExchangeRadius(r)}
-                    className={`p-3 rounded-xl border text-center font-bold text-xs transition-all ${
-                      exchangeRadius === r
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    {r} km
-                  </button>
-                ))}
-              </div>
-
-              {/* Profile Preview */}
-              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Profile Preview
-                </span>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg">
-                    {currentUser?.full_name?.charAt(0) || 'U'}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">{currentUser?.full_name}</h4>
-                    <p className="text-xs text-slate-500">{locationName} • {exchangeRadius} km radius</p>
-                  </div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">What are you here to achieve?</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[
+                    { id: 'LEARN', label: 'Learn for My Goals', desc: 'Studies, projects or career' },
+                    { id: 'EXCHANGE', label: 'Learn & Teach', desc: 'Exchange skills with another student' },
+                    { id: 'TEACH', label: 'Teach & Share', desc: 'Help someone learn what you know' },
+                    { id: 'MEET', label: 'Build My Network', desc: 'Meet peers around shared interests' },
+                  ].map(item => <button key={item.id} type="button" onClick={() => setPrimaryIntent(item.id)} className={`rounded-xl border p-3 text-left transition-all ${primaryIntent === item.id ? 'border-emerald-500 bg-emerald-50/70' : 'border-slate-200 bg-white hover:border-slate-300'}`}><p className="text-xs font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10px] text-slate-500">{item.desc}</p></button>)}
                 </div>
-
-                <div className="pt-2 border-t border-slate-200/80 text-xs">
-                  <div className="mb-2">
-                    <span className="font-semibold text-slate-700">Can teach: </span>
-                    <span className="text-emerald-700 font-medium">{offeredSkills.join(', ')}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-slate-700">Wants to learn: </span>
-                    <span className="text-teal-700 font-medium">{neededSkills.join(', ')}</span>
-                  </div>
+              </div>
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">How far should we search?</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[2, 5, 10, 25].map(r => <button key={r} type="button" onClick={() => setExchangeRadius(r)} className={`rounded-xl border p-2.5 text-xs font-bold transition-all ${exchangeRadius === r ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>{r} km</button>)}
                 </div>
+              </div>
+              <div className="border border-slate-200 bg-slate-50 p-4 rounded-xl">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Your profile is ready</p>
+                <p className="mt-1 text-sm font-bold text-slate-900">{currentUser?.full_name} · {locationName}</p>
+                <p className="mt-2 text-[11px] leading-5 text-slate-500">Teaching: <span className="font-semibold text-emerald-700">{offeredSkills.join(', ')}</span></p>
+                <p className="text-[11px] leading-5 text-slate-500">Learning: <span className="font-semibold text-teal-700">{neededSkills.join(', ')}</span></p>
               </div>
             </div>
           )}
@@ -406,7 +344,7 @@ export const OnboardingPage: React.FC = () => {
               </Button>
             ) : <div />}
 
-            {step < 5 ? (
+            {step < 4 ? (
               <Button
                 type="button"
                 size="sm"
