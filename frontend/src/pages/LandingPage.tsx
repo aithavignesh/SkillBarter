@@ -32,10 +32,10 @@ export const LandingPage: React.FC = () => (
   <main className="min-h-screen bg-[#f7f7f5] text-[#17233b]">
     <section className="border-b border-[#dedfdd] bg-[#f7f7f5]">
       <div className="mx-auto max-w-7xl px-5 pb-16 pt-12 sm:px-8 lg:px-10 lg:pb-24 lg:pt-16">
-        <div className="grid items-end gap-12 lg:grid-cols-[1.08fr_.92fr] lg:gap-20">
+        <div className="grid items-center gap-10 lg:grid-cols-[1.08fr_.92fr] lg:gap-16">
           <div>
             <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]"><span className="h-px w-8 bg-[#d31d24]" />Built for students & early-career learners</div>
-            <h1 className="mt-7 max-w-4xl text-[clamp(3rem,7vw,6.8rem)] font-semibold leading-[0.92] tracking-[-0.065em] text-[#17233b]">Find someone who can teach you.<br /><span className="text-[#d31d24]">Teach what you know.</span></h1>
+            <h1 className="mt-7 max-w-4xl text-[clamp(3rem,6.4vw,6.2rem)] font-semibold leading-[0.92] tracking-[-0.065em] text-[#17233b]">Find someone who can teach you.<br /><span className="text-[#d31d24]">Teach what you know.</span></h1>
             <p className="mt-8 max-w-xl text-[16px] leading-7 text-[#5d6675] sm:text-[18px]">SkillBarter helps students and early-career learners find peers who can teach what they want to learn — while giving them a way to share the skills they already know.</p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link to="/signup" className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Find a learning partner <ArrowRight className="h-4 w-4" /></Link>
@@ -48,8 +48,8 @@ export const LandingPage: React.FC = () => (
             </div>
           </div>
 
-          <div className="lg:pb-2">
-            <div className="border border-[#d9dbd9] bg-white">
+          <div className="w-full lg:pt-2">
+            <div className="border border-[#d9dbd9] bg-white shadow-[0_18px_50px_rgba(23,35,59,0.07)]">
               <div className="flex items-center justify-between border-b border-[#e8e9e7] px-5 py-4">
                 <div><p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a9099]">A typical exchange</p><p className="mt-1 text-[15px] font-semibold text-[#17233b]">One student learns. One student contributes.</p></div>
                 <span className="text-[10px] font-bold text-[#d31d24]">SKILLBARTER</span>
