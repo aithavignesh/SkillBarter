@@ -1,206 +1,144 @@
 # SkillBarter
 
-> **"Your Skills. Your Community. Your Currency."**  
-> *"Exchange skills locally. Build trust. Spend zero cash."*
+> **Learn what you need. Teach what you know.**
 
-SkillBarter is a production-quality hyperlocal social network connecting neighbors to trade physical and digital skills (e.g. plumbing for web development or painting for carpentry) with **zero cash exchange**, governed by an algorithmic community trust score.
+SkillBarter is a peer-learning and skill-exchange platform focused on **students and early-career learners**. Users create a profile, choose skills they can teach and skills they want to learn, discover compatible learners, propose exchanges, schedule sessions, complete learning exchanges, and leave verified reviews.
 
----
+## Current Product Journey
 
-## 1. Official Problem Statement
-
-Build a:
-> **"Hyperlocal Community Service & Skill Barter platform: A geo-fenced social network connecting neighbors to trade physical skills (e.g., plumbing for web design or painting for carpentry) with zero cash exchange, governed by a community trust score."**
-
-In an era of rising service costs and fragmented local communities, people often lack cash to hire specialists while possessing valuable talents themselves. SkillBarter unlocks this latent neighborhood value by treating skills as currency.
-
----
-
-## 2. Product Interpretation & Solution
-
-Unlike professional career networks (like LinkedIn) focused on recruitment, jobs, and corporate resumes, SkillBarter is purpose-built for:
-- Local residents & neighbors
-- Freelancers, students, and hobbyists
-- Home-repair practitioners (plumbers, electricians, carpenters)
-- Creative professionals (photographers, designers, developers)
-- Mentors and learners
-
-### The Core Barter Loop
 ```
-CREATE PROFILE ──> ADD SKILLS OFFERED ──> ADD SKILLS NEEDED ──> SET LOCATION
-     │
-     ▼
-DISCOVER NEARBY PEOPLE ──> FIND RECIPROCAL MATCH (e.g. 96%) ──> PROPOSE EXCHANGE
-     │
-     ▼
-REAL-TIME CHAT ──> ACCEPT PROPOSAL ──> ACTIVE WORKSPACE ──> MUTUAL COMPLETION
-     │
-     ▼
-COMMUNITY REVIEWS ──> DYNAMIC TRUST SCORE UPDATE ──> BETTER FUTURE MATCHES
+LANDING
+  ↓
+SIGN UP / LOGIN
+  ↓
+ONBOARDING
+  ↓
+DISCOVER / MATCHES
+  ↓
+PROFILE
+  ↓
+EXCHANGE REQUEST
+  ↓
+ACCEPT
+  ↓
+SCHEDULE
+  ↓
+LEARNING SESSION
+  ↓
+MUTUAL COMPLETION
+  ↓
+REVIEW + TRUST UPDATE
 ```
 
----
+## Core Features
 
-## 3. Technology Stack
+- Student and early-career learner GTM positioning
+- Skill onboarding: skills offered and skills needed
+- Nearby learner discovery and compatibility matching
+- Learning-exchange proposals with participant authorization
+- Exchange lifecycle: pending → active → completed/cancelled
+- Scheduling and learning-session workspace
+- Real-time messaging and notifications
+- Community feed and post interactions
+- Reviews and trust-score calculation
+- Block/report and community-safety workflows
+- Admin user/report management
+- Privacy controls for location visibility
+- Password reset and authenticated sessions
+- Responsive desktop and mobile experience
 
-- **Frontend**:
-  - React 19, TypeScript, Vite, Tailwind CSS
-  - Lucide React icon suite, React Router v7
-  - Responsive Mobile Bottom Navigation & Radar Community Map
-- **Backend**:
-  - Python 3.13 / FastAPI, Pydantic v2
-  - SQLAlchemy 2.0 ORM, python-jose (JWT)
-  - Native `bcrypt` password hashing (zero passlib legacy bugs)
-- **Database**:
-  - PostgreSQL 16 + PostGIS (Production & Docker)
-  - SQLite + Haversine geospatial fallback engine (Local Dev & automated pytest)
-- **Real-Time**:
-  - WebSockets (`/ws/{token}`) with live event multiplexing
-- **Testing**:
-  - `pytest`, `httpx`, TestClient
+## Technology
 
----
+### Frontend
 
-## 4. Key Architectural Features
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- Lucide React
+- InsForge SDK
 
-| Feature | Description |
-| :--- | :--- |
-| **Strict Zero-Cash Invariant** | No payments, prices, currencies, tokens, or fees anywhere in the system. |
-| **Privacy-First Hyperlocal Geofencing** | Approximate distance (e.g. `"1.8 km away"`) is shown. Exact coordinates are never exposed. |
-| **Reciprocal Matching Engine** | 4-factor scoring (Skill 50%, Distance 20%, Trust 20%, Availability 10%) with explainable reasons. |
-| **Mutual Completion Protocol** | Both parties must confirm completion before an exchange status moves to `COMPLETED`. |
-| **Algorithmic Trust Score** | Dynamic 0–100 score calculated on the backend from review quality, reliability, and response rates. |
-| **Quick 1-Click Demo Switcher** | Floating toolbar enabling instant persona switching (Arjun, Ravi, Ananya, Priya, Admin) for CEO demonstrations. |
+### Data & Authentication
 
----
+The current production frontend uses the InsForge SDK for authentication and database access. Application-level authorization checks are implemented in the frontend service layer, including participant checks for exchanges/messages/reviews and admin checks for administrative screens.
 
-## 5. Demonstration Personas & Demo Credentials
+**Production requirement:** database-level authorization/RLS must be verified in the connected InsForge project before treating the application as fully production-secure. The repository does not contain the InsForge database policy configuration.
 
-Pre-seeded demonstration accounts:
+## Repository Structure
 
-| Persona | Email | Password | Role & Skill Barter Profile |
-| :--- | :--- | :--- | :--- |
-| **Arjun Sharma** | `arjun@skillbarter.com` | `Password123!` | Offers: **Web Development**, Photography • Needs: **Plumbing**, Carpentry (Trust: 94) |
-| **Ravi Kumar** | `ravi@skillbarter.com` | `Password123!` | Offers: **Plumbing**, Home Repair • Needs: **Web Development** (1.8 km away, Trust: 94) |
-| **Ananya Rao** | `ananya@skillbarter.com` | `Password123!` | Offers: **UI Design**, Branding • Needs: Photography, Cooking (Trust: 91) |
-| **Priya Sharma** | `priya@skillbarter.com` | `Password123!` | Offers: **Photography**, Drone Video • Needs: Carpentry, Gardening (Trust: 96) |
-| **Admin User** | `admin@skillbarter.com` | `AdminPassword123!` | **Community Safety & Operations Admin** (Trust: 100) |
-
-> **Tip**: You can use the floating **Demo Switcher** at the bottom-right of the screen to switch between any of these users instantly with 1 click!
-
----
-
-## 6. End-to-End CEO Demonstration Script
-
-1. **Log in as Arjun Sharma**:
-   - Navigate to `/feed` or use the 1-click switcher.
-   - Observe Arjun's profile: Offers *Web Development*, Needs *Plumbing*.
-2. **Open Skill Matches**:
-   - Navigate to `/matches`.
-   - See **Ravi Kumar** at the top with a **96% Match** (1.8 km away in Madhapur).
-   - View the compatibility breakdown: Direct 2-way barter match, high trust (94/100).
-3. **Propose Exchange**:
-   - Click **Propose Exchange**.
-   - Enter: *"I can build your landing page in exchange for help fixing my kitchen sink."*
-   - Submit proposal.
-4. **Switch to Ravi Kumar**:
-   - Use the demo switcher to switch to **Ravi Kumar**.
-   - Notice the incoming notification and active proposal under `/exchanges`.
-   - Click **Accept Barter** -> Exchange transitions to **ACTIVE**.
-5. **Real-Time Chat & Workspace**:
-   - Open the **Exchange Workspace** or `/messages`.
-   - Send chat messages between Arjun and Ravi over live WebSockets.
-6. **Mutual Completion**:
-   - Arjun clicks **Confirm Completion**.
-   - Ravi clicks **Confirm Completion** -> Status automatically becomes **COMPLETED**.
-7. **Review & Trust Score Recalculation**:
-   - Both submit 5-star reviews and feedback.
-   - Backend dynamically re-computes trust scores and updates badges!
-
----
-
-## 7. Setup & Installation
-
-### Option A: Local Quickstart (Zero-Dependency SQLite)
-
-#### 1. Backend Setup
-```bash
-cd backend
-python -m pip install -r requirements.txt
-python -m pip install pydantic-settings
-python -m app.seed.seed_data
-python -m uvicorn app.main:app --reload --port 8000
 ```
-Backend API will be running at: `http://localhost:8000` (API Docs: `http://localhost:8000/docs`).
+frontend/
+  src/
+    components/       Shared UI and layout
+    context/          Auth, theme, notifications, socket state
+    lib/              InsForge client
+    pages/            Product screens
+    services/         API/data-access and business logic
 
-#### 2. Frontend Setup
+.github/
+  workflows/
+    frontend-ci.yml   TypeScript build + OTP test workflow
+```
+
+## Local Development
+
+### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Frontend application will be running at: `http://localhost:5173`.
 
----
-
-### Option B: Docker Compose (PostgreSQL + PostGIS)
+Production build:
 
 ```bash
-docker-compose up --build
-```
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8000`
-- PostgreSQL with PostGIS: `localhost:5432`
-
----
-
-## 8. Automated Testing
-
-Run the comprehensive pytest suite covering authentication, geospatial discovery, matching engine, exchange lifecycle, reviews, messaging, and admin safety:
-
-```bash
-cd backend
-python -m pytest tests -v
-```
-
-To run frontend TypeScript validation and production build check:
-```bash
-cd frontend
 npm run build
 ```
 
----
+OTP authentication tests:
 
-## 9. API Architecture Summary
+```bash
+node test-otp-auth.js
+```
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Authenticate user & return JWT |
-| `POST` | `/api/auth/register` | Register new neighborhood member |
-| `GET` | `/api/users/me` | Fetch authenticated profile & skills |
-| `GET` | `/api/users/nearby` | Hyperlocal radius query sorted by distance |
-| `GET` | `/api/matches` | Reciprocal dynamic compatibility engine |
-| `POST` | `/api/exchanges` | Propose skill-for-skill exchange |
-| `PATCH` | `/api/exchanges/{id}/complete` | Mutual completion protocol |
-| `POST` | `/api/reviews` | Submit post-exchange verified review |
-| `GET` | `/api/trust/user/{id}` | Explainable trust score breakdown |
-| `WS` | `/ws/{token}` | Real-time WebSocket multiplexer |
-| `GET` | `/api/community/stats` | Hyperlocal neighborhood dashboard metrics |
+## CI
 
----
+GitHub Actions validates the frontend on pushes and pull requests targeting `main`.
 
-## 10. Security & Safety Principles
+The workflow currently runs:
 
-1. **Zero Secret Leaks**: Passwords hashed using native bcrypt (72-byte truncation safe).
-2. **Location Privacy**: Coordinates are fuzzed into approximate distances.
-3. **Authorization**: Users can only modify their own proposals, messages, and profiles.
-4. **Moderation**: Complete admin panel for deactivating accounts and resolving abuse reports.
-5. **No Currency Gateways**: Zero financial attack surfaces.
+1. Dependency installation
+2. OTP authentication unit tests
+3. TypeScript production build
 
----
+## Deployment
 
-## 11. Documentation Links
+Vercel is configured to build the frontend from the `frontend` directory:
 
-- [System Architecture](docs/ARCHITECTURE.md)
-- [Matching Engine Specification](docs/MATCHING_ENGINE.md)
-- [Trust Score Formula & Badges](docs/TRUST_SCORE_SPEC.md)
+- Build command: `cd frontend && npm run build`
+- Output directory: `frontend/dist`
+
+Production deployment should be followed by a live smoke test covering authentication, onboarding, discovery, exchange requests, messaging, scheduling, completion, reviews, and logout.
+
+## Security Notes
+
+- Authenticated identity is resolved from the InsForge auth session rather than trusting a client-controlled user ID.
+- Auth/session identifiers are kept in session storage.
+- User-created skill, profile, post, report, and review inputs have application-level validation.
+- Administrative actions require an authenticated admin profile.
+- Exchange and messaging operations verify the current user's role/participation.
+- Exact location data is not intended to be exposed as a public profile field.
+
+Application-level checks are **not a substitute for database-level RLS**. Configure and verify InsForge policies for every production table before launch.
+
+## GTM Direction
+
+The current GTM focus is:
+
+**Primary audience:** students and early-career learners.
+
+**Core value proposition:** users can learn practical skills from peers while teaching skills they already know.
+
+The main activation goal is to move a new user from onboarding to their **first relevant learning partner and first exchange request** with minimal friction.
