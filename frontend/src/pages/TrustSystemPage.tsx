@@ -21,32 +21,39 @@ export const TrustSystemPage: React.FC = () => {
   const [trustData, setTrustData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [exchanges, setExchanges] = useState<any[]>([]);
 
   useEffect(() => {
     if (currentUser) {
-      Promise.all([api.getUserProfile(currentUser.id), api.getReviews(currentUser.id)]).then(([data, reviewData]) => {
+      Promise.all([api.getUserProfile(currentUser.id), api.getReviews(currentUser.id), api.getExchanges()]).then(([data, reviewData, exchangeData]) => {
         setTrustData(data);
         setReviews(reviewData || []);
+        setExchanges(exchangeData || []);
       }).catch((error) => console.error(error)).finally(() => setLoading(false));
     }
   }, [currentUser?.id]);
 
   const score = Number(trustData?.trust_score ?? currentUser?.trust_score ?? 0);
 
+  const completedExchanges = exchanges.filter((exchange: any) => exchange.status === 'COMPLETED').length;
+  const receivedRequests = exchanges.filter((exchange: any) => Number(exchange.receiver_id) === Number(currentUser?.id));
+  const answeredRequests = receivedRequests.filter((exchange: any) => exchange.status !== 'PENDING').length;
+  const responseRate = receivedRequests.length ? Math.round((answeredRequests / receivedRequests.length) * 100) : Number(trustData?.response_rate ?? 0);
   const breakdown = [
-    { title: 'Community Review Quality', weight: '40%', score: trustData?.breakdown?.review_quality ?? 0, max: 40, desc: 'Ratings and written feedback from verified barters' },
-    { title: 'Completion Reliability', weight: '25%', score: trustData?.breakdown?.completion_reliability ?? 0, max: 25, desc: 'Ratio of successfully confirmed exchanges vs cancellations' },
-    { title: 'Proposal Response Rate', weight: '15%', score: trustData?.breakdown?.response_rate ?? 0, max: 15, desc: 'How promptly you respond to incoming barter requests' },
-    { title: 'Exchange Volume History', weight: '10%', score: trustData?.breakdown?.exchange_history ?? 0, max: 10, desc: 'Proven track record across multiple trades' },
-    { title: 'Safety & Good Standing', weight: '10%', score: trustData?.breakdown?.safety_standing ?? 0, max: 10, desc: 'Zero upheld safety violations or misconduct reports' },
+    { title: 'Overall Trust Score', value: score, desc: 'Current score stored on your profile.' },
+    { title: 'Reliability', value: Number(trustData?.reliability_score ?? 0), desc: 'Stored reliability metric based on exchange history and reviews.' },
+    { title: 'Skill Quality', value: Number(trustData?.skill_quality_score ?? 0), desc: 'Stored skill-quality metric based on received reviews.' },
+    { title: 'Response Rate', value: responseRate, desc: 'Share of received exchange requests that are no longer pending.' },
+    { title: 'Completed Exchanges', value: completedExchanges, desc: 'Completed learning exchanges recorded for your account.' },
   ];
 
+  const earnedBadges = new Set(Array.isArray(trustData?.badges) ? trustData.badges : []);
   const badges = [
-    { name: 'Verified Member', desc: 'Account verified with confirmed neighborhood location and skills', earned: true },
-    { name: 'Reliable Exchanger', desc: 'Maintained 4.5+ star rating across 5 or more completed barters', earned: score >= 90 },
-    { name: 'Top Contributor', desc: 'Achieved 90+ community trust score and multiple active trades', earned: score >= 90 },
-    { name: 'Community Helper', desc: 'Bartered skills across 3 or more diverse service categories', earned: (currentUser?.completed_exchanges_count || 0) >= 5 },
-    { name: '10+ Successful Exchanges', desc: 'Successfully delivered 10 or more zero-cash skill trades', earned: (currentUser?.completed_exchanges_count || 0) >= 10 },
+    { name: 'Verified Member', desc: 'Profile verification has been approved.', earned: trustData?.verified === true },
+    { name: 'Reliable Exchanger', desc: 'Earned from the trust engine after sustained reliable exchanges.', earned: earnedBadges.has('Reliable Exchanger') },
+    { name: 'Top Contributor', desc: 'Earned from the trust engine after sustained high-quality activity.', earned: earnedBadges.has('Top Contributor') },
+    { name: 'Community Helper', desc: 'Earned from the trust engine after contributing across multiple skill categories.', earned: earnedBadges.has('Community Helper') },
+    { name: '10+ Successful Exchanges', desc: 'Earned after completing at least 10 exchanges.', earned: earnedBadges.has('10+ Successful Exchanges') },
   ];
 
   return (
@@ -98,33 +105,26 @@ export const TrustSystemPage: React.FC = () => {
       <Card className="p-6 space-y-4">
         <div className="border-b border-slate-100 pb-3">
           <h3 className="text-sm font-bold text-slate-900">Explainable Scoring Breakdown</h3>
-          <p className="text-xs text-slate-500">How your 0–100 score is calculated in real-time</p>
+          <p className="text-xs text-slate-500">Live metrics recorded from your account activity and completed exchanges</p>
         </div>
 
         <div className="space-y-4">
           {breakdown.map((item, i) => {
-            const percentage = (item.score / item.max) * 100;
+            const isCount = item.title === 'Completed Exchanges';
+            const percentage = isCount ? Math.min(100, Number(item.value) * 10) : Math.min(100, Math.max(0, Number(item.value)));
             return (
               <div key={i} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-bold text-slate-800">{item.title}</span>{' '}
-                    <span className="text-slate-400 font-mono">({item.weight} weighting)</span>
-                  </div>
-                  <strong className="text-emerald-700 font-mono">
-                    {item.score.toFixed(1)} / {item.max} pts
-                  </strong>
+                  <span className="font-bold text-slate-800">{item.title}</span>
+                  <strong className="text-emerald-700 font-mono">{isCount ? item.value : `${Number(item.value).toFixed(0)} / 100`}</strong>
                 </div>
                 <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-emerald-600 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${percentage}%` }}
-                  />
+                  <div className="bg-emerald-600 h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%` }} />
                 </div>
                 <p className="text-[11px] text-slate-500">{item.desc}</p>
               </div>
             );
-          })}
+          })
         </div>
       </Card>
 
