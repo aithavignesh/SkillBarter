@@ -87,6 +87,7 @@ export const Navbar: React.FC = () => {
     },
     { label: 'Learning Network', path: '/connections', icon: Users },
     { label: 'Invite Peers', path: '/invite', icon: Users },
+    { label: 'Beta Feedback', path: '/feedback', icon: MessageSquare },
     {
       label: 'Student Community', path: '/community', icon: Users,
       features: [
