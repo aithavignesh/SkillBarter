@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
 import { AppPageShell } from '../components/ui/AppPageShell';
 import { getMonetizationState, getPriorityMatchRemaining, consumePriorityMatch, updateMonetizationState } from '../services/monetization';
-import { Sparkles, Repeat, MapPin, ShieldCheck, CheckCircle, ArrowRight, SlidersHorizontal, Crown, Power, BadgeCheck, Rocket } from 'lucide-react';
+import { Sparkles, Repeat, MapPin, ShieldCheck, CheckCircle, ArrowRight, SlidersHorizontal, Crown, Power, BadgeCheck, Rocket, RefreshCw, Users, BookOpen, Share2 } from 'lucide-react';
 
 export const SkillMatchesPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -15,6 +15,7 @@ export const SkillMatchesPage: React.FC = () => {
   const userId = Number(currentUser?.id ?? 0);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<UserSummary | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
   const [defaultPartnerSkill, setDefaultPartnerSkill] = useState('');
@@ -24,9 +25,16 @@ export const SkillMatchesPage: React.FC = () => {
   const [priorityProposal, setPriorityProposal] = useState(false);
 
   const loadMatches = async () => {
-    try { setLoading(true); setMatches(await api.getMatches()); }
-    catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    try {
+      setLoading(true);
+      setLoadError(false);
+      setMatches(await api.getMatches());
+    } catch (e) {
+      console.error(e);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => { loadMatches(); }, []);
 
@@ -69,6 +77,27 @@ export const SkillMatchesPage: React.FC = () => {
     navigate('/exchanges');
   };
 
+  const shareSkillBarter = async () => {
+    const shareData = {
+      title: 'SkillBarter',
+      text: 'Learn a skill from a peer and teach what you know on SkillBarter.',
+      url: window.location.origin,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setNotice('SkillBarter sharing opened.');
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.origin);
+        setNotice('SkillBarter link copied. Share it with a classmate or friend.');
+      } else {
+        setNotice(window.location.origin);
+      }
+    } catch {
+      // Ignore share cancellation.
+    }
+  };
+
   return (
     <AppPageShell
       eyebrow="Learning matches"
@@ -91,7 +120,7 @@ export const SkillMatchesPage: React.FC = () => {
 
       <div className="mt-5 border border-[#e1e4e8] bg-white">
         <div className="border-b border-[#e1e4e8] bg-[#f7f8f7] px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">{priorityActive ? 'Priority learning recommendations' : 'Recommended learning partners'}</div>
-        {loading ? <div className="py-20 text-center text-sm text-slate-400">Finding peers who fit your learning goals…</div> : displayedMatches.length === 0 ? <div className="py-20 text-center"><Repeat className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No learning matches yet</h3><p className="mx-auto mt-1 max-w-md text-xs text-slate-500">Add at least one skill you want to learn and one skill you can teach, then we’ll surface peers with complementary goals.</p></div> : <div className="divide-y divide-[#e1e4e8]">
+        {loading ? <div className="py-20 text-center text-sm text-slate-400">Finding peers who fit your learning goals…</div> : loadError ? <div className="px-5 py-16 text-center"><RefreshCw className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">We couldn’t load your matches</h3><p className="mx-auto mt-1 max-w-md text-xs text-slate-500">Your profile is still safe. Try again, or use Discover to browse available learning partners.</p><div className="mt-5 flex flex-wrap justify-center gap-2"><Button size="sm" onClick={loadMatches} icon={<RefreshCw className="h-3.5 w-3.5" />}>Try again</Button><Link to="/discover"><Button size="sm" variant="outline" icon={<Users className="h-3.5 w-3.5" />}>Open Discover</Button></Link></div></div> : displayedMatches.length === 0 ? <div className="px-5 py-12 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#ead0d1] bg-[#fff8f8]"><Users className="h-5 w-5 text-[#d31d24]" /></div><h3 className="mt-3 text-sm font-bold text-[#17233b]">There aren’t matching peers yet</h3><p className="mx-auto mt-1 max-w-lg text-xs leading-5 text-slate-500">That can happen in a new community. Your profile is ready, but there may not be a peer who overlaps with your skills and location yet.</p><div className="mx-auto mt-5 grid max-w-2xl gap-3 text-left sm:grid-cols-3"><div className="border border-[#e1e4e8] bg-[#f7f8f7] p-3"><BookOpen className="h-4 w-4 text-[#d31d24]" /><p className="mt-2 text-[11px] font-bold text-[#17233b]">Add another skill</p><p className="mt-1 text-[10px] leading-4 text-slate-500">More teach/learn combinations create more chances to match.</p></div><div className="border border-[#e1e4e8] bg-[#f7f8f7] p-3"><MapPin className="h-4 w-4 text-[#d31d24]" /><p className="mt-2 text-[11px] font-bold text-[#17233b]">Widen your radius</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Include peers a little farther away when local supply is small.</p></div><div className="border border-[#e1e4e8] bg-[#f7f8f7] p-3"><Users className="h-4 w-4 text-[#d31d24]" /><p className="mt-2 text-[11px] font-bold text-[#17233b]">Bring in your peers</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Invite classmates or friends who can teach something useful.</p></div></div><div className="mt-5 flex flex-wrap justify-center gap-2"><Link to="/discover"><Button size="sm" icon={<Users className="h-3.5 w-3.5" />}>Browse Discover</Button></Link><Link to="/profile/me"><Button size="sm" variant="outline" icon={<BookOpen className="h-3.5 w-3.5" />}>Update my skills</Button></Link><Button size="sm" variant="outline" onClick={shareSkillBarter} icon={<Share2 className="h-3.5 w-3.5" />}>Share SkillBarter</Button></div><p className="mt-4 text-[10px] text-slate-400">We’ll show new matches as more learners join and update their learning profiles.</p></div> : <div className="divide-y divide-[#e1e4e8]">
           {displayedMatches.map((match, idx) => <div key={idx} className="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1.3fr)_220px] lg:items-center">
             <div className="flex items-start gap-3"><img src={match.candidate?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80'} alt={match.candidate?.full_name} className="h-12 w-12 rounded-full border border-[#dfe3e8] object-cover" /><div className="min-w-0"><p className="truncate text-sm font-bold text-[#17233b]">{match.candidate?.full_name}</p><p className="truncate text-xs text-slate-500">{match.candidate?.headline || 'Student & Peer Learner'}</p><div className="mt-1.5 flex flex-wrap gap-2">{match.candidate?.verified&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#17233b]"><BadgeCheck className="h-3 w-3"/>Verified</span>}{match.candidate?.premium&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#d31d24]"><Crown className="h-3 w-3"/>Premium</span>}{match.candidate?.featured&&<span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#d31d24]"><Rocket className="h-3 w-3"/>Featured</span>}</div><div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold"><span className="flex items-center gap-1 text-slate-500"><MapPin className="h-3 w-3 text-[#d31d24]" />{match.distance_display}</span><span className="text-slate-600">★ {Math.round(match.candidate?.trust_score || 0)}</span></div></div></div>
             <div><div className="mb-3 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Why this partner fits</span><span className="text-lg font-extrabold text-[#d31d24]">{match.match_score}%</span></div><div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border border-[#e1e4e8] bg-[#f7f8f7] p-3 text-xs"><div><p className="text-[9px] font-bold uppercase text-slate-400">You can teach</p><p className="mt-1 truncate font-bold text-[#17233b]">{match.matched_you_offer?.[0] || offeredList[0] || 'Your skill'}</p></div><Repeat className="h-4 w-4 text-[#d31d24]" /><div className="text-right"><p className="text-[9px] font-bold uppercase text-slate-400">They can teach</p><p className="mt-1 truncate font-bold text-[#17233b]">{match.they_offer?.[0] || 'Their skill'}</p></div></div><div className="mt-3 space-y-1">{match.reasons.slice(0,4).map((r,i)=><p key={i} className="flex items-center gap-1.5 text-[11px] text-slate-500"><CheckCircle className="h-3 w-3 text-[#d31d24]" />{r}</p>)}</div></div>
