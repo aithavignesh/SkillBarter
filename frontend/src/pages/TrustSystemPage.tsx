@@ -124,7 +124,7 @@ export const TrustSystemPage: React.FC = () => {
                 <p className="text-[11px] text-slate-500">{item.desc}</p>
               </div>
             );
-          })
+          })}
         </div>
       </Card>
 
