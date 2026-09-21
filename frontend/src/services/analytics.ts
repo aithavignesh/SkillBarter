@@ -5,7 +5,9 @@ export type FunnelEvent =
   | 'matches_viewed'
   | 'exchange_request_sent'
   | 'referral_shared'
-  | 'beta_feedback_submitted';
+  | 'beta_feedback_submitted'
+  | 'exchange_status_changed'
+  | 'exchange_completed';
 
 const STORAGE_KEY = 'skillbarter_analytics_session';
 
