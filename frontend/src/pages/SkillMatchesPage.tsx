@@ -77,7 +77,8 @@ export const SkillMatchesPage: React.FC = () => {
     setUsageTick(v => v + 1);
     setIsProposeOpen(false);
     setPriorityProposal(false);
-    trackEvent('exchange_request_sent', { priority: priorityProposal });\n    setNotice(priorityProposal ? 'Priority learning request sent.' : 'Learning request sent.');
+    trackEvent('exchange_request_sent', { priority: priorityProposal });
+    setNotice(priorityProposal ? 'Priority learning request sent.' : 'Learning request sent.');
     navigate('/exchanges');
   };
 
