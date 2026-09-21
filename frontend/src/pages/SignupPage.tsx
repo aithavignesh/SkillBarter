@@ -3,16 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Repeat, Lock, Mail, User, MapPin, Sparkles, ArrowRight } from 'lucide-react';
+import { Repeat, Lock, Mail, User, ArrowRight } from 'lucide-react';
 
 export const SignupPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [addressDisplay, setAddressDisplay] = useState('');
-  const [primarySkill, setPrimarySkill] = useState('');
-  const [primaryCategory, setPrimaryCategory] = useState('Technology');
   const [error, setError] = useState<string | null>(null);
   const { register, loading } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +26,7 @@ export const SignupPage: React.FC = () => {
         setError('Password must be at least 8 characters.');
         return;
       }
-      if (!fullName.trim() || !email.trim() || !addressDisplay.trim() || !primarySkill.trim()) {
+      if (!fullName.trim() || !email.trim()) {
         setError('Please complete all required fields.');
         return;
       }
@@ -41,10 +38,6 @@ export const SignupPage: React.FC = () => {
         full_name: fullName.trim(),
         email: email.trim(),
         password,
-        address_display: addressDisplay.trim(),
-        primary_skill: primarySkill.trim() || undefined,
-        primary_category: primaryCategory,
-        primary_intent: 'LEARNING',
       });
       navigate('/onboarding');
     } catch (err: any) {
@@ -75,10 +68,10 @@ export const SignupPage: React.FC = () => {
             </div>
           </Link>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Start learning with SkillBarter
+            Create your SkillBarter account
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Set up your profile in under a minute, then find a student who can teach what you want to learn.
+            Create your account first. We’ll guide you through a short learning profile next.
           </p>
         </div>
 
@@ -164,52 +157,18 @@ export const SignupPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Campus / City
-                </label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={addressDisplay}
-                    onChange={(e) => setAddressDisplay(e.target.value)}
-                    placeholder="e.g. Gachibowli, Hyderabad"
-                    className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
+            <div className="border-t border-slate-100 pt-2">
+              <div className="flex items-start gap-3 bg-[#fff7f7] p-3 border border-[#f1c8ca]">
+                <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-[#d31d24]" />
+                <div>
+                  <p className="text-xs font-bold text-[#8f1a20]">Next: build your learning profile</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500">After creating your account, we’ll ask what you can teach, what you want to learn, your area, and your learning preferences.</p>
                 </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-100">
-              <label className="block text-xs font-bold text-emerald-900 mb-2">
-                Add one skill you can teach
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={primarySkill}
-                  onChange={(e) => setPrimarySkill(e.target.value)}
-                  placeholder="e.g. Python, React, Figma, Public Speaking"
-                  className="text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  required
-                />
-                <select
-                  value={primaryCategory}
-                  onChange={(e) => setPrimaryCategory(e.target.value)}
-                  className="text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             <div className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-              Why we ask: your campus/city helps us find relevant learning partners. You can change it later, and exact GPS coordinates are never shown publicly.
+              Your learning profile is completed in the next step. You can change your preferences later, and exact GPS coordinates are never shown publicly.
             </div>
 
             <Button
@@ -218,7 +177,7 @@ export const SignupPage: React.FC = () => {
               className="w-full"
               icon={<ArrowRight className="w-4 h-4" />}
             >
-              Continue to Find My Learning Partners
+              Continue to Build My Learning Profile
             </Button>
           </form>
 
