@@ -37,7 +37,10 @@ export const SkillMatchesPage: React.FC = () => {
       setLoading(false);
     }
   };
-  useEffect(() => {\n    trackEvent('matches_viewed');\n    loadMatches();\n  }, []);
+  useEffect(() => {
+    trackEvent('matches_viewed');
+    loadMatches();
+  }, []);
 
   const monetization = useMemo(() => getMonetizationState(userId), [userId, usageTick]);
   const priorityRemaining = useMemo(() => getPriorityMatchRemaining(userId), [userId, usageTick, monetization]);
