@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { trackEvent } from '../services/analytics';
 import { useAuth } from '../context/AuthContext';
 import { Exchange } from '../types';
 import { Button } from '../components/ui/Button';
@@ -31,8 +32,8 @@ export const ExchangesPage: React.FC = () => {
       ? ['PENDING', 'COUNTERED'].includes(exchange.status)
       : exchange.status === activeTab);
 
-  const action = async (fn: () => Promise<any>) => {
-    try { await fn(); await loadExchanges(); }
+  const action = async (fn: () => Promise<any>, event?: Parameters<typeof trackEvent>[0], properties?: Record<string, string | number | boolean | undefined>) => {
+    try { await fn(); if (event) trackEvent(event, properties); await loadExchanges(); }
     catch (e: any) { alert(e?.message || 'Action failed'); }
   };
 
@@ -85,10 +86,10 @@ export const ExchangesPage: React.FC = () => {
                   <div className="space-y-1 text-[11px] text-slate-500"><p className="line-clamp-2 italic">“{ex.proposal_message || 'Learning exchange plan'}”</p><p className="flex flex-wrap gap-3"><span><Calendar className="mr-1 inline h-3 w-3" />{ex.preferred_date || 'Flexible'}</span><span><Clock className="mr-1 inline h-3 w-3" />~{ex.estimated_hours || 2}h</span></p></div>
                   <div><Badge variant={statusColors[ex.status] || 'slate'} size="md">{ex.status === 'PENDING' ? (isRequester ? 'You sent this request' : 'You received this request') : ex.status === 'ACTIVE' ? 'Ready to learn' : ex.status}</Badge><p className="mt-1 text-[10px] text-slate-400">{new Date(ex.created_at).toLocaleDateString()}</p></div>
                   <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-row sm:flex-wrap md:justify-end">
-                    {ex.status === 'PENDING' && !isRequester && <><Button size="sm" variant="outline" onClick={() => action(()=>api.rejectExchange(ex.id))}>Decline</Button><Button size="sm" onClick={() => action(()=>api.acceptExchange(ex.id))}>Accept & Start Learning</Button></>}
-                    {ex.status === 'PENDING' && isRequester && <><span className="w-full text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-2 sm:w-auto">Waiting for partner</span><Button size="sm" variant="outline" onClick={() => action(()=>api.withdrawExchange(ex.id))} icon={<XCircle className="h-3.5 w-3.5" />}>Withdraw</Button></>}
-                    {ex.status === 'ACTIVE' && !myCompleted && <Button size="sm" onClick={() => action(async()=>{ const updated=await api.completeExchange(ex.id); if(updated.status==='COMPLETED'){setReviewExchange(updated);setIsReviewOpen(true);} })} icon={<CheckCircle2 className="h-3.5 w-3.5" />}>Confirm Session Complete</Button>}
-                    {ex.status === 'ACTIVE' && <><Link to={`/messages/${partner.id}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5" />}>Message partner</Button></Link><Button size="sm" variant="ghost" onClick={() => { const reason = window.prompt('Why are you cancelling this exchange?'); if (reason?.trim()) void action(()=>api.cancelExchange(ex.id, reason.trim())); }}>Cancel</Button></>}
+                    {ex.status === 'PENDING' && !isRequester && <><Button size="sm" variant="outline" onClick={() => action(()=>api.rejectExchange(ex.id), 'exchange_status_changed', { action: 'rejected' })}>Decline</Button><Button size="sm" onClick={() => action(()=>api.acceptExchange(ex.id), 'exchange_status_changed', { action: 'accepted' })}>Accept & Start Learning</Button></>}
+                    {ex.status === 'PENDING' && isRequester && <><span className="w-full text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-2 sm:w-auto">Waiting for partner</span><Button size="sm" variant="outline" onClick={() => action(()=>api.withdrawExchange(ex.id), 'exchange_status_changed', { action: 'withdrawn' })} icon={<XCircle className="h-3.5 w-3.5" />}>Withdraw</Button></>}
+                    {ex.status === 'ACTIVE' && !myCompleted && <Button size="sm" onClick={() => action(async()=>{ const updated=await api.completeExchange(ex.id); if(updated.status==='COMPLETED'){setReviewExchange(updated);setIsReviewOpen(true);} }, 'exchange_completed', { exchange_id: ex.id })} icon={<CheckCircle2 className="h-3.5 w-3.5" />}>Confirm Session Complete</Button>}
+                    {ex.status === 'ACTIVE' && <><Link to={`/messages/${partner.id}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5" />}>Message partner</Button></Link><Button size="sm" variant="ghost" onClick={() => { const reason = window.prompt('Why are you cancelling this exchange?'); if (reason?.trim()) void action(()=>api.cancelExchange(ex.id, reason.trim()), 'exchange_status_changed', { action: 'cancelled' }); }}>Cancel</Button></>}
                     {ex.status === 'COMPLETED' && ex.user_can_review && <Button size="sm" onClick={()=>{setReviewExchange(ex);setIsReviewOpen(true);}} icon={<Star className="h-3.5 w-3.5" />}>Leave Peer Review</Button>}
                     {ex.status === 'COMPLETED' && ex.has_reviewed && <Link to="/matches"><Button size="sm" icon={<Repeat className="h-3.5 w-3.5" />}>Find Next Partner</Button></Link>}
                     <Link to={`/exchanges/${ex.id}`}><Button size="sm" variant="ghost" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>Open</Button></Link>
