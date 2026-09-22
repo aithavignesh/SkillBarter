@@ -17,6 +17,24 @@ export type FunnelEvent =
   | 'exchange_schedule_saved';
 
 const STORAGE_KEY = 'skillbarter_analytics_session';
+const ATTRIBUTION_KEY = 'skillbarter_marketing_attribution';
+
+const getMarketingAttribution = () => {
+  const params = new URLSearchParams(window.location.search);
+  const keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref'];
+  const current = Object.fromEntries(keys
+    .map((key) => [key, params.get(key)])
+    .filter(([, value]) => value));
+
+  try {
+    const existing = JSON.parse(sessionStorage.getItem(ATTRIBUTION_KEY) || '{}') as Record<string, string>;
+    const merged = { ...existing, ...current };
+    if (Object.keys(current).length > 0) sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(merged));
+    return merged;
+  } catch {
+    return current;
+  }
+};
 
 const getSessionId = () => {
   try {
@@ -31,12 +49,13 @@ const getSessionId = () => {
 };
 
 export const trackEvent = (event: FunnelEvent, properties: Record<string, string | number | boolean | undefined> = {}) => {
+  const attribution = getMarketingAttribution();
   const payload = {
     event,
     session_id: getSessionId(),
     path: window.location.pathname,
     timestamp: new Date().toISOString(),
-    properties: Object.fromEntries(Object.entries(properties).filter(([, value]) => value !== undefined)),
+    properties: Object.fromEntries(Object.entries({ ...attribution, ...properties }).filter(([, value]) => value !== undefined)),
   };
 
   // Configure VITE_ANALYTICS_ENDPOINT when a first-party analytics collector is ready.
