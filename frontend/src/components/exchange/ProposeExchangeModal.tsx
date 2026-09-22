@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { UserSummary } from '../../types';
 import { api } from '../../services/api';
+import { trackEvent } from '../../services/analytics';
 import { useAuth } from '../../context/AuthContext';
 import { Repeat, ShieldAlert, Calendar, Clock, MapPin } from 'lucide-react';
 
@@ -63,6 +64,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
         location_area: locationArea,
       });
 
+      trackEvent('exchange_request_sent', { priority: false, source: 'propose_exchange_modal' });
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
