@@ -97,7 +97,7 @@ export const LandingPage: React.FC = () => (
     <section className="bg-[#f7f7f5] py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
         <div className="grid gap-12 lg:grid-cols-[.7fr_1.3fr] lg:gap-20">
-          <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">Designed around peer learning</p><h2 className="mt-4 max-w-md text-3xl font-semibold leading-tight tracking-[-0.04em] sm:text-4xl">Your next skill can start with one person.</h2><p className="mt-5 max-w-md text-[13px] leading-6 text-[#707884]">The product is built around a simple journey: find a peer, start a focused learning exchange, then build trust through real sessions.</p><Link to="/discover" className="mt-7 inline-flex items-center gap-2 text-[12px] font-bold text-[#17233b] hover:text-[#d31d24]">Find learning partners <ArrowUpRight className="h-4 w-4" /></Link></div>
+          <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">Designed around peer learning</p><h2 className="mt-4 max-w-md text-3xl font-semibold leading-tight tracking-[-0.04em] sm:text-4xl">Your next skill can start with one person.</h2><p className="mt-5 max-w-md text-[13px] leading-6 text-[#707884]">The product is built around a simple journey: find a peer, start a focused learning exchange, then build trust through real sessions.</p><Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_features', action: 'discover' })} to="/discover" className="mt-7 inline-flex items-center gap-2 text-[12px] font-bold text-[#17233b] hover:text-[#d31d24]">Find learning partners <ArrowUpRight className="h-4 w-4" /></Link></div>
           <div className="grid gap-px border border-[#dfe1df] bg-[#dfe1df] sm:grid-cols-2">{features.map(({ icon: Icon, title, text }) => <div key={title} className="bg-white p-7"><Icon className="h-5 w-5 text-[#d31d24]" /><h3 className="mt-7 text-[15px] font-semibold">{title}</h3><p className="mt-2 text-[12px] leading-5 text-[#747c87]">{text}</p></div>)}</div>
         </div>
       </div>
@@ -115,7 +115,7 @@ export const LandingPage: React.FC = () => (
     <section className="bg-[#17233b] text-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-14 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10 lg:py-16">
         <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#e3a1a4]">START WITH THE BETA</p><h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Your next skill could come from someone you already have something to teach.</h2><p className="mt-3 max-w-xl text-[13px] leading-6 text-[#c3c9d3]">Create your profile, choose what you can teach and what you want to learn, then discover people with complementary skills.</p></div>
-        <Link to="/signup" className="inline-flex shrink-0 items-center gap-2 bg-white px-5 py-3 text-[13px] font-bold text-[#17233b] hover:bg-[#f2f3f1]">Create your profile <ArrowRight className="h-4 w-4" /></Link>
+        <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_beta_cta', action: 'signup' })} to="/signup" className="inline-flex shrink-0 items-center gap-2 bg-white px-5 py-3 text-[13px] font-bold text-[#17233b] hover:bg-[#f2f3f1]">Create your profile <ArrowRight className="h-4 w-4" /></Link>
       </div>
     </section>
   </main>
