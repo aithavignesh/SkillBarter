@@ -86,6 +86,14 @@ export const OnboardingPage: React.FC = () => {
       }
 
       await refreshUser();
+      const referralSource = new URLSearchParams(window.location.search).get('ref') || sessionStorage.getItem('skillbarter_referral_source') || undefined;
+      if (referralSource) sessionStorage.setItem('skillbarter_referral_source', referralSource);
+      trackEvent('onboarding_completed', {
+        offered_skill_count: offeredSkills.length,
+        needed_skill_count: neededSkills.length,
+        exchange_radius_km: exchangeRadius,
+        referral_source: referralSource,
+      });
       navigate('/matches');
     } catch (err) {
       console.error(err);
@@ -144,7 +152,7 @@ export const OnboardingPage: React.FC = () => {
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 1 of 5 · Quick setup</span>
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 1 of 4 · Quick setup</span>
                 <h2 className="text-xl font-bold text-slate-900 mt-0.5">Where do you want to find learning partners?</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Use your campus or city so we can surface relevant student peers. Your exact address is not shown.
@@ -183,7 +191,7 @@ export const OnboardingPage: React.FC = () => {
           {step === 2 && (
             <div className="space-y-6">
               <div>
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 2 of 5</span>
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 2 of 4</span>
                 <h2 className="text-xl font-bold text-slate-900 mt-0.5">What can you teach?</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Start with skills you can confidently teach or help someone with. Think coding, AI, design, editing, communication, languages or hobbies.
@@ -250,7 +258,7 @@ export const OnboardingPage: React.FC = () => {
           {step === 3 && (
             <div className="space-y-6">
               <div>
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 3 of 5</span>
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Step 3 of 4</span>
                 <h2 className="text-xl font-bold text-slate-900 mt-0.5">What do you want to learn?</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Choose skills that would help with your studies, projects, portfolio or career. Add at least one so we can find a useful match.
