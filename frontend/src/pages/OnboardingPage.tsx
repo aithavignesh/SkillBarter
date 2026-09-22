@@ -40,8 +40,8 @@ export const OnboardingPage: React.FC = () => {
   const [primaryIntent, setPrimaryIntent] = useState<string>(currentUser?.primary_intent || 'LEARN');
 
   // Skill tags
-  const [offeredSkills, setOfferedSkills] = useState<string[]>(['Web Development', 'Python']);
-  const [neededSkills, setNeededSkills] = useState<string[]>(['AI / Machine Learning', 'Interview Preparation']);
+  const [offeredSkills, setOfferedSkills] = useState<string[]>([]);
+  const [neededSkills, setNeededSkills] = useState<string[]>([]);
   const [newOfferSkill, setNewOfferSkill] = useState('');
   const [newNeedSkill, setNewNeedSkill] = useState('');
 
@@ -221,6 +221,7 @@ export const OnboardingPage: React.FC = () => {
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
                   Skills I can teach:
                 </label>
+                {offeredSkills.length === 0 && <p className="mb-2 text-[11px] text-amber-700">Add at least one skill so we can find a relevant learning partner.</p>}
                 <div className="flex flex-wrap gap-2">
                   {offeredSkills.map((skill) => (
                     <span
@@ -288,6 +289,7 @@ export const OnboardingPage: React.FC = () => {
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
                   Skills I want to learn:
                 </label>
+                {neededSkills.length === 0 && <p className="mb-2 text-[11px] text-amber-700">Add at least one learning goal so we can find a relevant peer.</p>}
                 <div className="flex flex-wrap gap-2">
                   {neededSkills.map((skill) => (
                     <span
