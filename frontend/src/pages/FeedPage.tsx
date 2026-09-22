@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { TrustScoreRing } from '../components/ui/TrustScoreRing';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
+import { trackEvent } from '../services/analytics';
 import {
   Sparkles,
   MapPin,
@@ -117,11 +118,11 @@ export const FeedPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[430px]">
               {[
-                { step: '01', label: 'Set your skills', path: `/profile/${currentUser?.id}` },
+                { step: '01', label: 'Set your skills', path: `/profile/${currentUser?.id}`, action: 'set_skills' },
                 { step: '02', label: 'Find a partner', path: '/discover' },
                 { step: '03', label: 'Start exchange', path: '/matches' },
               ].map(item => (
-                <Link key={item.step} to={item.path} className="rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10">
+                <Link key={item.step} to={item.path} onClick={() => trackEvent('activation_cta_clicked', { source: 'feed_activation_banner', action: item.action })} className="rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10">
                   <span className="text-[10px] font-black text-emerald-300">{item.step}</span>
                   <span className="mt-1 block text-[11px] font-semibold leading-tight text-white">{item.label}</span>
                 </Link>
@@ -396,7 +397,10 @@ export const FeedPage: React.FC = () => {
                   {post.author?.id !== currentUser?.id && (
                     <Button
                       size="sm"
-                      onClick={() => openProposeModal(post.author, post.skill?.name)}
+                      onClick={() => {
+                        trackEvent('activation_cta_clicked', { source: 'feed_post', action: 'start_exchange' });
+                        openProposeModal(post.author, post.skill?.name);
+                      }}
                       icon={<Repeat className="w-3.5 h-3.5" />}
                     >
                       Start Exchange
@@ -456,7 +460,10 @@ export const FeedPage: React.FC = () => {
                     <Button
                       size="sm"
                       className="w-full text-xs"
-                      onClick={() => openProposeModal(match.candidate, match.they_offer?.[0])}
+                      onClick={() => {
+                        trackEvent('activation_cta_clicked', { source: 'feed_match_widget', action: 'start_exchange' });
+                        openProposeModal(match.candidate, match.they_offer?.[0]);
+                      }}
                       icon={<Repeat className="w-3 h-3" />}
                     >
                       Start Exchange
@@ -491,6 +498,7 @@ export const FeedPage: React.FC = () => {
           partner={selectedPartner}
           defaultPartnerSkill={defaultPartnerSkill}
           onSuccess={() => {
+            trackEvent('exchange_request_sent', { source: 'feed' });
             alert('Learning exchange request sent! Redirecting to your exchanges.');
             navigate('/exchanges');
           }}
