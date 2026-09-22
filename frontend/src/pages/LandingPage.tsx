@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { trackEvent } from '../services/analytics';
 import { ArrowRight, ArrowUpRight, Check, Compass, MessageCircle, Repeat, ShieldCheck, Sparkles, Users, MapPin, BookOpen, BriefcaseBusiness, HeartHandshake, ChevronDown } from 'lucide-react';
 
 const steps = [
@@ -38,8 +39,8 @@ export const LandingPage: React.FC = () => (
             <h1 className="mt-7 max-w-4xl text-[clamp(3rem,6.4vw,6.2rem)] font-semibold leading-[0.92] tracking-[-0.065em] text-[#17233b]">Find someone who can teach you.<br /><span className="text-[#d31d24]">Teach what you know.</span></h1>
             <p className="mt-8 max-w-xl text-[16px] leading-7 text-[#5d6675] sm:text-[18px]">SkillBarter helps students and early-career learners find peers who can teach what they want to learn — while giving them a way to share the skills they already know.</p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Link to="/signup" className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Find a learning partner <ArrowRight className="h-4 w-4" /></Link>
-              <Link to="/discover" className="inline-flex items-center gap-2 border border-[#cfd2d1] bg-transparent px-5 py-3 text-[13px] font-bold text-[#17233b] hover:border-[#17233b]">Explore learning skills <Compass className="h-4 w-4" /></Link>
+              <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'signup' })} to="/signup" className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Find a learning partner <ArrowRight className="h-4 w-4" /></Link>
+              <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'discover' })} to="/discover" className="inline-flex items-center gap-2 border border-[#cfd2d1] bg-transparent px-5 py-3 text-[13px] font-bold text-[#17233b] hover:border-[#17233b]">Explore learning skills <Compass className="h-4 w-4" /></Link>
             </div>
             <div className="mt-10 flex flex-wrap gap-x-7 gap-y-2 text-[11px] font-medium text-[#7a8290]">
               <span className="inline-flex items-center gap-2"><Users className="h-3.5 w-3.5" /> People first</span>
@@ -88,7 +89,7 @@ export const LandingPage: React.FC = () => (
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
         <div className="max-w-2xl"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">What can you do here?</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Start with the skill you need next.</h2><p className="mt-4 text-[13px] leading-6 text-[#707884]">Choose a career-relevant learning goal — development, AI/data, design, communication or interview preparation. Then add one skill you can teach so your profile can find complementary peers.</p></div>
         <div className="mt-10 grid gap-px border border-[#dfe1df] bg-[#dfe1df] md:grid-cols-3">
-          {exchangeTypes.map(({ icon: Icon, title, text }) => <div key={title} className="bg-white p-7 sm:p-8"><Icon className="h-5 w-5 text-[#d31d24]" /><h3 className="mt-7 text-[16px] font-semibold">{title}</h3><p className="mt-2 text-[12px] leading-5 text-[#747c87]">{text}</p><Link to="/signup" className="mt-6 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#17233b] hover:text-[#d31d24]">Create your profile <ArrowUpRight className="h-3.5 w-3.5" /></Link></div>)}
+          {exchangeTypes.map(({ icon: Icon, title, text }) => <div key={title} className="bg-white p-7 sm:p-8"><Icon className="h-5 w-5 text-[#d31d24]" /><h3 className="mt-7 text-[16px] font-semibold">{title}</h3><p className="mt-2 text-[12px] leading-5 text-[#747c87]">{text}</p><Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_exchange_type', action: 'signup' })} to="/signup" className="mt-6 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#17233b] hover:text-[#d31d24]">Create your profile <ArrowUpRight className="h-3.5 w-3.5" /></Link></div>)}
         </div>
       </div>
     </section>
