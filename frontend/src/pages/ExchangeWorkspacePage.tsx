@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { trackEvent } from '../services/analytics';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { Exchange, Message } from '../types';
@@ -34,6 +35,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       setLoading(true);
       const data = await api.getExchange(exchangeId);
       setExchange(data);
+      trackEvent('exchange_workspace_viewed', { exchange_status: data.status });
       const partnerId = currentUser?.id === data.requester_id ? data.receiver_id : data.requester_id;
       setMessages(await api.getMessages(partnerId));
     } catch (e) { console.error(e); }
@@ -74,6 +76,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
         location_area: scheduleArea,
       });
       setExchange(previous => previous ? { ...previous, ...updated } : updated);
+      trackEvent('exchange_schedule_saved', { estimated_hours: Number(scheduleHours) });
       setScheduleOpen(false);
     } catch (err: any) {
       alert(err?.message || 'Unable to update exchange schedule');
@@ -88,6 +91,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
     try {
       const sent = await api.sendMessage({ receiver_id: partner.id, content: newTextMessage.trim(), exchange_id: exchange.id });
       setMessages(prev => [...prev, sent]);
+      trackEvent('exchange_message_sent', { exchange_id: exchange.id });
       setNewTextMessage('');
     } catch (e: any) { alert(e?.message || 'Unable to send message'); }
   };
