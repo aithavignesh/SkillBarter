@@ -113,6 +113,12 @@ The workflow currently runs:
 2. OTP authentication unit tests
 3. TypeScript production build
 
+## Beta Launch
+
+The first release should be run as a controlled beta with a small cohort of real students rather than a broad acquisition push. The operational checklist and daily validation process are documented in [`docs/BETA_LAUNCH_RUNBOOK.md`](docs/BETA_LAUNCH_RUNBOOK.md).
+
+Before inviting users, verify production configuration, database-level RLS/authorization, authentication, and the two-user exchange journey. During beta, prioritize evidence from completed learning exchanges and user feedback over signup volume.
+
 ## Deployment
 
 Vercel is configured to build the frontend from the `frontend` directory:
