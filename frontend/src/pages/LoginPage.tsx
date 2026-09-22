@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Repeat, Lock, Mail, ArrowRight, Phone, ShieldCheck, RotateCcw, KeyRound, CheckCircle2, ChevronDown } from 'lucide-react';
@@ -86,6 +87,7 @@ export const LoginPage: React.FC = () => {
     try {
       setError(null);
       await verifyPhoneOtp(phone.trim(), otp.trim());
+      trackEvent('login_completed', { method: 'phone_otp' });
       navigate('/feed');
     } catch (err: any) {
       setError(err.message || 'Invalid or expired OTP. Please check the code and try again.');
@@ -97,6 +99,7 @@ export const LoginPage: React.FC = () => {
     try {
       setError(null);
       await login(email.trim(), password);
+      trackEvent('login_completed', { method: 'email_password' });
       navigate('/feed');
     } catch (err: any) {
       const message = String(err.message || 'Invalid credentials');
