@@ -29,6 +29,16 @@ const faqs = [
   ['Can I use SkillBarter for professional growth?', 'Yes. You can use exchanges for portfolio feedback, interview preparation, project guidance, tools, creative skills and peer learning.'],
 ];
 
+const buildSignupPath = () => {
+  const params = new URLSearchParams(window.location.search);
+  const allowed = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref'];
+  const query = allowed
+    .filter((key) => params.get(key))
+    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params.get(key) as string)}`)
+    .join('&');
+  return query ? `/signup?${query}` : '/signup';
+};
+
 export const LandingPage: React.FC = () => (
   <main className="min-h-screen bg-[#f7f7f5] text-[#17233b]">
     <section className="border-b border-[#dedfdd] bg-[#f7f7f5]">
@@ -39,7 +49,7 @@ export const LandingPage: React.FC = () => (
             <h1 className="mt-7 max-w-4xl text-[clamp(3rem,6.4vw,6.2rem)] font-semibold leading-[0.92] tracking-[-0.065em] text-[#17233b]">Find someone who can teach you.<br /><span className="text-[#d31d24]">Teach what you know.</span></h1>
             <p className="mt-8 max-w-xl text-[16px] leading-7 text-[#5d6675] sm:text-[18px]">SkillBarter helps students and early-career learners find peers who can teach what they want to learn — while giving them a way to share the skills they already know.</p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'signup' })} to="/signup" className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Find a learning partner <ArrowRight className="h-4 w-4" /></Link>
+              <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'signup' })} to={buildSignupPath()} className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Find a learning partner <ArrowRight className="h-4 w-4" /></Link>
               <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'discover' })} to="/discover" className="inline-flex items-center gap-2 border border-[#cfd2d1] bg-transparent px-5 py-3 text-[13px] font-bold text-[#17233b] hover:border-[#17233b]">Explore learning skills <Compass className="h-4 w-4" /></Link>
             </div>
             <div className="mt-10 flex flex-wrap gap-x-7 gap-y-2 text-[11px] font-medium text-[#7a8290]">
