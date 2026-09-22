@@ -5,7 +5,7 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-export class AppErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBoundaryState> {
+export class AppErrorBoundary extends React.Component<React.PropsWithChildren<{}>, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(): ErrorBoundaryState {
