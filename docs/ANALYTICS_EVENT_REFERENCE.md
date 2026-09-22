@@ -45,7 +45,7 @@ Use unique sessions/users consistently when calculating the numerator and denomi
 
 ## Referral attribution
 
-Peer invites use `/signup?ref=peer-invite`. The referral source is persisted in session storage through onboarding so the signup source can be associated with later onboarding activation events.
+Peer invites use `/signup?ref=peer-invite`. Marketing links can additionally use standard UTM parameters: `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, and `utm_term`. Attribution is captured from the landing URL and persisted in session storage so the original acquisition source survives signup and onboarding. Later events include the stored attribution alongside explicitly supplied event properties. When reporting acquisition performance, compare unique users/sessions consistently across sources.
 
 ## Privacy rules
 
