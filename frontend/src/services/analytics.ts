@@ -9,7 +9,8 @@ export type FunnelEvent =
   | 'exchange_status_changed'
   | 'exchange_completed'
   | 'notification_opened'
-  | 'activation_cta_clicked';
+  | 'activation_cta_clicked'
+  | 'onboarding_step_viewed';
 
 const STORAGE_KEY = 'skillbarter_analytics_session';
 
