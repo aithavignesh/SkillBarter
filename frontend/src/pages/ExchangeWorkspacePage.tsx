@@ -28,6 +28,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const [scheduleArea, setScheduleArea] = useState<string>('');
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
 
   const exchangeId = Number(id || 0);
 
@@ -71,6 +72,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
     if (!exchange) return;
     try {
       setActionError('');
+      setActionSuccess('');
       setScheduleSaving(true);
       const updated = await (api as any).updateExchangeSchedule(exchange.id, {
         preferred_date: scheduleDate,
@@ -79,6 +81,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       });
       setExchange(previous => previous ? { ...previous, ...updated } : updated);
       trackEvent('exchange_schedule_saved', { estimated_hours: Number(scheduleHours) });
+      setActionSuccess('Session schedule saved. Your learning plan is ready.');
       setScheduleOpen(false);
     } catch (err: any) {
       setActionError(err?.message || 'Unable to update exchange schedule');
@@ -92,9 +95,11 @@ export const ExchangeWorkspacePage: React.FC = () => {
     if (!newTextMessage.trim() || !exchange || !partner) return;
     try {
       setActionError('');
+      setActionSuccess('');
       const sent = await api.sendMessage({ receiver_id: partner.id, content: newTextMessage.trim(), exchange_id: exchange.id });
       setMessages(prev => [...prev, sent]);
       trackEvent('exchange_message_sent', { exchange_id: exchange.id });
+      setActionSuccess('Message sent to your learning partner.');
       setNewTextMessage('');
     } catch (e: any) { setActionError(e?.message || 'Unable to send message'); }
   };
@@ -155,6 +160,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
         </div>
 
         {actionError && <div role="alert" className="mt-4 border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-800">{actionError}</div>}
+        {actionSuccess && <div role="status" className="mt-4 border border-green-200 bg-green-50 px-4 py-3 text-xs font-semibold text-green-800">{actionSuccess}</div>}
 
         <section className="border-b border-[#e1e4e8] pb-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
