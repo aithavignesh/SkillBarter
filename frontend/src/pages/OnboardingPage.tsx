@@ -27,6 +27,11 @@ export const OnboardingPage: React.FC = () => {
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const goToStep = (nextStep: number) => {
+    trackEvent('onboarding_step_viewed', { step: nextStep });
+    setStep(nextStep);
+  };
+
   // Form State
   const [locationName, setLocationName] = useState(currentUser?.address_display || '');
   const [headline, setHeadline] = useState(currentUser?.headline || '');
@@ -55,9 +60,9 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const handleCompleteOnboarding = async () => {
-    if (!locationName.trim()) { setStep(1); return; }
-    if (offeredSkills.length === 0) { setStep(2); return; }
-    if (neededSkills.length === 0) { setStep(3); return; }
+    if (!locationName.trim()) { goToStep(1); return; }
+    if (offeredSkills.length === 0) { goToStep(2); return; }
+    if (neededSkills.length === 0) { goToStep(3); return; }
     try {
       setLoading(true);
       await api.updateMe({
@@ -346,7 +351,7 @@ export const OnboardingPage: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setStep(step - 1)}
+                onClick={() => goToStep(step - 1)}
                 icon={<ArrowLeft className="w-4 h-4" />}
               >
                 Back
@@ -361,7 +366,7 @@ export const OnboardingPage: React.FC = () => {
                   if (step === 1 && !locationName.trim()) return;
                   if (step === 2 && offeredSkills.length === 0) return;
                   if (step === 3 && neededSkills.length === 0) return;
-                  setStep(step + 1);
+                  goToStep(step + 1);
                 }}
                 icon={<ArrowRight className="w-4 h-4" />}
               >
