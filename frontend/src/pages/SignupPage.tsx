@@ -17,6 +17,10 @@ export const SignupPage: React.FC = () => {
   const referralSource = new URLSearchParams(window.location.search).get('ref') || 'direct';
 
   useEffect(() => {
+    if (referralSource !== 'direct') sessionStorage.setItem('skillbarter_referral_source', referralSource);
+  }, [referralSource]);
+
+  useEffect(() => {
     trackEvent('signup_started', { referral_source: referralSource });
   }, [referralSource]);
 
