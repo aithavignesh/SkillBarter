@@ -27,6 +27,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const [scheduleHours, setScheduleHours] = useState<string>('2');
   const [scheduleArea, setScheduleArea] = useState<string>('');
   const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const exchangeId = Number(id || 0);
 
@@ -69,6 +70,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
     e.preventDefault();
     if (!exchange) return;
     try {
+      setActionError('');
       setScheduleSaving(true);
       const updated = await (api as any).updateExchangeSchedule(exchange.id, {
         preferred_date: scheduleDate,
@@ -79,7 +81,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       trackEvent('exchange_schedule_saved', { estimated_hours: Number(scheduleHours) });
       setScheduleOpen(false);
     } catch (err: any) {
-      alert(err?.message || 'Unable to update exchange schedule');
+      setActionError(err?.message || 'Unable to update exchange schedule');
     } finally {
       setScheduleSaving(false);
     }
@@ -89,38 +91,41 @@ export const ExchangeWorkspacePage: React.FC = () => {
     e.preventDefault();
     if (!newTextMessage.trim() || !exchange || !partner) return;
     try {
+      setActionError('');
       const sent = await api.sendMessage({ receiver_id: partner.id, content: newTextMessage.trim(), exchange_id: exchange.id });
       setMessages(prev => [...prev, sent]);
       trackEvent('exchange_message_sent', { exchange_id: exchange.id });
       setNewTextMessage('');
-    } catch (e: any) { alert(e?.message || 'Unable to send message'); }
+    } catch (e: any) { setActionError(e?.message || 'Unable to send message'); }
   };
 
   const handleComplete = async () => {
     if (!exchange) return;
     try {
+      setActionError('');
       const updated = await api.completeExchange(exchange.id);
       setExchange(previous => previous ? { ...previous, ...updated, user_can_review: updated.status === 'COMPLETED' } : updated);
       if (updated.status === 'COMPLETED') setReviewModalOpen(true);
       else await loadExchangeData();
-    } catch (e: any) { alert(e?.message || 'Unable to confirm completion'); }
+    } catch (e: any) { setActionError(e?.message || 'Unable to confirm completion'); }
   };
 
   const handleAccept = async () => {
     if (!exchange) return;
-    try { const updated = await api.acceptExchange(exchange.id); setExchange(previous => previous ? { ...previous, ...updated } : updated); }
-    catch (e: any) { alert(e?.message || 'Unable to accept exchange'); }
+    try { setActionError(''); const updated = await api.acceptExchange(exchange.id); setExchange(previous => previous ? { ...previous, ...updated } : updated); }
+    catch (e: any) { setActionError(e?.message || 'Unable to accept exchange'); }
   };
 
   const handleDecline = async () => {
     if (!exchange) return;
-    try { const updated = await api.rejectExchange(exchange.id); setExchange(previous => previous ? { ...previous, ...updated } : updated); }
-    catch (e: any) { alert(e?.message || 'Unable to decline exchange'); }
+    try { setActionError(''); const updated = await api.rejectExchange(exchange.id); setExchange(previous => previous ? { ...previous, ...updated } : updated); }
+    catch (e: any) { setActionError(e?.message || 'Unable to decline exchange'); }
   };
 
   const handleCancel = async () => {
     if (!exchange) return;
     try {
+      setActionError('');
       if (exchange.status === 'PENDING' && isRequester) {
         const updated = await api.withdrawExchange(exchange.id);
         setExchange(updated);
@@ -133,7 +138,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       }
       setCancelModalOpen(false);
       setCancelReason('');
-    } catch (e: any) { alert(e?.message || 'Unable to update learning exchange'); }
+    } catch (e: any) { setActionError(e?.message || 'Unable to update learning exchange'); }
   };
 
   if (loading) return <main className="min-h-screen bg-[#f7f7f5] px-6 py-16 text-center text-sm text-slate-400">Loading exchange workspace…</main>;
@@ -148,6 +153,8 @@ export const ExchangeWorkspacePage: React.FC = () => {
           <Link to="/exchanges" className="inline-flex items-center gap-2 text-xs font-bold text-[#697386] hover:text-[#17233b]"><ArrowLeft className="h-4 w-4" /> Back to exchanges</Link>
           <Badge variant={statusVariant} size="md">{exchange.status}</Badge>
         </div>
+
+        {actionError && <div role="alert" className="mt-4 border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-800">{actionError}</div>}
 
         <section className="border-b border-[#e1e4e8] pb-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
