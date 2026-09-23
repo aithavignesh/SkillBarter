@@ -1,16 +1,15 @@
 import json
-from datetime import datetime, timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
 from app.database import get_db
-from app.models.user import User
-from app.services.auth import get_current_admin
-from app.database import SessionLocal
 from app.models.analytics import AnalyticsEvent
+from app.models.user import User
 from app.schemas.analytics import AnalyticsEventCreate
+from app.services.auth import get_current_admin
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -35,11 +34,13 @@ ALLOWED_EVENTS = {
 
 
 @router.post("/events", status_code=status.HTTP_202_ACCEPTED)
-def capture_event(payload: AnalyticsEventCreate):
+def capture_event(
+    payload: AnalyticsEventCreate,
+    db: Session = Depends(get_db),
+):
     if payload.event not in ALLOWED_EVENTS:
         raise HTTPException(status_code=400, detail="Unsupported analytics event")
 
-    db = SessionLocal()
     try:
         event = AnalyticsEvent(
             event=payload.event,
@@ -54,8 +55,6 @@ def capture_event(payload: AnalyticsEventCreate):
     except Exception:
         db.rollback()
         raise HTTPException(status_code=503, detail="Analytics temporarily unavailable")
-    finally:
-        db.close()
 
 
 FUNNEL_EVENTS = [
