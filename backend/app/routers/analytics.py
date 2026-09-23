@@ -1,4 +1,5 @@
 import json
+from datetime import timezone
 
 from fastapi import APIRouter, HTTPException, status
 from app.database import SessionLocal
@@ -38,7 +39,7 @@ def capture_event(payload: AnalyticsEventCreate):
             event=payload.event,
             session_id=payload.session_id,
             path=payload.path,
-            timestamp=payload.timestamp,
+            timestamp=payload.timestamp.astimezone(timezone.utc).replace(tzinfo=None),
             properties=json.dumps(payload.properties, separators=(",", ":")),
         )
         db.add(event)
