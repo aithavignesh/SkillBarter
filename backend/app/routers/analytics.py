@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 from datetime import timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -74,7 +75,7 @@ def get_kpi(
     admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
-    since = func.datetime("now", f"-{days} days")
+    since = datetime.utcnow() - timedelta(days=days)
     rows = (
         db.query(
             AnalyticsEvent.event,
