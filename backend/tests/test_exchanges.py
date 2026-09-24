@@ -34,7 +34,12 @@ def test_full_exchange_lifecycle_and_review(client):
     assert accept_res.status_code == 200
     assert accept_res.json()["status"] == "ACTIVE"
 
-    # 5. Arjun confirms completion
+    # 5. The legacy start endpoint is idempotent after acceptance.
+    start_res = client.patch(f"/api/exchanges/{exchange_id}/start", headers={"Authorization": f"Bearer {arjun_token}"})
+    assert start_res.status_code == 200
+    assert start_res.json()["status"] == "ACTIVE"
+
+    # 6. Arjun confirms completion
     c1 = client.patch(f"/api/exchanges/{exchange_id}/complete", headers={"Authorization": f"Bearer {arjun_token}"})
     assert c1.status_code == 200
     # Still ACTIVE until Ravi also confirms!
@@ -42,7 +47,7 @@ def test_full_exchange_lifecycle_and_review(client):
     assert c1.json()["requester_completed"] is True
     assert c1.json()["receiver_completed"] is False
 
-    # 6. Ravi confirms completion
+    # 7. Ravi confirms completion
     c2 = client.patch(f"/api/exchanges/{exchange_id}/complete", headers={"Authorization": f"Bearer {ravi_token}"})
     assert c2.status_code == 200
     # Both confirmed -> status becomes COMPLETED!
@@ -50,7 +55,7 @@ def test_full_exchange_lifecycle_and_review(client):
     assert c2.json()["requester_completed"] is True
     assert c2.json()["receiver_completed"] is True
 
-    # 7. Arjun reviews Ravi
+    # 8. Arjun reviews Ravi
     review_res = client.post("/api/reviews", json={
         "exchange_id": exchange_id,
         "rating": 5,
@@ -64,7 +69,7 @@ def test_full_exchange_lifecycle_and_review(client):
     assert review_data["rating"] == 5
     assert review_data["would_exchange_again"] is True
 
-    # 8. Verify duplicate review is rejected
+    # 9. Verify duplicate review is rejected
     dup_res = client.post("/api/reviews", json={
         "exchange_id": exchange_id,
         "rating": 5,
@@ -72,7 +77,7 @@ def test_full_exchange_lifecycle_and_review(client):
     }, headers={"Authorization": f"Bearer {arjun_token}"})
     assert dup_res.status_code == 400
 
-    # 9. Verify Ravi's trust score
+    # 10. Verify Ravi's trust score
     trust_res = client.get(f"/api/trust/user/{ravi_id}")
     assert trust_res.status_code == 200
     trust_info = trust_res.json()
