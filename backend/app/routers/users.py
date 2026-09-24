@@ -6,7 +6,7 @@ from app.models.user import User
 from app.models.skill import Skill, UserSkill
 from app.models.safety import Block
 from app.schemas.user import UserOut, UserUpdate, UserPublicProfile, UserNearbyOut, MonetizationUpdate
-from app.services.auth import get_current_user
+from app.services.auth import get_current_user, get_current_admin
 from app.services.spatial import calculate_haversine_distance, format_distance, get_bounding_box
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -59,8 +59,8 @@ def update_my_profile(update_data: UserUpdate, current_user: User = Depends(get_
 
 
 @router.patch("/me/monetization", response_model=UserOut)
-def update_my_monetization(update_data: MonetizationUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Persist product entitlements. Verification remains false until an approval workflow sets it true."""
+def update_my_monetization(update_data: MonetizationUpdate, current_user: User = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """Persist product entitlements for an administrator-controlled account only."""
     values = update_data.model_dump(exclude_unset=True)
     if values.get("credits") is not None and values["credits"] < 0:
         raise HTTPException(status_code=400, detail="Credits cannot be negative")
