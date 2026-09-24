@@ -59,6 +59,15 @@ def create_connection(
     if not partner:
         raise HTTPException(status_code=404, detail="User not found")
 
+    blocked = db.query(Block).filter(
+        or_(
+            and_(Block.blocker_id == current_user.id, Block.blocked_id == connected_user_id),
+            and_(Block.blocker_id == connected_user_id, Block.blocked_id == current_user.id),
+        )
+    ).first()
+    if blocked:
+        raise HTTPException(status_code=403, detail="Connection unavailable for this user")
+
     existing = db.query(Connection).filter(
         or_(
             and_(Connection.user_id == current_user.id, Connection.connected_user_id == connected_user_id),
@@ -151,8 +160,9 @@ def get_connection_suggestions(
     connected_ids.add(current_user.id)
 
     # Blocks
-    blocks = [b.blocked_id for b in db.query(Block.blocked_id).filter(Block.blocker_id == current_user.id).all()]
-    connected_ids.update(blocks)
+    blocked_by_me = [b.blocked_id for b in db.query(Block.blocked_id).filter(Block.blocker_id == current_user.id).all()]
+    blocking_me = [b.blocker_id for b in db.query(Block.blocker_id).filter(Block.blocked_id == current_user.id).all()]
+    connected_ids.update(blocked_by_me + blocking_me)
 
     candidates = db.query(User).filter(
         User.id.notin_(connected_ids),
