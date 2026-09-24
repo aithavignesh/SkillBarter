@@ -117,6 +117,26 @@ async def send_message(
     if req.receiver_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot message yourself")
 
+    receiver = db.query(User).filter(
+        User.id == req.receiver_id,
+        User.is_active == True
+    ).first()
+    if not receiver:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+
+    # If a message is attached to an exchange, both the sender and receiver
+    # must be participants in that exchange. This prevents a client from
+    # attaching another user's exchange ID to a message.
+    if req.exchange_id is not None:
+        exchange = db.query(Exchange).filter(Exchange.id == req.exchange_id).first()
+        if not exchange:
+            raise HTTPException(status_code=404, detail="Exchange not found")
+        if current_user.id not in (exchange.requester_id, exchange.receiver_id):
+            raise HTTPException(status_code=403, detail="Not authorized for this exchange")
+        partner_id = exchange.receiver_id if current_user.id == exchange.requester_id else exchange.requester_id
+        if req.receiver_id != partner_id:
+            raise HTTPException(status_code=400, detail="Message recipient does not match the exchange partner")
+
     # Check if blocked
     is_blocked = db.query(Block).filter(
         or_(
