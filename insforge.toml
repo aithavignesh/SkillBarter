@@ -1,0 +1,7 @@
+# SkillBarter InsForge project configuration
+# Apply with the InsForge CLI:
+# npx @insforge/cli config apply --file insforge.toml --auto-approve
+
+[auth]
+require_email_verification = false
+disable_signup = false
