@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional
 import datetime
 from app.schemas.exchange import UserSummary
@@ -9,7 +9,17 @@ class ReviewCreate(BaseModel):
     reliability_score: int = Field(5, ge=1, le=5)
     skill_quality_score: int = Field(5, ge=1, le=5)
     would_exchange_again: bool = True
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=1000)
+
+    @field_validator("comment")
+    @classmethod
+    def validate_comment(cls, value: Optional[str]):
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("Comment cannot be blank")
+        return value
 
 class ReviewOut(BaseModel):
     id: int
