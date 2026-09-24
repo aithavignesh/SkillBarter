@@ -1,11 +1,11 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 import datetime
 from app.schemas.exchange import UserSummary
 
 class MessageCreate(BaseModel):
     receiver_id: int
-    content: str
+    content: str = Field(min_length=1, max_length=2000)
     exchange_id: Optional[int] = None
 
 class MessageOut(BaseModel):
