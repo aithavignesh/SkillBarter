@@ -23,12 +23,20 @@ def global_search(
 ):
     query_str = q.strip().lower()
     
-    # Exclude blocks
-    blocked = [b.blocked_id for b in db.query(Block.blocked_id).filter(Block.blocker_id == current_user.id).all()]
+    # Exclude blocks in both directions so blocked users cannot discover each other.
+    blocked_by_me = [
+        b.blocked_id
+        for b in db.query(Block.blocked_id).filter(Block.blocker_id == current_user.id).all()
+    ]
+    blocking_me = [
+        b.blocker_id
+        for b in db.query(Block.blocker_id).filter(Block.blocked_id == current_user.id).all()
+    ]
+    excluded_user_ids = set(blocked_by_me + blocking_me + [current_user.id])
     
     # 1. Search People
     people_query = db.query(User).filter(
-        User.id.notin_(blocked + [current_user.id]),
+        User.id.notin_(excluded_user_ids),
         User.is_active == True
     )
     if query_str:
@@ -83,7 +91,7 @@ def global_search(
     ]
 
     # 3. Search Requests/Offers (Posts)
-    posts_query = db.query(Post).filter(Post.author_id.notin_(blocked))
+    posts_query = db.query(Post).filter(Post.author_id.notin_(excluded_user_ids))
     if query_str:
         posts_query = posts_query.filter(
             or_(
