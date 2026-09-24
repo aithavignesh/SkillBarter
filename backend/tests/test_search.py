@@ -13,9 +13,13 @@ def test_search_excludes_users_who_block_current_user(client):
         "/api/users/me",
         headers={"Authorization": f"Bearer {ananya_token}"}
     ).json()["id"]
+    arjun_id = client.get(
+        "/api/users/me",
+        headers={"Authorization": f"Bearer {arjun_token}"}
+    ).json()["id"]
 
     block_res = client.post(
-        f"/api/blocks/{arjun_token and ananya_id}",
+        f"/api/blocks/{arjun_id}",
         headers={"Authorization": f"Bearer {ananya_token}"}
     )
     assert block_res.status_code == 200
