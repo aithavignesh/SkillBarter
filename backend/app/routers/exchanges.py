@@ -299,8 +299,19 @@ def start_exchange(
     if not e:
         raise HTTPException(status_code=404, detail="Exchange not found")
         
+    if current_user.id not in (e.requester_id, e.receiver_id):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Acceptance already transitions the exchange to ACTIVE. Keep this endpoint
+    # backward-compatible for clients that still call /start after acceptance.
+    if e.status == "ACTIVE":
+        return serialize_exchange(e, current_user.id, db)
+
     if e.status != "ACCEPTED":
-        raise HTTPException(status_code=400, detail="Only accepted exchanges can be moved to active")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only accepted exchanges can be moved to active (current status: {e.status})"
+        )
 
     e.status = "ACTIVE"
     e.updated_at = datetime.datetime.utcnow()
