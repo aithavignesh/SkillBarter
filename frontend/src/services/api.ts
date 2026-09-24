@@ -19,7 +19,7 @@ class ApiClient {
       // selector. Bind the phone-authenticated session to its InsForge auth user.
       const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
       if (authError || !authData?.user?.email) throw new Error(authError?.message || 'Not authenticated');
-      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', authData.user.email).maybeSingle();
+      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', authData.user.email).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
       if (!result.data) throw new Error('Application profile not found');
       return { authUser: authData.user, appUser: result.data };
@@ -27,7 +27,7 @@ class ApiClient {
     const { data, error } = await insforge.auth.getCurrentUser();
     if (error) throw new Error(error.message || 'Unable to load current user');
     if (!data?.user?.email) throw new Error('Not authenticated');
-    const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', data.user.email).maybeSingle();
+    const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', data.user.email).maybeSingle();
     if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
     if (!result.data) throw new Error('Application profile not found');
     return { authUser: data.user, appUser: result.data };
@@ -42,7 +42,7 @@ class ApiClient {
     const longitude = rawLongitude === null || rawLongitude === undefined || rawLongitude === '' ? undefined : Number(rawLongitude);
     if (latitude !== undefined && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) throw new Error('Invalid latitude.');
     if (longitude !== undefined && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180)) throw new Error('Invalid longitude.');
-    const existing = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', email).maybeSingle();
+    const existing = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', email).maybeSingle();
     if (existing.error) console.warn('App profile lookup warning:', existing.error);
     if (existing.data) {
       const updates = {
@@ -56,7 +56,7 @@ class ApiClient {
         primary_intent: profile.primary_intent ?? existing.data.primary_intent ?? 'EXCHANGE',
         onboarding_completed: profile.onboarding_completed ?? existing.data.onboarding_completed,
       };
-      const { data, error } = await insforge.database.from('users').update(updates).eq('id', existing.data.id).select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').single();
+      const { data, error } = await insforge.database.from('users').update(updates).eq('id', existing.data.id).select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').single();
       if (error) console.warn('App profile sync warning:', error);
       return data ?? existing.data;
     }
@@ -73,7 +73,7 @@ class ApiClient {
       primary_intent: profile.primary_intent ?? 'EXCHANGE',
       onboarding_completed: profile.onboarding_completed ?? false,
       is_active: true,
-    }).select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').single();
+    }).select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').single();
     if (error) { console.warn('App profile creation warning:', error); return null; }
     return data;
   }
@@ -236,7 +236,7 @@ class ApiClient {
     if (phone) {
       const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
       if (authError || !authData?.user?.email) throw new Error(authError?.message || 'Not authenticated');
-      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', authData.user.email).maybeSingle();
+      const result = await insforge.database.from('users').select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at').eq('email', authData.user.email).maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load current user');
       if (!result.data) throw new Error('Application profile not found');
       const user = { ...result.data, id: Number(result.data.id) };
@@ -277,7 +277,7 @@ class ApiClient {
         .from('users')
         .update({ ...profilePayload, updated_at: new Date().toISOString() })
         .eq('email', authData.user.email)
-        .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
+        .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
         .single();
       if (error) throw new Error(error.message || 'Unable to update profile');
       return { user: data };
@@ -359,7 +359,7 @@ class ApiClient {
 
   async getUserProfile(userId: number) {
     const { appUser } = await this.getAppUser();
-    const { data, error } = await insforge.database.from('users').select('id,full_name,avatar_url,bio,headline,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,onboarding_completed,primary_intent,created_at').eq('id', userId).maybeSingle();
+    const { data, error } = await insforge.database.from('users').select('id,full_name,avatar_url,bio,headline,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,onboarding_completed,primary_intent,created_at').eq('id', userId).maybeSingle();
     if (error) throw new Error(error.message || 'Unable to load user profile');
     if (!data) throw new Error('User not found');
     const skills = await this.getUserSkills(userId);
@@ -540,7 +540,7 @@ class ApiClient {
 
     const receiverResult = await insforge.database
       .from('users')
-      .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
+      .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
       .eq('id', receiverId)
       .eq('is_active', true)
       .maybeSingle();
@@ -1121,7 +1121,7 @@ class ApiClient {
 
     const authorsResult = await insforge.database
       .from('users')
-      .select('id,full_name,avatar_url,headline,latitude,longitude,location_visibility,trust_score,premium,verified,is_active,badges')
+      .select('id,full_name,avatar_url,headline,latitude,longitude,location_visibility,trust_score,is_active,badges')
       .in('id', authorIds);
     if (authorsResult.error) throw new Error(authorsResult.error.message || 'Unable to load feed authors');
 

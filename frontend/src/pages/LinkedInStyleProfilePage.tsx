@@ -1,5 +1,5 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { insforge } from '../lib/insforge';
 import { useAuth } from '../context/AuthContext';
@@ -17,11 +17,13 @@ const fallbackAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd722
 export const LinkedInStyleProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { currentUser, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const targetId = Number(id || currentUser?.id || 0);
   const own = Number(currentUser?.id) === targetId;
   const [profile, setProfile] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -34,17 +36,39 @@ export const LinkedInStyleProfilePage: React.FC = () => {
   const avatarInput = useRef<HTMLInputElement>(null);
 
   const load = async () => {
-    if (!targetId) return;
+    if (!targetId) {
+      setLoading(false);
+      setLoadError(false);
+      setProfile(null);
+      return;
+    }
+    let mounted = true;
     try {
       setLoading(true);
+      setLoadError(false);
+      setMessage('');
       const [p, r] = await Promise.all([api.getUserProfile(targetId), api.getUserReviews(targetId)]);
+      if (!mounted) return;
       setProfile(p); setReviews(Array.isArray(r) ? r : []);
       if (!own) {
-        try { const status = await (api as any).getConnectionStatus(targetId); setConnected(Boolean(status?.connected)); }
-        catch { setConnected(false); }
+        try {
+          const status = await (api as any).getConnectionStatus(targetId);
+          if (mounted) setConnected(Boolean(status?.connected));
+        } catch {
+          if (mounted) setConnected(false);
+        }
       }
-    } catch (e: any) { setMessage(e?.message || 'Unable to load profile.'); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      if (mounted) {
+        setProfile(null);
+        setReviews([]);
+        setLoadError(true);
+        setMessage('');
+      }
+    } finally {
+      if (mounted) setLoading(false);
+      mounted = false;
+    }
   };
 
   useEffect(() => { void load(); }, [targetId, own]);
@@ -54,6 +78,32 @@ export const LinkedInStyleProfilePage: React.FC = () => {
   const monetization = useMemo(() => own ? getMonetizationState(targetId) : null, [own, targetId, avatarVersion]);
   const featured = Boolean(monetization?.featuredUntil && new Date(monetization.featuredUntil).getTime() > Date.now());
   const averageReview = reviews.length ? reviews.reduce((sum, r) => sum + Number(r.rating || r.score || 0), 0) / reviews.length : 0;
+  const completionItems = useMemo(() => [
+    { label: 'Photo', complete: Boolean(profile?.avatar_url) },
+    { label: 'Headline', complete: Boolean(profile?.headline?.trim()) },
+    { label: 'About', complete: Boolean(profile?.bio?.trim()) },
+    { label: 'Location', complete: Boolean(profile?.address_display?.trim()) },
+    { label: 'Offered skill', complete: offered.length > 0 },
+    { label: 'Learning goal', complete: needed.length > 0 },
+  ], [profile, offered.length, needed.length]);
+  const profileCompletion = Math.round((completionItems.filter(item => item.complete).length / completionItems.length) * 100);
+  const missingCompletionItems = completionItems.filter(item => !item.complete);
+  const orientationStorageKey = `skillbarter:first-time-orientation:${targetId}`;
+  const [showOrientation, setShowOrientation] = useState(false);
+
+  useEffect(() => {
+    setShowOrientation(
+      own &&
+      profileCompletion === 100 &&
+      window.localStorage.getItem(orientationStorageKey) !== 'completed',
+    );
+  }, [own, profileCompletion, orientationStorageKey]);
+
+  const continueFromCompletion = () => {
+    window.localStorage.setItem(orientationStorageKey, 'completed');
+    setShowOrientation(false);
+    navigate('/matches');
+  };
 
   const uploadAvatar = async (file?: File) => {
     if (!file || !own) return;
@@ -102,8 +152,9 @@ export const LinkedInStyleProfilePage: React.FC = () => {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-400">Loading profile…</div>;
-  if (!profile) return <div className="min-h-[70vh] flex items-center justify-center text-sm text-slate-500">Profile unavailable.</div>;
+  if (loading) return <div className="min-h-[70vh] flex items-center justify-center"><div className="flex items-center gap-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" />Loading profile…</div></div>;
+  if (loadError) return <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3 px-4 text-center"><p className="text-sm font-semibold text-[#17233b]">We couldn't load this profile.</p><button type="button" onClick={() => { void load(); }} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#d31d24] hover:text-[#b8171d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]">Try again <span aria-hidden="true">↻</span></button></div>;
+  if (!profile) return <div className="min-h-[70vh] flex flex-col items-center justify-center gap-2 px-4 text-center"><p className="text-sm font-semibold text-[#17233b]">This profile is unavailable.</p><p className="text-xs text-slate-500">The profile may have been removed or is not available yet.</p></div>;
 
   return <div className="min-h-screen bg-[#f3f2ef] pb-16">
     <div className="mx-auto max-w-[1120px] px-4 py-5 sm:px-6 lg:px-8">
@@ -136,6 +187,49 @@ export const LinkedInStyleProfilePage: React.FC = () => {
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_310px]">
         <main className="space-y-4">
           {editing && own && <section className="border border-[#d9dfe6] bg-white p-5 shadow-sm"><div className="mb-4 flex items-center gap-2"><Edit3 className="h-4 w-4 text-[#d31d24]"/><h2 className="text-base font-bold text-[#17233b]">Edit introduction</h2></div><form onSubmit={save} className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-[#4f5d73]">Name<input className="mt-1 w-full border border-[#d9dfe6] px-3 py-2.5 text-sm" value={profile.full_name || ''} onChange={e=>setProfile({...profile,full_name:e.target.value})}/></label><label className="text-xs font-semibold text-[#4f5d73]">Headline<input className="mt-1 w-full border border-[#d9dfe6] px-3 py-2.5 text-sm" value={profile.headline || ''} onChange={e=>setProfile({...profile,headline:e.target.value})}/></label><label className="sm:col-span-2 text-xs font-semibold text-[#4f5d73]">About<textarea rows={5} className="mt-1 w-full border border-[#d9dfe6] px-3 py-2.5 text-sm" value={profile.bio || ''} onChange={e=>setProfile({...profile,bio:e.target.value})}/></label><label className="text-xs font-semibold text-[#4f5d73]">Location<input className="mt-1 w-full border border-[#d9dfe6] px-3 py-2.5 text-sm" value={profile.address_display || ''} onChange={e=>setProfile({...profile,address_display:e.target.value})}/></label><label className="text-xs font-semibold text-[#4f5d73]">Availability<input className="mt-1 w-full border border-[#d9dfe6] px-3 py-2.5 text-sm" value={profile.availability || ''} onChange={e=>setProfile({...profile,availability:e.target.value})}/></label><div className="sm:col-span-2"><Button type="submit" loading={saving} icon={<Save className="h-4 w-4"/>}>Save changes</Button></div></form></section>}
+
+          {own && (
+            <section className={`border p-5 shadow-sm ${profileCompletion === 100 ? 'border-[#e1e4e8] bg-white' : 'border-[#ead0d1] bg-[#fffafa]'}`} aria-label="Profile completion">
+              {profileCompletion === 100 ? (
+                <p className="flex items-center gap-2 text-xs font-semibold text-[#697386]">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                  Profile complete ✓
+                </p>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-[#17233b]">Profile setup · {profileCompletion}%</p>
+                      <p className="mt-1 text-xs text-[#697386]">
+                        Missing: {missingCompletionItems.map(item => item.label).join(', ')}
+                      </p>
+                    </div>
+                    <Button size="sm" onClick={() => setEditing(true)} icon={<Edit3 className="h-3.5 w-3.5" />}>
+                      Complete profile →
+                    </Button>
+                  </div>
+                  <div className="mt-4 h-2 overflow-hidden bg-[#e6e8eb]" role="progressbar" aria-label={`Profile completion ${profileCompletion}%`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={profileCompletion}>
+                    <div className="h-full bg-[#d31d24]" style={{ width: `${profileCompletion}%` }} />
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
+          {showOrientation && (
+            <section className="border border-[#d9dfe6] bg-white px-4 py-4 shadow-sm sm:px-5" aria-label="Onboarding complete">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#d31d24]">YOU'RE READY</p>
+                  <p className="mt-1 text-sm font-bold text-[#17233b]">Your profile is ready.</p>
+                  <p className="mt-1 text-xs leading-5 text-[#697386]">You’re ready to find a learning partner and start your first exchange.</p>
+                </div>
+                <Button size="sm" onClick={continueFromCompletion} className="w-full sm:w-auto sm:shrink-0">
+                  Find a learning partner →
+                </Button>
+              </div>
+            </section>
+          )}
 
           <section className="border border-[#d9dfe6] bg-white p-5 shadow-sm"><h2 className="text-lg font-bold text-[#17233b]">About</h2><p className="mt-3 whitespace-pre-line text-sm leading-7 text-[#4f5d73]">{profile.bio || 'Add a short introduction about your background, what you enjoy teaching, and what you want to learn through SkillBarter.'}</p></section>
 

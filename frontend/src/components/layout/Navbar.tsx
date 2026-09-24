@@ -23,6 +23,7 @@ export const Navbar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -126,30 +127,166 @@ export const Navbar: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
-  if (!currentUser) {
+if (!currentUser) {
     return (
-      <header className="sticky top-0 z-40 border-b border-[#e4e6e9] bg-white">
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link to="/" className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center bg-[#d31d24] text-white"><Repeat className="h-[17px] w-[17px]" /></span>
-            <span className="text-[19px] font-bold tracking-[-0.03em] text-[#17233b]">Skill<span className="text-[#d31d24]">Barter</span></span>
-          </Link>
-          <div className="flex items-center gap-1 sm:gap-3">
-            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} className="hidden items-center gap-2 border border-[#e1e4e8] bg-white px-3 py-2 text-[12px] font-semibold text-[#4d5b72] transition hover:border-[#cbd1d8] hover:text-[#17233b] sm:flex">
-              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              {theme === 'light' ? 'Dark mode' : 'Light mode'}
-            </button>
-            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} className="flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] sm:hidden">
-              {theme === 'light' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
-            </button>
-            <Link to="/login" className="px-3 py-2 text-[13px] font-semibold text-[#4d5b72] hover:text-[#17233b]">Log in</Link>
-            <Link to="/signup" className="bg-[#d31d24] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#b8171d]">Join SkillBarter</Link>
-          </div>
-        </div>
-      </header>
-    );
-  }
+        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 
+                {/* Logo */}
+                <Link
+                    to="/"
+                    className="flex items-center gap-2"
+                    aria-label="SkillBarter home"
+                >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#c62828] text-white">
+                        <Repeat className="h-5 w-5" />
+                    </div>
+
+                    <span className="text-lg font-semibold tracking-tight text-slate-900">
+                        SkillBarter
+                    </span>
+                </Link>
+
+                {/* Desktop Navigation */}
+                <div className="hidden items-center gap-7 lg:flex">
+                    <a
+                        href="#how-it-works"
+                        className="text-sm font-medium text-slate-600 transition-colors hover:text-[#c62828]"
+                    >
+                        How it works
+                    </a>
+
+                    <a
+                        href="#explore"
+                        className="text-sm font-medium text-slate-600 transition-colors hover:text-[#c62828]"
+                    >
+                        Explore
+                    </a>
+
+                    <a
+                        href="#why-skillbarter"
+                        className="text-sm font-medium text-slate-600 transition-colors hover:text-[#c62828]"
+                    >
+                        Why SkillBarter
+                    </a>
+
+                    <a
+                        href="#faq"
+                        className="text-sm font-medium text-slate-600 transition-colors hover:text-[#c62828]"
+                    >
+                        FAQ
+                    </a>
+                </div>
+
+                {/* Desktop Actions */}
+                <div className="hidden items-center gap-3 lg:flex">
+                    {/* Theme Toggle */}
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                        aria-label="Toggle theme"
+                    >
+                        {theme === 'dark' ? (
+                            <Sun className="h-4 w-4" />
+                        ) : (
+                            <Moon className="h-4 w-4" />
+                        )}
+                    </button>
+
+                    {/* Login */}
+                    <Link
+                        to="/login"
+                        className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    >
+                        Log in
+                    </Link>
+                </div>
+
+                {/* Mobile Menu Button */}
+                <div className="flex items-center gap-2 lg:hidden">
+                    {/* Theme Toggle */}
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                        aria-label="Toggle theme"
+                    >
+                        {theme === 'dark' ? (
+                            <Sun className="h-4 w-4" />
+                        ) : (
+                            <Moon className="h-4 w-4" />
+                        )}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
+                        aria-label="Toggle navigation menu"
+                        aria-expanded={isMobileMenuOpen}
+                    >
+                        {isMobileMenuOpen ? (
+                            <X className="h-5 w-5" />
+                        ) : (
+                            <Menu className="h-5 w-5" />
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile Navigation */}
+            {isMobileMenuOpen && (
+                <div className="border-t border-slate-200 bg-white px-4 py-4 lg:hidden">
+                    <div className="flex flex-col gap-1">
+
+                        <a
+                            href="#how-it-works"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#c62828]"
+                        >
+                            How it works
+                        </a>
+
+                        <a
+                            href="#explore"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#c62828]"
+                        >
+                            Explore
+                        </a>
+
+                        <a
+                            href="#why-skillbarter"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#c62828]"
+                        >
+                            Why SkillBarter
+                        </a>
+
+                        <a
+                            href="#faq"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#c62828]"
+                        >
+                            FAQ
+                        </a>
+
+                        <div className="my-2 border-t border-slate-200" />
+
+                        <Link
+                            to="/login"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                            Log in
+                        </Link>
+                    </div>
+                </div>
+            )}
+        </nav>
+    );
+}
   const navLink = (item: NavItem) => {
     const active = isActive(item.path);
     const expanded = expandedNav === item.path || Boolean(item.features?.some(feature => isActive(feature.path)));

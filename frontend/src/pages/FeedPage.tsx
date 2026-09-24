@@ -106,24 +106,24 @@ export const FeedPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* First-session activation */}
-      <Card className="mb-6 overflow-hidden border-slate-200 bg-gradient-to-r from-slate-900 via-slate-900 to-[#17233b] text-white">
+      <Card className="feed-activation-panel mb-6 overflow-hidden text-white">
         <div className="p-5 sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">Start your SkillBarter journey</p>
-              <h1 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">Learn one skill. Teach one skill. Make your first connection.</h1>
-              <p className="mt-2 text-xs leading-relaxed text-slate-300">
-                The fastest path to your first exchange is simple: complete your learning profile, find a peer who can teach you, then start a learning session.
+              <p className="feed-activation-panel__eyebrow text-[10px] font-bold uppercase tracking-[0.18em]">Start your SkillBarter journey</p>
+              <h1 className="feed-activation-panel__headline mt-2 text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl">Find your first learning exchange.</h1>
+              <p className="feed-activation-panel__description mt-3 text-xs leading-relaxed">
+                Set your skills, find a compatible peer, and start learning together.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[430px]">
               {[
                 { step: '01', label: 'Set your skills', path: `/profile/${currentUser?.id}`, action: 'set_skills' },
                 { step: '02', label: 'Find a partner', path: '/discover' },
-                { step: '03', label: 'Start exchange', path: '/matches' },
+                { step: '03', label: 'Start learning', path: '/matches' },
               ].map(item => (
-                <Link key={item.step} to={item.path} onClick={() => trackEvent('activation_cta_clicked', { source: 'feed_activation_banner', action: item.action })} className="rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10">
-                  <span className="text-[10px] font-black text-emerald-300">{item.step}</span>
+                <Link key={item.step} to={item.path} onClick={() => trackEvent('activation_cta_clicked', { source: 'feed_activation_banner', action: item.action })} className="feed-activation-panel__step rounded-lg p-3">
+                  <span className="feed-activation-panel__step-number text-[10px] font-black">{item.step}</span>
                   <span className="mt-1 block text-[11px] font-semibold leading-tight text-white">{item.label}</span>
                 </Link>
               ))}
