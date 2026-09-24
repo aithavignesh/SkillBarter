@@ -43,6 +43,13 @@ def test_send_message_rejects_empty_or_oversized_content(client):
     )
     assert empty_response.status_code == 422
 
+    whitespace_response = client.post(
+        "/api/messages",
+        json={"receiver_id": ravi_id, "content": "   "},
+        headers=headers
+    )
+    assert whitespace_response.status_code == 422
+
     oversized_response = client.post(
         "/api/messages",
         json={"receiver_id": ravi_id, "content": "x" * 2001},
