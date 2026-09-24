@@ -18,6 +18,29 @@ def create_report(
     if req.reported_user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot report yourself")
 
+    if req.reported_user_id is None and req.reported_exchange_id is None:
+        raise HTTPException(status_code=400, detail="Report must target a user or exchange")
+
+    reported_user = None
+    if req.reported_user_id is not None:
+        reported_user = db.query(User).filter(User.id == req.reported_user_id).first()
+        if not reported_user:
+            raise HTTPException(status_code=404, detail="Reported user not found")
+
+    reported_exchange = None
+    if req.reported_exchange_id is not None:
+        from app.models.exchange import Exchange
+        reported_exchange = db.query(Exchange).filter(Exchange.id == req.reported_exchange_id).first()
+        if not reported_exchange:
+            raise HTTPException(status_code=404, detail="Reported exchange not found")
+        if current_user.id not in (reported_exchange.requester_id, reported_exchange.receiver_id):
+            raise HTTPException(status_code=403, detail="Not authorized to report this exchange")
+        if req.reported_user_id is not None and req.reported_user_id not in (
+            reported_exchange.requester_id,
+            reported_exchange.receiver_id,
+        ):
+            raise HTTPException(status_code=400, detail="Reported user is not part of the exchange")
+
     report = Report(
         reporter_id=current_user.id,
         reported_user_id=req.reported_user_id,
@@ -29,8 +52,6 @@ def create_report(
     db.add(report)
     db.commit()
     db.refresh(report)
-
-    reported_user = db.query(User).filter(User.id == req.reported_user_id).first() if req.reported_user_id else None
 
     return {
         "id": report.id,
