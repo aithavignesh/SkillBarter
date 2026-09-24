@@ -40,7 +40,7 @@ class ExchangeOut(BaseModel):
     receiver_skill_id: Optional[int] = None
     requester_skill_name: Optional[str] = None
     receiver_skill_name: Optional[str] = None
-    status: str # PENDING, ACCEPTED, COUNTERED, REJECTED, ACTIVE, COMPLETED, CANCELLED
+    status: str # PENDING, COUNTERED, REJECTED, ACTIVE, COMPLETED, CANCELLED
     proposal_message: str
     counter_message: Optional[str] = None
     preferred_date: Optional[str] = None
