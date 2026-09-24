@@ -90,6 +90,10 @@ def block_user(
     if blocked_user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot block yourself")
 
+    blocked_user = db.query(User).filter(User.id == blocked_user_id).first()
+    if not blocked_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     existing = db.query(Block).filter(
         Block.blocker_id == current_user.id,
         Block.blocked_id == blocked_user_id
