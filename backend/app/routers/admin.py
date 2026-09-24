@@ -77,7 +77,7 @@ def toggle_user_active(
 
 @router.get("/reports")
 def get_admin_reports(
-    status_filter: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None, pattern="^(PENDING|RESOLVED|DISMISSED)$"),
     admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
@@ -107,13 +107,18 @@ def get_admin_reports(
 def resolve_report(
     report_id: int,
     resolution_status: str = Query(..., pattern="^(RESOLVED|DISMISSED)$"),
-    admin_note: Optional[str] = None,
+    admin_note: Optional[str] = Query(None, max_length=2000),
     admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
     report = db.query(Report).filter(Report.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+
+    if admin_note is not None:
+        admin_note = admin_note.strip()
+        if not admin_note:
+            raise HTTPException(status_code=400, detail="Admin note cannot be blank")
 
     report.status = resolution_status
     report.admin_note = admin_note
@@ -122,7 +127,12 @@ def resolve_report(
     if report.reported_user_id and resolution_status == "RESOLVED":
         recalculate_user_trust_score(report.reported_user_id, db)
 
-    return {"message": f"Report #{report_id} {resolution_status.lower()}"}
+    return {
+        "id": report.id,
+        "status": report.status,
+        "admin_note": report.admin_note,
+        "message": f"Report #{report_id} {resolution_status.lower()}"
+    }
 
 @router.get("/exchanges")
 def get_admin_exchanges(
