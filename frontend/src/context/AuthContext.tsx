@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { clearPhoneSession, getCurrentPhoneUser, requestPhoneOtp, verifyPhoneOtp } from '../services/phoneAuth';
+import { clearPhoneSession, getCurrentPhoneUser, hasPersistedPhoneSession, requestPhoneOtp, verifyPhoneOtp } from '../services/phoneAuth';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(user);
     } catch {
       try {
+        if (!hasPersistedPhoneSession()) throw new Error('No persisted phone session');
         const phoneUser = await getCurrentPhoneUser();
         if (phoneUser) {
           setCurrentUser(phoneUser as User);
