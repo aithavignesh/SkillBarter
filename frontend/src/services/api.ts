@@ -304,6 +304,9 @@ class ApiClient {
       // access-token-only sign-out. This prevents a stale session from
       // surviving a user-requested logout.
       this.clearToken();
+      // Clear the SDK's in-memory token as well. Storage cleanup alone is not
+      // sufficient when provider signOut fails for an access-token-only phone session.
+      try { insforge.setAccessToken(''); } catch {}
       sessionStorage.removeItem('skillbarter_user_id');
       sessionStorage.removeItem('skillbarter_phone');
       sessionStorage.removeItem('skillbarter_otp_phone');
