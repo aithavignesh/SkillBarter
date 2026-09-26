@@ -291,13 +291,34 @@ class ApiClient {
   }
 
   async logout() {
-    const { error } = await insforge.auth.signOut();
-    this.clearToken();
-    sessionStorage.removeItem('skillbarter_user_id');
-    sessionStorage.removeItem('skillbarter_phone');
-    // Remove any in-progress phone OTP challenge so a signed-out session cannot reuse it.
-    sessionStorage.removeItem('skillbarter_otp_challenge');
-    if (error) throw new Error(error.message || 'Logout failed');
+    const phoneSession = Boolean(sessionStorage.getItem('skillbarter_phone'));
+    let signOutError: any = null;
+
+    try {
+      const { error } = await insforge.auth.signOut();
+      signOutError = error;
+    } catch (error) {
+      signOutError = error;
+    } finally {
+      // Always clear browser session state, even if the provider rejects an
+      // access-token-only sign-out. This prevents a stale session from
+      // surviving a user-requested logout.
+      this.clearToken();
+      sessionStorage.removeItem('skillbarter_user_id');
+      sessionStorage.removeItem('skillbarter_phone');
+      sessionStorage.removeItem('skillbarter_otp_phone');
+      sessionStorage.removeItem('skillbarter_otp_challenge');
+      sessionStorage.removeItem('skillbarter_otp_sent_at');
+      sessionStorage.removeItem('skillbarter_demo_otp');
+      sessionStorage.removeItem('skillbarter_otp_expires');
+    }
+
+    // Phone OTP sessions intentionally use an access-token-only flow. If the
+    // provider cannot revoke that token through signOut, local logout is still
+    // completed so the application cannot reuse the session in this tab.
+    if (signOutError && !phoneSession) {
+      throw new Error(signOutError.message || 'Logout failed');
+    }
   }
 
   async getSkills(category?: string) {
