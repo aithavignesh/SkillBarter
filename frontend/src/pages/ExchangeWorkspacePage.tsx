@@ -29,6 +29,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
+  const [partnerBlocked, setPartnerBlocked] = useState(false);
 
   const exchangeId = Number(id || 0);
 
@@ -39,6 +40,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       setExchange(data);
       trackEvent('exchange_workspace_viewed', { exchange_status: data.status });
       const partnerId = currentUser?.id === data.requester_id ? data.receiver_id : data.requester_id;
+      setPartnerBlocked(await api.isUserBlocked(partnerId));
       setMessages(await api.getMessages(partnerId));
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -92,7 +94,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTextMessage.trim() || !exchange || !partner) return;
+    if (!newTextMessage.trim() || !exchange || !partner || partnerBlocked) return;
     try {
       setActionError('');
       setActionSuccess('');
@@ -211,11 +213,12 @@ export const ExchangeWorkspacePage: React.FC = () => {
             </Card>
 
             <Card className="overflow-hidden">
+              {partnerBlocked && <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">This member is blocked. Messaging is disabled. <button type="button" className="ml-2 underline" onClick={async () => { try { await api.unblockUser(partner.id); setPartnerBlocked(false); setActionError(""); } catch (e: any) { setActionError(e?.message || "Unable to unblock member"); } }}>Unblock</button></div>}
               <div className="flex items-center justify-between border-b border-[#e1e4e8] bg-[#f7f8f7] px-4 py-3"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-[#d31d24]" /><span className="text-xs font-bold text-[#17233b]">Learning plan with {partner.full_name}</span></div><span className="text-[10px] text-slate-400">Exchange #{exchange.id}</span></div>
               <div className="h-[390px] space-y-3 overflow-y-auto bg-white p-3 sm:p-4">
                 {messages.length === 0 ? <div className="py-24 text-center text-xs text-slate-400">No messages yet. Send a quick note about your learning goal and preferred session time.</div> : messages.map(m => { const mine = Number(m.sender_id) === Number(currentUser?.id); return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[90%] break-words px-3 py-2.5 text-xs sm:max-w-[78%] ${mine ? 'bg-[#d31d24] text-white' : 'bg-[#f1f3f5] text-[#17233b]'}`}><p>{m.content}</p><span className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-slate-400'}`}>{new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>; })}
               </div>
-              <form onSubmit={handleSendMessage} className="flex flex-col gap-2 border-t border-[#e1e4e8] bg-[#f7f8f7] p-3 sm:flex-row"><input value={newTextMessage} onChange={e => setNewTextMessage(e.target.value)} placeholder={`Message ${partner.full_name.split(' ')[0]}…`} className="h-10 w-full min-w-0 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" /><Button type="submit" size="sm" className="w-full sm:w-auto" icon={<Send className="h-3.5 w-3.5" />}>Send</Button></form>
+              <form onSubmit={handleSendMessage} className="flex flex-col gap-2 border-t border-[#e1e4e8] bg-[#f7f8f7] p-3 sm:flex-row"><input disabled={partnerBlocked} value={newTextMessage} onChange={e => setNewTextMessage(e.target.value)} placeholder={`Message ${partner.full_name.split(' ')[0]}…`} className="h-10 w-full min-w-0 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none disabled:cursor-not-allowed disabled:bg-slate-100 focus:border-[#d31d24]" /><Button type="submit" size="sm" disabled={partnerBlocked} className="w-full sm:w-auto" icon={<Send className="h-3.5 w-3.5" />}>Send</Button></form>
             </Card>
           </div>
 
