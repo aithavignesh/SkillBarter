@@ -6,13 +6,14 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   Repeat, Compass, Sparkles, ArrowLeftRight, MessageSquare, Bell, Search,
   User as UserIcon, ShieldCheck, LogOut, Shield, Coins, Users, Settings,
-  HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy, Sun, Moon, Menu, X,
+  HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy, Sun, Moon, Menu, X, UserPlus,
 } from 'lucide-react';
 
 export const DEFAULT_AVATAR_URL = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160';
 
 type NavFeature = { label: string; path: string };
 type NavItem = { label: string; path: string; icon: React.ComponentType<{ className?: string }>; features?: NavFeature[] };
+const notificationIconFor = (type: string) => type === 'MESSAGE' ? MessageSquare : type.startsWith('EXCHANGE') ? ArrowLeftRight : type.includes('CONNECT') ? UserPlus : type.includes('TRUST') || type.includes('REVIEW') ? ShieldCheck : Repeat;
 
 export const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -353,7 +354,7 @@ if (!currentUser) {
       </aside>
 
       <header className="sticky top-0 z-30 h-[68px] border-b border-[#e4e6e9] bg-white lg:ml-[312px]">
-        <div className="flex h-full items-center gap-4 px-5 sm:px-7 lg:px-8">
+        <div className="flex h-full items-center gap-4 px-5 pl-14 sm:px-7 sm:pl-16 lg:px-8 lg:pl-8">
           <div className="min-w-0 flex-1">
             <div className="hidden items-center gap-2 text-[11px] text-[#8a92a0] md:flex"><span>SkillBarter</span><span>/</span><span className="font-semibold text-[#17233b]">{primary.find((x) => isActive(x.path))?.label || 'Community'}</span></div>
             <form onSubmit={handleSearchSubmit} className="relative mt-0.5 max-w-[520px]"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search learning skills or people" className="h-9 w-full border border-[#e2e5e9] bg-[#fafbfc] pl-9 pr-4 text-[12px] text-[#17233b] outline-none transition focus:border-[#c8cdd5] focus:bg-white focus:ring-0" /></form>
@@ -365,7 +366,7 @@ if (!currentUser) {
             </button>
             <div className="relative">
               <button type="button" aria-label="Notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] hover:text-[#17233b]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
-              {showNotifications && <div className="absolute right-0 mt-2 w-80 border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)]"><div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><span className="text-[12px] font-bold text-[#17233b]">Notifications</span>{unreadCount > 0 && <button type="button" onClick={markAllAsRead} className="text-[10px] font-semibold text-[#d31d24]">Mark all read</button>}</div><div className="max-h-80 overflow-y-auto">{notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">No notifications yet</div> : notifications.map((n) => <div key={n.id} onClick={() => { markAsRead(n.id); if (n.link) { navigate(n.link); setShowNotifications(false); } }} className={`cursor-pointer border-b border-[#f0f1f3] px-4 py-3 hover:bg-[#fafbfc] ${!n.is_read ? 'bg-[#fff8f8]' : ''}`}><div className="flex items-start justify-between gap-2"><span className="text-[12px] font-semibold text-[#17233b]">{n.title}</span>{!n.is_read && <span className="mt-1 h-1.5 w-1.5 bg-[#d31d24]" />}</div><p className="mt-1 text-[11px] leading-5 text-[#697386]">{n.message}</p></div>)}</div></div>}
+              <div className={`notification-dropdown absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)] ${showNotifications ? 'notification-dropdown--open' : ''}`} aria-hidden={!showNotifications}><div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><span className="text-[12px] font-bold text-[#17233b]">Notifications</span>{unreadCount > 0 && <button tabIndex={showNotifications ? 0 : -1} type="button" onClick={markAllAsRead} className="text-[10px] font-semibold text-[#d31d24] transition-colors hover:text-[#b8171d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]">Mark all read</button>}</div><div className="max-h-80 overflow-y-auto">{notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">No notifications yet</div> : notifications.map((n) => { const Icon = notificationIconFor(String(n.type || '')); return <button tabIndex={showNotifications ? 0 : -1} key={n.id} type="button" onClick={() => { markAsRead(n.id); if (n.link) { navigate(n.link); setShowNotifications(false); } }} className={`notification-dropdown__item flex w-full items-start gap-3 border-b border-[#f0f1f3] px-4 py-3 text-left last:border-0 ${!n.is_read ? 'notification-dropdown__item--unread bg-[#fff8f8]' : 'notification-dropdown__item--read'}`}><span className={`notification-dropdown__icon flex h-8 w-8 shrink-0 items-center justify-center ${!n.is_read ? 'bg-[#fff0f0] text-[#d31d24]' : 'bg-[#f3f5f7] text-[#697386]'}`}><Icon className="h-3.5 w-3.5" /></span><span className="min-w-0 flex-1"><span className="flex items-start justify-between gap-2"><span className="notification-dropdown__title min-w-0 text-[12px] font-semibold text-[#17233b]">{n.title}</span><span className={`notification-dropdown__indicator mt-1 h-1.5 w-1.5 shrink-0 ${!n.is_read ? 'bg-[#d31d24]' : ''}`} aria-label={n.is_read ? undefined : 'Unread'} /></span><span className="notification-dropdown__message mt-1 block text-[11px] leading-5 text-[#697386]">{n.message}</span></span></button>; })}</div></div>
             </div>
             <div className="relative">
               <button type="button" onClick={() => { setShowProfileMenu((v) => !v); setShowNotifications(false); }} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#f6f7f8]"><img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-8 w-8 rounded-full object-cover" /><span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-[#17233b] xl:block">{currentUser.full_name}</span><ChevronRight className="hidden h-3.5 w-3.5 rotate-90 text-[#9aa1ac] xl:block" /></button>
@@ -380,13 +381,15 @@ if (!currentUser) {
           type="button"
           onClick={() => setShowMobileMenu(v => !v)}
           aria-label={showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={showMobileMenu}
+          aria-controls="mobile-primary-navigation"
           className="fixed left-5 top-[15px] z-50 flex h-9 w-9 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm"
         >
           {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
         {showMobileMenu && (
-          <div className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100vh-68px)] overflow-y-auto border-b border-[#e1e4e8] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(23,35,59,.12)]">
+          <nav id="mobile-primary-navigation" className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100dvh-68px)] overflow-y-auto border-b border-[#e1e4e8] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(23,35,59,.12)]">
             <div className="mb-4 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
               <img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-10 w-10 rounded-full object-cover" />
               <div className="min-w-0">
@@ -408,6 +411,7 @@ if (!currentUser) {
                     <Link
                       to={item.path}
                       onClick={() => setShowMobileMenu(false)}
+                      aria-current={active ? 'page' : undefined}
                       className={`flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#4d5b72]'}`}
                     >
                       <Icon className={`h-4 w-4 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
@@ -441,7 +445,7 @@ if (!currentUser) {
                 </div>
               );
             })}
-          </div>
+          </nav>
         )}
       </div>
     </>

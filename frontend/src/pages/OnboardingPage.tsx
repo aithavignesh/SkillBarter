@@ -26,8 +26,11 @@ export const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
+  const [stepError, setStepError] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   const goToStep = (nextStep: number) => {
+    setStepError('');
     trackEvent('onboarding_step_viewed', { step: nextStep });
     setStep(nextStep);
   };
@@ -60,11 +63,12 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const handleCompleteOnboarding = async () => {
-    if (!locationName.trim()) { goToStep(1); return; }
-    if (offeredSkills.length === 0) { goToStep(2); return; }
-    if (neededSkills.length === 0) { goToStep(3); return; }
+    if (!locationName.trim()) { setStep(1); setStepError('Add your campus or area to continue.'); return; }
+    if (offeredSkills.length === 0) { setStep(2); setStepError('Add at least one skill you can teach to continue.'); return; }
+    if (neededSkills.length === 0) { setStep(3); setStepError('Add at least one skill you want to learn to continue.'); return; }
     try {
       setLoading(true);
+      setSubmitError('');
       await api.updateMe({
         address_display: locationName,
         headline: headline || `${neededSkills[0] || 'Skill'} learner • ${offeredSkills[0] || 'Skill'} contributor`,
@@ -102,7 +106,7 @@ export const OnboardingPage: React.FC = () => {
       navigate('/matches');
     } catch (err) {
       console.error(err);
-      navigate('/feed');
+      setSubmitError(err instanceof Error ? err.message : 'Unable to save your learning profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -117,13 +121,14 @@ export const OnboardingPage: React.FC = () => {
 
   return (
     <div className="min-h-[85vh] bg-slate-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl">
         {/* Step Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             {stepTitles.map((s) => (
               <div
                 key={s.num}
+                aria-current={step === s.num ? 'step' : undefined}
                 className={`flex flex-col items-center flex-1 ${
                   step >= s.num ? 'text-emerald-700 font-bold' : 'text-slate-400'
                 }`}
@@ -143,16 +148,17 @@ export const OnboardingPage: React.FC = () => {
               </div>
             ))}
           </div>
-          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label="Onboarding progress" aria-valuemin={1} aria-valuemax={4} aria-valuenow={step}>
             <div
-              className="bg-emerald-600 h-full transition-all duration-300 rounded-full"
+              className="h-full rounded-full bg-emerald-600 transition-[width] duration-300 motion-reduce:transition-none"
               style={{ width: `${(step / 4) * 100}%` }}
             />
           </div>
         </div>
 
         {/* Step Content Card */}
-        <Card className="p-8">
+        <Card className="p-5 sm:p-8">
+          <div key={step} className="onboarding-step-content">
           {/* STEP 1: Location */}
           {step === 1 && (
             <div className="space-y-6">
@@ -345,14 +351,17 @@ export const OnboardingPage: React.FC = () => {
               </div>
             </div>
           )}
+          </div>
 
           {/* Navigation Controls */}
-          <div className="flex flex-col-reverse gap-3 pt-6 mt-6 border-t border-slate-100 sm:flex-row sm:items-center sm:justify-between">
+          {(stepError || submitError) && <p role="alert" className="mt-5 border border-[#f1c8ca] bg-[#fff7f7] px-3 py-2.5 text-xs leading-5 text-[#8f1a20]">{stepError || submitError}</p>}
+          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
             {step > 1 ? (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={loading}
                 onClick={() => goToStep(step - 1)}
                 icon={<ArrowLeft className="w-4 h-4" />}
               >
@@ -364,10 +373,11 @@ export const OnboardingPage: React.FC = () => {
               <Button
                 type="button"
                 size="sm"
+                disabled={loading}
                 onClick={() => {
-                  if (step === 1 && !locationName.trim()) return;
-                  if (step === 2 && offeredSkills.length === 0) return;
-                  if (step === 3 && neededSkills.length === 0) return;
+                  if (step === 1 && !locationName.trim()) { setStepError('Add your campus or area to continue.'); return; }
+                  if (step === 2 && offeredSkills.length === 0) { setStepError('Add at least one skill you can teach to continue.'); return; }
+                  if (step === 3 && neededSkills.length === 0) { setStepError('Add at least one skill you want to learn to continue.'); return; }
                   goToStep(step + 1);
                 }}
                 icon={<ArrowRight className="w-4 h-4" />}
@@ -379,6 +389,7 @@ export const OnboardingPage: React.FC = () => {
                 type="button"
                 size="sm"
                 loading={loading}
+                disabled={loading}
                 onClick={handleCompleteOnboarding}
                 icon={<CheckCircle2 className="w-4 h-4" />}
               >

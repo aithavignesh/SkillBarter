@@ -37,8 +37,10 @@ export const RatingStars: React.FC<RatingStarsProps> = ({
               type="button"
               disabled={!isInteractive}
               onClick={() => onChange && onChange(starValue)}
-              className={`p-0.5 transition-transform ${
-                isInteractive ? 'hover:scale-125 cursor-pointer focus:outline-none' : 'cursor-default'
+              aria-label={isInteractive ? `Rate ${starValue} out of ${max} stars` : undefined}
+              aria-pressed={isInteractive ? isFilled : undefined}
+              className={`inline-flex min-h-9 min-w-9 items-center justify-center p-0.5 transition-transform motion-reduce:transform-none motion-reduce:transition-none ${
+                isInteractive ? 'hover:scale-110 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]' : 'cursor-default'
               }`}
             >
               <Star
@@ -47,6 +49,7 @@ export const RatingStars: React.FC<RatingStarsProps> = ({
                     ? 'text-amber-400 fill-amber-400'
                     : 'text-slate-300 fill-slate-100'
                 }`}
+                aria-hidden="true"
               />
             </button>
           );

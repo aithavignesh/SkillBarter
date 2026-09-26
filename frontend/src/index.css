@@ -8,6 +8,184 @@
   ::selection { background: rgba(211,29,36,.14); color: #17233b; }
   a { transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease; }
   button, input, textarea, select { font: inherit; }
+  :focus-visible { outline: 2px solid #d31d24; outline-offset: 2px; }
+}
+
+.notification-dropdown {
+  z-index: 50;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transform-origin: top right;
+  transition: opacity 220ms ease, transform 220ms ease, visibility 220ms ease;
+}
+
+.notification-dropdown--open {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.notification-dropdown__item,
+.notification-item {
+  position: relative;
+  outline: none;
+  transition: background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease, color 240ms ease, transform 220ms ease;
+}
+
+.notification-dropdown__item::before,
+.notification-item::before {
+  position: absolute;
+  top: .75rem;
+  bottom: .75rem;
+  left: 0;
+  width: 2px;
+  background: transparent;
+  content: '';
+  transition: background-color 240ms ease, opacity 240ms ease;
+}
+
+.notification-dropdown__item--unread::before,
+.notification-item--unread::before {
+  background: #d31d24;
+}
+
+.notification-dropdown__item--read,
+.notification-item--read {
+  background-color: #fff;
+}
+
+.notification-dropdown__item:hover,
+.notification-dropdown__item:focus-visible,
+.notification-item:hover,
+.notification-item:focus-visible {
+  z-index: 1;
+  background-color: #fbfbfa;
+  box-shadow: 0 5px 14px rgba(23, 35, 59, .07);
+  transform: translateY(-2px);
+}
+
+.notification-dropdown__item--unread:hover,
+.notification-dropdown__item--unread:focus-visible,
+.notification-item--unread:hover,
+.notification-item--unread:focus-visible {
+  background-color: #fff5f5;
+}
+
+.notification-dropdown__item:active,
+.notification-item:active {
+  background-color: #f5f6f7;
+  transform: translateY(0);
+}
+
+.notification-dropdown__item:focus-visible,
+.notification-item:focus-visible {
+  outline: 2px solid rgba(211, 29, 36, .35);
+  outline-offset: -2px;
+}
+
+.notification-dropdown__icon,
+.notification-item__icon {
+  border: 1px solid transparent;
+  transition: color 240ms ease, background-color 240ms ease, border-color 240ms ease, transform 220ms ease;
+}
+
+.notification-dropdown__item:hover .notification-dropdown__icon,
+.notification-dropdown__item:focus-visible .notification-dropdown__icon,
+.notification-item:hover .notification-item__icon,
+.notification-item:focus-visible .notification-item__icon {
+  border-color: #e1e4e8;
+  transform: translateY(-1px);
+}
+
+.notification-dropdown__item--read .notification-dropdown__title,
+.notification-item--read .notification-item__title {
+  color: #4d5b72;
+  font-weight: 600;
+}
+
+.notification-dropdown__item--read .notification-dropdown__message,
+.notification-item--read .notification-item__message,
+.notification-item--read .notification-item__meta {
+  color: #8a92a0;
+}
+
+.notification-dropdown__indicator,
+.notification-item__indicator {
+  border-radius: 999px;
+  opacity: 1;
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.notification-dropdown__item--read .notification-dropdown__indicator,
+.notification-item--read .notification-item__indicator {
+  opacity: 0;
+  transform: scale(.5);
+}
+
+.notifications-list {
+  animation: notifications-list-in 240ms ease both;
+}
+
+.notifications-empty {
+  background: #fff;
+}
+
+@keyframes notifications-list-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes photoMenuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@media (max-width: 639px) {
+  .notification-dropdown {
+    position: fixed;
+    top: 4.25rem;
+    right: .75rem;
+    left: .75rem;
+    width: auto;
+    transform-origin: top center;
+  }
+
+  .notification-dropdown__item:hover,
+  .notification-dropdown__item:focus-visible,
+  .notification-item:hover,
+  .notification-item:focus-visible {
+    transform: none;
+  }
+
+  .notification-dropdown__item:active,
+  .notification-item:active {
+    background-color: #f5f6f7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-dropdown,
+  .notification-dropdown__item,
+  .notification-item,
+  .notification-dropdown__icon,
+  .notification-item__icon,
+  .notification-dropdown__indicator,
+  .notification-item__indicator,
+  .notifications-list {
+    animation: none;
+    transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
+    transform: none;
+  }
+}
+
+.onboarding-step-content { animation: onboarding-step-in 160ms ease-out both; }
+
+@keyframes onboarding-step-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .landing-hero-background {
@@ -1139,3 +1317,21 @@ header.sticky.top-0.z-30 .text-slate-600 { color: #66738a !important; }
 .dark ::selection { background: rgba(255,107,112,.22); color: #fff; }
 .dark ::-webkit-scrollbar-thumb { background: #3a4555; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #4a5668; }
+
+.modal-overlay { overscroll-behavior: contain; }
+.modal-backdrop { z-index: 0; }
+.modal-panel { animation: modal-enter 180ms ease-out both; }
+
+@keyframes modal-enter {
+  from { opacity: 0; transform: translateY(4px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

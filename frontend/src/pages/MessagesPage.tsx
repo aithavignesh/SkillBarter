@@ -16,15 +16,17 @@ export const MessagesPage: React.FC = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
 
   const active = conversations.find((c) => Number(c.partner.id) === Number(activePartnerId));
 
-  const loadConversations = async () => {
+  const loadConversations = async (backgroundRefresh = false) => {
     try {
-      setLoading(true);
+      if (!backgroundRefresh) setLoading(true);
+      setError('');
       const data = await api.getConversations();
       setConversations(data);
       if (data.length && !activePartnerId) setActivePartnerId(Number(data[0].partner.id));
@@ -37,10 +39,14 @@ export const MessagesPage: React.FC = () => {
 
   const loadMessages = async (partnerId: number) => {
     try {
-      setMessages(await api.getMessages(partnerId));
+      setMessagesLoading(true);
+      setMessages([]);
       setError('');
+      setMessages(await api.getMessages(partnerId));
     } catch (e: any) {
       setError(e?.message || 'Unable to load messages.');
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -61,7 +67,7 @@ export const MessagesPage: React.FC = () => {
           : [...previous, eventMessage]
       );
     }
-    if (eventMessage) void loadConversations();
+    if (eventMessage) void loadConversations(true);
   }, [lastMessageEvent, activePartnerId]);
 
   useEffect(() => {
@@ -88,7 +94,7 @@ export const MessagesPage: React.FC = () => {
           : [...previous, sent]
       );
       setInputText('');
-      await loadConversations();
+      await loadConversations(true);
     } catch (e: any) {
       setError(e?.message || 'Unable to send message.');
     } finally {
@@ -105,7 +111,7 @@ export const MessagesPage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 pb-24 sm:px-6 lg:px-8">
-      <Card className="grid min-h-[calc(100vh-9rem)] h-[750px] grid-cols-1 overflow-hidden border-[#e1e4e8] md:grid-cols-12">
+      <Card className="grid h-[min(750px,calc(100dvh-8rem))] min-h-[min(440px,calc(100dvh-10rem))] grid-cols-1 overflow-hidden border-[#e1e4e8] md:grid-cols-12">
         <aside
           className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} h-full flex-col border-r border-[#e1e4e8] bg-[#f7f8f7] md:col-span-4`}
         >
@@ -122,6 +128,11 @@ export const MessagesPage: React.FC = () => {
           <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="p-8 text-center text-xs text-slate-400">Loading chats...</div>
+            ) : error && conversations.length === 0 ? (
+              <div className="p-6 text-center" role="alert">
+                <p className="text-xs text-[#8f1a20]">Conversations couldn’t be loaded.</p>
+                <Button size="sm" variant="outline" className="mt-3" onClick={() => void loadConversations()}>Try again</Button>
+              </div>
             ) : conversations.length ? (
               conversations.map((conversation) => {
                 const partnerId = Number(conversation.partner.id);
@@ -246,8 +257,10 @@ export const MessagesPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex-1 space-y-3 overflow-y-auto bg-[#f7f7f5] p-4 sm:p-6">
-                {messages.length ? (
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-[#f7f7f5] p-4 sm:p-6">
+                {messagesLoading ? (
+                  <div className="py-16 text-center text-xs text-slate-500" role="status">Loading messages…</div>
+                ) : messages.length ? (
                   messages.map((message) => {
                     const mine = Number(message.sender_id) === Number(currentUser?.id);
 
@@ -263,7 +276,7 @@ export const MessagesPage: React.FC = () => {
                               : 'border border-[#e1e4e8] bg-white text-[#17233b]'
                           }`}
                         >
-                          <p>{message.content}</p>
+                          <p className="break-words whitespace-pre-wrap">{message.content}</p>
                           <span
                             className={`mt-1 block text-[9px] ${
                               mine ? 'text-red-100' : 'text-slate-400'
@@ -292,19 +305,20 @@ export const MessagesPage: React.FC = () => {
                 onSubmit={handleSend}
                 className="flex flex-col gap-2 border-t border-[#e1e4e8] bg-white p-3"
               >
-                <input
+                <textarea
+                  rows={2}
                   value={inputText}
                   onChange={(event) => setInputText(event.target.value)}
                   placeholder="Type a message..."
                   aria-label="Message"
                   maxLength={2000}
-                  className="w-full min-w-0 flex-1 rounded-xl border border-[#d9dde2] bg-white px-3 py-2.5 text-xs text-[#17233b] outline-none focus:border-[#d31d24]"
+                  className="w-full min-w-0 flex-1 resize-none rounded-xl border border-[#d9dde2] bg-white px-3 py-2.5 text-xs text-[#17233b] outline-none focus:border-[#d31d24]"
                 />
                 <Button
                   type="submit"
                   size="sm"
                   className="w-full sm:w-auto"
-                  disabled={sending || !inputText.trim()}
+                  disabled={sending || messagesLoading || !inputText.trim()}
                   icon={<Send className="h-4 w-4" />}
                 >
                   {sending ? 'Sending…' : 'Send'}

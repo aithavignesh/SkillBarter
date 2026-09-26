@@ -151,20 +151,20 @@ export const ExchangeReviewModal: React.FC<ExchangeReviewModalProps> = ({
         </div>
 
         {error && (
-          <p className="border border-red-100 bg-[#fff5f5] p-2.5 text-xs text-[#b8171d]">
+        <p role="alert" className="border border-red-100 bg-[#fff5f5] p-2.5 text-xs text-[#b8171d]">
             {error}
           </p>
         )}
 
-        <div className="flex items-center justify-between gap-2 border-t border-[#e1e4e8] pt-4">
-          <p className="text-[11px] text-slate-500">
+        <div className="flex flex-col gap-3 border-t border-[#e1e4e8] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[11px] leading-5 text-slate-600">
             Your review helps build trust for future learning matches.
           </p>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button type="button" size="sm" variant="outline" onClick={onClose}>
               Skip for now
             </Button>
-            <Button type="submit" loading={loading} icon={<CheckCircle className="w-4 h-4" />}>
+          <Button type="submit" size="sm" loading={loading} icon={<CheckCircle className="w-4 h-4" />}>
               Submit Review
             </Button>
           </div>

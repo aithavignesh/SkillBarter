@@ -9,6 +9,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { ExchangeReviewModal } from '../components/exchange/ExchangeReviewModal';
+import { Modal } from '../components/ui/Modal';
 import { ArrowLeft, Repeat, CheckCircle2, Send, Circle, Star, X, MessageSquare, Calendar, Clock, MapPin, ShieldCheck, BadgeCheck, Crown, Rocket } from 'lucide-react';
 
 export const ExchangeWorkspacePage: React.FC = () => {
@@ -19,6 +20,8 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newTextMessage, setNewTextMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [messageSending, setMessageSending] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -35,12 +38,24 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const loadExchangeData = async () => {
     try {
       setLoading(true);
+      setLoadError('');
+      setActionError('');
+      setExchange(null);
+      setMessages([]);
       const data = await api.getExchange(exchangeId);
       setExchange(data);
       trackEvent('exchange_workspace_viewed', { exchange_status: data.status });
       const partnerId = currentUser?.id === data.requester_id ? data.receiver_id : data.requester_id;
-      setMessages(await api.getMessages(partnerId));
-    } catch (e) { console.error(e); }
+      try {
+        setMessages(await api.getMessages(partnerId));
+      } catch (e) {
+        console.error(e);
+        setActionError('Your exchange loaded, but messages are temporarily unavailable.');
+      }
+    } catch (e) {
+      console.error(e);
+      setLoadError(e instanceof Error ? e.message : 'Unable to load this exchange.');
+    }
     finally { setLoading(false); }
   };
 
@@ -94,6 +109,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
     e.preventDefault();
     if (!newTextMessage.trim() || !exchange || !partner) return;
     try {
+      setMessageSending(true);
       setActionError('');
       setActionSuccess('');
       const sent = await api.sendMessage({ receiver_id: partner.id, content: newTextMessage.trim(), exchange_id: exchange.id });
@@ -102,6 +118,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       setActionSuccess('Message sent to your learning partner.');
       setNewTextMessage('');
     } catch (e: any) { setActionError(e?.message || 'Unable to send message'); }
+    finally { setMessageSending(false); }
   };
 
   const handleComplete = async () => {
@@ -146,8 +163,9 @@ export const ExchangeWorkspacePage: React.FC = () => {
     } catch (e: any) { setActionError(e?.message || 'Unable to update learning exchange'); }
   };
 
-  if (loading) return <main className="min-h-screen bg-[#f7f7f5] px-6 py-16 text-center text-sm text-slate-400">Loading exchange workspace…</main>;
-  if (!exchange || !partner) return <main className="min-h-screen bg-[#f7f7f5] px-6 py-16 text-center"><p className="text-sm font-semibold text-[#17233b]">Exchange not found</p><Link to="/exchanges" className="mt-4 inline-block"><Button size="sm">Back to exchanges</Button></Link></main>;
+  if (loading) return <main className="min-h-[60vh] bg-[#f7f7f5] px-6 py-16 text-center text-sm text-slate-500" role="status">Loading exchange workspace…</main>;
+  if (loadError) return <main className="flex min-h-[60vh] flex-col items-center justify-center gap-3 bg-[#f7f7f5] px-6 py-16 text-center"><p className="text-sm font-semibold text-[#17233b]">We couldn’t load this exchange.</p><p className="max-w-md text-xs text-slate-500">{loadError}</p><Button size="sm" variant="outline" onClick={() => void loadExchangeData()}>Try again</Button><Link to="/exchanges" className="text-xs font-semibold text-[#d31d24]">Back to exchanges</Link></main>;
+  if (!exchange || !partner) return <main className="min-h-[60vh] bg-[#f7f7f5] px-6 py-16 text-center"><p className="text-sm font-semibold text-[#17233b]">Exchange not found</p><Link to="/exchanges" className="mt-4 inline-block"><Button size="sm">Back to exchanges</Button></Link></main>;
 
   const statusVariant: any = exchange.status === 'ACTIVE' ? 'emerald' : exchange.status === 'COMPLETED' ? 'emerald' : exchange.status === 'PENDING' ? 'amber' : 'slate';
 
@@ -166,7 +184,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#d31d24]">Learning session workspace</p>
-              <h1 className="text-2xl font-extrabold tracking-[-0.02em] text-[#17233b] sm:text-3xl">{myOffer || 'Skill exchange'} <span className="text-[#d31d24]">↔</span> {partnerOffer || 'Partner skill'}</h1>
+              <h1 className="break-words text-2xl font-extrabold tracking-[-0.02em] text-[#17233b] sm:text-3xl">{myOffer || 'Skill exchange'} <span className="text-[#d31d24]">↔</span> {partnerOffer || 'Partner skill'}</h1>
               <p className="mt-1.5 text-sm text-[#697386]">Turn the accepted request into a focused learning session: agree on one practical outcome, meet, then confirm what you learned.</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -212,10 +230,10 @@ export const ExchangeWorkspacePage: React.FC = () => {
 
             <Card className="overflow-hidden">
               <div className="flex items-center justify-between border-b border-[#e1e4e8] bg-[#f7f8f7] px-4 py-3"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-[#d31d24]" /><span className="text-xs font-bold text-[#17233b]">Learning plan with {partner.full_name}</span></div><span className="text-[10px] text-slate-400">Exchange #{exchange.id}</span></div>
-              <div className="h-[390px] space-y-3 overflow-y-auto bg-white p-3 sm:p-4">
-                {messages.length === 0 ? <div className="py-24 text-center text-xs text-slate-400">No messages yet. Send a quick note about your learning goal and preferred session time.</div> : messages.map(m => { const mine = Number(m.sender_id) === Number(currentUser?.id); return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[90%] break-words px-3 py-2.5 text-xs sm:max-w-[78%] ${mine ? 'bg-[#d31d24] text-white' : 'bg-[#f1f3f5] text-[#17233b]'}`}><p>{m.content}</p><span className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-slate-400'}`}>{new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>; })}
+              <div className="h-[min(390px,48dvh)] min-h-[220px] space-y-3 overflow-y-auto bg-white p-3 sm:p-4">
+                {messages.length === 0 ? <div className="py-24 text-center text-xs text-slate-500">No messages yet. Send a quick note about your learning goal and preferred session time.</div> : messages.map(m => { const mine = Number(m.sender_id) === Number(currentUser?.id); return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[90%] break-words px-3 py-2.5 text-xs sm:max-w-[78%] ${mine ? 'bg-[#d31d24] text-white' : 'bg-[#f1f3f5] text-[#17233b]'}`}><p className="whitespace-pre-wrap">{m.content}</p><span className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-slate-500'}`}>{new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>; })}
               </div>
-              <form onSubmit={handleSendMessage} className="flex flex-col gap-2 border-t border-[#e1e4e8] bg-[#f7f8f7] p-3 sm:flex-row"><input value={newTextMessage} onChange={e => setNewTextMessage(e.target.value)} placeholder={`Message ${partner.full_name.split(' ')[0]}…`} className="h-10 w-full min-w-0 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" /><Button type="submit" size="sm" className="w-full sm:w-auto" icon={<Send className="h-3.5 w-3.5" />}>Send</Button></form>
+              <form onSubmit={handleSendMessage} className="flex flex-col gap-2 border-t border-[#e1e4e8] bg-[#f7f8f7] p-3 sm:flex-row"><textarea rows={2} value={newTextMessage} onChange={e => setNewTextMessage(e.target.value)} placeholder={`Message ${partner.full_name.split(' ')[0]}…`} aria-label="Message learning partner" maxLength={2000} disabled={messageSending} className="min-h-10 w-full min-w-0 flex-1 resize-none border border-[#d9dde2] bg-white px-3 py-2.5 text-xs text-[#17233b] outline-none focus:border-[#d31d24] disabled:cursor-not-allowed disabled:opacity-60" /><Button type="submit" size="sm" className="w-full sm:w-auto" disabled={messageSending || !newTextMessage.trim()} loading={messageSending} icon={<Send className="h-3.5 w-3.5" />}>Send</Button></form>
             </Card>
           </div>
 
@@ -228,10 +246,42 @@ export const ExchangeWorkspacePage: React.FC = () => {
         </div>
       </div>
 
-      {scheduleOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-lg border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">Schedule learning session</h3><p className="mt-1 text-xs text-[#697386]">Agree on the date, duration and session format with your learning partner.</p></div><button type="button" onClick={()=>setScheduleOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4"/></button></div><form onSubmit={saveSchedule} className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Session date / time<input required value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs" placeholder="e.g. Saturday, 4 PM"/></label><label className="text-xs font-semibold text-slate-600">Duration (hours)<input required type="number" min="0.5" max="24" step="0.5" value={scheduleHours} onChange={e=>setScheduleHours(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs"/></label><label className="text-xs font-semibold text-slate-600 sm:col-span-2">Session format / area<input required value={scheduleArea} onChange={e=>setScheduleArea(e.target.value)} className="mt-1 h-10 w-full border border-[#d9dde2] px-3 text-xs" placeholder="Online / campus / public shared space"/></label><div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" size="sm" variant="ghost" onClick={()=>setScheduleOpen(false)}>Cancel</Button><Button type="submit" size="sm" loading={scheduleSaving}>Save schedule</Button></div></form></div></div>}
-      {cancelModalOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17233b]/35 p-4"><div className="w-full max-w-md border border-[#e1e4e8] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-[#17233b]">{exchange.status === 'PENDING' && isRequester ? 'Withdraw this learning request?' : 'Cancel this learning exchange?'}</h3><p className="mt-1 text-xs text-[#697386]">{exchange.status === 'PENDING' && isRequester ? 'Your partner will be notified that the request was withdrawn.' : 'The other participant will be notified.'}</p></div><button onClick={() => setCancelModalOpen(false)} className="p-1 text-slate-400 hover:text-[#17233b]"><X className="h-4 w-4" /></button></div>{exchange.status === 'ACTIVE' && <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Reason for cancellation…" className="mt-4 min-h-24 w-full resize-none border border-[#d9dde2] p-3 text-xs outline-none focus:border-[#d31d24]" />}<div className="mt-4 flex justify-end gap-2"><Button size="sm" variant="ghost" onClick={() => setCancelModalOpen(false)}>Keep exchange</Button><Button size="sm" onClick={handleCancel} disabled={exchange.status === 'ACTIVE' && !cancelReason.trim()}>{exchange.status === 'PENDING' && isRequester ? 'Withdraw request' : 'Confirm cancellation'}</Button></div></div></div>}
+      <Modal
+        isOpen={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        title="Schedule learning session"
+        subtitle="Agree on the date, duration and session format with your learning partner."
+        maxWidth="md"
+      >
+        <form onSubmit={saveSchedule} className="grid gap-3 sm:grid-cols-2">
+          <label className="text-xs font-semibold text-slate-600">Session date / time<input required value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs" placeholder="e.g. Saturday, 4 PM" /></label>
+          <label className="text-xs font-semibold text-slate-600">Duration (hours)<input required type="number" min="0.5" max="24" step="0.5" value={scheduleHours} onChange={e => setScheduleHours(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs" /></label>
+          <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Session format / area<input required value={scheduleArea} onChange={e => setScheduleArea(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs" placeholder="Online / campus / public shared space" /></label>
+          <div className="flex flex-col-reverse gap-2 border-t border-[#e1e4e8] pt-4 sm:col-span-2 sm:flex-row sm:justify-end">
+            <Button type="button" size="sm" variant="outline" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+            <Button type="submit" size="sm" loading={scheduleSaving}>Save schedule</Button>
+          </div>
+        </form>
+      </Modal>
+      <Modal
+        isOpen={cancelModalOpen}
+        onClose={() => setCancelModalOpen(false)}
+        title={exchange.status === 'PENDING' && isRequester ? 'Withdraw this learning request?' : 'Cancel this learning exchange?'}
+        subtitle={exchange.status === 'PENDING' && isRequester ? 'Your partner will be notified that the request was withdrawn.' : 'The other participant will be notified.'}
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm leading-6 text-[#4d5b72]">This action updates the exchange for both participants.</p>
+          {exchange.status === 'ACTIVE' && <label className="block text-xs font-semibold text-slate-600">Reason for cancellation<textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Share a brief reason…" className="mt-1 min-h-24 w-full resize-y border border-[#d9dde2] p-3 text-xs outline-none focus:border-[#d31d24]" /></label>}
+          {actionError && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-xs text-red-800">{actionError}</p>}
+          <div className="flex flex-col-reverse gap-2 border-t border-[#e1e4e8] pt-4 sm:flex-row sm:justify-end">
+            <Button type="button" size="sm" variant="outline" onClick={() => setCancelModalOpen(false)}>Keep exchange</Button>
+            <Button type="button" size="sm" variant="danger" onClick={handleCancel} disabled={exchange.status === 'ACTIVE' && !cancelReason.trim()}>{exchange.status === 'PENDING' && isRequester ? 'Withdraw request' : 'Confirm cancellation'}</Button>
+          </div>
+        </div>
+      </Modal>
 
-      {reviewModalOpen && <ExchangeReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} exchange={exchange} onSuccess={() => { setReviewModalOpen(false); loadExchangeData(); }} />}
+      {reviewModalOpen && <ExchangeReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} exchange={exchange} onSuccess={() => { setReviewModalOpen(false); setActionSuccess('Review submitted. Thank you for sharing your experience.'); void loadExchangeData(); }} />}
     </main>
   );
 };
