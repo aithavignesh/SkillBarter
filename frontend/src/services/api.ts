@@ -1507,6 +1507,56 @@ class ApiClient {
     return result.data;
   }
 
+  async blockUser(blockedUserId: number) {
+    const { appUser } = await this.getAppUser();
+    const targetId = Number(blockedUserId);
+    if (!Number.isInteger(targetId) || targetId <= 0) throw new Error('Invalid user.');
+    if (targetId === Number(appUser.id)) throw new Error('You cannot block yourself.');
+    const target = await insforge.database.from('users').select('id').eq('id', targetId).maybeSingle();
+    if (target.error) throw new Error(target.error.message || 'Unable to verify user.');
+    if (!target.data) throw new Error('User not found.');
+
+    const existing = await insforge.database.from('blocks')
+      .select('id,blocker_id,blocked_id,created_at')
+      .eq('blocker_id', Number(appUser.id))
+      .eq('blocked_id', targetId)
+      .maybeSingle();
+    if (existing.error) throw new Error(existing.error.message || 'Unable to check block status.');
+    if (existing.data) return existing.data;
+
+    const result = await insforge.database.from('blocks')
+      .insert({ blocker_id: Number(appUser.id), blocked_id: targetId })
+      .select('id,blocker_id,blocked_id,created_at')
+      .single();
+    if (result.error) throw new Error(result.error.message || 'Unable to block user.');
+    return result.data;
+  }
+
+  async unblockUser(blockedUserId: number) {
+    const { appUser } = await this.getAppUser();
+    const targetId = Number(blockedUserId);
+    if (!Number.isInteger(targetId) || targetId <= 0) throw new Error('Invalid user.');
+    const result = await insforge.database.from('blocks')
+      .delete()
+      .eq('blocker_id', Number(appUser.id))
+      .eq('blocked_id', targetId);
+    if (result.error) throw new Error(result.error.message || 'Unable to unblock user.');
+    return true;
+  }
+
+  async isUserBlocked(blockedUserId: number) {
+    const { appUser } = await this.getAppUser();
+    const targetId = Number(blockedUserId);
+    if (!Number.isInteger(targetId) || targetId <= 0) return false;
+    const result = await insforge.database.from('blocks')
+      .select('id')
+      .eq('blocker_id', Number(appUser.id))
+      .eq('blocked_id', targetId)
+      .maybeSingle();
+    if (result.error) throw new Error(result.error.message || 'Unable to check block status.');
+    return Boolean(result.data);
+  }
+
   async getReviews(userId: number) {
     const targetUserId = Number(userId);
     if (!Number.isInteger(targetUserId) || targetUserId <= 0) throw new Error('Invalid user.');
