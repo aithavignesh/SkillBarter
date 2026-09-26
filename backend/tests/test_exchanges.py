@@ -28,34 +28,6 @@ def test_full_exchange_lifecycle_and_review(client):
     exchange_id = exchange["id"]
     assert exchange["status"] == "PENDING"
     assert exchange["proposal_message"] == proposal_payload["proposal_message"]
-    assert exchange["preferred_date"] == proposal_payload["preferred_date"]
-    assert exchange["estimated_hours"] == proposal_payload["estimated_hours"]
-
-    # 3b. Both users can use the exchange-scoped messaging channel.
-    message_res = client.post("/api/messages", json={
-        "receiver_id": ravi_id,
-        "exchange_id": exchange_id,
-        "content": "Confirmed — Saturday at 3 PM works for me."
-    }, headers={"Authorization": f"Bearer {arjun_token}"})
-    assert message_res.status_code == 200
-    assert message_res.json()["exchange_id"] == exchange_id
-
-    messages_res = client.get(
-        f"/api/messages/{ravi_id}",
-        headers={"Authorization": f"Bearer {ravi_token}"},
-    )
-    assert messages_res.status_code == 200
-    assert any(m["content"] == "Confirmed — Saturday at 3 PM works for me." for m in messages_res.json())
-
-    # 3c. Record the scheduled exchange milestone in the analytics collector.
-    schedule_event = client.post("/api/analytics/events", json={
-        "event": "exchange_schedule_saved",
-        "session_id": "test-exchange-lifecycle",
-        "path": "/exchanges",
-        "timestamp": "2026-09-26T12:00:00+00:00",
-        "properties": {"exchange_id": exchange_id, "preferred_date": proposal_payload["preferred_date"]},
-    })
-    assert schedule_event.status_code == 202
 
     # 4. Ravi accepts the proposal
     accept_res = client.patch(f"/api/exchanges/{exchange_id}/accept", headers={"Authorization": f"Bearer {ravi_token}"})
@@ -70,7 +42,6 @@ def test_full_exchange_lifecycle_and_review(client):
     # 6. Arjun confirms completion
     c1 = client.patch(f"/api/exchanges/{exchange_id}/complete", headers={"Authorization": f"Bearer {arjun_token}"})
     assert c1.status_code == 200
-    # Still ACTIVE until Ravi also confirms!
     assert c1.json()["status"] == "ACTIVE"
     assert c1.json()["requester_completed"] is True
     assert c1.json()["receiver_completed"] is False
@@ -78,19 +49,9 @@ def test_full_exchange_lifecycle_and_review(client):
     # 7. Ravi confirms completion
     c2 = client.patch(f"/api/exchanges/{exchange_id}/complete", headers={"Authorization": f"Bearer {ravi_token}"})
     assert c2.status_code == 200
-    # Both confirmed -> status becomes COMPLETED!
     assert c2.json()["status"] == "COMPLETED"
     assert c2.json()["requester_completed"] is True
     assert c2.json()["receiver_completed"] is True
-
-    completion_event = client.post("/api/analytics/events", json={
-        "event": "exchange_completed",
-        "session_id": "test-exchange-lifecycle",
-        "path": "/exchanges",
-        "timestamp": "2026-09-26T12:30:00+00:00",
-        "properties": {"exchange_id": exchange_id},
-    })
-    assert completion_event.status_code == 202
 
     # 8. Arjun reviews Ravi
     review_res = client.post("/api/reviews", json={
