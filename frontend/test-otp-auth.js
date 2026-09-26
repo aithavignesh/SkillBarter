@@ -6,6 +6,7 @@ import {
   sanitizeEnvValue,
   checkVerifyRateLimit,
   clearVerifyRateLimit,
+  validatePhoneAuthSession,
 } from './api/auth/phone/_utils.js';
 import { getSmsProviderConfig } from './api/auth/phone/smsProvider.js';
 
@@ -65,6 +66,25 @@ process.env.TWOFACTOR_API_KEY = 'test-key';
 assert.strictEqual(getSmsProviderConfig().provider, '2factor');
 assert.strictEqual(getSmsProviderConfig().twoFactorApiKey, 'test-key');
 console.log('  [PASS] 2Factor is the default provider when no provider override is set');
+
+// Phone login session contract
+assert.deepStrictEqual(
+  validatePhoneAuthSession({ accessToken: '  access-token  ', user: { email: ' VIGNESH@EXAMPLE.COM ' } }),
+  { valid: true, accessToken: 'access-token', email: 'vignesh@example.com' }
+);
+assert.deepStrictEqual(
+  validatePhoneAuthSession({ user: { email: 'vignesh@example.com' } }),
+  { valid: false, reason: 'MISSING_ACCESS_TOKEN' }
+);
+assert.deepStrictEqual(
+  validatePhoneAuthSession({ accessToken: 'access-token', user: {} }),
+  { valid: false, reason: 'MISSING_USER_EMAIL' }
+);
+assert.deepStrictEqual(
+  validatePhoneAuthSession(null),
+  { valid: false, reason: 'MISSING_ACCESS_TOKEN' }
+);
+console.log('  [PASS] Phone login session contract validation');
 
 if (previousProvider === undefined) delete process.env.SMS_PROVIDER;
 else process.env.SMS_PROVIDER = previousProvider;
