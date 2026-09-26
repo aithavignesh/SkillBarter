@@ -7,7 +7,12 @@ import { insforge } from '../lib/insforge';
 class ApiClient {
   private getToken(): string | null { return sessionStorage.getItem('skillbarter_token'); }
   public setToken(token: string) { sessionStorage.setItem('skillbarter_token', token); }
-  public clearToken() { sessionStorage.removeItem('skillbarter_token'); }
+  public clearToken() {
+    sessionStorage.removeItem('skillbarter_token');
+    // Keep the SDK client aligned with browser session storage. This matters
+    // when a token expires or a session lookup fails before an explicit logout.
+    try { insforge.setAccessToken(''); } catch {}
+  }
 
   private async getAppUser() {
     // Phone OTP sessions are intentionally access-token based and do not expose
