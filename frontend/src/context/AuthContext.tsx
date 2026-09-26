@@ -22,6 +22,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   const refreshUser = async () => {
+    // A fresh visitor has no authenticated access token yet. Calling
+    // getCurrentUser() in that state can make the InsForge SDK hit its
+    // browser refresh endpoint and produce a 401/403 even though nobody
+    // is logged in. Only restore a session when the app has a token.
+    const hasToken = Boolean(sessionStorage.getItem('skillbarter_token'));
+    if (!hasToken) {
+      setCurrentUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const user = await api.getMe();
       setCurrentUser(user);
