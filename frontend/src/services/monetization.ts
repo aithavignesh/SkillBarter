@@ -23,6 +23,7 @@ export function getMonetizationState(userId:number):MonetizationState{
 
 export async function hydrateMonetizationState(userId:number):Promise<MonetizationState>{
   const local=getMonetizationState(userId); if(!userId)return local;
+  if (sessionStorage.getItem('skillbarter_phone')) return local;
   try{
     const auth=await insforge.auth.getCurrentUser(); if(auth.error||!auth.data?.user?.email)return local;
     const result=await insforge.database.from('users').select('premium,premium_until,verified,verification_requested_at,featured_until,priority_matching,credits,workshops_enabled,corporate_interest,sponsored_enabled,lead_generation_enabled,priority_matches_used,priority_matches_date,boosts_used,last_boost_at').eq('email',auth.data.user.email).maybeSingle();
