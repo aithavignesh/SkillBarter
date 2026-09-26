@@ -36,6 +36,8 @@ export const ProfilePage: React.FC = () => {
 
   // Propose Modal
   const [isProposeOpen, setIsProposeOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [safetyBusy, setSafetyBusy] = useState(false);
 
   // Add Skill Modal (for own profile)
   const [newSkillName, setNewSkillName] = useState('');
@@ -51,6 +53,9 @@ export const ProfilePage: React.FC = () => {
       ]);
       setProfile(profData);
       setReviews(revsData);
+      if (currentUser && !isOwnProfile) {
+        try { setIsBlocked(await api.isUserBlocked(targetId)); } catch { setIsBlocked(false); }
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -93,6 +98,25 @@ export const ProfilePage: React.FC = () => {
       alert('Report submitted to community safety team.');
     } catch (e: any) {
       alert(e.message);
+    }
+  };
+
+  const handleBlock = async () => {
+    const action = isBlocked ? 'unblock' : 'block';
+    if (!window.confirm(isBlocked ? 'Unblock this member so they can appear in your interactions again?' : 'Block this member? You will no longer receive messages or exchange interactions from them.')) return;
+    try {
+      setSafetyBusy(true);
+      if (isBlocked) {
+        await api.unblockUser(targetId);
+        setIsBlocked(false);
+      } else {
+        await api.blockUser(targetId);
+        setIsBlocked(true);
+      }
+    } catch (e: any) {
+      alert(e.message || `Unable to ${action} this member.`);
+    } finally {
+      setSafetyBusy(false);
     }
   };
 
@@ -162,6 +186,11 @@ export const ProfilePage: React.FC = () => {
               </Link>
               <Button size="sm" variant="ghost" onClick={handleReport} className="text-slate-400 hover:text-rose-600">
                 <Flag className="w-4 h-4" />
+                <span className="hidden sm:inline">Report</span>
+              </Button>
+              <Button size="sm" variant="ghost" onClick={handleBlock} disabled={safetyBusy} className="text-slate-400 hover:text-slate-900">
+                <ShieldCheck className="w-4 h-4" />
+                <span className="hidden sm:inline">{safetyBusy ? 'Saving…' : isBlocked ? 'Unblock' : 'Block'}</span>
               </Button>
             </div>
           ) : (
