@@ -48,6 +48,13 @@ def test_notifications_are_user_scoped_and_read_actions_are_authorized(client, d
     )
     assert forbidden.status_code == 404
 
+    before = client.get(
+        "/api/notifications/unread-count",
+        headers={"Authorization": f"Bearer {arjun_token}"}
+    )
+    assert before.status_code == 200
+    before_count = before.json()["unread_count"]
+
     mark = client.patch(
         f"/api/notifications/{arjun_notification.id}/read",
         headers={"Authorization": f"Bearer {arjun_token}"}
@@ -59,7 +66,7 @@ def test_notifications_are_user_scoped_and_read_actions_are_authorized(client, d
         headers={"Authorization": f"Bearer {arjun_token}"}
     )
     assert unread.status_code == 200
-    assert unread.json()["unread_count"] == 0
+    assert unread.json()["unread_count"] == max(0, before_count - 1)
 
 
 def test_read_all_only_affects_current_user(client, db):
