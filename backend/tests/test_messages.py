@@ -118,11 +118,13 @@ def test_send_message_rejects_exchange_recipient_mismatch(client):
     assert proposal.status_code == 200
     exchange_id = proposal.json()["id"]
 
-    # Arjun is a valid participant, but cannot attach the exchange to another recipient.
+    # Ravi is a valid participant, but the recipient must be the exchange partner.
+    third_token = login(client, "priya@skillbarter.com")
+    third_id = me(client, third_token)["id"]
     response = client.post(
         "/api/messages",
         json={
-            "receiver_id": arjun_id,
+            "receiver_id": third_id,
             "content": "Wrong recipient",
             "exchange_id": exchange_id
         },
