@@ -13,7 +13,7 @@ export const LoginPage: React.FC = () => {
   const [otp, setOtp] = useState('');
   const countries = [
     ['IN','India','+91'],['US','United States','+1'],['CA','Canada','+1'],['GB','United Kingdom','+44'],['AU','Australia','+61'],
-    ['AE','United Arab Emirates','+971'],['SA','Saudi Arabia','+966'],['SG','Singapore','+65'],['MY','Malaysia','+60'],['SG','Singapore','+65'],
+    ['AE','United Arab Emirates','+971'],['SA','Saudi Arabia','+966'],['SG','Singapore','+65'],['MY','Malaysia','+60'],
     ['DE','Germany','+49'],['FR','France','+33'],['IT','Italy','+39'],['ES','Spain','+34'],['NL','Netherlands','+31'],
     ['CH','Switzerland','+41'],['SE','Sweden','+46'],['NO','Norway','+47'],['DK','Denmark','+45'],['FI','Finland','+358'],
     ['IE','Ireland','+353'],['PT','Portugal','+351'],['BE','Belgium','+32'],['AT','Austria','+43'],['PL','Poland','+48'],
@@ -26,7 +26,7 @@ export const LoginPage: React.FC = () => {
     ['PK','Pakistan','+92'],['BD','Bangladesh','+880'],['LK','Sri Lanka','+94'],['NP','Nepal','+977'],['BT','Bhutan','+975'],
     ['QA','Qatar','+974'],['KW','Kuwait','+965'],['OM','Oman','+968'],['BH','Bahrain','+973'],['JO','Jordan','+962'],
     ['IR','Iran','+98'],['IQ','Iraq','+964'],['ET','Ethiopia','+251'],['TZ','Tanzania','+255'],['UG','Uganda','+256'],
-    ['DZ','Algeria','+213'],['TN','Tunisia','+216'],['GH','Ghana','+233'],['FJ','Fiji','+679'],['IS','Iceland','+354']
+    ['DZ','Algeria','+213'],['TN','Tunisia','+216'],['FJ','Fiji','+679'],['IS','Iceland','+354']
   ];
 
   const [otpSent, setOtpSent] = useState(false);
