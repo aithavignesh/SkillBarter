@@ -145,6 +145,9 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
   sessionStorage.setItem('skillbarter_token', token);
 
   const user = data.user;
+  if (!user?.email) {
+    throw new Error('OTP verified, but the login session did not include a user. Please try again.');
+  }
   if (user?.id) sessionStorage.setItem('skillbarter_user_id', String(user.id));
   sessionStorage.setItem('skillbarter_phone', phone);
 
