@@ -35,7 +35,7 @@ export const ConversationPage: React.FC = () => {
       ]);
       setPartner(profile);
       setMessages(thread);
-      setBlocked(Boolean(await (api as any).getBlockStatus?.(partnerId)));
+      setBlocked(await api.isUserBlocked(partnerId));
       const conversation = (conversations || []).find((item: any) => Number(item.partner?.id) === partnerId);
       if (conversation?.active_exchange_id) {
         try {
@@ -69,6 +69,7 @@ export const ConversationPage: React.FC = () => {
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (blocked) { setError('This member is blocked. Unblock them before sending a message.'); return; }
     const value = text.trim();
     if (!value || !partnerId || sending) return;
     try {
@@ -115,6 +116,12 @@ export const ConversationPage: React.FC = () => {
           <Link to="/messages"><Button size="sm" variant="outline" icon={<MessageSquare className="h-4 w-4" />}>All messages</Button></Link>
         </div>
         <Card className="overflow-hidden">
+          {blocked && (
+            <div className="flex flex-col gap-2 border-b border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-amber-900"><ShieldOff className="h-4 w-4 shrink-0" /> This member is blocked. Messaging is disabled.</div>
+              <Button size="sm" variant="outline" onClick={toggleBlock} disabled={blocking}>{blocking ? 'Saving…' : 'Unblock'}</Button>
+            </div>
+          )}
           <header className="flex items-center justify-between gap-4 border-b border-[#e1e4e8] bg-white px-5 py-4">
             <div className="flex min-w-0 items-center gap-3">
               <img src={partner?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'} className="h-11 w-11 rounded-full object-cover" alt="" />
@@ -165,7 +172,7 @@ export const ConversationPage: React.FC = () => {
             {error && <div className="border-t border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">{error}</div>}
             <form onSubmit={send} className="flex gap-2 border-t border-[#e1e4e8] bg-white p-3">
               <input value={text} onChange={e => setText(e.target.value)} placeholder="Write a message…" aria-label="Message" maxLength={2000} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} className="h-10 flex-1 border border-[#d9dde2] bg-white px-3 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" />
-              <Button type="submit" size="sm" disabled={sending || !text.trim()} icon={<Send className="h-4 w-4" />}>{sending ? 'Sending…' : 'Send'}</Button>
+              <Button type="submit" size="sm" disabled={blocked || sending || !text.trim()} icon={<Send className="h-4 w-4" />}>{sending ? 'Sending…' : 'Send'}</Button>
             </form>
           </section>
         </Card>
