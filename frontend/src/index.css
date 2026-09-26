@@ -133,8 +133,157 @@
   background: #fff;
 }
 
+.profile-name,
+.profile-headline,
+.profile-metadata {
+  overflow-wrap: anywhere;
+}
+
+.profile-avatar {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.profile-avatar:not(:disabled):focus-visible {
+  box-shadow: 0 8px 20px rgba(23, 35, 59, .16);
+  transform: translateY(-2px);
+}
+
+.profile-section {
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.profile-section:focus-within {
+  border-color: #d4d9df;
+  box-shadow: 0 6px 16px rgba(23, 35, 59, .055);
+  transform: translateY(-1px);
+}
+
+.profile-skill-chip {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.profile-edit-panel {
+  animation: profile-edit-in 180ms ease-out both;
+}
+
+.profile-feedback {
+  animation: profile-edit-in 180ms ease-out both;
+}
+
+.profile-edit-input {
+  min-width: 0;
+  color: #17233b;
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.profile-edit-input:focus {
+  border-color: #d31d24;
+  box-shadow: 0 0 0 3px rgba(211, 29, 36, .1);
+}
+
+.profile-edit-input[aria-invalid="true"] {
+  border-color: #b8171d;
+}
+
+.profile-edit-error {
+  border: 1px solid #f1c8ca;
+  background: #fff7f7;
+  padding: .75rem;
+  color: #8f1a20;
+  font-size: .75rem;
+  line-height: 1.25rem;
+}
+
+.profile-completion-bar {
+  transition: width 260ms ease;
+}
+
+.exchange-status-badge {
+  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease;
+}
+
+.exchange-title,
+.exchange-skill-card,
+.exchange-next-action {
+  overflow-wrap: anywhere;
+}
+
+.exchange-lifecycle__step {
+  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease;
+}
+
+.exchange-lifecycle__step--done {
+  border-color: #ead0d1;
+  background: #fff6f6;
+}
+
+.exchange-skill-card {
+  min-width: 0;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.mobile-primary-navigation {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 200ms ease;
+}
+
+.mobile-primary-navigation--open {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.public-mobile-navigation {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 200ms ease;
+}
+
+.public-mobile-navigation--open {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .profile-avatar:not(:disabled):hover {
+    box-shadow: 0 8px 20px rgba(23, 35, 59, .16);
+    transform: translateY(-2px);
+  }
+
+  .profile-section:hover {
+    border-color: #d4d9df;
+    box-shadow: 0 6px 16px rgba(23, 35, 59, .055);
+    transform: translateY(-1px);
+  }
+
+  .profile-skill-chip:hover {
+    border-color: #c6ccd4;
+  }
+
+  .exchange-skill-card:hover {
+    border-color: #d5d9de;
+    background-color: #f3f5f6;
+  }
+}
+
 @keyframes notifications-list-in {
   from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes profile-edit-in {
+  from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -160,6 +309,12 @@
     transform: none;
   }
 
+  .profile-section:hover,
+  .profile-avatar:not(:disabled):hover,
+  .profile-section:focus-within {
+    transform: none;
+  }
+
   .notification-dropdown__item:active,
   .notification-item:active {
     background-color: #f5f6f7;
@@ -174,9 +329,25 @@
   .notification-item__icon,
   .notification-dropdown__indicator,
   .notification-item__indicator,
-  .notifications-list {
+  .notifications-list,
+  .profile-avatar,
+  .profile-section,
+  .profile-skill-chip,
+  .profile-edit-panel,
+  .profile-feedback,
+  .profile-edit-input,
+  .profile-completion-bar,
+  .exchange-status-badge,
+  .exchange-lifecycle__step,
+  .exchange-skill-card,
+  .mobile-primary-navigation {
     animation: none;
     transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
+    transform: none;
+  }
+
+  .public-mobile-navigation {
+    transition: opacity 120ms ease;
     transform: none;
   }
 }

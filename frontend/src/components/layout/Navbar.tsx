@@ -14,6 +14,13 @@ export const DEFAULT_AVATAR_URL = 'https://images.unsplash.com/photo-15070032111
 type NavFeature = { label: string; path: string };
 type NavItem = { label: string; path: string; icon: React.ComponentType<{ className?: string }>; features?: NavFeature[] };
 const notificationIconFor = (type: string) => type === 'MESSAGE' ? MessageSquare : type.startsWith('EXCHANGE') ? ArrowLeftRight : type.includes('CONNECT') ? UserPlus : type.includes('TRUST') || type.includes('REVIEW') ? ShieldCheck : Repeat;
+const notificationTime = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+};
 
 export const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -223,9 +230,10 @@ if (!currentUser) {
                     <button
                         type="button"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
                         aria-label="Toggle navigation menu"
                         aria-expanded={isMobileMenuOpen}
+                        aria-controls="public-mobile-navigation"
                     >
                         {isMobileMenuOpen ? (
                             <X className="h-5 w-5" />
@@ -237,8 +245,7 @@ if (!currentUser) {
             </div>
 
             {/* Mobile Navigation */}
-            {isMobileMenuOpen && (
-                <div className="border-t border-slate-200 bg-white px-4 py-4 lg:hidden">
+                <div id="public-mobile-navigation" aria-hidden={!isMobileMenuOpen} className={`public-mobile-navigation absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-4 shadow-md lg:hidden ${isMobileMenuOpen ? 'public-mobile-navigation--open' : ''}`}>
                     <div className="flex flex-col gap-1">
 
                         <a
@@ -284,7 +291,6 @@ if (!currentUser) {
                         </Link>
                     </div>
                 </div>
-            )}
         </nav>
     );
 }
@@ -365,8 +371,45 @@ if (!currentUser) {
               <span className="hidden sm:inline">{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
             </button>
             <div className="relative">
-              <button type="button" aria-label="Notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] hover:text-[#17233b]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
-              <div className={`notification-dropdown absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)] ${showNotifications ? 'notification-dropdown--open' : ''}`} aria-hidden={!showNotifications}><div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><span className="text-[12px] font-bold text-[#17233b]">Notifications</span>{unreadCount > 0 && <button tabIndex={showNotifications ? 0 : -1} type="button" onClick={markAllAsRead} className="text-[10px] font-semibold text-[#d31d24] transition-colors hover:text-[#b8171d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]">Mark all read</button>}</div><div className="max-h-80 overflow-y-auto">{notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">No notifications yet</div> : notifications.map((n) => { const Icon = notificationIconFor(String(n.type || '')); return <button tabIndex={showNotifications ? 0 : -1} key={n.id} type="button" onClick={() => { markAsRead(n.id); if (n.link) { navigate(n.link); setShowNotifications(false); } }} className={`notification-dropdown__item flex w-full items-start gap-3 border-b border-[#f0f1f3] px-4 py-3 text-left last:border-0 ${!n.is_read ? 'notification-dropdown__item--unread bg-[#fff8f8]' : 'notification-dropdown__item--read'}`}><span className={`notification-dropdown__icon flex h-8 w-8 shrink-0 items-center justify-center ${!n.is_read ? 'bg-[#fff0f0] text-[#d31d24]' : 'bg-[#f3f5f7] text-[#697386]'}`}><Icon className="h-3.5 w-3.5" /></span><span className="min-w-0 flex-1"><span className="flex items-start justify-between gap-2"><span className="notification-dropdown__title min-w-0 text-[12px] font-semibold text-[#17233b]">{n.title}</span><span className={`notification-dropdown__indicator mt-1 h-1.5 w-1.5 shrink-0 ${!n.is_read ? 'bg-[#d31d24]' : ''}`} aria-label={n.is_read ? undefined : 'Unread'} /></span><span className="notification-dropdown__message mt-1 block text-[11px] leading-5 text-[#697386]">{n.message}</span></span></button>; })}</div></div>
+              <button type="button" aria-label="Notifications" aria-expanded={showNotifications} aria-controls="navbar-notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-9 w-9 items-center justify-center text-[#6f7887] transition-colors hover:bg-[#f6f7f8] hover:text-[#17233b]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
+              <div
+                id="navbar-notifications"
+                className={`notification-dropdown absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)] ${showNotifications ? 'notification-dropdown--open' : ''}`}
+                aria-hidden={!showNotifications}
+              >
+                <div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3">
+                  <span className="text-[12px] font-bold text-[#17233b]">Notifications</span>
+                  {unreadCount > 0 && <button tabIndex={showNotifications ? 0 : -1} type="button" onClick={markAllAsRead} className="text-[10px] font-semibold text-[#d31d24] transition-colors hover:text-[#b8171d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]">Mark all read</button>}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">No notifications yet</div> : notifications.map((n) => {
+                    const Icon = notificationIconFor(String(n.type || ''));
+                    const title = n.title || 'Notification';
+                    return (
+                      <button
+                        tabIndex={showNotifications ? 0 : -1}
+                        key={n.id}
+                        type="button"
+                        onClick={() => { void markAsRead(n.id); if (n.link) { navigate(n.link); setShowNotifications(false); } }}
+                        aria-label={`${n.is_read ? '' : 'Unread notification: '}${title}`}
+                        className={`notification-dropdown__item flex w-full items-start gap-3 border-b border-[#f0f1f3] px-4 py-3 text-left last:border-0 ${!n.is_read ? 'notification-dropdown__item--unread bg-[#fff8f8]' : 'notification-dropdown__item--read'}`}
+                      >
+                        <span className={`notification-dropdown__icon flex h-8 w-8 shrink-0 items-center justify-center ${!n.is_read ? 'bg-[#fff0f0] text-[#d31d24]' : 'bg-[#f3f5f7] text-[#697386]'}`}>
+                          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-start justify-between gap-2">
+                            <span className="notification-dropdown__title min-w-0 break-words text-[12px] font-semibold text-[#17233b]">{title}</span>
+                            <span className={`notification-dropdown__indicator mt-1 h-1.5 w-1.5 shrink-0 ${!n.is_read ? 'bg-[#d31d24]' : ''}`} aria-hidden="true" />
+                          </span>
+                          <span className="notification-dropdown__message mt-1 block break-words text-[11px] leading-5 text-[#697386]">{n.message}</span>
+                          {n.created_at && <time className="mt-1 block text-[10px] text-slate-500" dateTime={n.created_at}>{notificationTime(n.created_at)}</time>}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
             <div className="relative">
               <button type="button" onClick={() => { setShowProfileMenu((v) => !v); setShowNotifications(false); }} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#f6f7f8]"><img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-8 w-8 rounded-full object-cover" /><span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-[#17233b] xl:block">{currentUser.full_name}</span><ChevronRight className="hidden h-3.5 w-3.5 rotate-90 text-[#9aa1ac] xl:block" /></button>
@@ -383,13 +426,12 @@ if (!currentUser) {
           aria-label={showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={showMobileMenu}
           aria-controls="mobile-primary-navigation"
-          className="fixed left-5 top-[15px] z-50 flex h-9 w-9 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm"
+          className="fixed left-5 top-[13px] z-50 flex h-11 w-11 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm"
         >
           {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
-        {showMobileMenu && (
-          <nav id="mobile-primary-navigation" className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100dvh-68px)] overflow-y-auto border-b border-[#e1e4e8] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(23,35,59,.12)]">
+          <nav id="mobile-primary-navigation" aria-hidden={!showMobileMenu} className={`mobile-primary-navigation fixed inset-x-0 top-[68px] z-40 max-h-[calc(100dvh-68px)] overflow-y-auto border-b border-[#e1e4e8] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(23,35,59,.12)] ${showMobileMenu ? 'mobile-primary-navigation--open' : ''}`}>
             <div className="mb-4 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
               <img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-10 w-10 rounded-full object-cover" />
               <div className="min-w-0">
@@ -412,17 +454,18 @@ if (!currentUser) {
                       to={item.path}
                       onClick={() => setShowMobileMenu(false)}
                       aria-current={active ? 'page' : undefined}
-                      className={`flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#4d5b72]'}`}
+                      className={`flex min-w-0 flex-1 items-center gap-3 border-l-2 px-2 py-3 text-[13px] transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#4d5b72]'}`}
                     >
-                      <Icon className={`h-4 w-4 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
-                      {item.label}
+                      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
+                      <span className="min-w-0 break-words">{item.label}</span>
                     </Link>
                     {item.features && (
                       <button
                         type="button"
                         onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)}
-                        className="flex h-9 w-9 items-center justify-center text-[#8a92a0]"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center text-[#8a92a0]"
                         aria-label={`Show ${item.label} features`}
+                        aria-expanded={expanded}
                       >
                         <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
                       </button>
@@ -435,7 +478,7 @@ if (!currentUser) {
                           key={feature.path}
                           to={feature.path}
                           onClick={() => setShowMobileMenu(false)}
-                          className={`block px-3 py-2 text-[11px] ${isActive(feature.path) ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}
+                          className={`block break-words px-3 py-2.5 text-[11px] ${isActive(feature.path) ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}
                         >
                           {feature.label}
                         </Link>
@@ -446,7 +489,6 @@ if (!currentUser) {
               );
             })}
           </nav>
-        )}
       </div>
     </>
   );
