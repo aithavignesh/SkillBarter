@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 from app.routers import (
     auth, users, skills, matches, exchanges, messages, reviews, trust,
-    notifications, connections, feed, community, search, reports, admin
+    notifications, connections, feed, community, search, reports, admin, learning
 )
 
 
@@ -95,6 +95,7 @@ app.include_router(community.router, prefix=settings.API_V1_STR)
 app.include_router(search.router, prefix=settings.API_V1_STR)
 app.include_router(reports.router, prefix=settings.API_V1_STR)
 app.include_router(admin.router, prefix=settings.API_V1_STR)
+app.include_router(learning.router, prefix=settings.API_V1_STR)
 
 @app.get("/health")
 def health_check():
