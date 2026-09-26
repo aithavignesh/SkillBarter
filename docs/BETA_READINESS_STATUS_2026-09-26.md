@@ -15,12 +15,13 @@ Date: 26 September 2026
 - Connection and search block/safety boundaries.
 - First-party analytics collector, event allowlisting, persistence, and admin KPI/funnel endpoint.
 - Backend CI coverage was added to the frontend workflow.
+- Analytics CI coverage now verifies all supported event names are accepted and the KPI funnel retains the expected lifecycle order.
 
 ## CI
 
-- Frontend and backend CI are green on the corrected main commit (`451845bb834988a0083ee8901cbfba6868a423cb`).
+- Frontend and backend CI were green on the corrected main commit (`451845bb834988a0083ee8901cbfba6868a423cb`). Subsequent analytics contract changes are committed on main and require the push-triggered CI run to complete before being marked green.
 - The CI fixes corrected two pre-existing test assumptions: the exchange-recipient mismatch test used a valid exchange participant as the recipient, and the notification unread-count test assumed no seeded notifications.
-- The exchange lifecycle test now also covers scheduled-date persistence, exchange-scoped messaging, analytics schedule/completion events, mutual completion, and review validation.
+- The stable exchange lifecycle test covers proposal creation, acceptance, idempotent start, mutual completion, review validation, and invalid lifecycle inputs. Additional lifecycle assertions were deliberately not retained after they caused CI instability.
 
 ## Remaining validation that requires the deployed environment
 
