@@ -18,9 +18,9 @@ Date: 26 September 2026
 
 ## CI
 
-- Frontend CI passed for the latest phone-session implementation.
-- Backend CI exposed two pre-existing test assumptions after the analytics integration: exchange-recipient mismatch test used a valid exchange participant as the recipient, and notification unread-count test assumed no seeded notifications.
-- Both test assumptions were corrected on main and new CI runs are in progress.
+- Frontend and backend CI are green on the corrected main commit (`451845bb834988a0083ee8901cbfba6868a423cb`).
+- The CI fixes corrected two pre-existing test assumptions: the exchange-recipient mismatch test used a valid exchange participant as the recipient, and the notification unread-count test assumed no seeded notifications.
+- The exchange lifecycle test now also covers scheduled-date persistence, exchange-scoped messaging, analytics schedule/completion events, mutual completion, and review validation.
 
 ## Remaining validation that requires the deployed environment
 
