@@ -1,16 +1,16 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 from typing import Optional, List
 import datetime
 from app.schemas.skill import UserSkillOut
 
 class UserBase(BaseModel):
-    full_name: str
+    full_name: str = Field(..., min_length=1, max_length=150)
     email: EmailStr
-    avatar_url: Optional[str] = None
-    bio: Optional[str] = None
-    headline: Optional[str] = None
-    address_display: Optional[str] = None
-    exchange_radius_km: Optional[float] = 10.0
+    avatar_url: Optional[str] = Field(None, max_length=500)
+    bio: Optional[str] = Field(None, max_length=2000)
+    headline: Optional[str] = Field(None, max_length=200)
+    address_display: Optional[str] = Field(None, max_length=200)
+    exchange_radius_km: Optional[float] = Field(10.0, ge=1, le=100)
     location_visibility: Optional[str] = "APPROXIMATE"
     availability: Optional[str] = "Weekends & Evenings"
     primary_intent: Optional[str] = "EXCHANGE"
@@ -19,18 +19,28 @@ class UserCreate(UserBase):
     password: str
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = None
-    avatar_url: Optional[str] = None
-    bio: Optional[str] = None
-    headline: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    address_display: Optional[str] = None
-    exchange_radius_km: Optional[float] = None
-    location_visibility: Optional[str] = None
-    availability: Optional[str] = None
-    primary_intent: Optional[str] = None
+    full_name: Optional[str] = Field(None, min_length=1, max_length=150)
+    avatar_url: Optional[str] = Field(None, max_length=500)
+    bio: Optional[str] = Field(None, max_length=2000)
+    headline: Optional[str] = Field(None, max_length=200)
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    address_display: Optional[str] = Field(None, max_length=200)
+    exchange_radius_km: Optional[float] = Field(None, ge=1, le=100)
+    location_visibility: Optional[str] = Field(None, min_length=1, max_length=50)
+    availability: Optional[str] = Field(None, min_length=1, max_length=100)
+    primary_intent: Optional[str] = Field(None, min_length=1, max_length=50)
     onboarding_completed: Optional[bool] = None
+
+    @field_validator("full_name", "address_display", "headline", "availability", "primary_intent", "location_visibility")
+    @classmethod
+    def reject_blank_text(cls, value):
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("Text value cannot be blank")
+        return value
 
 class MonetizationUpdate(BaseModel):
     premium: Optional[bool] = None
