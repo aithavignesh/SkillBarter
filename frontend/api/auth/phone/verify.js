@@ -6,6 +6,7 @@ import {
   verifyOtpChallenge,
   checkVerifyRateLimit,
   clearVerifyRateLimit,
+  validatePhoneAuthSession,
 } from './_utils.js';
 
 export default async function handler(req, res) {
@@ -62,7 +63,8 @@ export default async function handler(req, res) {
     }
 
     const session = await createOrSignInPhoneUser(phone);
-    if (!session?.accessToken || !session?.user?.email) {
+    const sessionValidation = validatePhoneAuthSession(session);
+    if (!sessionValidation.valid) {
       throw Object.assign(
         new Error('Phone authentication completed, but no valid login session was returned. Please try again.'),
         { code: 'SESSION_CREATION_FAILED', statusCode: 502 }
