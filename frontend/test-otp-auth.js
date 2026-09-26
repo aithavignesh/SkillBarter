@@ -4,6 +4,8 @@ import {
   verifyOtpChallenge,
   normalizePhone,
   sanitizeEnvValue,
+  checkVerifyRateLimit,
+  clearVerifyRateLimit,
 } from './api/auth/phone/_utils.js';
 import { getSmsProviderConfig } from './api/auth/phone/smsProvider.js';
 
@@ -32,6 +34,28 @@ assert.strictEqual(verifyOtpChallenge('+917028554230', '123456', challenge.token
 assert.strictEqual(verifyOtpChallenge('+917028554230', '654321', challenge.token, testSecret), false);
 assert.strictEqual(verifyOtpChallenge('+919999999999', '123456', challenge.token, testSecret), false);
 console.log('  [PASS] OTP cryptographic challenge generation and verification');
+
+// OTP verification attempt limiting
+const verifyLimitPhone = '+917000000001';
+const verifyLimitChallenge = 'unit-test-challenge';
+clearVerifyRateLimit(verifyLimitPhone, verifyLimitChallenge);
+for (let i = 0; i < 5; i++) {
+  const result = checkVerifyRateLimit(verifyLimitPhone, verifyLimitChallenge);
+  assert.strictEqual(result.allowed, true);
+}
+const blockedVerify = checkVerifyRateLimit(verifyLimitPhone, verifyLimitChallenge);
+assert.strictEqual(blockedVerify.allowed, false);
+assert.strictEqual(blockedVerify.attemptsRemaining, 0);
+clearVerifyRateLimit(verifyLimitPhone, verifyLimitChallenge);
+assert.strictEqual(checkVerifyRateLimit(verifyLimitPhone, verifyLimitChallenge).allowed, true);
+clearVerifyRateLimit(verifyLimitPhone, verifyLimitChallenge);
+console.log('  [PASS] OTP verification attempt limiting and reset');
+
+// Rate limiting is scoped to the phone + challenge, so a new challenge starts
+// with a fresh attempt budget.
+const otherChallenge = checkVerifyRateLimit(verifyLimitPhone, 'different-challenge');
+assert.strictEqual(otherChallenge.allowed, true);
+clearVerifyRateLimit(verifyLimitPhone, 'different-challenge');
 
 // India-first SMS provider selection
 const previousProvider = process.env.SMS_PROVIDER;
