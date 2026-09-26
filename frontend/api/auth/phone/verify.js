@@ -4,6 +4,8 @@ import {
   parseRequestBody,
   sendJson,
   verifyOtpChallenge,
+  checkVerifyRateLimit,
+  clearVerifyRateLimit,
 } from './_utils.js';
 
 export default async function handler(req, res) {
@@ -33,6 +35,19 @@ export default async function handler(req, res) {
     const phone = normalizePhone(rawPhone);
     const otp = String(rawOtp).trim();
 
+    const verifyLimit = checkVerifyRateLimit(phone, challenge);
+    if (!verifyLimit.allowed) {
+      return sendJson(
+        res,
+        {
+          error: 'Too many incorrect OTP attempts. Please request a new OTP and try again later.',
+          code: 'OTP_VERIFY_RATE_LIMITED',
+          waitSeconds: verifyLimit.waitSeconds,
+        },
+        429
+      );
+    }
+
     if (!/^\d{6}$/.test(otp)) {
       return sendJson(res, { error: 'Invalid OTP format. OTP must be a 6-digit numeric code.', code: 'INVALID_FORMAT' }, 400);
     }
@@ -47,6 +62,7 @@ export default async function handler(req, res) {
     }
 
     const session = await createOrSignInPhoneUser(phone);
+    clearVerifyRateLimit(phone, challenge);
 
     return sendJson(
       res,
