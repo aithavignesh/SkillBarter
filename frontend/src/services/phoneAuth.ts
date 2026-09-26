@@ -228,3 +228,10 @@ export function clearPhoneSession() {
   sessionStorage.removeItem('skillbarter_demo_otp');
   sessionStorage.removeItem('skillbarter_otp_expires');
 }
+
+export function hasPersistedPhoneSession() {
+  return Boolean(
+    sessionStorage.getItem('skillbarter_token') &&
+    sessionStorage.getItem('skillbarter_phone')
+  );
+}
