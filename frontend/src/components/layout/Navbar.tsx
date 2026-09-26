@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -25,9 +25,15 @@ const notificationTime = (value?: string) => {
 export const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading: notificationsLoading, error: notificationsError, refreshNotifications, markAsRead, markAllAsRead } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const notificationsContainerRef = useRef<HTMLDivElement>(null);
+  const notificationsButtonRef = useRef<HTMLButtonElement>(null);
+  const profileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const profileMenuContainerRef = useRef<HTMLDivElement>(null);
+  const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -135,6 +141,58 @@ export const Navbar: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
+  useEffect(() => {
+    setShowMobileMenu(false);
+    setShowNotifications(false);
+    setShowProfileMenu(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowNotifications(false);
+      notificationsButtonRef.current?.focus();
+    };
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (event.target instanceof Node && !notificationsContainerRef.current?.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+    };
+  }, [showNotifications]);
+
+  useEffect(() => {
+    if (!showProfileMenu && !showMobileMenu && !isMobileMenuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowProfileMenu(false);
+      setShowMobileMenu(false);
+      setIsMobileMenuOpen(false);
+      if (showProfileMenu) profileMenuButtonRef.current?.focus();
+      else mobileMenuButtonRef.current?.focus();
+    };
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (!(event.target instanceof Node)) return;
+      if (showProfileMenu && !profileMenuContainerRef.current?.contains(event.target)) setShowProfileMenu(false);
+      if ((showMobileMenu || isMobileMenuOpen) && !mobileMenuContainerRef.current?.contains(event.target)) {
+        setShowMobileMenu(false);
+        setIsMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+    };
+  }, [showProfileMenu, showMobileMenu, isMobileMenuOpen]);
+
 if (!currentUser) {
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
@@ -228,6 +286,7 @@ if (!currentUser) {
                     </button>
 
                     <button
+                        ref={mobileMenuButtonRef}
                         type="button"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
@@ -301,7 +360,7 @@ if (!currentUser) {
     return (
       <div key={item.path}>
         <div className={`flex items-center border-l-2 transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7]' : 'border-transparent'}`}>
-          <Link to={item.path} className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:text-[#17233b]'}`}>
+          <Link to={item.path} aria-current={active ? 'page' : undefined} className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:text-[#17233b]'}`}>
             <Icon className={`h-[17px] w-[17px] shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
             <span>{item.label}</span>
           </Link>
@@ -370,8 +429,8 @@ if (!currentUser) {
               {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               <span className="hidden sm:inline">{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
             </button>
-            <div className="relative">
-              <button type="button" aria-label="Notifications" aria-expanded={showNotifications} aria-controls="navbar-notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-9 w-9 items-center justify-center text-[#6f7887] transition-colors hover:bg-[#f6f7f8] hover:text-[#17233b]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
+            <div ref={notificationsContainerRef} className="relative">
+              <button ref={notificationsButtonRef} type="button" aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`} aria-expanded={showNotifications} aria-controls="navbar-notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-10 w-10 items-center justify-center text-[#6f7887] transition-colors hover:bg-[#f6f7f8] hover:text-[#17233b] active:bg-[#eef0f2]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
               <div
                 id="navbar-notifications"
                 className={`notification-dropdown absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)] ${showNotifications ? 'notification-dropdown--open' : ''}`}
@@ -382,7 +441,8 @@ if (!currentUser) {
                   {unreadCount > 0 && <button tabIndex={showNotifications ? 0 : -1} type="button" onClick={markAllAsRead} className="text-[10px] font-semibold text-[#d31d24] transition-colors hover:text-[#b8171d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]">Mark all read</button>}
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">No notifications yet</div> : notifications.map((n) => {
+                  {notificationsError && <div className="border-b border-[#f0d5d6] bg-[#fff7f7] px-4 py-3" role="alert"><p className="break-words text-[11px] leading-5 text-[#8f1a20]">Notifications couldn’t be updated.</p><button type="button" onClick={() => void refreshNotifications()} className="mt-1 min-h-8 text-[11px] font-bold text-[#b8171d] underline underline-offset-2">Try again</button></div>}
+                  {notificationsLoading && notifications.length === 0 ? <div className="space-y-3 p-4" role="status"><span className="sr-only">Loading notifications…</span>{[0, 1].map(item => <div key={item} aria-hidden="true" className="flex items-center gap-3"><span className="h-8 w-8 shrink-0 rounded-full bg-[#f1f3f5]" /><span className="min-w-0 flex-1 space-y-2"><span className="block h-2.5 w-2/5 bg-[#f1f3f5]" /><span className="block h-2.5 w-4/5 bg-[#f1f3f5]" /></span></div>)}</div> : notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">{notificationsError ? 'Notifications are unavailable right now.' : 'No notifications yet'}</div> : notifications.map((n) => {
                     const Icon = notificationIconFor(String(n.type || ''));
                     const title = n.title || 'Notification';
                     return (
@@ -411,22 +471,23 @@ if (!currentUser) {
                 </div>
               </div>
             </div>
-            <div className="relative">
-              <button type="button" onClick={() => { setShowProfileMenu((v) => !v); setShowNotifications(false); }} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#f6f7f8]"><img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-8 w-8 rounded-full object-cover" /><span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-[#17233b] xl:block">{currentUser.full_name}</span><ChevronRight className="hidden h-3.5 w-3.5 rotate-90 text-[#9aa1ac] xl:block" /></button>
-              {showProfileMenu && <div className="absolute right-0 mt-2 w-60 border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)]"><div className="border-b border-[#edf0f2] px-4 py-3"><p className="text-[12px] font-bold text-[#17233b]">{currentUser.full_name}</p><p className="mt-0.5 truncate text-[10px] text-[#8a92a0]">{currentUser.email}</p></div><div className="py-1"><button type="button" onClick={() => toggleTheme()} className="flex w-full items-center justify-between px-4 py-2.5 text-left text-[12px] font-semibold text-[#4d5b72] hover:bg-[#fafbfc]"><span className="flex items-center gap-2">{theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}{theme === 'light' ? 'Dark mode' : 'Light mode'}</span><span className="text-[10px] text-[#9299a5]">{theme === 'light' ? 'OFF' : 'ON'}</span></button><Link to={`/profile/${currentUser.id}`} onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] text-[#4d5b72] hover:bg-[#fafbfc]"><UserIcon className="h-4 w-4" />My Profile</Link><Link to="/monetization" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><Coins className="h-4 w-4" />Monetization Hub</Link>{currentUser.is_admin && <Link to="/admin" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 border-t border-[#edf0f2] px-4 py-2.5 text-[12px] text-[#8a5a00]"><Shield className="h-4 w-4" />Admin Moderation</Link>}</div><div className="border-t border-[#edf0f2] p-1"><button type="button" onClick={async () => { setShowProfileMenu(false); await logout(); navigate('/'); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><LogOut className="h-4 w-4" />Log out</button></div></div>}
+            <div ref={profileMenuContainerRef} className="relative">
+              <button ref={profileMenuButtonRef} type="button" aria-label={`Account menu for ${currentUser.full_name}`} aria-expanded={showProfileMenu} aria-haspopup="menu" onClick={() => { setShowProfileMenu((v) => !v); setShowNotifications(false); }} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#f6f7f8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]"><img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt="" className="h-8 w-8 rounded-full object-cover" /><span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-[#17233b] xl:block">{currentUser.full_name}</span><ChevronRight className="hidden h-3.5 w-3.5 rotate-90 text-[#9aa1ac] xl:block" /></button>
+              {showProfileMenu && <div id="profile-navigation-menu" className="absolute right-0 mt-2 w-60 border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)]"><div className="border-b border-[#edf0f2] px-4 py-3"><p className="text-[12px] font-bold text-[#17233b]">{currentUser.full_name}</p><p className="mt-0.5 truncate text-[10px] text-[#8a92a0]">{currentUser.email}</p></div><div className="py-1"><button type="button" onClick={() => toggleTheme()} className="flex w-full items-center justify-between px-4 py-2.5 text-left text-[12px] font-semibold text-[#4d5b72] hover:bg-[#fafbfc]"><span className="flex items-center gap-2">{theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}{theme === 'light' ? 'Dark mode' : 'Light mode'}</span><span className="text-[10px] text-[#9299a5]">{theme === 'light' ? 'OFF' : 'ON'}</span></button><Link to={`/profile/${currentUser.id}`} onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] text-[#4d5b72] hover:bg-[#fafbfc]"><UserIcon className="h-4 w-4" />My Profile</Link><Link to="/monetization" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><Coins className="h-4 w-4" />Monetization Hub</Link>{currentUser.is_admin && <Link to="/admin" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 border-t border-[#edf0f2] px-4 py-2.5 text-[12px] text-[#8a5a00]"><Shield className="h-4 w-4" />Admin Moderation</Link>}</div><div className="border-t border-[#edf0f2] p-1"><button type="button" onClick={async () => { setShowProfileMenu(false); await logout(); navigate('/'); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><LogOut className="h-4 w-4" />Log out</button></div></div>}
             </div>
           </div>
         </div>
       </header>
 
-      <div className="lg:hidden">
+      <div ref={mobileMenuContainerRef} className="lg:hidden">
         <button
+          ref={mobileMenuButtonRef}
           type="button"
           onClick={() => setShowMobileMenu(v => !v)}
           aria-label={showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={showMobileMenu}
           aria-controls="mobile-primary-navigation"
-          className="fixed left-5 top-[13px] z-50 flex h-11 w-11 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm"
+          className="fixed left-5 top-[13px] z-50 flex h-11 w-11 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm transition-colors hover:bg-[#f7f8f7] active:bg-[#eef0f2]"
         >
           {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>

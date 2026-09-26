@@ -16,6 +16,7 @@ const iconFor = (type: string) => {
 };
 
 const groupFor = (type: string) => type === 'MESSAGE' ? 'Messages' : type.startsWith('EXCHANGE') ? 'Exchanges' : type.includes('CONNECT') ? 'Connections' : type.includes('TRUST') || type.includes('REVIEW') ? 'Trust & reviews' : 'Other';
+const filterOptions = ['ALL', 'Messages', 'Exchanges', 'Connections', 'Trust & reviews', 'Other'];
 const labelFor = (type: string) => {
   const labels: Record<string, string> = {
     MESSAGE: 'Message',
@@ -53,7 +54,6 @@ export const NotificationsPage: React.FC = () => {
   const { notifications, unreadCount, loading, error, markAsRead, markAllAsRead, refreshNotifications } = useNotifications();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('ALL');
-  const filterOptions = ['ALL', 'Messages', 'Exchanges', 'Connections', 'Trust & reviews', 'Other'];
   const filtered = useMemo(
     () => filter === 'ALL' ? notifications : notifications.filter(item => groupFor(String(item.type || '')) === filter),
     [notifications, filter],
@@ -93,7 +93,7 @@ export const NotificationsPage: React.FC = () => {
               type="button"
               aria-pressed={filter === option}
               onClick={() => setFilter(option)}
-              className={`min-h-9 shrink-0 px-2.5 py-1.5 text-[10px] font-bold transition-colors ${filter === option ? 'bg-[#17233b] text-white' : 'text-slate-600 hover:bg-[#f7f8f7]'}`}
+              className={`min-h-9 shrink-0 px-2.5 py-1.5 text-[10px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] active:bg-[#e9ecef] ${filter === option ? 'bg-[#17233b] text-white' : 'text-slate-600 hover:bg-[#f7f8f7]'}`}
             >
               {option === 'ALL' ? 'All' : option}
               {option !== 'ALL' && unreadByGroup[option] > 0 && <span className="ml-1.5 inline-flex min-w-4 justify-center bg-[#d31d24] px-1 text-[8px] text-white">{unreadByGroup[option]}</span>}
@@ -104,14 +104,26 @@ export const NotificationsPage: React.FC = () => {
 
       {error && (
         <div className="mb-4 flex flex-col gap-3 border border-[#f1c8ca] bg-[#fff7f7] px-4 py-3 sm:flex-row sm:items-center sm:justify-between" role="alert">
-          <p className="text-xs text-[#8f1a20]">Notifications couldn’t be updated. {error}</p>
+          <p className="max-w-prose break-words text-xs leading-5 text-[#8f1a20]">Notifications couldn’t be updated. {error}</p>
           <Button size="sm" variant="outline" onClick={() => void refreshNotifications()} loading={loading}>Try again</Button>
         </div>
       )}
 
       <Card className="notifications-surface overflow-hidden">
         {loading && notifications.length === 0 ? (
-          <div className="p-10 text-center text-xs text-slate-500" role="status">Loading notifications…</div>
+          <div className="space-y-0 divide-y divide-[#edf0f2] p-4 sm:p-5" role="status" aria-label="Loading notifications">
+            {[0, 1, 2].map(item => (
+              <div key={item} className="flex items-start gap-3 py-4 first:pt-0 last:pb-0" aria-hidden="true">
+                <span className="h-10 w-10 shrink-0 rounded-full bg-[#f1f3f5]" />
+                <span className="min-w-0 flex-1 space-y-2 pt-1">
+                  <span className="block h-3 w-2/5 max-w-48 bg-[#f1f3f5]" />
+                  <span className="block h-3 w-4/5 bg-[#f1f3f5]" />
+                  <span className="block h-2.5 w-1/4 max-w-28 bg-[#f1f3f5]" />
+                </span>
+              </div>
+            ))}
+            <span className="sr-only">Loading notifications…</span>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="notifications-empty p-10 text-center sm:p-14">
             <Bell className="mx-auto mb-3 h-8 w-8 text-slate-300" />
@@ -141,7 +153,7 @@ export const NotificationsPage: React.FC = () => {
                     </span>
                     <span className="notification-item__message mt-1 block break-words text-xs leading-5 text-[#697386]">{notification.message}</span>
                     <span className="notification-item__meta mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
-                      <span>{timeFor(notification.created_at)}</span>
+                      <time dateTime={notification.created_at}>{timeFor(notification.created_at)}</time>
                       <span aria-hidden="true">·</span>
                       <span>{labelFor(String(notification.type || ''))}</span>
                       {notification.link && <span className="font-bold text-[#d31d24]">Open →</span>}

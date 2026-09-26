@@ -340,7 +340,8 @@
   .exchange-status-badge,
   .exchange-lifecycle__step,
   .exchange-skill-card,
-  .mobile-primary-navigation {
+  .mobile-primary-navigation,
+  .onboarding-step-content {
     animation: none;
     transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
     transform: none;

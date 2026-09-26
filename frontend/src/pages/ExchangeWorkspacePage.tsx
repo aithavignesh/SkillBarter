@@ -30,6 +30,8 @@ export const ExchangeWorkspacePage: React.FC = () => {
   const [scheduleHours, setScheduleHours] = useState<string>('2');
   const [scheduleArea, setScheduleArea] = useState<string>('');
   const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleError, setScheduleError] = useState('');
+  const [messagesError, setMessagesError] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
   const [exchangeActionPending, setExchangeActionPending] = useState(false);
@@ -41,6 +43,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       setLoading(true);
       setLoadError('');
       setActionError('');
+      setMessagesError('');
       setExchange(null);
       setMessages([]);
       const data = await api.getExchange(exchangeId);
@@ -51,7 +54,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
         setMessages(await api.getMessages(partnerId));
       } catch (e) {
         console.error(e);
-        setActionError('Your exchange loaded, but messages are temporarily unavailable.');
+        setMessagesError('Messages are temporarily unavailable. You can still review the exchange details.');
       }
     } catch (e) {
       console.error(e);
@@ -77,6 +80,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
 
   const openScheduleEditor = () => {
     if (!exchange) return;
+    setScheduleError('');
     setScheduleDate(exchange.preferred_date || '');
     setScheduleHours(String(exchange.estimated_hours || 2));
     setScheduleArea(exchange.location_area || '');
@@ -89,6 +93,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
     try {
       setActionError('');
       setActionSuccess('');
+      setScheduleError('');
       setScheduleSaving(true);
       const updated = await (api as any).updateExchangeSchedule(exchange.id, {
         preferred_date: scheduleDate,
@@ -100,7 +105,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
       setActionSuccess('Session schedule saved. Your learning plan is ready.');
       setScheduleOpen(false);
     } catch (err: any) {
-      setActionError(err?.message || 'Unable to update exchange schedule');
+      setScheduleError(err?.message || 'Unable to update exchange schedule');
     } finally {
       setScheduleSaving(false);
     }
@@ -265,8 +270,9 @@ export const ExchangeWorkspacePage: React.FC = () => {
 
             <Card className="overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e1e4e8] bg-[#f7f8f7] px-4 py-3"><div className="flex min-w-0 items-center gap-2"><MessageSquare className="h-4 w-4 shrink-0 text-[#d31d24]" /><span className="break-words text-xs font-bold text-[#17233b]">Learning plan with {partner.full_name}</span></div><span className="shrink-0 text-[10px] text-slate-500">Exchange #{exchange.id}</span></div>
-              <div className="h-[min(390px,48dvh)] min-h-[220px] space-y-3 overflow-y-auto bg-white p-3 sm:p-4">
-                {messages.length === 0 ? <div className="py-24 text-center text-xs text-slate-500">No messages yet. Send a quick note about your learning goal and preferred session time.</div> : messages.map(m => { const mine = Number(m.sender_id) === Number(currentUser?.id); return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[90%] break-words px-3 py-2.5 text-xs sm:max-w-[78%] ${mine ? 'bg-[#d31d24] text-white' : 'bg-[#f1f3f5] text-[#17233b]'}`}><p className="whitespace-pre-wrap">{m.content}</p><span className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-slate-500'}`}>{new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div>; })}
+              <div className="h-[min(390px,48dvh)] min-h-[220px] space-y-3 overflow-y-auto bg-white p-3 sm:p-4" aria-live="polite">
+                {messagesError && <p role="status" className="border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">{messagesError}</p>}
+                {messages.length === 0 ? <div className="py-24 text-center text-xs leading-5 text-slate-500">{messagesError ? 'Your messages will appear here when they are available.' : 'No messages yet. Send a quick note about your learning goal and preferred session time.'}</div> : messages.map(m => { const mine = Number(m.sender_id) === Number(currentUser?.id); return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[90%] break-words px-3 py-2.5 text-xs sm:max-w-[78%] ${mine ? 'bg-[#d31d24] text-white' : 'bg-[#f1f3f5] text-[#17233b]'}`}><p className={`mb-1 text-[9px] font-bold ${mine ? 'text-red-100' : 'text-slate-500'}`}>{mine ? 'You' : partner.full_name}</p><p className="whitespace-pre-wrap break-words">{m.content}</p><time dateTime={m.created_at} className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-slate-500'}`}>{new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</time></div></div>; })}
               </div>
               <form onSubmit={handleSendMessage} className="flex flex-col gap-2 border-t border-[#e1e4e8] bg-[#f7f8f7] p-3 sm:flex-row"><textarea rows={2} value={newTextMessage} onChange={e => setNewTextMessage(e.target.value)} placeholder={`Message ${partner.full_name.split(' ')[0]}…`} aria-label="Message learning partner" maxLength={2000} disabled={messageSending} className="min-h-10 w-full min-w-0 flex-1 resize-none border border-[#d9dde2] bg-white px-3 py-2.5 text-xs text-[#17233b] outline-none focus:border-[#d31d24] disabled:cursor-not-allowed disabled:opacity-60" /><Button type="submit" size="sm" className="w-full sm:w-auto" disabled={messageSending || !newTextMessage.trim()} loading={messageSending} icon={<Send className="h-3.5 w-3.5" />}>Send</Button></form>
             </Card>
@@ -289,11 +295,12 @@ export const ExchangeWorkspacePage: React.FC = () => {
         maxWidth="md"
       >
         <form onSubmit={saveSchedule} className="grid gap-3 sm:grid-cols-2">
-          <label className="text-xs font-semibold text-slate-600">Session date / time<input required value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs" placeholder="e.g. Saturday, 4 PM" /></label>
-          <label className="text-xs font-semibold text-slate-600">Duration (hours)<input required type="number" min="0.5" max="24" step="0.5" value={scheduleHours} onChange={e => setScheduleHours(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs" /></label>
-          <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Session format / area<input required value={scheduleArea} onChange={e => setScheduleArea(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs" placeholder="Online / campus / public shared space" /></label>
+          <label className="text-xs font-semibold text-slate-600">Session date / time<input required disabled={scheduleSaving} value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs focus:border-[#d31d24] focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50" placeholder="e.g. Saturday, 4 PM" /></label>
+          <label className="text-xs font-semibold text-slate-600">Duration (hours)<input required disabled={scheduleSaving} type="number" min="0.5" max="24" step="0.5" value={scheduleHours} onChange={e => setScheduleHours(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs focus:border-[#d31d24] focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50" /></label>
+          <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Session format / area<input required disabled={scheduleSaving} value={scheduleArea} onChange={e => setScheduleArea(e.target.value)} className="mt-1 h-10 w-full min-w-0 border border-[#d9dde2] px-3 text-xs focus:border-[#d31d24] focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50" placeholder="Online / campus / public shared space" /></label>
+          {scheduleError && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-xs leading-5 text-red-800 sm:col-span-2">{scheduleError}</p>}
           <div className="flex flex-col-reverse gap-2 border-t border-[#e1e4e8] pt-4 sm:col-span-2 sm:flex-row sm:justify-end">
-            <Button type="button" size="sm" variant="outline" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setScheduleOpen(false)} disabled={scheduleSaving}>Cancel</Button>
             <Button type="submit" size="sm" loading={scheduleSaving}>Save schedule</Button>
           </div>
         </form>

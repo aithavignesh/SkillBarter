@@ -588,7 +588,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
         role="menu"
         aria-label="Profile photo options"
         style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
-        className="w-56 border border-[#e1e4e8] bg-white p-1.5 shadow-[0_10px_24px_rgba(23,35,59,.15)] animate-[photoMenuIn_0.15s_ease-out]"
+        className="w-56 border border-[#e1e4e8] bg-white p-1.5 shadow-[0_10px_24px_rgba(23,35,59,.15)] motion-safe:animate-[photoMenuIn_0.15s_ease-out]"
       >
         <button type="button" role="menuitem" onClick={choosePhoto} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-[#17233b] transition-colors hover:bg-[#f7f7f5] focus-visible:bg-[#f7f7f5] focus-visible:outline-none"><Upload className="h-4 w-4 text-[#d31d24]" />Upload from device</button>
         <button type="button" role="menuitem" onClick={choosePhoto} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-[#17233b] transition-colors hover:bg-[#f7f7f5] focus-visible:bg-[#f7f7f5] focus-visible:outline-none"><ImagePlus className="h-4 w-4 text-[#d31d24]" />Choose another image</button>
