@@ -78,3 +78,42 @@ def test_full_exchange_lifecycle_and_review(client):
     trust_info = trust_res.json()
     assert trust_info["trust_score"] >= 90
     assert trust_info["reviews_count"] >= 1
+
+
+def test_exchange_rejects_invalid_lifecycle_input(client):
+    arjun_token = client.post("/api/auth/login", json={
+        "email": "arjun@skillbarter.com", "password": "Password123!"
+    }).json()["access_token"]
+    ravi_token = client.post("/api/auth/login", json={
+        "email": "ravi@skillbarter.com", "password": "Password123!"
+    }).json()["access_token"]
+    ravi_id = client.get("/api/users/me", headers={"Authorization": f"Bearer {ravi_token}"}).json()["id"]
+    headers = {"Authorization": f"Bearer {arjun_token}"}
+
+    blank = client.post("/api/exchanges", json={
+        "receiver_id": ravi_id,
+        "proposal_message": "   ",
+        "estimated_hours": 2
+    }, headers=headers)
+    assert blank.status_code == 422
+
+    invalid_hours = client.post("/api/exchanges", json={
+        "receiver_id": ravi_id,
+        "proposal_message": "Valid proposal",
+        "estimated_hours": 0
+    }, headers=headers)
+    assert invalid_hours.status_code == 422
+
+    too_many_hours = client.post("/api/exchanges", json={
+        "receiver_id": ravi_id,
+        "proposal_message": "Valid proposal",
+        "estimated_hours": 25
+    }, headers=headers)
+    assert too_many_hours.status_code == 422
+
+    too_long = client.post("/api/exchanges", json={
+        "receiver_id": ravi_id,
+        "proposal_message": "x" * 2001,
+        "estimated_hours": 2
+    }, headers=headers)
+    assert too_long.status_code == 422

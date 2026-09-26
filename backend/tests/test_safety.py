@@ -39,3 +39,73 @@ def test_reporting_and_blocking(client):
     assert admin_rep_res.status_code == 200
     reports = admin_rep_res.json()
     assert len(reports) > 0
+
+
+def test_report_rejects_unknown_user_and_unauthorized_exchange(client):
+    arjun_token = client.post("/api/auth/login", json={
+        "email": "arjun@skillbarter.com",
+        "password": "Password123!"
+    }).json()["access_token"]
+    ravi_token = client.post("/api/auth/login", json={
+        "email": "ravi@skillbarter.com",
+        "password": "Password123!"
+    }).json()["access_token"]
+    priya_token = client.post("/api/auth/login", json={
+        "email": "priya@skillbarter.com",
+        "password": "Password123!"
+    }).json()["access_token"]
+
+    unknown = client.post("/api/reports", json={
+        "reported_user_id": 999999,
+        "category": "Spam",
+        "details": "Unknown account"
+    }, headers={"Authorization": f"Bearer {arjun_token}"})
+    assert unknown.status_code == 404
+
+    ravi_id = client.get("/api/users/me", headers={"Authorization": f"Bearer {ravi_token}"}).json()["id"]
+    proposal = client.post("/api/exchanges", json={
+        "receiver_id": ravi_id,
+        "requester_skill_name": "Web Development",
+        "receiver_skill_name": "Plumbing",
+        "proposal_message": "Safety test exchange",
+        "preferred_date": "Saturday",
+        "estimated_hours": 1,
+        "location_area": "Madhapur"
+    }, headers={"Authorization": f"Bearer {arjun_token}"})
+    assert proposal.status_code == 200
+    exchange_id = proposal.json()["id"]
+
+    unauthorized = client.post("/api/reports", json={
+        "reported_user_id": ravi_id,
+        "reported_exchange_id": exchange_id,
+        "category": "Unsafe behavior",
+        "details": "Unauthorized report attempt"
+    }, headers={"Authorization": f"Bearer {priya_token}"})
+    assert unauthorized.status_code == 403
+
+
+def test_block_rejects_unknown_user(client):
+    arjun_token = client.post("/api/auth/login", json={
+        "email": "arjun@skillbarter.com",
+        "password": "Password123!"
+    }).json()["access_token"]
+
+    response = client.post(
+        "/api/blocks/999999",
+        headers={"Authorization": f"Bearer {arjun_token}"}
+    )
+    assert response.status_code == 404
+
+
+def test_report_rejects_blank_details(client):
+    arjun_token = client.post("/api/auth/login", json={
+        "email": "arjun@skillbarter.com",
+        "password": "Password123!"
+    }).json()["access_token"]
+
+    response = client.post("/api/reports", json={
+        "reported_user_id": 2,
+        "category": "Spam",
+        "details": "   "
+    }, headers={"Authorization": f"Bearer {arjun_token}"})
+    assert response.status_code == 422

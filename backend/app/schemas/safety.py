@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 import datetime
 from app.schemas.exchange import UserSummary
@@ -6,8 +6,16 @@ from app.schemas.exchange import UserSummary
 class ReportCreate(BaseModel):
     reported_user_id: Optional[int] = None
     reported_exchange_id: Optional[int] = None
-    category: str # Spam, Harassment, Fraudulent behavior, Unsafe behavior, Fake skill, Other
-    details: str
+    category: str = Field(min_length=1, max_length=50)
+    details: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("category", "details")
+    @classmethod
+    def reject_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Value cannot be blank")
+        return value
 
 class ReportOut(BaseModel):
     id: int
