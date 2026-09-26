@@ -270,8 +270,8 @@ class ApiClient {
     // Keep privileged account fields out of profile-form updates.
     const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone) {
-      const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
-      if (authError || !authData?.user?.email) throw new Error(authError?.message || 'Not authenticated');
+      const email = sessionStorage.getItem('skillbarter_phone_email');
+      if (!email) throw new Error('Phone session is missing its authenticated identity.');
       const { data, error } = await insforge.database
         .from('users')
         .update({ ...profilePayload, updated_at: new Date().toISOString() })
