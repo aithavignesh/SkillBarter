@@ -386,7 +386,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
       <section className="relative overflow-visible border border-[#d9dfe6] bg-white shadow-sm">
         <div className="h-32 bg-gradient-to-r from-[#172b4d] via-[#24527a] to-[#d31d24] sm:h-40" />
         <div className="px-5 pb-5 sm:px-8">
-          <div className="relative -mt-16 flex flex-col gap-4 sm:-mt-20 sm:flex-row sm:items-end">
+          <div className="relative -mt-16 flex flex-col gap-4 sm:-mt-20 sm:flex-row sm:items-start">
             <div className="relative shrink-0">
               <button type="button" onClick={() => own && togglePhotoMenu()} disabled={!own || uploading} className="group relative block h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-[#17233b] text-white shadow-md sm:h-36 sm:w-36 disabled:cursor-default" aria-label={own ? 'Change profile photo' : `${profile.full_name || 'Member'} profile photo`}>
                 {profile.avatar_url && !avatarLoadError ? <img src={profile.avatar_url} className="h-full w-full object-cover" alt={profile.full_name || 'Profile'} onError={() => setAvatarLoadError(true)} /> : <span className="flex h-full w-full items-center justify-center text-3xl font-bold tracking-wide">{initials}</span>}
@@ -396,8 +396,8 @@ export const LinkedInStyleProfilePage: React.FC = () => {
               <input ref={avatarInput} type="file" accept="image/jpeg,.jpg,.jpeg,image/png,image/webp" className="hidden" onChange={e => { const file=e.target.files?.[0]; e.target.value=''; handlePhotoSelected(file); }} />
               {uploading && <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white"><Loader2 className="h-6 w-6 animate-spin" /></div>}
             </div>
-            <div className="min-w-0 flex-1 pb-1 pt-1">
-              <div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-bold text-[#17233b] sm:text-[28px]">{profile.full_name || 'SkillBarter Member'}</h1>
+            <div className="min-w-0 flex-1 pb-1 pt-1 sm:pt-20">
+              <div className="flex flex-wrap items-center gap-2"><h1 className="min-w-0 max-w-full break-words text-2xl font-bold text-[#17233b] sm:text-[28px]">{profile.full_name || 'SkillBarter Member'}</h1>
                 {own && monetization?.premium && <span className="inline-flex items-center gap-1 rounded-full bg-[#fff0f0] px-2.5 py-1 text-[10px] font-bold text-[#b8171d]"><Crown className="h-3 w-3"/> Premium</span>}
                 {own && monetization?.verified && <span className="inline-flex items-center gap-1 rounded-full bg-[#eef6ff] px-2.5 py-1 text-[10px] font-bold text-[#24527a]"><BadgeCheck className="h-3 w-3"/> Verified</span>}
                 {own && featured && <span className="inline-flex items-center gap-1 rounded-full bg-[#fff7e9] px-2.5 py-1 text-[10px] font-bold text-[#9b6b27]"><Rocket className="h-3 w-3"/> Featured</span>}
@@ -405,7 +405,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
               <p className="mt-1 text-base text-[#384860]">{profile.headline || 'SkillBarter community member'}</p>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#697386]"><span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5"/>{profile.address_display || 'Local community'}</span><span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5"/>{profile.connections_count || 0} connections</span><span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 text-[#d31d24]"/>{averageReview ? averageReview.toFixed(1) : 'New'} rating</span></div>
             </div>
-            <div className="flex flex-wrap gap-2 pb-1">{own ? <Button size="sm" variant="outline" onClick={() => setEditing(!editing)} icon={<Edit3 className="h-3.5 w-3.5"/>}>{editing ? 'Close' : 'Edit profile'}</Button> : <><Button size="sm" onClick={() => setProposeOpen(true)} icon={<Repeat className="h-3.5 w-3.5"/>}>Propose exchange</Button><Link to={`/messages/${targetId}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5"/>}>Message</Button></Link><Button size="sm" variant="ghost" onClick={() => { setReportError(''); setReportDetails(''); setReportDialogOpen(true); }} icon={<Flag className="h-3.5 w-3.5"/>}>Report</Button><Button size="sm" variant="ghost" onClick={() => { setBlockError(''); setBlockDialogOpen(true); }} icon={<ShieldOff className="h-3.5 w-3.5"/>}>{blocked ? 'Unblock' : 'Block'}</Button></>}</div>
+            <div className="flex flex-wrap gap-2 pb-1 sm:mt-20">{own ? <Button size="sm" variant="outline" onClick={() => setEditing(!editing)} icon={<Edit3 className="h-3.5 w-3.5"/>}>{editing ? 'Close' : 'Edit profile'}</Button> : <><Button size="sm" onClick={() => setProposeOpen(true)} icon={<Repeat className="h-3.5 w-3.5"/>}>Propose exchange</Button><Link to={`/messages/${targetId}`}><Button size="sm" variant="outline" icon={<MessageSquare className="h-3.5 w-3.5"/>}>Message</Button></Link><Button size="sm" variant="ghost" onClick={() => { setReportError(''); setReportDetails(''); setReportDialogOpen(true); }} icon={<Flag className="h-3.5 w-3.5"/>}>Report</Button><Button size="sm" variant="ghost" onClick={() => { setBlockError(''); setBlockDialogOpen(true); }} icon={<ShieldOff className="h-3.5 w-3.5"/>}>{blocked ? 'Unblock' : 'Block'}</Button></>}</div>
           </div>
         </div>
       </section>

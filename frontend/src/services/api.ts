@@ -255,6 +255,7 @@ class ApiClient {
   async updateMe(payload: any) {
     const profilePayload = {
       full_name: typeof payload.full_name === 'string' ? payload.full_name.trim().slice(0, 120) : undefined,
+      avatar_url: typeof payload.avatar_url === 'string' ? payload.avatar_url.trim() : undefined,
       headline: typeof payload.headline === 'string' ? payload.headline.trim().slice(0, 160) : undefined,
       bio: typeof payload.bio === 'string' ? payload.bio.trim().slice(0, 2000) : undefined,
       address_display: typeof payload.address_display === 'string' ? payload.address_display.trim().slice(0, 200) : undefined,
