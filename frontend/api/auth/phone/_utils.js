@@ -85,6 +85,14 @@ export function clearVerifyRateLimit(phone, challenge) {
   verifyAttemptMap.delete(key);
 }
 
+export function validatePhoneAuthSession(session) {
+  const accessToken = typeof session?.accessToken === 'string' ? session.accessToken.trim() : '';
+  const email = typeof session?.user?.email === 'string' ? session.user.email.trim().toLowerCase() : '';
+  if (!accessToken) return { valid: false, reason: 'MISSING_ACCESS_TOKEN' };
+  if (!email) return { valid: false, reason: 'MISSING_USER_EMAIL' };
+  return { valid: true, accessToken, email };
+}
+
 export function generateSecureOtp() { return String(crypto.randomInt(0,1000000)).padStart(6,'0'); }
 
 export function createOtpChallenge(phone, customOtp=null, customSecret=null) {
