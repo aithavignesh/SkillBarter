@@ -86,9 +86,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await api.logout();
-    clearPhoneSession();
-    setCurrentUser(null);
+    try {
+      await api.logout();
+    } finally {
+      // Auth state must be cleared even when the auth provider reports a
+      // sign-out error. The browser session has already been invalidated
+      // locally by ApiClient.logout().
+      clearPhoneSession();
+      setCurrentUser(null);
+    }
   };
 
   const demoSwitchUser = async (userId: number) => {
