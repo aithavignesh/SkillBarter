@@ -2,11 +2,10 @@ import { api } from './api';
 import { insforge } from '../lib/insforge';
 
 const getAppUser = async () => {
-  const { data: auth, error: authError } = await insforge.auth.getCurrentUser();
-  if (authError || !auth?.user?.email) throw new Error(authError?.message || 'Not authenticated');
-  const { data, error } = await insforge.database.from('users').select('*').eq('email', auth.user.email).maybeSingle();
-  if (error) throw new Error(error.message || 'Unable to load application profile');
-  if (!data) throw new Error('Application profile not found');
+  // Reuse the central auth facade so phone OTP sessions never enter the
+  // browser refresh/CSRF flow through a direct getCurrentUser() call.
+  const data = await api.getMe();
+  if (!data?.email) throw new Error('Not authenticated');
   return data;
 };
 
