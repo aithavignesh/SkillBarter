@@ -14,7 +14,7 @@ class Exchange(Base):
     requester_skill_id = Column(Integer, ForeignKey("skills.id", ondelete="SET NULL"), nullable=True)
     receiver_skill_id = Column(Integer, ForeignKey("skills.id", ondelete="SET NULL"), nullable=True)
     
-    # State machine status: PENDING, ACCEPTED, COUNTERED, REJECTED, ACTIVE, COMPLETED, CANCELLED
+    # State machine status: PENDING, COUNTERED, REJECTED, ACTIVE, COMPLETED, CANCELLED
     status = Column(String(30), default="PENDING", index=True, nullable=False)
     
     proposal_message = Column(Text, nullable=False)
