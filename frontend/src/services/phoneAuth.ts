@@ -149,6 +149,7 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
     throw new Error('OTP verified, but the login session did not include a user. Please try again.');
   }
   if (user?.id) sessionStorage.setItem('skillbarter_user_id', String(user.id));
+  if (user?.email) sessionStorage.setItem('skillbarter_phone_email', String(user.email));
   sessionStorage.setItem('skillbarter_phone', phone);
 
   sessionStorage.removeItem('skillbarter_otp_phone');
@@ -180,27 +181,25 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
 }
 
 export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
-  const { data, error } = await insforge.auth.getCurrentUser();
-  if (error || !data?.user) return null;
+  // Phone sessions intentionally keep only the access token in the browser.
+  // Do not call getCurrentUser(), which can invoke the refresh flow and fail
+  // with a CSRF error because there is no browser-managed refresh cookie.
   const phone = sessionStorage.getItem('skillbarter_phone');
-  if (!phone) return null;
+  const email = sessionStorage.getItem('skillbarter_phone_email');
+  const userId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
+  if (!phone || !email) return null;
 
-  // The application profile must be resolved from the authenticated session,
-  // not from a client-controlled sessionStorage user id.
-  let appUser: any = null;
-  if (data.user.email) {
-    const { data: dbUser } = await insforge.database
-      .from('users')
-      .select('id,email,full_name,avatar_url,bio,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent')
-      .eq('email', data.user.email)
-      .maybeSingle();
-    appUser = dbUser;
-  }
+  const { data: appUser, error } = await insforge.database
+    .from('users')
+    .select('id,email,full_name,avatar_url,bio,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent')
+    .eq('email', email)
+    .maybeSingle();
+  if (error || !appUser) return null;
 
   return {
-    id: Number(appUser?.id || data.user.id || 0),
-    email: data.user.email || '',
-    full_name: appUser?.full_name || data.user.name || 'SkillBarter Member',
+    id: Number(appUser?.id || userId || 0),
+    email: appUser?.email || email,
+    full_name: appUser?.full_name || 'SkillBarter Member',
     phone,
     avatar_url: appUser?.avatar_url,
     bio: appUser?.bio,
@@ -218,9 +217,9 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
     skills: [],
   };
 }
-
 export function clearPhoneSession() {
   sessionStorage.removeItem('skillbarter_phone');
+  sessionStorage.removeItem('skillbarter_phone_email');
   sessionStorage.removeItem('skillbarter_user_id');
   sessionStorage.removeItem('skillbarter_otp_phone');
   sessionStorage.removeItem('skillbarter_otp_challenge');
