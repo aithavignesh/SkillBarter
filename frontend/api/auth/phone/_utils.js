@@ -1,7 +1,10 @@
 import crypto from 'node:crypto';
 
 const rateLimitMap = new Map();
+const verifyAttemptMap = new Map();
 const COOLDOWN_SECONDS = 30;
+const MAX_VERIFY_ATTEMPTS = 5;
+const VERIFY_WINDOW_MS = 10 * 60 * 1000;
 
 export function sendJson(res, data, status = 200) {
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' };
@@ -41,8 +44,45 @@ export function normalizePhone(rawPhone) {
 
 export function checkRateLimit(phone) {
   const last = rateLimitMap.get(phone), now = Date.now();
-  if (last) { const elapsed = Math.floor((now-last)/1000); if (elapsed < COOLDOWN_SECONDS) return { allowed:false, waitSeconds:COOLDOWN_SECONDS-elapsed, error:`Please wait ${COOLDOWN_SECONDS-elapsed} seconds before requesting another OTP.` }; }
-  rateLimitMap.set(phone, now); return { allowed:true };
+  if (last) {
+    const elapsed = Math.floor((now-last)/1000);
+    if (elapsed < COOLDOWN_SECONDS) {
+      return {
+        allowed:false,
+        waitSeconds:COOLDOWN_SECONDS-elapsed,
+        error:`Please wait ${COOLDOWN_SECONDS-elapsed} seconds before requesting another OTP.`
+      };
+    }
+  }
+  rateLimitMap.set(phone, now);
+  return { allowed:true };
+}
+
+export function checkVerifyRateLimit(phone, challenge) {
+  const key = crypto.createHash('sha256').update(`${phone}:${challenge}`).digest('hex');
+  const now = Date.now();
+  const current = verifyAttemptMap.get(key);
+  if (!current || now - current.startedAt >= VERIFY_WINDOW_MS) {
+    verifyAttemptMap.set(key, { startedAt: now, attempts: 1 });
+    return { allowed: true, attemptsRemaining: MAX_VERIFY_ATTEMPTS - 1 };
+  }
+
+  if (current.attempts >= MAX_VERIFY_ATTEMPTS) {
+    return {
+      allowed: false,
+      waitSeconds: Math.max(1, Math.ceil((VERIFY_WINDOW_MS - (now - current.startedAt)) / 1000)),
+      attemptsRemaining: 0,
+    };
+  }
+
+  current.attempts += 1;
+  verifyAttemptMap.set(key, current);
+  return { allowed: true, attemptsRemaining: MAX_VERIFY_ATTEMPTS - current.attempts };
+}
+
+export function clearVerifyRateLimit(phone, challenge) {
+  const key = crypto.createHash('sha256').update(`${phone}:${challenge}`).digest('hex');
+  verifyAttemptMap.delete(key);
 }
 
 export function generateSecureOtp() { return String(crypto.randomInt(0,1000000)).padStart(6,'0'); }
