@@ -8,6 +8,7 @@ from app.models.notification import Notification
 from app.models.connection import Connection
 from app.models.post import Post
 from app.models.safety import Report, Block
+from app.models.analytics import AnalyticsEvent
 
 __all__ = [
     "Base",
@@ -21,5 +22,6 @@ __all__ = [
     "Connection",
     "Post",
     "Report",
-    "Block"
+    "Block",
+    "AnalyticsEvent"
 ]
