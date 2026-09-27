@@ -19,11 +19,12 @@ Date: 27 September 2026
 - Admin moderation reports now include exchange context when a report is tied to an exchange.
 - Notifications now expose explicit labels for exchange lifecycle events.
 - Exchange Workspace now provides an in-context Report action.
+- Profile avatar uploads now persist the uploaded Storage URL with cache-busting and update the visible profile immediately after a successful upload.
 
 ## CI / deployment verification
 
-- The latest main commit is `613f0abf7896d11801f722ca2d12c90eef4175d1` (27 September 2026).
-- GitHub currently returns no workflow-run record for that commit, so CI is **not marked green yet**.
+- The latest main commit includes the profile-avatar upload/cache refresh fixes (`d830c59a7c17b11dfc69a9ccb4bec94f57b1280f`) on 27 September 2026.
+- GitHub currently returns no workflow-run record for the latest main commit, so CI is **not marked green yet**.
 - Vercel deployment contexts have previously reported deployments in progress; deployment success should be verified from the actual commit status before declaring production readiness.
 - Render/FastAPI startup has previously been observed, but database connectivity must be re-verified from the deployed environment before claiming the production backend is fully healthy.
 
