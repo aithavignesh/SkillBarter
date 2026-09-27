@@ -99,7 +99,8 @@ def get_admin_reports(
             "created_at": r.created_at,
             "reporter_name": reporter.full_name if reporter else "Unknown",
             "reported_name": reported_user.full_name if reported_user else "N/A",
-            "reported_user_id": r.reported_user_id
+            "reported_user_id": r.reported_user_id,
+            "reported_exchange_id": r.reported_exchange_id
         })
     return results
 
