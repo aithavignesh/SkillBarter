@@ -20,7 +20,9 @@ import {
   Flag,
   CheckCircle,
   Plus,
-  Star
+  Star,
+  Camera,
+  Loader2
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
@@ -43,6 +45,7 @@ export const ProfilePage: React.FC = () => {
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillType, setNewSkillType] = useState<'OFFERED' | 'NEEDED'>('OFFERED');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const loadProfile = async () => {
     try {
@@ -83,6 +86,23 @@ export const ProfilePage: React.FC = () => {
       await loadProfile();
     } catch (e: any) {
       alert(e.message);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !isOwnProfile) return;
+
+    try {
+      setIsUploadingAvatar(true);
+      await api.uploadAvatar(file);
+      await refreshUser();
+      await loadProfile();
+    } catch (error: any) {
+      alert(error?.message || 'Unable to upload profile photo.');
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
@@ -134,11 +154,33 @@ export const ProfilePage: React.FC = () => {
       <Card className="p-6 md:p-8 relative overflow-hidden border-slate-200/90 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-            <img
-              src={profile.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-              alt={profile.full_name}
-              className="w-20 h-20 rounded-full object-cover border-4 border-emerald-400 shadow-md shrink-0"
-            />
+            <div className="relative shrink-0">
+              <img
+                src={profile.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                alt={profile.full_name}
+                className="w-20 h-20 rounded-full object-cover border-4 border-emerald-400 shadow-md"
+              />
+              {isOwnProfile && (
+                <>
+                  <input
+                    id="profile-avatar-upload"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    disabled={isUploadingAvatar}
+                  />
+                  <label
+                    htmlFor="profile-avatar-upload"
+                    className="absolute -bottom-1 -right-1 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-slate-900 text-white shadow-md transition hover:bg-emerald-600"
+                    title="Change profile photo"
+                    aria-label="Change profile photo"
+                  >
+                    {isUploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                  </label>
+                </>
+              )}
+            </div>
             <div>
               <h1 className="text-2xl font-extrabold text-slate-900">{profile.full_name}</h1>
               <p className="text-sm text-slate-600 mt-0.5">{profile.headline || 'Student & Peer Learner'}</p>
