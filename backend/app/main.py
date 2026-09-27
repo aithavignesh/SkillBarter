@@ -7,7 +7,7 @@ from jose import jwt, JWTError
 from sqlalchemy import text
 
 from app.config import settings
-from app.database import engine, Base, check_db_connection, get_last_db_error
+from app.database import engine, Base, SessionLocal, check_db_connection, get_last_db_error
 import app.models
 from app.services.websocket import ws_manager
 from app.seed.seed_data import seed_database
@@ -121,6 +121,15 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     except (JWTError, ValueError, TypeError):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
+
+    db = SessionLocal()
+    try:
+        user = db.query(app.models.user.User).filter(app.models.user.User.id == user_id).first()
+        if user is None or not user.is_active:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+    finally:
+        db.close()
 
     await ws_manager.connect(user_id, websocket)
     try:
