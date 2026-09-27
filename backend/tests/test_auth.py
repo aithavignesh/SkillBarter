@@ -104,3 +104,5 @@ def test_demo_switch_missing_user(client, db):
     assert response.status_code == 404
     admin.is_admin = False
     db.commit()
+    admin.is_admin = False
+    db.commit()
