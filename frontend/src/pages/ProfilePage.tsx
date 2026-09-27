@@ -96,7 +96,16 @@ export const ProfilePage: React.FC = () => {
 
     try {
       setIsUploadingAvatar(true);
-      await api.uploadAvatar(file);
+      const updatedProfile = await api.uploadAvatar(file);
+
+      // Update the visible profile immediately. This avoids waiting for a
+      // second database read and makes the successful upload obvious.
+      setProfile((previous) =>
+        previous
+          ? { ...previous, avatar_url: updatedProfile.avatar_url }
+          : previous
+      );
+
       await refreshUser();
       await loadProfile();
     } catch (error: any) {
