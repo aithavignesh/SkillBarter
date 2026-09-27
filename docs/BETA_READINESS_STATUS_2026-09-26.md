@@ -1,6 +1,6 @@
 # SkillBarter Beta Readiness Status
 
-Date: 26 September 2026
+Date: 27 September 2026
 
 ## Completed on main
 
@@ -12,9 +12,10 @@ Date: 26 September 2026
 - Review input validation.
 - Monetization entitlement authorization hardening.
 - User profile validation hardening.
-- Connection and search block/safety boundaries.
+- Connection, search, messaging, and exchange block/safety boundaries are enforced server-side.
 - First-party analytics collector, event allowlisting, persistence, and admin KPI/funnel endpoint.
 - Backend CI coverage was added to the frontend workflow.
+- Render production backend deployment now resolves and connects to the InsForge PostgreSQL database successfully; seed data is present and FastAPI startup completes.
 - Analytics CI coverage now verifies all supported event names are accepted and the KPI funnel retains the expected lifecycle order.
 
 ## CI
@@ -28,7 +29,7 @@ Date: 26 September 2026
 1. Live phone OTP delivery and verification with a real test number.
 2. Two-user end-to-end journey: signup -> onboarding -> matching -> request -> acceptance -> scheduling -> messaging -> completion -> review.
 3. Live analytics event capture and KPI verification.
-4. Live Report/Block/Admin moderation functional validation.
+4. Live Report/Block/Admin moderation functional validation, including direct API boundary checks.
 5. Desktop/mobile browser smoke testing.
 6. Notification delivery/read-state verification in the deployed environment.
 
