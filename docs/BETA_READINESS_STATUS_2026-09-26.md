@@ -12,35 +12,41 @@ Date: 27 September 2026
 - Review input validation.
 - Monetization entitlement authorization hardening.
 - User profile validation hardening.
-- Connection, search, messaging, and exchange block/safety boundaries are enforced server-side.
+- Connection, search, messaging, and exchange block/safety boundaries are implemented in the application code.
 - First-party analytics collector, event allowlisting, persistence, and admin KPI/funnel endpoint.
 - Backend CI coverage was added to the frontend workflow.
-- Render production backend deployment now resolves and connects to the InsForge PostgreSQL database successfully; seed data is present and FastAPI startup completes.
-- Analytics CI coverage now verifies all supported event names are accepted and the KPI funnel retains the expected lifecycle order.
+- Analytics CI coverage verifies all supported event names are accepted and the KPI funnel retains the expected lifecycle order.
+- Admin moderation reports now include exchange context when a report is tied to an exchange.
+- Notifications now expose explicit labels for exchange lifecycle events.
+- Exchange Workspace now provides an in-context Report action.
 
-## CI
+## CI / deployment verification
 
-- Frontend and backend CI were green on the corrected main commit (`451845bb834988a0083ee8901cbfba6868a423cb`). Subsequent analytics contract changes are committed on main and require the push-triggered CI run to complete before being marked green.
-- The CI fixes corrected two pre-existing test assumptions: the exchange-recipient mismatch test used a valid exchange participant as the recipient, and the notification unread-count test assumed no seeded notifications.
-- The stable exchange lifecycle test covers proposal creation, acceptance, idempotent start, mutual completion, review validation, and invalid lifecycle inputs. Additional lifecycle assertions were deliberately not retained after they caused CI instability.
+- The latest main commit is `613f0abf7896d11801f722ca2d12c90eef4175d1` (27 September 2026).
+- GitHub currently returns no workflow-run record for that commit, so CI is **not marked green yet**.
+- Vercel deployment contexts have previously reported deployments in progress; deployment success should be verified from the actual commit status before declaring production readiness.
+- Render/FastAPI startup has previously been observed, but database connectivity must be re-verified from the deployed environment before claiming the production backend is fully healthy.
 
 ## Remaining validation that requires the deployed environment
 
 1. Live phone OTP delivery and verification with a real test number.
-2. Two-user end-to-end journey: signup -> onboarding -> matching -> request -> acceptance -> scheduling -> messaging -> completion -> review.
+2. Two-user end-to-end journey: signup -> onboarding -> matching -> request -> acceptance -> scheduling -> messaging -> completion -> review. **Exchange verification is intentionally deferred for the current validation pass.**
 3. Live analytics event capture and KPI verification.
 4. Live Report/Block/Admin moderation functional validation, including direct API boundary checks.
 5. Desktop/mobile browser smoke testing.
 6. Notification delivery/read-state verification in the deployed environment.
+7. Final CI and Vercel deployment-status verification after the latest main changes.
 
 ## Beta blockers
 
-A final beta-ready declaration should wait until the live checks above are executed successfully. Code-level security and CI hardening is substantially integrated, but live SMS and full two-user production-path validation cannot be established from repository tests alone.
+A final beta-ready declaration should wait until the live checks above are executed successfully. Code-level hardening is substantially integrated, but live SMS, deployed analytics, moderation, browser responsiveness, notification behavior, CI, and production-path checks still require verification.
 
 ## Next priorities
 
-- Finish live beta smoke test.
-- Resolve any live OTP/provider configuration issues.
+- Complete non-exchange live beta validation first.
 - Verify analytics collector deployment/configuration and KPI data.
-- Verify moderation/report/block behavior with separate user and admin accounts.
-- Review remaining non-critical PR #14 (AI-ready learning-path feature) separately; it is not required for the core beta lifecycle.
+- Verify Report/Block/Admin moderation behavior with separate user and admin accounts.
+- Run desktop/mobile responsive smoke testing.
+- Verify notification delivery and read-state behavior.
+- Re-check CI and Vercel status on the latest main commit.
+- Keep PR #14 (AI-ready learning-path feature) separate from core beta readiness; it is not required for the core beta lifecycle.
