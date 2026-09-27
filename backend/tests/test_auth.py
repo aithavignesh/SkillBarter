@@ -84,6 +84,8 @@ def test_demo_switch_allows_admin(client, db):
     assert data["user_id"] == target.id
     assert data["email"] == target.email
     assert data["access_token"]
+    admin.is_admin = False
+    db.commit()
 
 def test_demo_switch_missing_user(client, db):
     from app.models.user import User
@@ -100,3 +102,5 @@ def test_demo_switch_missing_user(client, db):
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 404
+    admin.is_admin = False
+    db.commit()
