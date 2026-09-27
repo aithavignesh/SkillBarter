@@ -291,6 +291,12 @@ def reject_exchange(
     if current_user.id not in (e.requester_id, e.receiver_id):
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    _ensure_not_blocked(current_user.id, e.receiver_id if current_user.id == e.requester_id else e.requester_id, db)
+
+    e.status = "REJECTED"
+
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     e.status = "REJECTED"
     e.updated_at = datetime.datetime.utcnow()
     db.commit()
@@ -365,6 +371,8 @@ def mark_exchange_completed(
     else:
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    _ensure_not_blocked(current_user.id, e.receiver_id if current_user.id == e.requester_id else e.requester_id, db)
+
     partner_id = e.receiver_id if current_user.id == e.requester_id else e.requester_id
 
     # If both have marked completed -> officially COMPLETED!
@@ -418,6 +426,12 @@ def cancel_exchange(
         raise HTTPException(status_code=400, detail=f"Cannot cancel exchange in status '{e.status}'")
 
     if current_user.id not in (e.requester_id, e.receiver_id):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    _ensure_not_blocked(current_user.id, e.receiver_id if current_user.id == e.requester_id else e.requester_id, db)
+
+    e.status = "CANCELLED"
+
         raise HTTPException(status_code=403, detail="Not authorized")
 
     e.status = "CANCELLED"
