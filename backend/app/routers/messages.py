@@ -29,9 +29,19 @@ def get_conversations(
     ex_partners_2 = [e[0] for e in db.query(Exchange.requester_id).filter(Exchange.receiver_id == current_user.id).all()]
     partner_ids.update(ex_partners_1 + ex_partners_2)
 
-    # Remove blocks
-    blocked = [b[0] for b in db.query(Block.blocked_id).filter(Block.blocker_id == current_user.id).all()]
-    partner_ids.difference_update(blocked)
+    # Remove blocked relationships in both directions. A user who has
+    # blocked us should not remain visible as a conversation partner.
+    blocked_by_me = [
+        b[0] for b in db.query(Block.blocked_id)
+        .filter(Block.blocker_id == current_user.id)
+        .all()
+    ]
+    blocking_me = [
+        b[0] for b in db.query(Block.blocker_id)
+        .filter(Block.blocked_id == current_user.id)
+        .all()
+    ]
+    partner_ids.difference_update(set(blocked_by_me + blocking_me))
 
     conversations = []
     for pid in partner_ids:
