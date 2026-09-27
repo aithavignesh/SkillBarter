@@ -226,7 +226,7 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="space-y-4">
             {reports.map((r) => (
               <Card key={r.id} className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
-                <div className="space-y-1 text-xs"><div className="flex items-center gap-2"><Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">{r.status}</Badge><span className="font-bold text-slate-900">{r.category}</span><span className="text-slate-400">• Reported by {r.reporter_name}</span></div><p className="text-slate-700 italic">"{r.details}"</p><p className="text-[10px] text-slate-400">Against user: {r.reported_name}</p></div>
+                <div className="space-y-1 text-xs"><div className="flex items-center gap-2"><Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">{r.status}</Badge><span className="font-bold text-slate-900">{r.category}</span><span className="text-slate-400">• Reported by {r.reporter_name}</span></div><p className="text-slate-700 italic">"{r.details}"</p><p className="text-[10px] text-slate-400">Against user: {r.reported_name}{r.reported_exchange_id ? ` • Exchange #${r.reported_exchange_id}` : ""}</p></div>
                 {r.status === 'PENDING' && <div className="flex shrink-0 items-center gap-2"><Button size="sm" variant="outline" onClick={() => handleResolveReport(r.id, 'DISMISSED')}>Dismiss</Button><Button size="sm" variant="danger" onClick={() => handleResolveReport(r.id, 'RESOLVED')}>Resolve & Penalize</Button></div>}
               </Card>
             ))}
