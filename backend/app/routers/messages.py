@@ -101,6 +101,15 @@ def get_messages_with_partner(
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
 
+    blocked = db.query(Block).filter(
+        or_(
+            and_(Block.blocker_id == current_user.id, Block.blocked_id == partner_id),
+            and_(Block.blocker_id == partner_id, Block.blocked_id == current_user.id),
+        )
+    ).first()
+    if blocked:
+        raise HTTPException(status_code=403, detail="Communication not permitted between these accounts")
+
     # Mark incoming as read
     db.query(Message).filter(
         Message.sender_id == partner_id,
