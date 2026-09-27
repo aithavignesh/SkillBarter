@@ -6,9 +6,9 @@
       "main": true
     }
   },
-  "buildCommand": "cd frontend && npm run build",
-  "installCommand": "cd frontend && npm install --no-audit --no-fund",
-  "outputDirectory": "frontend/dist",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install --no-audit --no-fund",
+  "outputDirectory": "dist",
   "functions": {
     "api/**/*.js": {
       "maxDuration": 30
