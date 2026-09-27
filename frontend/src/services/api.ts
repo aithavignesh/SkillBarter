@@ -282,18 +282,25 @@ class ApiClient {
       throw new Error(upload.error?.message || 'Unable to upload profile photo.');
     }
 
+    // Store a cache-busted URL so replacing a profile photo cannot keep showing
+    // the browser's cached copy of the previous image.
+    const uploadedUrl = String(upload.data.url);
+    const avatarUrl = uploadedUrl.includes('?')
+      ? `${uploadedUrl}&v=${Date.now()}`
+      : `${uploadedUrl}?v=${Date.now()}`;
+
     const result = await insforge.database
       .from('users')
       .update({
-        avatar_url: upload.data.url,
+        avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       })
       .eq('id', Number(appUser.id))
       .select('id,avatar_url,updated_at')
       .single();
 
-    if (result.error) {
-      throw new Error(result.error.message || 'Photo uploaded, but the profile could not be updated.');
+    if (result.error || !result.data?.avatar_url) {
+      throw new Error(result.error?.message || 'Photo uploaded, but the profile could not be updated.');
     }
 
     return result.data;
