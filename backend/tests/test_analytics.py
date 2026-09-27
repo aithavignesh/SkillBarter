@@ -99,7 +99,7 @@ def test_all_supported_analytics_events_are_accepted(client):
 def test_kpi_funnel_contains_expected_lifecycle_order(client):
     login = client.post("/api/auth/login", json={
         "email": "admin@skillbarter.com",
-        "password": "Password123!"
+        "password": "AdminPassword123!"
     })
     assert login.status_code == 200
 
