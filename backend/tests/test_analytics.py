@@ -44,7 +44,7 @@ def test_kpi_endpoint_requires_admin(client):
 def test_kpi_endpoint_returns_funnel(client):
     login = client.post("/api/auth/login", json={
         "email": "admin@skillbarter.com",
-        "password": "Password123!"
+        "password": "AdminPassword123!"
     })
 
     if login.status_code != 200:
