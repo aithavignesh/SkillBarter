@@ -132,3 +132,36 @@ def test_send_message_rejects_exchange_recipient_mismatch(client):
     )
 
     assert response.status_code == 400
+
+
+def test_conversations_hide_users_who_block_current_user(client):
+    arjun_token = login(client, "arjun@skillbarter.com")
+    ravi_token = login(client, "ravi@skillbarter.com")
+    arjun_id = me(client, arjun_token)["id"]
+    ravi_id = me(client, ravi_token)["id"]
+
+    message_response = client.post(
+        "/api/messages",
+        json={"receiver_id": ravi_id, "content": "Conversation visibility check"},
+        headers={"Authorization": f"Bearer {arjun_token}"}
+    )
+    assert message_response.status_code == 200
+
+    block_response = client.post(
+        f"/api/blocks/{arjun_id}",
+        headers={"Authorization": f"Bearer {ravi_token}"}
+    )
+    assert block_response.status_code == 200
+
+    conversations = client.get(
+        "/api/messages/conversations",
+        headers={"Authorization": f"Bearer {arjun_token}"}
+    )
+    assert conversations.status_code == 200
+    assert all(item["partner"]["id"] != ravi_id for item in conversations.json())
+
+    unblock_response = client.delete(
+        f"/api/blocks/{arjun_id}",
+        headers={"Authorization": f"Bearer {ravi_token}"}
+    )
+    assert unblock_response.status_code == 200
