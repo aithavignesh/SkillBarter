@@ -88,3 +88,30 @@ def test_admin_report_resolution_rejects_oversized_note(client):
         headers=_auth(admin_token),
     )
     assert response.status_code == 422
+
+
+def test_admin_deactivation_invalidates_existing_user_session(client):
+    user_token = _login(client, "ananya@skillbarter.com", "Password123!")
+    user_id = client.get("/api/users/me", headers=_auth(user_token)).json()["id"]
+    admin_token = _login(client, "admin@skillbarter.com", "AdminPassword123!")
+
+    deactivate = client.patch(
+        f"/api/admin/users/{user_id}/toggle-active",
+        headers=_auth(admin_token),
+    )
+    assert deactivate.status_code == 200
+    assert deactivate.json()["is_active"] is False
+
+    blocked_request = client.get("/api/users/me", headers=_auth(user_token))
+    assert blocked_request.status_code == 403
+    assert blocked_request.json()["detail"] == "Inactive user account"
+
+    reactivate = client.patch(
+        f"/api/admin/users/{user_id}/toggle-active",
+        headers=_auth(admin_token),
+    )
+    assert reactivate.status_code == 200
+    assert reactivate.json()["is_active"] is True
+
+    restored_request = client.get("/api/users/me", headers=_auth(user_token))
+    assert restored_request.status_code == 200
