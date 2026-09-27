@@ -9,7 +9,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { ExchangeReviewModal } from '../components/exchange/ExchangeReviewModal';
-import { ArrowLeft, Repeat, CheckCircle2, Send, Circle, Star, X, MessageSquare, Calendar, Clock, MapPin, ShieldCheck, BadgeCheck, Crown, Rocket } from 'lucide-react';
+import { ArrowLeft, Repeat, CheckCircle2, Send, Circle, Star, X, MessageSquare, Calendar, Clock, MapPin, ShieldCheck, BadgeCheck, Crown, Rocket, Flag } from 'lucide-react';
 
 export const ExchangeWorkspacePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -129,6 +129,24 @@ export const ExchangeWorkspacePage: React.FC = () => {
     catch (e: any) { setActionError(e?.message || 'Unable to decline exchange'); }
   };
 
+  const handleReport = async () => {
+    if (!exchange || !partner) return;
+    const details = window.prompt('Describe the safety issue for moderators:');
+    if (!details?.trim()) return;
+    try {
+      setActionError('');
+      await api.createReport({
+        reported_user_id: partner.id,
+        reported_exchange_id: exchange.id,
+        category: 'Unsafe behavior',
+        details: details.trim(),
+      });
+      setActionSuccess('Report submitted to the moderation team.');
+    } catch (e: any) {
+      setActionError(e?.message || 'Unable to submit report');
+    }
+  };
+
   const handleCancel = async () => {
     if (!exchange) return;
     try {
@@ -179,6 +197,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
               {exchange.status === 'COMPLETED' && <Link to="/matches"><Button size="sm" icon={<Repeat className="h-4 w-4" />}>Find Your Next Learning Partner</Button></Link>}
               {exchange.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={openScheduleEditor} icon={<Calendar className="h-4 w-4" />}>Schedule</Button>}
               {exchange.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={() => setCancelModalOpen(true)} icon={<X className="h-4 w-4" />}>Cancel exchange</Button>}
+              <Button size="sm" variant="ghost" onClick={handleReport} className="text-slate-400 hover:text-rose-600" icon={<Flag className="h-4 w-4" />}>Report</Button>
             </div>
           </div>
         </section>
