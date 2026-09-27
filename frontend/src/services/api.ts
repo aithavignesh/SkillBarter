@@ -270,6 +270,35 @@ class ApiClient {
     return user;
   }
 
+  async uploadAvatar(file: File) {
+    const { appUser } = await this.getAppUser();
+
+    if (!(file instanceof File)) throw new Error('Please select a profile image.');
+    if (!file.type.startsWith('image/')) throw new Error('Profile photo must be an image.');
+    if (file.size > 5 * 1024 * 1024) throw new Error('Profile photo must be 5 MB or smaller.');
+
+    const upload = await insforge.storage.from('avatars').uploadAuto(file);
+    if (upload.error || !upload.data?.url) {
+      throw new Error(upload.error?.message || 'Unable to upload profile photo.');
+    }
+
+    const result = await insforge.database
+      .from('users')
+      .update({
+        avatar_url: upload.data.url,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', Number(appUser.id))
+      .select('id,avatar_url,updated_at')
+      .single();
+
+    if (result.error) {
+      throw new Error(result.error.message || 'Photo uploaded, but the profile could not be updated.');
+    }
+
+    return result.data;
+  }
+
   async updateMe(payload: any) {
     const profilePayload = {
       full_name: typeof payload.full_name === 'string' ? payload.full_name.trim().slice(0, 120) : undefined,
