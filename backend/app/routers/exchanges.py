@@ -108,6 +108,8 @@ def create_exchange_proposal(
     if not receiver:
         raise HTTPException(status_code=404, detail="Partner user not found")
 
+    _ensure_not_blocked(current_user.id, receiver.id, db)
+
     # Resolve skill IDs by name if provided
     req_skill_id = req.requester_skill_id
     if not req_skill_id and req.requester_skill_name:
@@ -202,6 +204,9 @@ def accept_exchange(
     if e.status not in ("PENDING", "COUNTERED"):
         raise HTTPException(status_code=400, detail=f"Cannot accept exchange in status {e.status}")
 
+    partner_id = e.requester_id if current_user.id == e.receiver_id else e.receiver_id
+    _ensure_not_blocked(current_user.id, partner_id, db)
+
     # Receiver can accept PENDING, Requester can accept COUNTERED
     if e.status == "PENDING" and current_user.id != e.receiver_id:
         raise HTTPException(status_code=403, detail="Only the recipient can accept this proposal")
@@ -242,6 +247,9 @@ def counter_exchange(
 
     if current_user.id not in (e.requester_id, e.receiver_id):
         raise HTTPException(status_code=403, detail="Not authorized")
+
+    partner_id = e.receiver_id if current_user.id == e.requester_id else e.requester_id
+    _ensure_not_blocked(current_user.id, partner_id, db)
 
     e.status = "COUNTERED"
     e.counter_message = req.counter_message
@@ -312,6 +320,9 @@ def start_exchange(
         
     if current_user.id not in (e.requester_id, e.receiver_id):
         raise HTTPException(status_code=403, detail="Not authorized")
+
+    partner_id = e.receiver_id if current_user.id == e.requester_id else e.requester_id
+    _ensure_not_blocked(current_user.id, partner_id, db)
 
     # Acceptance already transitions the exchange to ACTIVE. Keep this endpoint
     # backward-compatible for clients that still call /start after acceptance.
