@@ -21,6 +21,7 @@ Date: 27 September 2026
 - Notification read-state handling is guarded against stale account-switch responses, marks individual/all notifications read, refreshes on socket activity, and the socket now uses the active sessionStorage access token.
 - Exchange Workspace now provides an in-context Report action.
 - Profile avatar uploads now persist the uploaded Storage URL with cache-busting and update the visible profile immediately after a successful upload.
+- InsForge client initialization was hardened so persisted phone-OTP sessions attach their access token explicitly instead of initializing the SDK in a way that can trigger repeated browser refresh attempts and 401 responses.
 
 ## CI / deployment verification
 
@@ -31,7 +32,7 @@ Date: 27 September 2026
 
 ## Remaining validation that requires the deployed environment
 
-1. Live phone OTP delivery and verification with a real test number.
+1. Live phone OTP delivery and verification with a real test number, including confirming the deployed client no longer produces repeated `/api/auth/refresh` 401 responses for phone sessions.
 2. Two-user end-to-end journey: signup -> onboarding -> matching -> request -> acceptance -> scheduling -> messaging -> completion -> review. **Exchange verification is intentionally deferred for the current validation pass.**
 3. Live analytics event capture and KPI verification.
 4. Live Report/Block/Admin moderation functional validation, including direct API boundary checks.
