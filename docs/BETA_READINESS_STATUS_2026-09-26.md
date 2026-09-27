@@ -18,6 +18,7 @@ Date: 27 September 2026
 - Analytics CI coverage verifies all supported event names are accepted and the KPI funnel retains the expected lifecycle order.
 - Admin moderation reports now include exchange context when a report is tied to an exchange.
 - Notifications now expose explicit labels for exchange lifecycle events.
+- Notification read-state handling is guarded against stale account-switch responses, marks individual/all notifications read, refreshes on socket activity, and the socket now uses the active sessionStorage access token.
 - Exchange Workspace now provides an in-context Report action.
 - Profile avatar uploads now persist the uploaded Storage URL with cache-busting and update the visible profile immediately after a successful upload.
 
@@ -35,7 +36,7 @@ Date: 27 September 2026
 3. Live analytics event capture and KPI verification.
 4. Live Report/Block/Admin moderation functional validation, including direct API boundary checks.
 5. Desktop/mobile browser smoke testing.
-6. Notification delivery/read-state verification in the deployed environment.
+6. Notification delivery/read-state verification in the deployed environment, including unread badge updates, individual/all mark-read behavior, account switching, and socket-triggered refresh.
 7. Final CI and Vercel deployment-status verification after the latest main changes.
 
 ## Beta blockers
