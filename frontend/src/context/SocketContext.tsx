@@ -16,7 +16,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('skillbarter_token');
+    // Auth tokens are stored in sessionStorage by the current auth flow.
+    // Reading localStorage here prevents the notification/message socket from
+    // connecting for normal browser sessions.
+    const token = sessionStorage.getItem('skillbarter_token');
     if (!currentUser || !token) {
       if (wsRef.current) {
         wsRef.current.close();
