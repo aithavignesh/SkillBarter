@@ -14,6 +14,17 @@ import datetime
 
 router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
 
+
+def _ensure_not_blocked(current_user_id: int, partner_id: int, db: Session) -> None:
+    """Enforce the bidirectional block boundary for exchange interactions."""
+    from app.models.safety import Block
+    blocked = db.query(Block).filter(
+        ((Block.blocker_id == current_user_id) & (Block.blocked_id == partner_id)) |
+        ((Block.blocker_id == partner_id) & (Block.blocked_id == current_user_id))
+    ).first()
+    if blocked:
+        raise HTTPException(status_code=403, detail="Exchange interaction not permitted between these accounts")
+
 def serialize_exchange(e: Exchange, current_user_id: int, db: Session) -> dict:
     requester_user = db.query(User).filter(User.id == e.requester_id).first()
     receiver_user = db.query(User).filter(User.id == e.receiver_id).first()
