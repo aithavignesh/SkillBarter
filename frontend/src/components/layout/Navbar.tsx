@@ -47,96 +47,26 @@ export const Navbar: React.FC = () => {
     if (query) navigate(`/discover?q=${encodeURIComponent(query)}`);
   };
 
+  // Keep the sidebar focused on the core GTM journey. Secondary screens remain
+  // reachable from their parent pages instead of competing with the main actions.
   const primary: NavItem[] = [
     { label: 'Home', path: '/feed', icon: Repeat },
-    {
-      label: 'Find a Learning Partner', path: '/discover', icon: Compass,
-      features: [
-        { label: 'Search Skills & People', path: '/discover/search' },
-        { label: 'Filter Learning Partners', path: '/discover/advanced-search' },
-        { label: 'Recommended Partners', path: '/discover/recommended' },
-      ],
-    },
-    {
-      label: 'My Learning Matches', path: '/matches', icon: Sparkles,
-      features: [
-        { label: 'Smart Learning Matches', path: '/matches/ai-matching' },
-        { label: 'Match Details', path: '/matches/match-details' },
-      ],
-    },
-    {
-      label: 'Learning Exchanges', path: '/exchanges', icon: ArrowLeftRight,
-      features: [
-        { label: 'Start Learning Request', path: '/requests/send-request' },
-        { label: 'Incoming Learning Requests', path: '/requests/incoming-requests' },
-        { label: 'Sent Exchange Requests', path: '/requests/sent-requests' },
-        { label: 'Request Details', path: '/requests/request-details' },
-        { label: 'Active Learning Session', path: '/exchanges/active-exchange' },
-        { label: 'Learning History', path: '/exchanges/exchange-history' },
-        { label: 'Peer Reviews', path: '/exchanges/exchange-rating' },
-        { label: 'Schedule Learning Session', path: '/exchanges/schedule' },
-        { label: 'Calendar', path: '/exchanges/calendar' },
-      ],
-    },
-    {
-      label: 'Messages', path: '/messages', icon: MessageSquare,
-      features: [
-        { label: 'Chat Details', path: '/messages/chat-details' },
-        { label: 'Notifications', path: '/notifications' },
-        { label: 'Notification Settings', path: '/notifications/notification-settings' },
-      ],
-    },
+    { label: 'Find a Learning Partner', path: '/discover', icon: Compass },
+    { label: 'My Learning Matches', path: '/matches', icon: Sparkles },
+    { label: 'Learning Exchanges', path: '/exchanges', icon: ArrowLeftRight },
+    { label: 'Messages', path: '/messages', icon: MessageSquare },
   ];
 
   const community: NavItem[] = [
-    {
-      label: 'My Profile', path: `/profile/${currentUser?.id}`, icon: UserIcon,
-      features: [
-        { label: 'Edit Profile', path: '/profile/edit-profile' },
-        { label: 'Public Profile', path: '/profile/public-profile' },
-        { label: 'Skills Management', path: '/profile/skills' },
-        { label: 'Add New Skill', path: '/profile/add-skill' },
-        { label: 'What I Want to Learn', path: '/learning/learning-goals' },
-        { label: 'What I Can Teach', path: '/learning/teaching-skills' },
-      ],
-    },
     { label: 'Learning Network', path: '/connections', icon: Users },
-    { label: 'Invite Peers', path: '/invite', icon: Users },
-    { label: 'Beta Feedback', path: '/feedback', icon: MessageSquare },
-    {
-      label: 'Student Community', path: '/community', icon: Users,
-      features: [
-        { label: 'Share Learning Update', path: '/community/create-post' },
-        { label: 'Post Details', path: '/community/post-details' },
-        { label: 'Community Groups', path: '/community/groups' },
-        { label: 'Group Details', path: '/community/group-details' },
-        { label: 'Learning Sessions', path: '/workshops/workshops' },
-        { label: 'Create Learning Session', path: '/workshops/create-workshop' },
-        { label: 'Workshop Details', path: '/workshops/workshop-details' },
-        { label: 'My Workshops', path: '/workshops/my-workshops' },
-        { label: 'Learning Progress', path: '/learning/credits' },
-      ],
-    },
-    {
-      label: 'Trust & Reputation', path: '/trust', icon: ShieldCheck,
-      features: [{ label: 'Verification Center', path: '/trust/verification' }],
-    },
-    {
-      label: 'Monetization', path: '/monetization', icon: Coins,
-      features: [{ label: 'Premium Membership', path: '/membership/premium' }],
-    },
+    { label: 'Student Community', path: '/community', icon: GraduationCap },
+    { label: 'My Profile', path: `/profile/${currentUser?.id}`, icon: UserIcon },
+    { label: 'Trust & Reputation', path: '/trust', icon: ShieldCheck },
   ];
 
   const support: NavItem[] = [
-    { label: 'Help & Support', path: '/support/support', icon: HelpCircle, features: [{ label: 'FAQ', path: '/support/faq' }] },
-    {
-      label: 'Settings', path: '/settings/account-settings', icon: Settings,
-      features: [
-        { label: 'Privacy & Security', path: '/settings/privacy' },
-        { label: 'Account Settings', path: '/settings/account-settings' },
-        { label: 'Activity History', path: '/activity/activity' },
-      ],
-    },
+    { label: 'Help & Support', path: '/support/support', icon: HelpCircle },
+    { label: 'Settings', path: '/settings/account-settings', icon: Settings },
   ];
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
