@@ -118,7 +118,7 @@ class UserNearbyOut(BaseModel):
     avatar_url: Optional[str] = None
     headline: Optional[str] = None
     address_display: Optional[str] = None
-    distance_km: float
+    distance_km: Optional[float] = None
     distance_display: str
     trust_score: float
     reliability_score: float
