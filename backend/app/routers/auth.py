@@ -66,7 +66,10 @@ def get_me(current_user: User = Depends(get_current_user), db: Session = Depends
 
 @router.post("/demo-switch/{user_id}", response_model=Token)
 def demo_switch_user(user_id: int, db: Session = Depends(get_db), current_admin: User = Depends(get_current_admin)):
-    """Admin-only convenience endpoint for authorized CEO/live demonstrations."""
+    """Development/demo-only account switching; disabled in production."""
+    from app.config import settings
+    if settings.APP_ENV.strip().lower() == "production":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not available")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
