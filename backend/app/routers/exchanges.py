@@ -248,6 +248,13 @@ def counter_exchange(
     if current_user.id not in (e.requester_id, e.receiver_id):
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    # Only the recipient may counter an original PENDING proposal.
+    # After a counter-proposal, only the original requester may counter it.
+    if e.status == "PENDING" and current_user.id != e.receiver_id:
+        raise HTTPException(status_code=403, detail="Only the recipient can counter this proposal")
+    if e.status == "COUNTERED" and current_user.id != e.requester_id:
+        raise HTTPException(status_code=403, detail="Only the original requester can counter this proposal")
+
     partner_id = e.receiver_id if current_user.id == e.requester_id else e.requester_id
     _ensure_not_blocked(current_user.id, partner_id, db)
 
