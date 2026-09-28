@@ -6,6 +6,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
@@ -14,8 +15,8 @@ from app.main import app
 from app.seed.seed_data import seed_database
 from app.models.user import User
 
-TEST_DATABASE_URL = "sqlite:///./test_skillbarter.db"
-test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+TEST_DATABASE_URL = "sqlite://"
+test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
 @pytest.fixture(autouse=True)
@@ -31,11 +32,8 @@ def setup_test_db():
     seed_database()
     yield
     Base.metadata.drop_all(bind=test_engine)
-    if os.path.exists("./test_skillbarter.db"):
-        try:
-            os.remove("./test_skillbarter.db")
-        except Exception:
-            pass
+    seed_data.engine = old_engine
+    seed_data.SessionLocal = old_session
 
 @pytest.fixture
 def db():
