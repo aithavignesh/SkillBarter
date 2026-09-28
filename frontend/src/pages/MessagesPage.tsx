@@ -115,9 +115,9 @@ export const MessagesPage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 pb-24 sm:px-6 lg:px-8">
-      <Card className="grid h-[min(750px,calc(100dvh-8rem))] min-h-[min(440px,calc(100dvh-10rem))] grid-cols-1 overflow-hidden border-[#e1e4e8] md:grid-cols-12">
+      <Card className="message-workspace grid h-[min(750px,calc(100dvh-8rem))] min-h-[min(440px,calc(100dvh-10rem))] min-w-0 grid-cols-1 overflow-hidden border-[#e1e4e8] md:grid-cols-12">
         <aside
-          className={`${mobileChatOpen ? 'hidden md:flex' : 'flex'} h-full flex-col border-r border-[#e1e4e8] bg-[#f7f8f7] md:col-span-4`}
+          className={`message-workspace__sidebar ${mobileChatOpen ? 'hidden md:flex' : 'flex'} h-full min-h-0 min-w-0 flex-col border-r border-[#e1e4e8] bg-[#f7f8f7] md:col-span-4`}
         >
           <div className="border-b border-[#e1e4e8] bg-white p-4">
             <div className="flex items-center justify-between">
@@ -131,7 +131,7 @@ export const MessagesPage: React.FC = () => {
 
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="p-8 text-center text-xs text-slate-400">Loading chats...</div>
+              <div className="p-8 text-center text-xs text-slate-400" role="status">Loading conversations…</div>
             ) : error && conversations.length === 0 ? (
               <div className="p-6 text-center" role="alert">
                 <p className="text-xs text-[#8f1a20]">Conversations couldn’t be loaded.</p>
@@ -152,7 +152,7 @@ export const MessagesPage: React.FC = () => {
                     }}
                     className={`flex w-full items-start gap-3 border-b border-[#e1e4e8] p-4 text-left ${
                       selected ? 'border-l-4 border-[#d31d24] bg-white' : 'hover:bg-white'
-                    }`}
+                    } transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d31d24]`}
                   >
                     <img
                       src={conversation.partner.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'}
@@ -194,7 +194,7 @@ export const MessagesPage: React.FC = () => {
         </aside>
 
         <section
-          className={`${mobileChatOpen ? 'flex' : 'hidden md:flex'} h-full flex-col bg-white md:col-span-8`}
+          className={`message-workspace__conversation ${mobileChatOpen ? 'flex' : 'hidden md:flex'} h-full min-h-0 min-w-0 flex-col bg-white md:col-span-8`}
         >
           {active ? (
             <>
@@ -213,9 +213,9 @@ export const MessagesPage: React.FC = () => {
                     className="h-10 w-10 rounded-full object-cover"
                     alt=""
                   />
-                  <div>
-                    <h3 className="text-xs font-bold text-[#17233b]">{active.partner.full_name}</h3>
-                    <p className="text-[11px] text-slate-500">
+                  <div className="min-w-0">
+                    <h3 className="break-words text-xs font-bold text-[#17233b]">{active.partner.full_name}</h3>
+                    <p className="break-words text-[11px] text-slate-500">
                       {active.partner.headline || 'SkillBarter member'}
                     </p>
                     <div className="mt-1 flex gap-2">
@@ -261,7 +261,7 @@ export const MessagesPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-[#f7f7f5] p-4 sm:p-6" aria-label="Conversation messages">
+              <div className="message-workspace__thread min-h-0 min-w-0 flex-1 space-y-3 overflow-y-auto bg-[#f7f7f5] p-4 sm:p-6" aria-label="Conversation messages" aria-live="polite">
                 {messagesLoading ? (
                   <div className="py-16 text-center text-xs text-slate-500" role="status">Loading messages…</div>
                 ) : messageLoadError ? (
@@ -279,15 +279,15 @@ export const MessagesPage: React.FC = () => {
                         className={`flex ${mine ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`min-w-0 max-w-[min(28rem,88%)] break-words rounded-2xl p-3 text-xs shadow-sm ${
+                          className={`message-bubble min-w-0 max-w-[min(28rem,88%)] rounded-2xl p-3 text-xs ${
                             mine
-                              ? 'bg-[#d31d24] text-white'
-                              : 'border border-[#e1e4e8] bg-white text-[#17233b]'
+                              ? 'message-bubble--sent bg-[#d31d24] text-white'
+                              : 'message-bubble--received border border-[#e1e4e8] bg-white text-[#17233b]'
                           }`}
                         >
-                          <p className="break-words whitespace-pre-wrap">{message.content}</p>
+                          <p className="message-bubble__content whitespace-pre-wrap">{message.content}</p>
                           <time dateTime={message.created_at}
-                            className={`mt-1 block text-[9px] ${
+                            className={`message-bubble__time mt-1 block text-[9px] ${
                               mine ? 'text-red-100' : 'text-slate-400'
                             }`}
                           >
@@ -303,7 +303,7 @@ export const MessagesPage: React.FC = () => {
                     );
                   })
                 ) : (
-                  <div className="py-20 text-center text-xs text-slate-400">
+                  <div className="py-20 text-center text-xs text-slate-400" role="status">
                     No messages yet. Send the first message.
                   </div>
                 )}
@@ -312,7 +312,7 @@ export const MessagesPage: React.FC = () => {
 
               <form
                 onSubmit={handleSend}
-                className="flex flex-col gap-2 border-t border-[#e1e4e8] bg-white p-3"
+                className="message-composer flex flex-col gap-2 border-t border-[#e1e4e8] bg-white p-3 sm:flex-row sm:items-end"
               >
                 <textarea
                   rows={2}
@@ -321,13 +321,14 @@ export const MessagesPage: React.FC = () => {
                   placeholder="Type a message..."
                   aria-label="Message"
                   maxLength={2000}
-                  className="conversation-text-input w-full min-w-0 flex-1 resize-none rounded-xl border border-[#d9dde2] bg-white px-3 py-2.5 text-xs text-[#17233b] outline-none focus:border-[#d31d24]"
+                  className="conversation-text-input min-h-11 w-full min-w-0 flex-1 resize-y rounded-xl border border-[#d9dde2] bg-white px-3 py-2.5 text-xs text-[#17233b] outline-none focus:border-[#d31d24]"
                 />
                 <Button
                   type="submit"
                   size="sm"
-                  className="w-full sm:w-auto"
+                  className="message-send-button w-full sm:w-auto sm:min-w-[96px]"
                   disabled={sending || messagesLoading || !inputText.trim()}
+                  loading={sending}
                   icon={<Send className="h-4 w-4" />}
                 >
                   {sending ? 'Sending…' : 'Send'}

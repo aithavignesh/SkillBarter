@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { PublicProfile, Review } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
 import { TrustScoreRing } from '../components/ui/TrustScoreRing';
 import { RatingStars } from '../components/ui/RatingStars';
@@ -35,6 +36,11 @@ export const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportSending, setReportSending] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const [reportNotice, setReportNotice] = useState('');
 
   // Propose Modal
   const [isProposeOpen, setIsProposeOpen] = useState(false);
@@ -89,6 +95,7 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -118,15 +125,30 @@ export const ProfilePage: React.FC = () => {
   const handleReport = async () => {
     const reason = prompt('Please describe why you are reporting this user to moderators:');
     if (!reason) return;
+=======
+  const handleReport = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const details = reportDetails.trim();
+    if (!details) {
+      setReportError('Describe what happened so the safety team can review it.');
+      return;
+    }
+>>>>>>> d6a5c4b (implemented sept27 task)
     try {
+      setReportSending(true);
+      setReportError('');
       await api.createReport({
         reported_user_id: targetId,
         category: 'Spam / Inappropriate',
-        details: reason,
+        details,
       });
-      alert('Report submitted to community safety team.');
+      setReportDialogOpen(false);
+      setReportDetails('');
+      setReportNotice('Your report was sent to the community safety team.');
     } catch (e: any) {
-      alert(e.message);
+      setReportError(e?.message || 'Unable to submit this report.');
+    } finally {
+      setReportSending(false);
     }
   };
 
@@ -160,6 +182,7 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 space-y-6">
       {/* Profile Header Card */}
+      {reportNotice && <div className="flex items-center justify-between gap-3 border border-[#cce6d5] bg-[#f4fbf6] px-4 py-3 text-xs font-semibold text-[#246443]" role="status"><span>{reportNotice}</span><button type="button" onClick={() => setReportNotice('')} className="flex h-10 w-10 shrink-0 items-center justify-center" aria-label="Dismiss report confirmation"><span aria-hidden="true">×</span></button></div>}
       <Card className="p-6 md:p-8 relative overflow-hidden border-slate-200/90 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
@@ -235,6 +258,7 @@ export const ProfilePage: React.FC = () => {
                   Message Partner
                 </Button>
               </Link>
+<<<<<<< HEAD
               <Button size="sm" variant="ghost" onClick={handleReport} className="text-slate-400 hover:text-rose-600">
                 <Flag className="w-4 h-4" />
                 <span className="hidden sm:inline">Report</span>
@@ -242,6 +266,10 @@ export const ProfilePage: React.FC = () => {
               <Button size="sm" variant="ghost" onClick={handleBlock} disabled={safetyBusy} className="text-slate-400 hover:text-slate-900">
                 <ShieldCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">{safetyBusy ? 'Saving…' : isBlocked ? 'Unblock' : 'Block'}</span>
+=======
+              <Button size="sm" variant="ghost" onClick={() => { setReportError(''); setReportDetails(''); setReportDialogOpen(true); }} icon={<Flag className="w-4 h-4" />}>
+                Report
+>>>>>>> d6a5c4b (implemented sept27 task)
               </Button>
             </div>
           ) : (
@@ -413,6 +441,39 @@ export const ProfilePage: React.FC = () => {
           alert('Exchange request sent successfully!');
         }}
       />
+      {!isOwnProfile && <Modal
+        isOpen={reportDialogOpen}
+        onClose={() => { if (!reportSending) setReportDialogOpen(false); }}
+        title="Report this profile"
+        subtitle="Share a specific concern for the community safety team."
+        maxWidth="sm"
+        closeDisabled={reportSending}
+      >
+        <form onSubmit={handleReport} className="space-y-4">
+          <div className="border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold text-slate-800">Your report is reviewed privately.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">Include only the details needed to understand your concern.</p>
+          </div>
+          <label htmlFor="peer-report-details" className="block text-xs font-semibold text-slate-800">
+            What should the safety team know?
+            <textarea
+              id="peer-report-details"
+              value={reportDetails}
+              onChange={event => { setReportDetails(event.target.value); setReportError(''); }}
+              rows={5}
+              required
+              disabled={reportSending}
+              aria-invalid={Boolean(reportError) && !reportDetails.trim()}
+              className="mt-1.5 min-h-32 w-full min-w-0 resize-y border border-slate-300 bg-white p-3 text-sm leading-6 text-slate-900 outline-none transition-colors duration-200 focus:border-[#d31d24] focus-visible:ring-2 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+            />
+          </label>
+          {reportError && <p role="alert" className="break-words border border-red-200 bg-red-50 p-3 text-xs leading-5 text-red-800">{reportError}</p>}
+          <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+            <Button type="button" size="sm" className="w-full sm:w-auto" variant="outline" onClick={() => setReportDialogOpen(false)} disabled={reportSending}>Cancel</Button>
+            <Button type="submit" size="sm" className="w-full sm:w-auto" loading={reportSending} disabled={reportSending || !reportDetails.trim()} icon={<Flag className="h-4 w-4" />}>{reportSending ? 'Sending report…' : 'Send report'}</Button>
+          </div>
+        </form>
+      </Modal>}
     </div>
   );
 };

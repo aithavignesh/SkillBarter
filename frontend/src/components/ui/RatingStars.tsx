@@ -8,6 +8,7 @@ interface RatingStarsProps {
   size?: 'sm' | 'md' | 'lg';
   showScore?: boolean;
   ariaLabel?: string;
+  disabled?: boolean;
 }
 
 export const RatingStars: React.FC<RatingStarsProps> = ({
@@ -17,6 +18,7 @@ export const RatingStars: React.FC<RatingStarsProps> = ({
   size = 'md',
   showScore = false,
   ariaLabel = 'Rating',
+  disabled = false,
 }) => {
   const sizeClasses = {
     sm: 'w-3.5 h-3.5',
@@ -24,7 +26,7 @@ export const RatingStars: React.FC<RatingStarsProps> = ({
     lg: 'w-6 h-6',
   };
 
-  const isInteractive = Boolean(onChange);
+  const isInteractive = Boolean(onChange) && !disabled;
 
   return (
     <div className="flex items-center gap-1" role="group" aria-label={ariaLabel}>
@@ -41,8 +43,8 @@ export const RatingStars: React.FC<RatingStarsProps> = ({
               onClick={() => onChange && onChange(starValue)}
               aria-label={isInteractive ? `Rate ${starValue} out of ${max} stars` : undefined}
               aria-pressed={isInteractive ? starValue === Math.round(value) : undefined}
-              className={`inline-flex min-h-9 min-w-9 items-center justify-center p-0.5 transition-transform motion-reduce:transform-none motion-reduce:transition-none ${
-                isInteractive ? 'hover:scale-110 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]' : 'cursor-default'
+              className={`inline-flex min-h-10 min-w-10 items-center justify-center rounded-md p-0.5 transition-colors duration-200 motion-reduce:transition-none ${
+                isInteractive ? 'cursor-pointer hover:bg-amber-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]' : disabled ? 'cursor-not-allowed opacity-60' : 'cursor-default'
               }`}
             >
               <Star

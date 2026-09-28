@@ -125,7 +125,7 @@ export const ConversationPage: React.FC = () => {
           </button>
           <Link to="/messages"><Button size="sm" variant="outline" icon={<MessageSquare className="h-4 w-4" />}>All messages</Button></Link>
         </div>
-        <Card className="overflow-hidden">
+        <Card className="conversation-workspace overflow-hidden">
           <header className="flex flex-col gap-3 border-b border-[#e1e4e8] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div className="flex min-w-0 items-center gap-3">
               <img src={partner?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'} className="h-11 w-11 rounded-full object-cover" alt="" />
@@ -160,40 +160,44 @@ export const ConversationPage: React.FC = () => {
             </div>
           )}
 
-          <section className="flex h-[min(68dvh,680px)] min-h-[min(360px,calc(100dvh-14rem))] flex-col bg-[#fbfbfa]">
-            <div className="flex-1 space-y-3 overflow-y-auto p-5 sm:p-7" role="log" aria-label={`Messages with ${partner.full_name}`} aria-relevant="additions">
+          <section className="conversation-workspace__thread flex h-[min(68dvh,680px)] min-h-[min(360px,calc(100dvh-14rem))] min-w-0 flex-col bg-[#fbfbfa]">
+            <div className="min-h-0 min-w-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-7" role="log" aria-label={`Messages with ${partner.full_name}`} aria-relevant="additions">
               {loading ? <div className="flex h-full items-center justify-center text-xs text-[#697386]">Loading conversation…</div> : messages.length ? messages.map((m: any) => {
                 const mine = Number(m.sender_id) === Number(currentUser?.id);
                 return <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`min-w-0 max-w-[min(28rem,88%)] break-words px-4 py-3 text-xs leading-5 sm:max-w-[78%] ${mine ? 'bg-[#d31d24] text-white' : 'border border-[#e1e4e8] bg-white text-[#17233b]'}`}>
-                    <p className="break-words whitespace-pre-wrap">{m.content}</p>
-                    <time dateTime={m.created_at} className={`mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-[#8a94a6]'}`}>{m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</time>
+                  <div className={`message-bubble min-w-0 max-w-[min(28rem,88%)] px-4 py-3 text-xs leading-5 sm:max-w-[78%] ${mine ? 'message-bubble--sent bg-[#d31d24] text-white' : 'message-bubble--received border border-[#e1e4e8] bg-white text-[#17233b]'}`}>
+                    <p className="message-bubble__content whitespace-pre-wrap">{m.content}</p>
+                    <time dateTime={m.created_at} className={`message-bubble__time mt-1 block text-[9px] ${mine ? 'text-red-100' : 'text-[#8a94a6]'}`}>{m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</time>
                   </div>
                 </div>;
               }) : <div className="flex h-full flex-col items-center justify-center text-center"><MessageSquare className="mb-3 h-9 w-9 text-[#d7dce2]" /><p className="text-sm font-semibold text-[#17233b]">Start the conversation</p><p className="mt-1 text-xs text-[#697386]">Send a message to {partner?.full_name || 'this member'}.</p></div>}
               <div ref={endRef} />
             </div>
             {error && <div role="alert" className="break-words border-t border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">{error}</div>}
-            <form onSubmit={send} className="flex items-end gap-2 border-t border-[#e1e4e8] bg-white p-3">
-              <textarea rows={2} value={text} onChange={e => setText(e.target.value)} placeholder="Write a message…" aria-label="Message" maxLength={2000} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} className="conversation-text-input min-h-10 min-w-0 flex-1 resize-none border border-[#d9dde2] bg-white px-3 py-2.5 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" />
-              <Button type="submit" size="sm" disabled={sending || !text.trim()} icon={<Send className="h-4 w-4" />}>{sending ? 'Sending…' : 'Send'}</Button>
+            <form onSubmit={send} className="message-composer flex flex-col gap-2 border-t border-[#e1e4e8] bg-white p-3 sm:flex-row sm:items-end">
+              <textarea rows={2} value={text} onChange={e => setText(e.target.value)} placeholder="Write a message…" aria-label="Message" maxLength={2000} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} className="conversation-text-input min-h-11 min-w-0 flex-1 resize-y border border-[#d9dde2] bg-white px-3 py-2.5 text-xs text-[#17233b] outline-none focus:border-[#d31d24]" />
+              <Button type="submit" size="sm" className="message-send-button w-full sm:w-auto sm:min-w-[96px]" disabled={sending || !text.trim()} loading={sending} icon={<Send className="h-4 w-4" />}>{sending ? 'Sending…' : 'Send'}</Button>
             </form>
           </section>
         </Card>
       </div>
       <Modal
         isOpen={blockDialogOpen}
-        onClose={() => setBlockDialogOpen(false)}
+        onClose={() => { if (!blocking) setBlockDialogOpen(false); }}
         title={blocked ? 'Unblock this member?' : 'Block this member?'}
         subtitle={blocked ? 'This member will be available in your learning network again.' : 'This member will no longer appear in your matching flow.'}
         maxWidth="sm"
+        closeDisabled={blocking}
       >
         <div className="space-y-4">
-          <p className="text-sm leading-6 text-[#4d5b72]">{blocked ? `You can message ${partner.full_name} again after unblocking.` : `You can unblock ${partner.full_name} later from your safety settings.`}</p>
+          <div className={`border p-3 ${blocked ? 'border-[#e1e4e8] bg-[#f7f8f7]' : 'border-[#ead0d1] bg-[#fff8f8]'}`}>
+            <p className="text-xs font-semibold text-[#17233b]">{blocked ? 'Restore this connection' : 'What changes when you block this member?'}</p>
+            <p className="mt-1 break-words text-xs leading-5 text-[#4d5b72]">{blocked ? `You can message ${partner.full_name} again after unblocking.` : `This member will no longer appear in your matching flow. You can unblock ${partner.full_name} later from your safety settings.`}</p>
+          </div>
           {blockError && <p role="alert" className="break-words border border-red-200 bg-red-50 p-3 text-xs text-red-800">{blockError}</p>}
           <div className="flex flex-col-reverse gap-2 border-t border-[#e1e4e8] pt-4 sm:flex-row sm:justify-end">
-            <Button type="button" size="sm" variant="outline" onClick={() => setBlockDialogOpen(false)} disabled={blocking}>Cancel</Button>
-            <Button type="button" size="sm" variant={blocked ? 'secondary' : 'danger'} onClick={() => void toggleBlock()} loading={blocking}>{blocked ? 'Unblock member' : 'Block member'}</Button>
+            <Button type="button" size="sm" className="w-full sm:w-auto" variant="outline" onClick={() => setBlockDialogOpen(false)} disabled={blocking}>Cancel</Button>
+            <Button type="button" size="sm" className="w-full sm:w-auto" variant={blocked ? 'secondary' : 'danger'} onClick={() => void toggleBlock()} loading={blocking}>{blocking ? (blocked ? 'Unblocking…' : 'Blocking…') : (blocked ? 'Unblock member' : 'Block member')}</Button>
           </div>
         </div>
       </Modal>

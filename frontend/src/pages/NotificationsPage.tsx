@@ -110,6 +110,12 @@ export const NotificationsPage: React.FC = () => {
       )}
 
       <Card className="notifications-surface overflow-hidden">
+        {loading && notifications.length > 0 && (
+          <div className="flex items-center gap-2 border-b border-[#e1e4e8] bg-[#f8f9f9] px-4 py-2.5 text-[11px] font-medium text-[#586579]" role="status">
+            <RefreshCw className="h-3.5 w-3.5 animate-spin text-[#d31d24] motion-reduce:animate-none" aria-hidden="true" />
+            Refreshing notifications…
+          </div>
+        )}
         {loading && notifications.length === 0 ? (
           <div className="space-y-0 divide-y divide-[#edf0f2] p-4 sm:p-5" role="status" aria-label="Loading notifications">
             {[0, 1, 2].map(item => (
@@ -126,7 +132,7 @@ export const NotificationsPage: React.FC = () => {
           </div>
         ) : filtered.length === 0 ? (
           <div className="notifications-empty p-10 text-center sm:p-14">
-            <Bell className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+            <Bell className="mx-auto mb-3 h-8 w-8 text-slate-300" aria-hidden="true" />
             <p className="text-sm font-bold text-[#17233b]">{notifications.length ? 'No notifications in this category' : 'No activity yet'}</p>
             <p className="mt-1 text-xs text-[#697386]">{notifications.length ? 'Try another filter to see your recent activity.' : 'Messages and exchange updates will appear here.'}</p>
           </div>
@@ -141,6 +147,7 @@ export const NotificationsPage: React.FC = () => {
                   type="button"
                   onClick={() => void open(notification)}
                   aria-label={`${unread ? 'Unread notification: ' : ''}${notification.title || labelFor(String(notification.type || ''))}`}
+                  aria-describedby={`notification-state-${notification.id}`}
                   className={`notification-item flex w-full items-start gap-3 border-b border-[#edf0f2] p-4 text-left last:border-0 sm:gap-4 sm:p-5 ${unread ? 'notification-item--unread bg-[#fff8f8]' : 'notification-item--read'}`}
                 >
                   <span className={`notification-item__icon flex h-10 w-10 shrink-0 items-center justify-center ${unread ? 'bg-[#fff0f0] text-[#d31d24]' : 'bg-[#f3f5f7] text-[#697386]'}`}>
@@ -149,7 +156,10 @@ export const NotificationsPage: React.FC = () => {
                   <span className="min-w-0 flex-1">
                     <span className="flex items-start justify-between gap-3">
                       <span className={`notification-item__title min-w-0 text-sm text-[#17233b] ${unread ? 'font-bold' : 'font-semibold'}`}>{notification.title || labelFor(String(notification.type || ''))}</span>
-                      <span className={`notification-item__indicator mt-1.5 h-1.5 w-1.5 shrink-0 ${unread ? 'bg-[#d31d24]' : ''}`} aria-hidden="true" />
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {unread && <span className="bg-[#fff0f0] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#b8171d]">New</span>}
+                        <span className={`notification-item__indicator mt-1.5 h-1.5 w-1.5 ${unread ? 'bg-[#d31d24]' : ''}`} aria-hidden="true" />
+                      </span>
                     </span>
                     <span className="notification-item__message mt-1 block break-words text-xs leading-5 text-[#697386]">{notification.message}</span>
                     <span className="notification-item__meta mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
@@ -157,6 +167,7 @@ export const NotificationsPage: React.FC = () => {
                       <span aria-hidden="true">·</span>
                       <span>{labelFor(String(notification.type || ''))}</span>
                       {notification.link && <span className="font-bold text-[#d31d24]">Open →</span>}
+                      <span id={`notification-state-${notification.id}`} className="sr-only">{unread ? 'Unread' : 'Read'}</span>
                     </span>
                   </span>
                 </button>

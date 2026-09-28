@@ -618,27 +618,33 @@ export const LinkedInStyleProfilePage: React.FC = () => {
         </aside>
       </div>
     </div>
-    <Modal isOpen={reportDialogOpen} onClose={() => setReportDialogOpen(false)} title="Report this profile" subtitle="Share a specific concern for the community safety team." maxWidth="sm">
+    <Modal isOpen={reportDialogOpen} onClose={() => { if (!reportSending) setReportDialogOpen(false); }} title="Report this profile" subtitle="Share a specific concern for the community safety team." maxWidth="sm" closeDisabled={reportSending}>
       <form onSubmit={handleReport} className="space-y-4">
-        <p className="text-sm leading-6 text-[#4d5b72]">Reports are reviewed privately. Please include only the details needed to understand the concern.</p>
+        <div className="border border-[#e1e4e8] bg-[#f7f8f7] p-3">
+          <p className="text-xs font-semibold text-[#17233b]">What happens when you send a report?</p>
+          <p className="mt-1 text-xs leading-5 text-[#4d5b72]">The community safety team reviews it privately. Include only the details they need to understand your concern.</p>
+        </div>
         <label htmlFor="profile-report-details" className="block text-xs font-semibold text-[#17233b]">What should we know?
-          <textarea id="profile-report-details" value={reportDetails} onChange={event => setReportDetails(event.target.value)} rows={5} maxLength={2000} required className="profile-textarea mt-1.5 min-h-28 w-full resize-y border border-[#d9dde2] bg-white p-3 text-sm text-[#17233b] outline-none focus:border-[#d31d24]" aria-describedby="profile-report-count" />
+          <textarea id="profile-report-details" value={reportDetails} onChange={event => setReportDetails(event.target.value)} rows={5} maxLength={2000} required disabled={reportSending} aria-invalid={Boolean(reportError) && !reportDetails.trim()} className="profile-textarea mt-1.5 min-h-32 w-full min-w-0 resize-y border border-[#d9dde2] bg-white p-3 text-sm leading-6 text-[#17233b] outline-none focus:border-[#d31d24] disabled:cursor-not-allowed disabled:bg-slate-50" aria-describedby="profile-report-count" />
         </label>
         <p id="profile-report-count" className="text-right text-[10px] text-slate-500">{reportDetails.length}/2000 characters</p>
         {reportError && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-xs text-red-800">{reportError}</p>}
         <div className="flex flex-col-reverse gap-2 border-t border-[#e1e4e8] pt-4 sm:flex-row sm:justify-end">
-          <Button type="button" size="sm" variant="outline" onClick={() => setReportDialogOpen(false)} disabled={reportSending}>Cancel</Button>
-          <Button type="submit" size="sm" loading={reportSending} disabled={reportSending || !reportDetails.trim()} icon={<Flag className="h-3.5 w-3.5" />}>Send report</Button>
+          <Button type="button" size="sm" className="w-full sm:w-auto" variant="outline" onClick={() => setReportDialogOpen(false)} disabled={reportSending}>Cancel</Button>
+          <Button type="submit" size="sm" className="w-full sm:w-auto" loading={reportSending} disabled={reportSending || !reportDetails.trim()} icon={<Flag className="h-3.5 w-3.5" />}>{reportSending ? 'Sending report…' : 'Send report'}</Button>
         </div>
       </form>
     </Modal>
-    <Modal isOpen={blockDialogOpen} onClose={() => setBlockDialogOpen(false)} title={blocked ? 'Unblock this member?' : 'Block this member?'} subtitle={blocked ? 'This member will be available in your learning network again.' : 'This member will no longer appear in your matching flow.'} maxWidth="sm">
+    <Modal isOpen={blockDialogOpen} onClose={() => { if (!blocking) setBlockDialogOpen(false); }} title={blocked ? 'Unblock this member?' : 'Block this member?'} subtitle={blocked ? 'This member will be available in your learning network again.' : 'This member will no longer appear in your matching flow.'} maxWidth="sm" closeDisabled={blocking}>
       <div className="space-y-4">
-        <p className="text-sm leading-6 text-[#4d5b72]">{blocked ? `You can message ${profile.full_name} again after unblocking.` : `You can unblock ${profile.full_name} later from your safety settings.`}</p>
+        <div className={`border p-3 ${blocked ? 'border-[#e1e4e8] bg-[#f7f8f7]' : 'border-[#ead0d1] bg-[#fff8f8]'}`}>
+          <p className="text-xs font-semibold text-[#17233b]">{blocked ? 'Restore this connection' : 'What changes when you block this member?'}</p>
+          <p className="mt-1 break-words text-xs leading-5 text-[#4d5b72]">{blocked ? `You can message ${profile.full_name} again after unblocking.` : `This member will no longer appear in your matching flow. You can unblock ${profile.full_name} later from your safety settings.`}</p>
+        </div>
         {blockError && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-xs text-red-800">{blockError}</p>}
         <div className="flex flex-col-reverse gap-2 border-t border-[#e1e4e8] pt-4 sm:flex-row sm:justify-end">
-          <Button type="button" size="sm" variant="outline" onClick={() => setBlockDialogOpen(false)} disabled={blocking}>Cancel</Button>
-          <Button type="button" size="sm" variant={blocked ? 'secondary' : 'danger'} onClick={() => void handleBlockToggle()} loading={blocking}>{blocked ? 'Unblock member' : 'Block member'}</Button>
+          <Button type="button" size="sm" className="w-full sm:w-auto" variant="outline" onClick={() => setBlockDialogOpen(false)} disabled={blocking}>Cancel</Button>
+          <Button type="button" size="sm" className="w-full sm:w-auto" variant={blocked ? 'secondary' : 'danger'} onClick={() => void handleBlockToggle()} loading={blocking}>{blocking ? (blocked ? 'Unblocking…' : 'Blocking…') : (blocked ? 'Unblock member' : 'Block member')}</Button>
         </div>
       </div>
     </Modal>

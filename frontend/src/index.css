@@ -6,19 +6,54 @@
   html { background: #f7f7f5; }
   body { @apply min-h-screen font-sans antialiased text-[#17233b]; background: #f7f7f5; }
   ::selection { background: rgba(211,29,36,.14); color: #17233b; }
-  a { transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease; }
+  a { transition: color 200ms ease, background-color 200ms ease, border-color 200ms ease, opacity 200ms ease; }
   button, input, textarea, select { font: inherit; }
   :focus-visible { outline: 2px solid #d31d24; outline-offset: 2px; }
 }
 
 .notification-dropdown {
   z-index: 50;
+  max-height: min(32rem, calc(100dvh - 6rem));
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-6px);
   transform-origin: top right;
   transition: opacity 220ms ease, transform 220ms ease, visibility 220ms ease;
+}
+
+#profile-navigation-menu {
+  max-height: calc(100dvh - 5rem);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+}
+
+.schedule-form input,
+.review-text-input,
+.profile-textarea {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+}
+
+.schedule-form input:focus-visible,
+.review-text-input:focus-visible,
+.profile-textarea:focus-visible {
+  border-color: #d31d24;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(211, 29, 36, .1);
+}
+
+.schedule-form input[aria-invalid="true"],
+.review-form [aria-invalid="true"],
+.profile-textarea[aria-invalid="true"] {
+  border-color: #b8171d;
+}
+
+.schedule-form__selection {
+  overflow-wrap: anywhere;
 }
 
 .notification-dropdown--open {
@@ -32,7 +67,7 @@
 .notification-item {
   position: relative;
   outline: none;
-  transition: background-color 240ms ease, border-color 240ms ease, box-shadow 240ms ease, color 240ms ease, transform 220ms ease;
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
 }
 
 .notification-dropdown__item::before,
@@ -63,8 +98,7 @@
 .notification-item:focus-visible {
   z-index: 1;
   background-color: #fbfbfa;
-  box-shadow: 0 5px 14px rgba(23, 35, 59, .07);
-  transform: translateY(-2px);
+  border-color: #e1e4e8;
 }
 
 .notification-dropdown__item--unread:hover,
@@ -77,7 +111,6 @@
 .notification-dropdown__item:active,
 .notification-item:active {
   background-color: #f5f6f7;
-  transform: translateY(0);
 }
 
 .notification-dropdown__item:focus-visible,
@@ -223,6 +256,138 @@
 .exchange-skill-card {
   min-width: 0;
   transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.exchange-workspace__grid,
+.exchange-workspace__main,
+.exchange-workspace__aside,
+.exchange-session-card {
+  min-width: 0;
+}
+
+.exchange-workspace__actions > * {
+  max-width: 100%;
+}
+
+.exchange-session-card {
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+
+.exchange-messages__list {
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+}
+
+.message-bubble {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.message-bubble--sent {
+  border-radius: 1rem 1rem .25rem 1rem;
+}
+
+.message-bubble--received {
+  border-radius: 1rem 1rem 1rem .25rem;
+}
+
+.message-bubble__content {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.message-bubble__time {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.message-workspace,
+.message-workspace__sidebar,
+.message-workspace__conversation,
+.message-workspace__thread,
+.conversation-workspace,
+.conversation-workspace__thread {
+  min-width: 0;
+}
+
+.message-workspace__sidebar,
+.message-workspace__conversation {
+  min-height: 0;
+}
+
+.message-workspace__thread,
+.conversation-workspace__thread {
+  overscroll-behavior: contain;
+}
+
+.message-composer {
+  min-width: 0;
+}
+
+.conversation-text-input,
+.exchange-text-input {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+}
+
+.conversation-text-input:focus-visible,
+.exchange-text-input:focus-visible {
+  outline: none;
+  border-color: #d31d24;
+  box-shadow: 0 0 0 3px rgba(211, 29, 36, .1);
+}
+
+.message-send-button {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+.message-send-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(211, 29, 36, .2);
+}
+
+.message-send-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.message-send-button:disabled {
+  box-shadow: none;
+}
+
+@media (max-width: 639px) {
+  .exchange-workspace__actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  }
+
+  .exchange-workspace__actions > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .exchange-workspace__actions > button,
+  .exchange-workspace__actions > a > button {
+    width: 100%;
+  }
+
+  .exchange-session-card {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exchange-session-card,
+  .message-bubble,
+  .conversation-text-input,
+  .exchange-text-input,
+  .message-send-button,
+  .schedule-form input,
+  .review-text-input,
+  .profile-textarea {
+    transition: none;
+  }
 }
 
 .mobile-primary-navigation {
@@ -844,6 +1009,8 @@ html:not(.dark) .feed-activation-panel__description {
   .onboarding-text-input,
   .profile-edit-input,
   .profile-textarea,
+  .review-text-input,
+  .schedule-form input,
   .conversation-text-input,
   .exchange-text-input,
   .review-text-input {

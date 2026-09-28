@@ -130,21 +130,22 @@ export const ConnectionsPage: React.FC = () => {
               const request = pendingRequests.find((ex) => Number(ex.requester_id) === Number(u.id) || Number(ex.receiver_id) === Number(u.id));
               const isIncoming = Boolean(request && Number(request.receiver_id) === Number(currentUser?.id));
               return (
-                <div key={u.id} className="grid gap-4 px-5 py-4 transition hover:bg-[#fafafa] md:grid-cols-[minmax(240px,1.4fr)_1fr_150px_220px] md:items-center">
+                <div key={u.id} className={`grid gap-4 px-4 py-4 transition-colors duration-200 sm:px-5 md:grid-cols-[minmax(240px,1.4fr)_1fr_150px_220px] md:items-center ${pending && isIncoming ? 'bg-[#fffafa] hover:bg-[#fff6f6]' : 'hover:bg-[#fafafa]'}`}>
                   <div className="flex min-w-0 items-center gap-3">
-                    <Link to={`/profile/${u.id}`}><img src={avatar(u.avatar_url)} alt={u.full_name} className="h-11 w-11 shrink-0 rounded-full object-cover border border-[#dfe3e8]" /></Link>
+                    <Link to={`/profile/${u.id}`} aria-label={`View ${u.full_name || 'learning peer'}’s profile`}><img src={avatar(u.avatar_url)} alt="" className="h-11 w-11 shrink-0 rounded-full border border-[#dfe3e8] object-cover" /></Link>
                     <div className="min-w-0">
                       <Link to={`/profile/${u.id}`} className="truncate text-sm font-bold text-[#17233b] hover:text-[#d31d24]">{u.full_name || 'Learning peer'}</Link>
                       <p className="truncate text-xs text-slate-500">{u.headline || 'Student & Peer Learner'}</p>
                     </div>
                   </div>
                   <div className="text-xs text-slate-500"><p className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-[#d31d24]" />{u.distance_display || u.address_display || 'Location not set'}</p><p className="mt-1 font-semibold text-slate-700">★ {Math.round(Number(u.trust_score) || 0)} trust</p></div>
-                  <div><span className="inline-flex border border-[#ead0d1] bg-[#fff6f6] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#b8171d]">{pending ? (isIncoming ? 'Incoming' : 'Sent') : activeTab === 'PARTNERS' ? 'Learning partner' : activeTab === 'NEARBY' ? 'Nearby' : 'Suggested'}</span></div>
+                  <div className="flex flex-wrap items-center gap-2"><span className="inline-flex border border-[#ead0d1] bg-[#fff6f6] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#b8171d]">{pending ? (isIncoming ? 'Incoming' : 'Sent') : activeTab === 'PARTNERS' ? 'Learning partner' : activeTab === 'NEARBY' ? 'Nearby' : 'Suggested'}</span>{pending && isIncoming && <span className="text-[10px] font-semibold text-[#9b252b]">Needs your response</span>}</div>
                   <div className="flex flex-wrap justify-start gap-2 md:justify-end">
                     {pending ? isIncoming ? <>
-                      <Button size="sm" disabled={busyId === request?.id} onClick={() => request && handleRequest(request.id, 'accept')} icon={<Check className="h-3.5 w-3.5" />}>Accept</Button>
-                      <Button size="sm" variant="outline" disabled={busyId === request?.id} onClick={() => request && handleRequest(request.id, 'reject')} icon={<X className="h-3.5 w-3.5" />}>Decline</Button>
-                    </> : <Link to="/exchanges"><Button size="sm" variant="outline">View request</Button></Link> : <>
+                      <Button size="sm" loading={busyId === request?.id} disabled={busyId === request?.id} onClick={() => request && handleRequest(request.id, 'accept')} icon={<Check className="h-3.5 w-3.5" />}>Accept</Button>
+                      <Button size="sm" variant="outline" disabled={busyId === request?.id} onClick={() => request && handleRequest(request.id, 'reject')} icon={<X className="h-3.5 w-3.5" />}>Reject</Button>
+                      {request && <Link to={`/exchanges/${request.id}`} className="w-full sm:w-auto"><Button size="sm" variant="ghost" className="w-full sm:w-auto" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>View Exchange</Button></Link>}
+                    </> : request ? <Link to={`/exchanges/${request.id}`}><Button size="sm" variant="outline" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>View Exchange</Button></Link> : <Link to="/exchanges"><Button size="sm" variant="outline">View Exchange</Button></Link> : <>
                       <Button size="sm" onClick={() => openProposal(u)} icon={<Repeat className="h-3.5 w-3.5" />}>Start Learning Exchange</Button>
                       {activeTab === 'PARTNERS' && <Link to={`/messages/${u.id}`}><Button size="sm" variant="ghost" icon={<MessageSquare className="h-3.5 w-3.5" />}>Message</Button></Link>}
                     </>}
