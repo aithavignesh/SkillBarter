@@ -29,7 +29,7 @@ def get_skill_matches(
                 "full_name": cand.full_name,
                 "avatar_url": cand.avatar_url,
                 "headline": cand.headline,
-                "address_display": cand.address_display,
+                "address_display": None if (cand.location_visibility or "APPROXIMATE").upper() == "PRIVATE" else cand.address_display,
                 "trust_score": cand.trust_score,
                 "reliability_score": cand.reliability_score,
                 "completed_exchanges_count": cand.completed_exchanges_count,
