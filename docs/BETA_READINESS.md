@@ -39,7 +39,7 @@ The production database migration for `username` and `phone` must be applied and
 
 These items cannot be certified from the Git repository alone:
 
-1. Apply and verify `migrations/20260928_add_username_phone.sql` in the production InsForge database.
+1. Apply and verify `migrations/20260928124009_add-username-phone.sql` in the production InsForge database. The migration is currently blocked because the production `public.users` table is owned by `postgres`, while the InsForge migration runner uses `project_admin`, which does not own the table.
 2. Verify InsForge RLS with two normal users and an admin for profiles, reports, blocks, messages, exchanges, notifications, reviews, and admin moderation.
 3. Confirm `VITE_ANALYTICS_ENDPOINT` is configured in production and that KPI events are actually being received.
 4. Confirm the current Vercel deployment is built from the latest main commit and that production smoke tests use the deployed build.
