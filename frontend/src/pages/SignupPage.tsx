@@ -4,11 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Repeat, Lock, Mail, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Repeat, Lock, Mail, User, Phone, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export const SignupPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,8 +40,18 @@ export const SignupPage: React.FC = () => {
         setError('Password must be at least 8 characters.');
         return;
       }
-      if (!fullName.trim() || !email.trim()) {
-        setError('Please complete all required fields.');
+      if (!fullName.trim() || !username.trim() || !email.trim() || !phone.trim()) {
+        setError('Please complete your full name, username, email, and mobile number.');
+        return;
+      }
+      const cleanUsername = username.trim().replace(/^@/, '').toLowerCase();
+      if (!/^[a-z0-9_]{3,30}$/.test(cleanUsername)) {
+        setError('Username must be 3–30 characters and use only letters, numbers, or underscores.');
+        return;
+      }
+      const cleanPhone = phone.replace(/[^0-9+]/g, '');
+      if (!/^\\+[1-9]\\d{7,14}$/.test(cleanPhone)) {
+        setError('Enter your mobile number with country code, e.g. +919876543210.');
         return;
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -48,7 +60,9 @@ export const SignupPage: React.FC = () => {
       }
       await register({
         full_name: fullName.trim(),
+        username: cleanUsername,
         email: email.trim(),
+        phone: cleanPhone,
         password,
       });
       trackEvent('signup_completed', { referral_source: referralSource });
@@ -111,6 +125,24 @@ export const SignupPage: React.FC = () => {
                 <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
                 <input id="signup-full-name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Ramesh Kumar" className="signup-input w-full pl-9 pr-3" required />
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="signup-username" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Username</label>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                <input id="signup-username" type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 30))} placeholder="e.g. vignesh_aitha" className="signup-input w-full pl-9 pr-3" minLength={3} maxLength={30} required />
+              </div>
+              <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">Your unique public name for search and your profile.</p>
+            </div>
+
+            <div>
+              <label htmlFor="signup-phone" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Mobile Number</label>
+              <div className="relative">
+                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                <input id="signup-phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^0-9+\s-]/g, ''))} placeholder="+91 98765 43210" className="signup-input w-full pl-9 pr-3" required />
+              </div>
+              <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">Used for account verification and recovery; it is not your public username.</p>
             </div>
 
             <div>
