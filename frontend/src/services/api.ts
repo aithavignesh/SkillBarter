@@ -932,16 +932,52 @@ class ApiClient {
     let query: any = insforge.database.from('exchanges').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).eq('status', 'ACTIVE');
     query = uid === Number(e.requester_id) ? query.eq('requester_completed', false) : query.eq('receiver_completed', false);
     query = query.or(`requester_id.eq.${uid},receiver_id.eq.${uid}`);
-    const { data, error } = await query.select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at').maybeSingle();
+    let { data, error } = await query.select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at').maybeSingle();
     if (error) throw new Error(error.message || 'Unable to confirm completion');
     if (!data) throw new Error('Completion was already confirmed or the learning exchange changed state.');
+
+    // Re-read after the write so two near-simultaneous confirmations cannot
+    // leave both completion flags true while the exchange remains ACTIVE.
+    // The status transition is idempotent: either participant may perform it
+    // once both confirmations are visible.
+    let finalStatusChanged = false;
+    const latest = await this.getExchangeRow(id);
+    if (
+      latest.status === 'ACTIVE' &&
+      Boolean(latest.requester_completed) &&
+      Boolean(latest.receiver_completed)
+    ) {
+      const completionResult = await insforge.database
+        .from('exchanges')
+        .update({ status: 'COMPLETED', updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('status', 'ACTIVE')
+        .eq('requester_completed', true)
+        .eq('receiver_completed', true)
+        .select('id,requester_id,receiver_id,requester_skill_id,receiver_skill_id,status,proposal_message,preferred_date,estimated_hours,location_area,requester_completed,receiver_completed,cancellation_reason,cancelled_by_id,created_at,updated_at')
+        .maybeSingle();
+
+      if (completionResult.error) {
+        throw new Error(completionResult.error.message || 'Unable to finalize exchange completion');
+      }
+
+      if (completionResult.data) {
+        data = completionResult.data;
+        finalStatusChanged = true;
+      } else {
+        // Another participant may have finalized the exchange first.
+        const refreshed = await this.getExchangeRow(id);
+        data = refreshed;
+        finalStatusChanged = refreshed.status === 'COMPLETED';
+      }
+    }
 
     const partnerId = uid === Number(e.requester_id) ? Number(e.receiver_id) : Number(e.requester_id);
     await insforge.database.from('notifications').insert({
       user_id: partnerId,
-      type: patch.status === 'COMPLETED' ? 'EXCHANGE_COMPLETED' : 'EXCHANGE_COMPLETION_PENDING',
-      title: patch.status === 'COMPLETED' ? 'Learning exchange completed' : 'Completion confirmed',
-      message: patch.status === 'COMPLETED'
+      type: finalStatusChanged ? 'EXCHANGE_COMPLETED' : 'EXCHANGE_COMPLETION_PENDING',
+      title: finalStatusChanged ? 'Learning exchange completed' : 'Completion confirmed',
+      message: finalStatusChanged
         ? `${appUser.full_name} confirmed the learning session and it is now completed.`
         : `${appUser.full_name} confirmed their side of the learning session.`,
       link: `/exchanges/${id}`,
