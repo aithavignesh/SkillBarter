@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { clearPhoneSession, getCurrentPhoneUser, hasPersistedPhoneSession, requestPhoneOtp, verifyPhoneOtp } from '../services/phoneAuth';
+import { requestEmailOtp, verifyEmailOtp } from '../services/emailOtp';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -10,6 +11,8 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   requestPhoneOtp: (phone: string) => Promise<string>;
   verifyPhoneOtp: (phone: string, otp: string) => Promise<void>;
+  requestEmailOtp: (email: string) => Promise<void>;
+  verifyEmailOtp: (email: string, otp: string) => Promise<void>;
   register: (payload: any) => Promise<void>;
   logout: () => Promise<void>;
   demoSwitchUser: (userId: number) => Promise<void>;
@@ -100,6 +103,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const handleRequestEmailOtp = async (email: string) => {
+    setLoading(true);
+    try { await requestEmailOtp(email); } finally { setLoading(false); }
+  };
+
+  const handleVerifyEmailOtp = async (email: string, otp: string) => {
+    setLoading(true);
+    try {
+      clearPhoneSession();
+      await verifyEmailOtp(email, otp);
+      await refreshUser();
+    } finally { setLoading(false); }
+  };
+
   const logout = async () => {
     try {
       await api.logout();
@@ -120,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, login, requestPhoneOtp: handleRequestPhoneOtp, verifyPhoneOtp: handleVerifyPhoneOtp, register, logout, demoSwitchUser, refreshUser }}>
+    <AuthContext.Provider value={{ currentUser, loading, login, requestPhoneOtp: handleRequestPhoneOtp, verifyPhoneOtp: handleVerifyPhoneOtp, requestEmailOtp: handleRequestEmailOtp, verifyEmailOtp: handleVerifyEmailOtp, register, logout, demoSwitchUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
