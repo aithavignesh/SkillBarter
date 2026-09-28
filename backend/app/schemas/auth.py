@@ -21,6 +21,8 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     full_name: str
+    username: Optional[str] = None
+    phone: Optional[str] = None
     address_display: Optional[str] = "Hyderabad"
     latitude: Optional[float] = 17.4485
     longitude: Optional[float] = 78.3748
