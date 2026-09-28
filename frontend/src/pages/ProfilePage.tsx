@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { trackEvent } from '../services/analytics';
 import { useAuth } from '../context/AuthContext';
 import { PublicProfile, Review } from '../types';
 import { Card } from '../components/ui/Card';
@@ -124,6 +125,10 @@ export const ProfilePage: React.FC = () => {
         category: 'Spam / Inappropriate',
         details: reason,
       });
+      trackEvent('safety_report_submitted', {
+        target_user_id: targetId,
+        category: 'Spam / Inappropriate',
+      });
       alert('Report submitted to community safety team.');
     } catch (e: any) {
       alert(e.message);
@@ -138,9 +143,11 @@ export const ProfilePage: React.FC = () => {
       if (isBlocked) {
         await api.unblockUser(targetId);
         setIsBlocked(false);
+        trackEvent('safety_block_changed', { action: 'unblocked', target_user_id: targetId });
       } else {
         await api.blockUser(targetId);
         setIsBlocked(true);
+        trackEvent('safety_block_changed', { action: 'blocked', target_user_id: targetId });
       }
     } catch (e: any) {
       alert(e.message || `Unable to ${action} this member.`);
