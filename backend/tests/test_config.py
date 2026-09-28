@@ -25,5 +25,6 @@ def test_production_settings_require_strong_secret():
         _env_file=None,
         APP_ENV="production",
         SECRET_KEY="a" * 32,
+        DATABASE_URL="postgresql://test:test@localhost:5432/skillbarter_test",
     )
     assert settings.SECRET_KEY == "a" * 32
