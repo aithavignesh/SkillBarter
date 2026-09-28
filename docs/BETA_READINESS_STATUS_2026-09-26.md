@@ -28,7 +28,9 @@ Date: 27 September 2026
 - The latest main commit includes the profile-avatar upload/cache refresh fixes (`d830c59a7c17b11dfc69a9ccb4bec94f57b1280f`) on 27 September 2026.
 - GitHub currently returns no workflow-run record for the latest main commit, so CI is **not marked green yet**.
 - Vercel deployment contexts have previously reported deployments in progress; deployment success should be verified from the actual commit status before declaring production readiness.
-- Render/FastAPI startup has previously been observed, but database connectivity must be re-verified from the deployed environment before claiming the production backend is fully healthy.
+- Render/FastAPI startup and database initialization have now been re-verified from the deployed environment; the service reached `Application startup complete` and reported that seed data already exists.
+
+- Render `SkillBarter-1` is now live on commit `844a4bf1e8fb0ac3aa4965ef2d2f1b197826610e`; startup completed successfully and the deployed backend confirmed existing seed data after database initialization.
 
 ## Remaining validation that requires the deployed environment
 
