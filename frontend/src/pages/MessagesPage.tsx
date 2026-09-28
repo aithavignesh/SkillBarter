@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BadgeCheck, Crown, MessageSquare, Repeat, Send } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,8 @@ import { Button } from '../components/ui/Button';
 
 export const MessagesPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const requestedPartnerId = Number(searchParams.get('partner'));
   const { lastMessageEvent } = useSocket();
   const [conversations, setConversations] = useState<any[]>([]);
   const [activePartnerId, setActivePartnerId] = useState<number | null>(null);
@@ -30,7 +32,17 @@ export const MessagesPage: React.FC = () => {
       setError('');
       const data = await api.getConversations();
       setConversations(data);
-      if (data.length && !activePartnerId) setActivePartnerId(Number(data[0].partner.id));
+      if (!activePartnerId) {
+        const requested = Number.isInteger(requestedPartnerId) && requestedPartnerId > 0
+          ? data.find((conversation: any) => Number(conversation.partner.id) === requestedPartnerId)
+          : null;
+        if (requested) {
+          setActivePartnerId(Number(requested.partner.id));
+          setMobileChatOpen(true);
+        } else if (data.length) {
+          setActivePartnerId(Number(data[0].partner.id));
+        }
+      }
     } catch (e: any) {
       setError(e?.message || 'Unable to load conversations.');
     } finally {
