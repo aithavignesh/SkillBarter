@@ -203,7 +203,6 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
     username: appUser?.username || '',
     phone: appUser?.phone || phone,
     full_name: appUser?.full_name || 'SkillBarter Member',
-    phone,
     avatar_url: appUser?.avatar_url,
     bio: appUser?.bio,
     trust_score: Number(appUser?.trust_score ?? 0),
