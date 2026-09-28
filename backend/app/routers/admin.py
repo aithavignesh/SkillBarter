@@ -112,9 +112,15 @@ def resolve_report(
     admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    report = db.query(Report).filter(Report.id == report_id).first()
+    # Moderation actions are only valid for pending reports. Requiring the
+    # current state here also makes repeated/stale moderation requests fail
+    # instead of overwriting an existing resolution.
+    report = db.query(Report).filter(
+        Report.id == report_id,
+        Report.status == "PENDING",
+    ).first()
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(status_code=404, detail="Pending report not found")
 
     if admin_note is not None:
         admin_note = admin_note.strip()
