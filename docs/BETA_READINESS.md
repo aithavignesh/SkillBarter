@@ -30,8 +30,9 @@ The current main branch signup flow collects:
 - Mobile number
 - Password
 - Confirm password
+- Mobile OTP verification before account creation
 
-Username is searchable/public profile identity. Email/password is the primary login path. Phone OTP remains a secondary/legacy authentication path and must not be treated as fully linked to the new email/password identity until that linkage is verified.
+Login is now OTP-first: users can sign in with mobile OTP or email OTP. Email/password remains available as a fallback. New users must complete the registration form and verify their mobile number by OTP before the SkillBarter account is created. Phone OTP login is intended for users with an existing SkillBarter profile; the production username/phone migration must be applied before this can be fully certified in production.
 
 The production database migration for `username` and `phone` must be applied and verified separately.
 
