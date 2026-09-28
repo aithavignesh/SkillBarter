@@ -3,6 +3,7 @@ import { insforge } from '../lib/insforge';
 export interface PhoneAuthUser {
   id: number;
   email: string;
+  username?: string;
   full_name: string;
   phone?: string;
   avatar_url?: string;
