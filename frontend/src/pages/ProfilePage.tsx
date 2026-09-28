@@ -237,7 +237,7 @@ export const ProfilePage: React.FC = () => {
               <Button size="sm" onClick={() => setIsProposeOpen(true)} icon={<Repeat className="w-3.5 h-3.5" />}>
                 Start Learning Exchange
               </Button>
-              <Link to="/messages">
+              <Link to={`/messages?partner=${targetId}`}>
                 <Button size="sm" variant="outline" icon={<MessageSquare className="w-3.5 h-3.5" />}>
                   Message Partner
                 </Button>
