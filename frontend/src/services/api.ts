@@ -7,12 +7,20 @@ import { getCurrentPhoneUser } from './phoneAuth';
  */
 class ApiClient {
   private getToken(): string | null { return sessionStorage.getItem('skillbarter_token'); }
-  public setToken(token: string) { sessionStorage.setItem('skillbarter_token', token); }
+  public setToken(token: string) {
+    sessionStorage.setItem('skillbarter_token', token);
+    // Keep both the SDK auth state and its underlying HTTP client aligned.
+    // This guarantees PostgREST requests (for example /rest/v1/users) carry
+    // the same access token immediately after signup/login.
+    try { insforge.setAccessToken(token); } catch {}
+    try { insforge.getHttpClient?.().setAuthToken(token); } catch {}
+  }
   public clearToken() {
     sessionStorage.removeItem('skillbarter_token');
     // Keep the SDK client aligned with browser session storage. This matters
     // when a token expires or a session lookup fails before an explicit logout.
-    try { insforge.setAccessToken(''); } catch {}
+    try { insforge.setAccessToken(null); } catch {}
+    try { insforge.getHttpClient?.().setAuthToken(null); } catch {}
   }
 
   private async getAppUser() {
@@ -137,10 +145,7 @@ class ApiClient {
     const { data, error } = await insforge.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message || 'Invalid credentials');
     if (!data?.user) throw new Error('Login succeeded but no user was returned.');
-    if (data.accessToken) {
-      this.setToken(data.accessToken);
-      try { insforge.setAccessToken(data.accessToken); } catch {}
-    }
+    if (data.accessToken) this.setToken(data.accessToken);
     const appUser = await this.syncAppUser(data.user, data.user?.profile ?? {});
     const user = this.authUserToLegacyUser(data.user, appUser);
     return { access_token: data.accessToken ?? '', user_id: user.id, email: user.email, full_name: user.full_name, is_admin: user.is_admin };
@@ -195,10 +200,7 @@ class ApiClient {
       }
     }
 
-    if (accessToken) {
-      this.setToken(accessToken);
-      try { insforge.setAccessToken(accessToken); } catch {}
-    }
+    if (accessToken) this.setToken(accessToken);
 
     const profile = {
       nickname: payload.full_name,
