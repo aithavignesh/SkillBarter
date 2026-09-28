@@ -973,15 +973,21 @@ class ApiClient {
     }
 
     const partnerId = uid === Number(e.requester_id) ? Number(e.receiver_id) : Number(e.requester_id);
-    await insforge.database.from('notifications').insert({
-      user_id: partnerId,
-      type: finalStatusChanged ? 'EXCHANGE_COMPLETED' : 'EXCHANGE_COMPLETION_PENDING',
-      title: finalStatusChanged ? 'Learning exchange completed' : 'Completion confirmed',
-      message: finalStatusChanged
-        ? `${appUser.full_name} confirmed the learning session and it is now completed.`
-        : `${appUser.full_name} confirmed their side of the learning session.`,
-      link: `/exchanges/${id}`,
-    });
+
+    // The participant who wins the final status transition sends the
+    // completion notification. If the other participant observes that the
+    // exchange was already finalized, do not emit a duplicate notification.
+    if (finalStatusChanged || data.status !== 'COMPLETED') {
+      await insforge.database.from('notifications').insert({
+        user_id: partnerId,
+        type: finalStatusChanged ? 'EXCHANGE_COMPLETED' : 'EXCHANGE_COMPLETION_PENDING',
+        title: finalStatusChanged ? 'Learning exchange completed' : 'Completion confirmed',
+        message: finalStatusChanged
+          ? `${appUser.full_name} confirmed the learning session and it is now completed.`
+          : `${appUser.full_name} confirmed their side of the learning session.`,
+        link: `/exchanges/${id}`,
+      });
+    }
     return this.serializeExchange(data, uid);
   }
 
