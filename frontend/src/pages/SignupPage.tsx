@@ -4,13 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Repeat, Lock, Mail, User, ArrowRight } from 'lucide-react';
+import { Repeat, Lock, Mail, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export const SignupPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { register, loading } = useAuth();
   const navigate = useNavigate();
@@ -70,133 +72,93 @@ export const SignupPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center p-4 bg-slate-50">
-      <div className="w-full max-w-lg space-y-6">
-        <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-2 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
-              <Repeat className="w-5 h-5" />
-            </div>
+    <div className="signup-page min-h-[85vh] bg-[#f7f7f5] px-5 py-12 sm:px-8 sm:py-16">
+      <div className="mx-auto w-full max-w-[560px]">
+        <header className="text-center">
+          <Link to="/" className="signup-brand inline-flex items-center gap-2" aria-label="SkillBarter home">
+            <span className="flex h-10 w-10 items-center justify-center bg-[#17233b] text-white">
+              <Repeat className="h-5 w-5" />
+            </span>
+            <span className="text-[18px] font-bold tracking-[-0.04em] text-[#17233b]">Skill<span className="text-[#d31d24]">Barter</span></span>
           </Link>
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Create your SkillBarter account
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Create your account first. We’ll guide you through a short learning profile next.
-          </p>
+          <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.2em] text-[#d31d24]">Create your SkillBarter account</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] text-[#17233b] sm:text-4xl">Start with the basics.</h1>
+          <p className="mx-auto mt-3 max-w-md text-[13px] leading-6 text-[#707884]">Your learning profile comes next.</p>
+        </header>
+
+        <div className="signup-progress mt-8 flex items-center justify-center gap-3 text-[10px] font-bold tracking-[0.14em]">
+          <span className="text-[#d31d24]">01 ACCOUNT</span>
+          <span aria-hidden="true" className="h-px w-16 bg-[#d31d24]/35 sm:w-24" />
+          <span className="text-[#9aa1ac]">02 PROFILE</span>
         </div>
 
-        <Card className="p-6">
-          <form onSubmit={handleSignup} className="space-y-4">
+        <Card className="signup-card mt-8 p-5 sm:p-8">
+          <div className="mb-6 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
+            <span className="h-2 w-2 bg-[#d31d24]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#17233b]">Your account</span>
+          </div>
+
+          <form onSubmit={handleSignup} className="space-y-5">
             {error && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+              <div role="alert" className="border border-[#f1c8ca] bg-[#fff7f7] px-3 py-2.5 text-xs text-[#8f1a20]">
                 {error}
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Ramesh Kumar"
-                    className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ramesh@example.com"
-                    className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
+            <div>
+              <label htmlFor="signup-full-name" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Full Name</label>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                <input id="signup-full-name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Ramesh Kumar" className="signup-input w-full pl-9 pr-3" required />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="signup-email" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Email Address</label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                <input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ramesh@example.com" className="signup-input w-full pl-9 pr-3" required />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="signup-password" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Password</label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                <input id="signup-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 8 characters" className="signup-input w-full pl-9 pr-11" required minLength={8} />
+                <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="signup-password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+              </div>
+              <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">Use at least 8 characters.</p>
+            </div>
+
+            <div>
+              <label htmlFor="signup-confirm-password" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Confirm Password</label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                <input id="signup-confirm-password" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" className="signup-input w-full pl-9 pr-11" required minLength={8} />
+                <button type="button" onClick={() => setShowConfirmPassword((visible) => !visible)} className="signup-password-toggle" aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}>{showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+              </div>
+            </div>
+
+            <div className="signup-next-step flex items-start gap-3">
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-[#d31d24]" />
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 8 characters"
-                    className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                    minLength={8}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter your password"
-                    className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                    minLength={8}
-                  />
-                </div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#17233b]">Next</p>
+                <p className="mt-1 text-[13px] font-semibold text-[#17233b]">Build your learning profile <span className="text-[#d31d24]">→</span></p>
+                <p className="mt-1.5 text-[11px] leading-5 text-[#707884]">After creating your account, we’ll ask what you can teach, what you want to learn, your area, and your learning preferences.</p>
               </div>
             </div>
 
-            <div className="border-t border-slate-100 pt-2">
-              <div className="flex items-start gap-3 bg-[#fff7f7] p-3 border border-[#f1c8ca]">
-                <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-[#d31d24]" />
-                <div>
-                  <p className="text-xs font-bold text-[#8f1a20]">Next: build your learning profile</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500">After creating your account, we’ll ask what you can teach, what you want to learn, your area, and your learning preferences.</p>
-                </div>
-              </div>
-            </div>
+            <p className="text-[11px] leading-5 text-[#8a92a0]">Your learning profile is completed in the next step. You can change your preferences later, and exact GPS coordinates are never shown publicly.</p>
 
-            <div className="text-[11px] text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-              Your learning profile is completed in the next step. You can change your preferences later, and exact GPS coordinates are never shown publicly.
-            </div>
-
-            <Button
-              type="submit"
-              loading={loading}
-              className="w-full"
-              icon={<ArrowRight className="w-4 h-4" />}
-            >
-              Continue to Build My Learning Profile
+            <Button type="submit" loading={loading} className="signup-submit w-full" icon={<ArrowRight className="h-4 w-4" />}>
+              Continue to learning profile
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-500">
+          <div className="mt-7 border-t border-[#edf0f2] pt-5 text-center text-xs text-[#8a92a0]">
             Already have an account?{' '}
-            <Link to="/login" className="text-emerald-600 font-semibold hover:underline">
-              Log in here
-            </Link>
+            <Link to="/login" className="font-semibold text-[#d31d24] hover:text-[#b8171d] hover:underline">Log in</Link>
           </div>
         </Card>
       </div>

@@ -60,24 +60,24 @@ export const ExchangeReviewModal: React.FC<ExchangeReviewModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => { if (!loading) onClose(); }}
       title="Review your learning session"
       subtitle={`Share feedback about your session with ${partner.full_name}`}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="flex items-center gap-3 border border-[#e1e4e8] bg-[#f7f8f7] p-3">
+        <div className="flex min-w-0 items-center gap-3 border border-[#e1e4e8] bg-[#f7f8f7] p-3">
           <img
             src={partner.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
             alt={partner.full_name}
             className="h-10 w-10 rounded-full border border-[#dfe3e8] object-cover"
           />
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-bold text-slate-900">{partner.full_name}</h4>
-            <p className="text-[11px] text-slate-500">{partner.headline || 'Student & Peer Learner'}</p>
+            <h4 className="break-words text-xs font-bold text-slate-900">{partner.full_name}</h4>
+            <p className="break-words text-[11px] text-slate-500">{partner.headline || 'Student & Peer Learner'}</p>
           </div>
           <span className="border border-red-100 bg-[#fff5f5] px-2.5 py-1 text-[10px] font-bold text-[#d31d24]">
-            ★ {Math.round(partner.trust_score)}
+            ★ {Math.round(partner.trust_score || 0)}
           </span>
         </div>
 
@@ -86,7 +86,7 @@ export const ExchangeReviewModal: React.FC<ExchangeReviewModalProps> = ({
             How was the learning session?
           </label>
           <div className="flex justify-center mb-1">
-            <RatingStars value={rating} onChange={setRating} size="lg" />
+            <RatingStars value={rating} onChange={setRating} size="lg" ariaLabel="Overall session rating" />
           </div>
           <p className="text-[11px] text-slate-500">Rate the session from 1 to 5 stars</p>
         </div>
@@ -96,26 +96,28 @@ export const ExchangeReviewModal: React.FC<ExchangeReviewModalProps> = ({
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Was your learning partner reliable?
             </label>
-            <RatingStars value={reliabilityScore} onChange={setReliabilityScore} size="sm" showScore />
+            <RatingStars value={reliabilityScore} onChange={setReliabilityScore} size="sm" showScore ariaLabel="Learning partner reliability rating" />
           </div>
 
           <div className="border border-[#e1e4e8] bg-white p-3">
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Was the learning useful and as expected?
             </label>
-            <RatingStars value={skillQualityScore} onChange={setSkillQualityScore} size="sm" showScore />
+            <RatingStars value={skillQualityScore} onChange={setSkillQualityScore} size="sm" showScore ariaLabel="Learning quality rating" />
           </div>
         </div>
 
-        <div className="flex items-center justify-between border border-[#e1e4e8] bg-white p-3">
-          <span className="text-xs font-semibold text-slate-700">
+        <fieldset className="flex flex-wrap items-center justify-between gap-3 border border-[#e1e4e8] bg-white p-3">
+          <legend className="sr-only">Would you learn with this partner again?</legend>
+          <span aria-hidden="true" className="text-xs font-semibold text-slate-700">
             Would you learn with this partner again?
           </span>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setWouldExchangeAgain(true)}
-              className={`px-3 py-1 text-xs rounded-lg font-medium flex items-center gap-1 transition-all ${
+              aria-pressed={wouldExchangeAgain}
+              className={`min-h-9 px-3 py-1 text-xs rounded-lg font-medium flex items-center gap-1 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24] ${
                 wouldExchangeAgain
                   ? 'bg-[#d31d24] text-white'
                   : 'bg-[#f7f8f7] text-slate-600 hover:bg-[#eef0f2]'
@@ -126,7 +128,8 @@ export const ExchangeReviewModal: React.FC<ExchangeReviewModalProps> = ({
             <button
               type="button"
               onClick={() => setWouldExchangeAgain(false)}
-              className={`px-3 py-1 text-xs rounded-lg font-medium flex items-center gap-1 transition-all ${
+              aria-pressed={!wouldExchangeAgain}
+              className={`min-h-9 px-3 py-1 text-xs rounded-lg font-medium flex items-center gap-1 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24] ${
                 !wouldExchangeAgain
                   ? 'bg-[#17233b] text-white'
                   : 'bg-[#f7f8f7] text-slate-600 hover:bg-[#eef0f2]'
@@ -135,7 +138,7 @@ export const ExchangeReviewModal: React.FC<ExchangeReviewModalProps> = ({
               <ThumbsDown className="w-3.5 h-3.5" /> No
             </button>
           </div>
-        </div>
+        </fieldset>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -146,25 +149,25 @@ export const ExchangeReviewModal: React.FC<ExchangeReviewModalProps> = ({
             placeholder="What helped you learn? Share a quick note for future learners."
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            className="w-full border border-[#dfe3e8] p-3 text-xs text-[#17233b] outline-none placeholder:text-slate-400 focus:border-[#d31d24]"
+            className="review-text-input w-full border border-[#dfe3e8] p-3 text-xs text-[#17233b] outline-none placeholder:text-slate-400 focus:border-[#d31d24]"
           />
         </div>
 
         {error && (
-          <p className="border border-red-100 bg-[#fff5f5] p-2.5 text-xs text-[#b8171d]">
+        <p role="alert" className="break-words border border-red-100 bg-[#fff5f5] p-2.5 text-xs text-[#b8171d]">
             {error}
           </p>
         )}
 
-        <div className="flex items-center justify-between gap-2 border-t border-[#e1e4e8] pt-4">
-          <p className="text-[11px] text-slate-500">
+        <div className="flex flex-col gap-3 border-t border-[#e1e4e8] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[11px] leading-5 text-slate-600">
             Your review helps build trust for future learning matches.
           </p>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={loading}>
               Skip for now
             </Button>
-            <Button type="submit" loading={loading} icon={<CheckCircle className="w-4 h-4" />}>
+          <Button type="submit" size="sm" loading={loading} icon={<CheckCircle className="w-4 h-4" />}>
               Submit Review
             </Button>
           </div>

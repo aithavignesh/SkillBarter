@@ -26,8 +26,11 @@ export const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
+  const [stepError, setStepError] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   const goToStep = (nextStep: number) => {
+    setStepError('');
     trackEvent('onboarding_step_viewed', { step: nextStep });
     setStep(nextStep);
   };
@@ -60,11 +63,12 @@ export const OnboardingPage: React.FC = () => {
   };
 
   const handleCompleteOnboarding = async () => {
-    if (!locationName.trim()) { goToStep(1); return; }
-    if (offeredSkills.length === 0) { goToStep(2); return; }
-    if (neededSkills.length === 0) { goToStep(3); return; }
+    if (!locationName.trim()) { setStep(1); setStepError('Add your campus or area to continue.'); return; }
+    if (offeredSkills.length === 0) { setStep(2); setStepError('Add at least one skill you can teach to continue.'); return; }
+    if (neededSkills.length === 0) { setStep(3); setStepError('Add at least one skill you want to learn to continue.'); return; }
     try {
       setLoading(true);
+      setSubmitError('');
       await api.updateMe({
         address_display: locationName,
         headline: headline || `${neededSkills[0] || 'Skill'} learner • ${offeredSkills[0] || 'Skill'} contributor`,
@@ -102,7 +106,7 @@ export const OnboardingPage: React.FC = () => {
       navigate('/matches');
     } catch (err) {
       console.error(err);
-      navigate('/feed');
+      setSubmitError(err instanceof Error ? err.message : 'Unable to save your learning profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -116,14 +120,15 @@ export const OnboardingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-[85vh] bg-slate-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="onboarding-page min-h-[85vh] bg-slate-50 py-10 px-4">
+      <div className="mx-auto max-w-2xl">
         {/* Step Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             {stepTitles.map((s) => (
               <div
                 key={s.num}
+                aria-current={step === s.num ? 'step' : undefined}
                 className={`flex flex-col items-center flex-1 ${
                   step >= s.num ? 'text-emerald-700 font-bold' : 'text-slate-400'
                 }`}
@@ -143,16 +148,17 @@ export const OnboardingPage: React.FC = () => {
               </div>
             ))}
           </div>
-          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label="Onboarding progress" aria-valuemin={1} aria-valuemax={4} aria-valuenow={step}>
             <div
-              className="bg-emerald-600 h-full transition-all duration-300 rounded-full"
+              className="h-full rounded-full bg-emerald-600 transition-[width] duration-300 motion-reduce:transition-none"
               style={{ width: `${(step / 4) * 100}%` }}
             />
           </div>
         </div>
 
         {/* Step Content Card */}
-        <Card className="p-8">
+        <Card className="p-5 sm:p-8">
+          <div key={step} className="onboarding-step-content">
           {/* STEP 1: Location */}
           {step === 1 && (
             <div className="space-y-6">
@@ -171,11 +177,15 @@ export const OnboardingPage: React.FC = () => {
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
+                    id="onboarding-location"
                     type="text"
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
                     placeholder="e.g. Gachibowli, Hyderabad"
-                    className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    aria-required="true"
+                    aria-invalid={step === 1 && Boolean(stepError)}
+                    aria-describedby={step === 1 && stepError ? 'onboarding-step-error' : undefined}
+                    className="onboarding-text-input w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -205,14 +215,17 @@ export const OnboardingPage: React.FC = () => {
 
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
+                  aria-label="Skill you can teach"
+                  aria-invalid={step === 2 && Boolean(stepError)}
+                  aria-describedby={step === 2 && stepError ? 'onboarding-step-error' : undefined}
                   type="text"
                   placeholder="e.g. React, Python, Figma, Excel, Public Speaking..."
                   value={newOfferSkill}
                   onChange={(e) => setNewOfferSkill(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOffer())}
-                  className="w-full min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="onboarding-text-input w-full min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <Button type="button" size="sm" onClick={handleAddOffer} icon={<Plus className="w-4 h-4" />}>
+                <Button type="button" size="sm" onClick={handleAddOffer} disabled={!newOfferSkill.trim()} icon={<Plus className="w-4 h-4" />}>
                   Add Skill
                 </Button>
               </div>
@@ -226,14 +239,15 @@ export const OnboardingPage: React.FC = () => {
                   {offeredSkills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200"
+                      className="inline-flex max-w-full min-w-0 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200"
                     >
                       <Sparkles className="w-3 h-3 text-emerald-600" />
-                      {skill}
+                      <span className="min-w-0 break-words">{skill}</span>
                       <button
                         type="button"
                         onClick={() => setOfferedSkills(offeredSkills.filter(s => s !== skill))}
-                        className="hover:text-rose-600 ml-1"
+                        className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]"
+                        aria-label={`Remove ${skill}`}
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -250,7 +264,8 @@ export const OnboardingPage: React.FC = () => {
                       key={s}
                       type="button"
                       onClick={() => !offeredSkills.includes(s) && setOfferedSkills([...offeredSkills, s])}
-                      className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition-colors"
+                      aria-pressed={offeredSkills.includes(s)}
+                      className="min-h-9 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]"
                     >
                       + {s}
                     </button>
@@ -273,14 +288,17 @@ export const OnboardingPage: React.FC = () => {
 
               <div className="flex gap-2">
                 <input
+                  aria-label="Skill you want to learn"
+                  aria-invalid={step === 3 && Boolean(stepError)}
+                  aria-describedby={step === 3 && stepError ? 'onboarding-step-error' : undefined}
                   type="text"
                   placeholder="e.g. Machine Learning, DSA, UI Design, Resume Review..."
                   value={newNeedSkill}
                   onChange={(e) => setNewNeedSkill(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNeed())}
-                  className="flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="onboarding-text-input min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <Button type="button" size="sm" onClick={handleAddNeed} icon={<Plus className="w-4 h-4" />}>
+                <Button type="button" size="sm" onClick={handleAddNeed} disabled={!newNeedSkill.trim()} icon={<Plus className="w-4 h-4" />}>
                   Add
                 </Button>
               </div>
@@ -294,14 +312,15 @@ export const OnboardingPage: React.FC = () => {
                   {neededSkills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-200"
+                      className="inline-flex max-w-full min-w-0 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-200"
                     >
                       <HelpCircle className="w-3 h-3 text-teal-600" />
-                      {skill}
+                      <span className="min-w-0 break-words">{skill}</span>
                       <button
                         type="button"
                         onClick={() => setNeededSkills(neededSkills.filter(s => s !== skill))}
-                        className="hover:text-rose-600 ml-1"
+                        className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]"
+                        aria-label={`Remove ${skill}`}
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -328,31 +347,34 @@ export const OnboardingPage: React.FC = () => {
                     { id: 'EXCHANGE', label: 'Learn & Teach', desc: 'Exchange skills with another student' },
                     { id: 'TEACH', label: 'Teach & Share', desc: 'Help someone learn what you know' },
                     { id: 'MEET', label: 'Build My Network', desc: 'Meet peers around shared interests' },
-                  ].map(item => <button key={item.id} type="button" onClick={() => setPrimaryIntent(item.id)} className={`rounded-xl border p-3 text-left transition-all ${primaryIntent === item.id ? 'border-emerald-500 bg-emerald-50/70' : 'border-slate-200 bg-white hover:border-slate-300'}`}><p className="text-xs font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10px] text-slate-500">{item.desc}</p></button>)}
+                  ].map(item => <button key={item.id} type="button" aria-pressed={primaryIntent === item.id} onClick={() => setPrimaryIntent(item.id)} className={`rounded-xl border p-3 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${primaryIntent === item.id ? 'border-emerald-500 bg-emerald-50/70' : 'border-slate-200 bg-white hover:border-slate-300'}`}><p className="text-xs font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10px] text-slate-500">{item.desc}</p></button>)}
                 </div>
               </div>
               <div>
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">How far should we search?</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {[2, 5, 10, 25].map(r => <button key={r} type="button" onClick={() => setExchangeRadius(r)} className={`rounded-xl border p-2.5 text-xs font-bold transition-all ${exchangeRadius === r ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>{r} km</button>)}
+                  {[2, 5, 10, 25].map(r => <button key={r} type="button" aria-pressed={exchangeRadius === r} onClick={() => setExchangeRadius(r)} className={`min-h-10 rounded-xl border p-2.5 text-xs font-bold transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${exchangeRadius === r ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>{r} km</button>)}
                 </div>
               </div>
               <div className="border border-slate-200 bg-slate-50 p-4 rounded-xl">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Your profile is ready</p>
-                <p className="mt-1 text-sm font-bold text-slate-900">{currentUser?.full_name} · {locationName}</p>
-                <p className="mt-2 text-[11px] leading-5 text-slate-500">Teaching: <span className="font-semibold text-emerald-700">{offeredSkills.join(', ')}</span></p>
-                <p className="text-[11px] leading-5 text-slate-500">Learning: <span className="font-semibold text-teal-700">{neededSkills.join(', ')}</span></p>
+                <p className="mt-1 break-words text-sm font-bold text-slate-900">{currentUser?.full_name} · {locationName}</p>
+                <p className="break-words mt-2 text-[11px] leading-5 text-slate-500">Teaching: <span className="font-semibold text-emerald-700">{offeredSkills.join(', ')}</span></p>
+                <p className="break-words text-[11px] leading-5 text-slate-500">Learning: <span className="font-semibold text-teal-700">{neededSkills.join(', ')}</span></p>
               </div>
             </div>
           )}
+          </div>
 
           {/* Navigation Controls */}
-          <div className="flex flex-col-reverse gap-3 pt-6 mt-6 border-t border-slate-100 sm:flex-row sm:items-center sm:justify-between">
+          {(stepError || submitError) && <p id="onboarding-step-error" role="alert" className="mt-5 break-words border border-[#f1c8ca] bg-[#fff7f7] px-3 py-2.5 text-xs leading-5 text-[#8f1a20]">{stepError || submitError}</p>}
+          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
             {step > 1 ? (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={loading}
                 onClick={() => goToStep(step - 1)}
                 icon={<ArrowLeft className="w-4 h-4" />}
               >
@@ -364,10 +386,11 @@ export const OnboardingPage: React.FC = () => {
               <Button
                 type="button"
                 size="sm"
+                disabled={loading}
                 onClick={() => {
-                  if (step === 1 && !locationName.trim()) return;
-                  if (step === 2 && offeredSkills.length === 0) return;
-                  if (step === 3 && neededSkills.length === 0) return;
+                  if (step === 1 && !locationName.trim()) { setStepError('Add your campus or area to continue.'); return; }
+                  if (step === 2 && offeredSkills.length === 0) { setStepError('Add at least one skill you can teach to continue.'); return; }
+                  if (step === 3 && neededSkills.length === 0) { setStepError('Add at least one skill you want to learn to continue.'); return; }
                   goToStep(step + 1);
                 }}
                 icon={<ArrowRight className="w-4 h-4" />}
@@ -379,6 +402,7 @@ export const OnboardingPage: React.FC = () => {
                 type="button"
                 size="sm"
                 loading={loading}
+                disabled={loading}
                 onClick={handleCompleteOnboarding}
                 icon={<CheckCircle2 className="w-4 h-4" />}
               >

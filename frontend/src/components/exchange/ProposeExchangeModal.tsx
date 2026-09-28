@@ -85,6 +85,20 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="exchange-progress" aria-label="Exchange progress">
+          {[
+            { step: '01', label: 'Choose', active: true },
+            { step: '02', label: 'Propose', active: true },
+            { step: '03', label: 'Agree', active: false },
+            { step: '04', label: 'Start', active: false },
+          ].map(({ step, label, active }) => (
+            <div key={step} className={`exchange-progress__step ${active ? 'exchange-progress__step--active' : ''}`}>
+              <span className="exchange-progress__number">{step}</span>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+
         {/* Partner preview card */}
         <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
           <img
