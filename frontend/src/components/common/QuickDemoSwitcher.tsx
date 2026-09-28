@@ -19,9 +19,9 @@ export const QuickDemoSwitcher: React.FC = () => {
       <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-300 p-2 text-slate-800 transition-all duration-200">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2.5 px-3 py-1.5 text-xs font-semibold hover:text-emerald-700 transition-colors focus:outline-none"
+          className="flex items-center gap-2.5 px-3 py-1.5 text-xs font-semibold hover:text-emerald-700 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]"
         >
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
           <Users className="w-4 h-4 text-emerald-600" />
           <span>Demo Persona: <strong className="text-slate-900">{currentUser ? currentUser.full_name : 'Guest'}</strong></span>
           {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronUp className="w-3.5 h-3.5 text-slate-400" />}

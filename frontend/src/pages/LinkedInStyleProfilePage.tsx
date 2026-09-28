@@ -9,7 +9,7 @@ import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModa
 import { Modal } from '../components/ui/Modal';
 import { getMonetizationState } from '../services/monetization';
 import {
-  BadgeCheck, Camera, CheckCircle2, Crown, Edit3, ExternalLink, GraduationCap,
+  BadgeCheck, Camera, CheckCircle2, Crown, Edit3, Eye, ExternalLink, GraduationCap,
   Loader2, MapPin, MessageSquare, Plus, Repeat, Rocket, Save, ShieldCheck,
   Sparkles, Star, Trash2, UserPlus, Users, Briefcase, X, Upload, ImagePlus, Trash2 as RemovePhoto, Flag, ShieldOff
 } from 'lucide-react';
@@ -51,6 +51,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
   const firstPhotoMenuItemRef = useRef<HTMLButtonElement>(null);
   const [photoActionsOpen, setPhotoActionsOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [cropPreviewUrl, setCropPreviewUrl] = useState('');
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [cropZoom, setCropZoom] = useState(1);
@@ -223,6 +224,11 @@ export const LinkedInStyleProfilePage: React.FC = () => {
   const choosePhoto = () => {
     closePhotoMenu();
     avatarInput.current?.click();
+  };
+
+  const viewPhoto = () => {
+    closePhotoMenu();
+    setImageViewerOpen(true);
   };
 
   const handlePhotoSelected = (file?: File) => {
@@ -658,12 +664,29 @@ export const LinkedInStyleProfilePage: React.FC = () => {
         style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
         className="w-56 border border-[#e1e4e8] bg-white p-1.5 shadow-[0_10px_24px_rgba(23,35,59,.15)] motion-safe:animate-[photoMenuIn_0.15s_ease-out]"
       >
-        <button ref={firstPhotoMenuItemRef} type="button" role="menuitem" onClick={choosePhoto} className="flex min-h-10 w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-[#17233b] transition-colors hover:bg-[#f7f7f5] focus-visible:bg-[#f7f7f5] focus-visible:outline-none"><Upload className="h-4 w-4 text-[#d31d24]" />Upload from device</button>
+        {profile.avatar_url && !avatarLoadError && <button ref={firstPhotoMenuItemRef} type="button" role="menuitem" onClick={viewPhoto} className="flex min-h-10 w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-[#17233b] transition-colors hover:bg-[#f7f7f5] focus-visible:bg-[#f7f7f5] focus-visible:outline-none"><Eye className="h-4 w-4 text-[#697386]" />View profile picture</button>}
+        <button ref={profile.avatar_url && !avatarLoadError ? undefined : firstPhotoMenuItemRef} type="button" role="menuitem" onClick={choosePhoto} className="flex min-h-10 w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-[#17233b] transition-colors hover:bg-[#f7f7f5] focus-visible:bg-[#f7f7f5] focus-visible:outline-none"><Upload className="h-4 w-4 text-[#d31d24]" />Upload from device</button>
         <button type="button" role="menuitem" onClick={choosePhoto} className="flex min-h-10 w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-[#17233b] transition-colors hover:bg-[#f7f7f5] focus-visible:bg-[#f7f7f5] focus-visible:outline-none"><ImagePlus className="h-4 w-4 text-[#d31d24]" />Choose another image</button>
         {profile.avatar_url && <button type="button" role="menuitem" onClick={() => void removePhoto()} className="flex min-h-10 w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-semibold text-[#b8171d] transition-colors hover:bg-[#fff5f5] focus-visible:bg-[#fff5f5] focus-visible:outline-none"><RemovePhoto className="h-4 w-4" />Remove photo</button>}
       </div>,
       document.body
     )}
+    <Modal
+      isOpen={imageViewerOpen && Boolean(profile.avatar_url)}
+      onClose={() => setImageViewerOpen(false)}
+      title="Profile picture"
+      maxWidth="lg"
+    >
+      {profile.avatar_url && (
+        <div className="flex min-h-0 min-w-0 items-center justify-center">
+          <img
+            src={profile.avatar_url}
+            alt={`${profile.full_name || 'Member'} profile picture`}
+            className="max-h-[min(70dvh,640px)] max-w-full object-contain"
+          />
+        </div>
+      )}
+    </Modal>
   </div>;
 };
 

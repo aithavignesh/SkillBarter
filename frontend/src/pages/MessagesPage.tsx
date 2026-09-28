@@ -161,8 +161,8 @@ export const MessagesPage: React.FC = () => {
                     />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
-                        <span className="block truncate text-xs font-bold text-[#17233b]">
-                          {conversation.partner.full_name}
+                        <span className="block break-words text-xs font-bold text-[#17233b]">
+                          {conversation.partner.full_name || 'Learning partner'}
                         </span>
                         {Number(conversation.unread_count || 0) > 0 && (
                           <span className="min-w-5 rounded-full bg-[#d31d24] px-1.5 py-0.5 text-center text-[9px] font-bold text-white">
@@ -170,7 +170,7 @@ export const MessagesPage: React.FC = () => {
                           </span>
                         )}
                       </span>
-                      <span className="mt-1 block truncate text-[11px] text-slate-500">
+                      <span className="mt-1 line-clamp-2 break-words text-[11px] text-slate-500">
                         {conversation.last_message?.content || 'Start a conversation'}
                       </span>
                       {conversation.active_exchange_id && (

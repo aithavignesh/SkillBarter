@@ -418,7 +418,7 @@ export const FeedPage: React.FC = () => {
           <Card className="p-4 bg-gradient-to-br from-white to-emerald-50/30">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-[#d31d24] animate-pulse" />
+                <Sparkles className="w-4 h-4 text-[#d31d24]" />
                 <h3 className="text-xs font-bold text-slate-900">People Who Match Your Learning Goals</h3>
               </div>
               <Link to="/matches" className="text-[11px] font-semibold text-emerald-700 hover:underline">
@@ -441,7 +441,7 @@ export const FeedPage: React.FC = () => {
                           alt={match.candidate?.full_name}
                           className="w-7 h-7 rounded-full object-cover"
                         />
-                        <span className="text-xs font-bold text-slate-900 truncate">
+                        <span className="min-w-0 break-words text-xs font-bold text-slate-900">
                           {match.candidate?.full_name}
                         </span>
                       </div>
@@ -451,7 +451,7 @@ export const FeedPage: React.FC = () => {
                     </div>
 
                     <div className="text-[11px] text-slate-600 mb-2">
-                      <p className="truncate">
+                      <p className="break-words">
                         <strong>They can teach:</strong> {match.they_offer?.join(', ') || 'Skills'}
                       </p>
                       <p className="text-emerald-700 font-semibold"><span className="block">{match.distance_display}</span><span className="block text-slate-500 mt-0.5">Skill match • peer learning</span></p>

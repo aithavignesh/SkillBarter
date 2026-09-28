@@ -667,6 +667,11 @@ html:not(.dark) .feed-activation-panel__description {
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
 
+.discover-person-card [class*="border"][class*="px-2"] {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .discover-person-card:hover,
 .discover-person-card:focus-visible,
 .discover-person-card--expanded,
@@ -1304,14 +1309,6 @@ html:not(.dark) .feed-activation-panel__description {
     grid-template-columns: 1fr;
   }
 
-  @media (min-width: 768px) and (max-width: 1199px) {
-    .feature-card--active {
-      inset: -.75rem;
-      min-height: 16rem;
-      transform: scale(1.01) translateY(-3px);
-    }
-  }
-
   .feature-grid__slot {
     min-height: 0;
   }
@@ -1321,6 +1318,14 @@ html:not(.dark) .feed-activation-panel__description {
     inset: auto;
     min-height: 0;
     transform: translateY(-4px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .feature-card--active {
+    inset: -.75rem;
+    min-height: 16rem;
+    transform: scale(1.01) translateY(-3px);
   }
 }
 

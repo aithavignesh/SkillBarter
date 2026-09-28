@@ -134,8 +134,8 @@ export const ConnectionsPage: React.FC = () => {
                   <div className="flex min-w-0 items-center gap-3">
                     <Link to={`/profile/${u.id}`} aria-label={`View ${u.full_name || 'learning peer'}’s profile`}><img src={avatar(u.avatar_url)} alt="" className="h-11 w-11 shrink-0 rounded-full border border-[#dfe3e8] object-cover" /></Link>
                     <div className="min-w-0">
-                      <Link to={`/profile/${u.id}`} className="truncate text-sm font-bold text-[#17233b] hover:text-[#d31d24]">{u.full_name || 'Learning peer'}</Link>
-                      <p className="truncate text-xs text-slate-500">{u.headline || 'Student & Peer Learner'}</p>
+                      <Link to={`/profile/${u.id}`} className="break-words text-sm font-bold text-[#17233b] hover:text-[#d31d24]">{u.full_name || 'Learning peer'}</Link>
+                      <p className="break-words text-xs text-slate-500">{u.headline || 'Student & Peer Learner'}</p>
                     </div>
                   </div>
                   <div className="text-xs text-slate-500"><p className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-[#d31d24]" />{u.distance_display || u.address_display || 'Location not set'}</p><p className="mt-1 font-semibold text-slate-700">★ {Math.round(Number(u.trust_score) || 0)} trust</p></div>

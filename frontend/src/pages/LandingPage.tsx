@@ -87,6 +87,8 @@ const InteractiveInfoBlock: React.FC<{
     <div
       className={`${dark ? 'landing-outcome-block' : 'landing-step-block'} ${className} ${active ? 'landing-info-block--active' : ''}`}
       tabIndex={0}
+      role="button"
+      aria-expanded={active}
       onMouseEnter={() => setActive(true)}
       onMouseLeave={() => setActive(false)}
       onFocus={() => setActive(true)}
@@ -117,7 +119,7 @@ const InteractiveInfoBlock: React.FC<{
 };
 
 const PathwaySection: React.FC = () => (
-  <div className="border-b border-[#dedfdd]">
+  <div id="how-it-works" className="scroll-mt-20 border-b border-[#dedfdd]">
     <section className="bg-white">
       <div className="mx-auto grid max-w-7xl grid-cols-1 px-5 sm:px-8 lg:grid-cols-3 lg:px-10">
         <InteractiveInfoBlock label="01" title="Tell us what you know" text="Add the skills you can teach and the skills you want to learn." details={[
@@ -305,14 +307,14 @@ export const LandingPage: React.FC = () => (
 
     <PathwaySection />
 
-    <section id="explore" className="border-b border-[#dedfdd] bg-white py-16 sm:py-20">
+    <section id="explore" className="scroll-mt-20 border-b border-[#dedfdd] bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-7xl min-w-0 px-5 sm:px-8 lg:px-10">
         <div className="max-w-2xl"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">What can you do here?</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Start with the skill you need next.</h2><p className="mt-4 text-[13px] leading-6 text-[#707884]">Choose a career-relevant learning goal — development, AI/data, design, communication or interview preparation. Then add one skill you can teach so your profile can find complementary peers.</p></div>
         <ExploreTree />
       </div>
     </section>
 
-    <section className="bg-[#f7f7f5] py-16 sm:py-20">
+    <section id="why-skillbarter" className="scroll-mt-20 bg-[#f7f7f5] py-16 sm:py-20">
       <div className="mx-auto max-w-7xl min-w-0 px-5 sm:px-8 lg:px-10">
         <div className="grid min-w-0 gap-12 lg:grid-cols-[.7fr_1.3fr] lg:gap-20">
           <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">Designed around peer learning</p><h2 className="mt-4 max-w-md text-3xl font-semibold leading-tight tracking-[-0.04em] sm:text-4xl">Your next skill can start with one person.</h2><p className="mt-5 max-w-md text-[13px] leading-6 text-[#707884]">The product is built around a simple journey: find a peer, start a focused learning exchange, then build trust through real sessions.</p><Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_features', action: 'discover' })} to="/discover" className="mt-7 inline-flex items-center gap-2 text-[12px] font-bold text-[#17233b] hover:text-[#d31d24]">Find learning partners <ArrowUpRight className="h-4 w-4" /></Link></div>
@@ -321,7 +323,7 @@ export const LandingPage: React.FC = () => (
       </div>
     </section>
 
-    <section className="border-y border-[#dedfdd] bg-white py-16 sm:py-20">
+    <section id="faq" className="scroll-mt-20 border-y border-[#dedfdd] bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-4xl px-5 sm:px-8">
         <div className="text-center"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]">Questions before you join?</p><h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">A few things people usually ask.</h2></div>
         <div className="mt-10 divide-y divide-[#e5e7e5] border-y border-[#e5e7e5]">

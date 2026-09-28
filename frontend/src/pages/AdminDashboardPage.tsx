@@ -5,7 +5,12 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Tabs } from '../components/ui/Tabs';
+import { Modal } from '../components/ui/Modal';
 import { Shield, Users, AlertTriangle, Repeat, CheckCircle, XCircle, Clock } from 'lucide-react';
+
+type ModerationAction =
+  | { type: 'user'; userId: number; isActive: boolean; userName: string }
+  | { type: 'report'; reportId: number; status: 'RESOLVED' | 'DISMISSED'; category: string };
 
 export const AdminDashboardPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -15,10 +20,15 @@ export const AdminDashboardPage: React.FC = () => {
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<string>('USERS');
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState('');
+  const [pendingAction, setPendingAction] = useState<ModerationAction | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   const loadAdminData = async () => {
     try {
       setLoading(true);
+      setLoadError('');
       const [s, u, r, e] = await Promise.all([
         api.getAdminStats(),
         api.getAdminUsers(),
@@ -31,6 +41,7 @@ export const AdminDashboardPage: React.FC = () => {
       setExchanges(e);
     } catch (err) {
       console.error(err);
+      setLoadError(err instanceof Error ? err.message : 'Unable to load moderation data.');
     } finally {
       setLoading(false);
     }
@@ -40,26 +51,38 @@ export const AdminDashboardPage: React.FC = () => {
     loadAdminData();
   }, []);
 
-  const handleToggleUser = async (userId: number) => {
+  const handleToggleUser = (userId: number) => {
     const target = users.find((user) => Number(user.id) === Number(userId));
-    const action = target?.is_active ? 'deactivate' : 'reactivate';
-    if (!window.confirm(`Are you sure you want to ${action} this learner account?`)) return;
-    try {
-      await api.toggleAdminUserActive(userId);
-      await loadAdminData();
-    } catch (e: any) {
-      alert(e.message);
-    }
+    if (!target) return;
+    setActionError('');
+    setPendingAction({ type: 'user', userId, isActive: Boolean(target.is_active), userName: target.full_name || 'this learner' });
   };
 
-  const handleResolveReport = async (reportId: number, status: 'RESOLVED' | 'DISMISSED') => {
-    const action = status === 'RESOLVED' ? 'resolve and penalize' : 'dismiss';
-    if (!window.confirm(`Are you sure you want to ${action} this safety report?`)) return;
+  const handleResolveReport = (reportId: number, status: 'RESOLVED' | 'DISMISSED', category: string) => {
+    setActionError('');
+    setPendingAction({ type: 'report', reportId, status, category });
+  };
+
+  const confirmModerationAction = async () => {
+    if (!pendingAction || actionLoading) return;
     try {
-      await api.resolveAdminReport(reportId, status, status === 'RESOLVED' ? 'Resolved by community moderator' : 'Dismissed by community moderator');
+      setActionLoading(true);
+      setActionError('');
+      if (pendingAction.type === 'user') {
+        await api.toggleAdminUserActive(pendingAction.userId);
+      } else {
+        await api.resolveAdminReport(
+          pendingAction.reportId,
+          pendingAction.status,
+          pendingAction.status === 'RESOLVED' ? 'Resolved by community moderator' : 'Dismissed by community moderator',
+        );
+      }
       await loadAdminData();
-    } catch (e: any) {
-      alert(e.message);
+      setPendingAction(null);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Unable to complete this moderation action.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -97,6 +120,13 @@ export const AdminDashboardPage: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {loadError && (
+        <div className="flex flex-col gap-3 border border-[#f1c8ca] bg-[#fff7f7] px-4 py-3 sm:flex-row sm:items-center sm:justify-between" role="alert">
+          <p className="break-words text-xs leading-5 text-[#8f1a20]">Moderation data couldn’t be loaded. {loadError}</p>
+          <Button size="sm" variant="outline" onClick={() => void loadAdminData()} loading={loading}>Try again</Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
@@ -225,9 +255,9 @@ export const AdminDashboardPage: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {reports.map((r) => (
-              <Card key={r.id} className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
-                <div className="space-y-1 text-xs"><div className="flex items-center gap-2"><Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">{r.status}</Badge><span className="font-bold text-slate-900">{r.category}</span><span className="text-slate-400">• Reported by {r.reporter_name}</span></div><p className="text-slate-700 italic">"{r.details}"</p><p className="text-[10px] text-slate-400">Against user: {r.reported_name}{r.reported_exchange_id ? ` • Exchange #${r.reported_exchange_id}` : ""}</p></div>
-                {r.status === 'PENDING' && <div className="flex shrink-0 items-center gap-2"><Button size="sm" variant="outline" onClick={() => handleResolveReport(r.id, 'DISMISSED')}>Dismiss</Button><Button size="sm" variant="danger" onClick={() => handleResolveReport(r.id, 'RESOLVED')}>Resolve & Penalize</Button></div>}
+              <Card key={r.id} className="flex min-w-0 flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
+              <div className="min-w-0 space-y-1 text-xs"><div className="flex flex-wrap items-center gap-2"><Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">{r.status}</Badge><span className="break-words font-bold text-slate-900">{r.category}</span><span className="break-words text-slate-400">• Reported by {r.reporter_name}</span></div><p className="break-words text-slate-700 italic">"{r.details}"</p><p className="break-words text-[10px] text-slate-400">Against user: {r.reported_name}{r.reported_exchange_id ? ` • Exchange #${r.reported_exchange_id}` : ""}</p></div>
+              {r.status === 'PENDING' && <div className="flex shrink-0 flex-wrap items-center gap-2"><Button size="sm" variant="outline" onClick={() => handleResolveReport(r.id, 'DISMISSED', r.category)}>Dismiss</Button><Button size="sm" variant="danger" onClick={() => handleResolveReport(r.id, 'RESOLVED', r.category)}>Resolve & Penalize</Button></div>}
               </Card>
             ))}
           </div>
@@ -244,6 +274,57 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         </Card>
       )}
+      <Modal
+        isOpen={Boolean(pendingAction)}
+        onClose={() => { if (!actionLoading) { setPendingAction(null); setActionError(''); } }}
+        title={pendingAction?.type === 'user'
+          ? `${pendingAction.isActive ? 'Deactivate' : 'Reactivate'} learner account?`
+          : pendingAction?.status === 'RESOLVED' ? 'Resolve this safety report?' : 'Dismiss this safety report?'}
+        subtitle={pendingAction?.type === 'user'
+          ? `${pendingAction.userName}'s account status will be updated.`
+          : pendingAction ? `${pendingAction.category} report. This action will be recorded for the moderation team.` : undefined}
+        maxWidth="sm"
+        closeDisabled={actionLoading}
+      >
+        {pendingAction && (
+          <div className="space-y-4">
+            <div className={`border p-3 ${pendingAction.type === 'report' && pendingAction.status === 'RESOLVED' || pendingAction.type === 'user' && pendingAction.isActive ? 'border-[#ead0d1] bg-[#fff8f8]' : 'border-[#e1e4e8] bg-[#f7f8f7]'}`}>
+              <p className="text-xs font-semibold text-[#17233b]">
+                {pendingAction.type === 'report' && pendingAction.status === 'RESOLVED'
+                  ? 'Resolve and penalize'
+                  : pendingAction.type === 'report'
+                    ? 'Dismiss report'
+                    : pendingAction.isActive ? 'Deactivate account' : 'Reactivate account'}
+              </p>
+              <p className="mt-1 break-words text-xs leading-5 text-[#4d5b72]">
+                {pendingAction.type === 'report'
+                  ? pendingAction.status === 'RESOLVED'
+                    ? 'The report will be marked resolved and the reported account will be penalized.'
+                    : 'The report will be marked dismissed. No penalty will be applied.'
+                  : pendingAction.isActive
+                    ? 'The learner account will be deactivated and will no longer be active on the platform.'
+                    : 'The learner account will be reactivated.'}
+              </p>
+            </div>
+            {actionError && <p role="alert" className="break-words border border-red-200 bg-red-50 p-3 text-xs text-red-800">{actionError}</p>}
+            <div className="flex flex-col-reverse gap-2 border-t border-[#e1e4e8] pt-4 sm:flex-row sm:justify-end">
+              <Button type="button" size="sm" className="w-full sm:w-auto" variant="outline" onClick={() => setPendingAction(null)} disabled={actionLoading}>Cancel</Button>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full sm:w-auto"
+                variant={pendingAction.type === 'report' && pendingAction.status === 'RESOLVED' || pendingAction.type === 'user' && pendingAction.isActive ? 'danger' : 'primary'}
+                onClick={() => void confirmModerationAction()}
+                loading={actionLoading}
+              >
+                {pendingAction.type === 'report'
+                  ? pendingAction.status === 'RESOLVED' ? 'Resolve & Penalize' : 'Dismiss report'
+                  : pendingAction.isActive ? 'Deactivate account' : 'Reactivate account'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

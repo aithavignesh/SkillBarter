@@ -107,8 +107,8 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
             className="w-10 h-10 rounded-full object-cover border border-slate-200"
           />
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-bold text-slate-900 truncate">{partner.full_name}</h4>
-            <p className="text-[11px] text-slate-500 truncate">{partner.headline || 'Student & Peer Learner'}</p>
+            <h4 className="break-words text-xs font-bold text-slate-900">{partner.full_name || 'Learning partner'}</h4>
+            <p className="break-words text-[11px] text-slate-500">{partner.headline || 'Student & Peer Learner'}</p>
           </div>
           <div className="text-right shrink-0">
             <span className="inline-block text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
