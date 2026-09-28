@@ -35,7 +35,7 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState<number>(0);
-  const [emailFallback, setEmailFallback] = useState(false);
+  const [emailFallback, setEmailFallback] = useState(true);
   const [resetSending, setResetSending] = useState(false);
 
   const { login, requestPhoneOtp, verifyPhoneOtp, loading } = useAuth();
@@ -153,7 +153,7 @@ export const LoginPage: React.FC = () => {
               <span className="flex h-8 w-8 items-center justify-center border border-[#f1c8ca] bg-[#fff7f7] text-[#d31d24]"><Phone className="h-4 w-4" /></span>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#17233b]">Sign in</p>
-                <p className="mt-0.5 text-[11px] text-[#8a92a0]">Use your mobile number to continue</p>
+                <p className="mt-0.5 text-[11px] text-[#8a92a0]">Use your email and password to sign in</p>
               </div>
             </div>
 
@@ -217,7 +217,7 @@ export const LoginPage: React.FC = () => {
 
           <Card className="login-email-card p-5 sm:p-6">
             <button type="button" onClick={() => { setEmailFallback(!emailFallback); setError(null); }} aria-expanded={emailFallback} aria-controls="login-email-form" className="flex w-full items-center justify-between gap-4 text-left">
-              <span><span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#17233b]">Alternative sign in</span><span className="mt-1 block text-[12px] text-[#707884]">Use email and password instead</span></span>
+              <span><span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#17233b]">Email &amp; password sign in</span><span className="mt-1 block text-[12px] text-[#707884]">Use the email you registered with</span></span>
               <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#dfe3e7] text-lg font-light text-[#17233b]" aria-hidden="true">{emailFallback ? '−' : '+'}</span>
             </button>
 
