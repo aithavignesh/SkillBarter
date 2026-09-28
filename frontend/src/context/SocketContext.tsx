@@ -31,15 +31,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const getWsUrl = () => {
       const explicitWs = import.meta.env.VITE_WS_URL;
-      if (explicitWs) return `${explicitWs.replace(/\/$/, '')}/ws/${token}`;
-      const apiUrl = import.meta.env.VITE_API_URL;
-      if (apiUrl) {
-        const base = apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '');
-        return `${base}/ws/${token}`;
-      }
-      return `ws://localhost:8000/ws/${token}`;
+      // The current production auth session is issued by InsForge, while the
+      // legacy FastAPI WebSocket expects a different JWT. Never fall back to
+      // localhost or derive a socket URL from VITE_API_URL.
+      if (!explicitWs) return null;
+      return `${explicitWs.replace(/\/$/, '')}/ws/${token}`;
     };
     const wsUrl = getWsUrl();
+    if (!wsUrl) {
+      setIsConnected(false);
+      return;
+    }
     let socket: WebSocket | null = null;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let stopped = false;
