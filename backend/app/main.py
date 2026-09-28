@@ -76,7 +76,16 @@ async def lifespan(app: FastAPI):
                 logger.error("Could not complete database initialization after all retries. App starting in degraded state.")
     yield
 
-app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION, lifespan=lifespan)
+_is_production = settings.APP_ENV.strip().lower() == "production"
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    lifespan=lifespan,
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
+)
 
 app.add_middleware(
     CORSMiddleware,
