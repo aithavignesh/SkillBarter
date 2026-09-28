@@ -95,7 +95,7 @@ export async function requestPhoneOtp(phoneInput: string): Promise<string> {
 }
 
 /** Verify the received OTP against the server-side cryptographic challenge. */
-export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Promise<PhoneAuthUser> {
+export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpose: 'login' | 'register' = 'login'): Promise<PhoneAuthUser | { phone: string; verified: true }> {
   const phone = normalizePhone(phoneInput);
   const otp = String(otpInput ?? '').trim();
 
@@ -116,7 +116,7 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({ phone, otp, challenge }),
+      body: JSON.stringify({ phone, otp, challenge, purpose }),
     });
   } catch {
     throw new Error('Network error: Unable to reach the verification service. Please check your connection.');
@@ -139,6 +139,8 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string): Prom
     error.code = data.code;
     throw error;
   }
+
+  if (purpose === 'register') return { phone, verified: true };
 
   const token = data.accessToken || data.token;
   if (!token) throw new Error('OTP verified, but no login session was returned. Please try again.');
