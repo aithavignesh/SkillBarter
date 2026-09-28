@@ -57,7 +57,18 @@ export const MessagesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (activePartnerId) void loadMessages(activePartnerId);
+    if (!activePartnerId) return;
+    void loadMessages(activePartnerId);
+
+    // The current production auth flow uses InsForge, so the legacy FastAPI
+    // WebSocket is intentionally not used. Refresh the active conversation
+    // periodically so incoming messages still appear without a socket.
+    const interval = window.setInterval(() => {
+      void loadMessages(activePartnerId);
+      void loadConversations(true);
+    }, 5000);
+
+    return () => window.clearInterval(interval);
   }, [activePartnerId]);
 
   useEffect(() => {
