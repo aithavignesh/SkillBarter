@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { RatingStars } from '../ui/RatingStars';
 import { Exchange } from '../../types';
 import { api } from '../../services/api';
+import { trackEvent } from '../../services/analytics';
 import { useAuth } from '../../context/AuthContext';
 import { CheckCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 
@@ -45,6 +46,14 @@ export const ExchangeReviewModal: React.FC<ExchangeReviewModalProps> = ({
         skill_quality_score: skillQualityScore,
         would_exchange_again: wouldExchangeAgain,
         comment: comment.trim() || undefined,
+      });
+
+      trackEvent('review_submitted', {
+        exchange_id: exchange.id,
+        rating,
+        reliability_score: reliabilityScore,
+        skill_quality_score: skillQualityScore,
+        would_exchange_again: wouldExchangeAgain,
       });
 
       await refreshUser();
