@@ -14,7 +14,10 @@ export type FunnelEvent =
   | 'login_completed'
   | 'exchange_workspace_viewed'
   | 'exchange_message_sent'
-  | 'exchange_schedule_saved';
+  | 'exchange_schedule_saved'
+  | 'review_submitted'
+  | 'safety_report_submitted'
+  | 'safety_block_changed';
 
 const STORAGE_KEY = 'skillbarter_analytics_session';
 const ATTRIBUTION_KEY = 'skillbarter_marketing_attribution';
