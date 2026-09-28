@@ -1,6 +1,6 @@
 # SkillBarter Beta Readiness Status
 
-Date: 27 September 2026
+Date: 28 September 2026
 
 ## Completed on main
 
@@ -26,11 +26,16 @@ Date: 27 September 2026
 ## CI / deployment verification
 
 - The latest main commit includes the profile-avatar upload/cache refresh fixes (`d830c59a7c17b11dfc69a9ccb4bec94f57b1280f`) on 27 September 2026.
-- GitHub currently returns no workflow-run record for the latest main commit, so CI is **not marked green yet**.
-- Vercel deployment contexts have previously reported deployments in progress; deployment success should be verified from the actual commit status before declaring production readiness.
+- GitHub status checks for the latest main commit `a7fc3b812581dff8b64cad0165a38f1925c1010d` are currently green across the reported Vercel contexts. This confirms the latest main commit has successful reported Vercel checks, but it does not replace live functional validation.
 - Render/FastAPI startup and database initialization have now been re-verified from the deployed environment; the service reached `Application startup complete` and reported that seed data already exists.
 
 - Render `SkillBarter-1` is now live on commit `844a4bf1e8fb0ac3aa4965ef2d2f1b197826610e`; startup completed successfully and the deployed backend confirmed existing seed data after database initialization.
+
+## 28 September security / integration review
+
+- Reviewed the production-exposed FastAPI `demo-switch` endpoint; it is currently protected by `get_current_admin`, so it does not bypass authentication/authorization.
+- Reviewed UI PR #15 from `ui/team-member`. It remains draft and is not ready to merge because its current branch reintroduces the phone-session `getCurrentUser()` refresh path and places a real InsForge client configuration in `.env.example`. These changes must be corrected/rebased before merge so the existing authentication hardening on `main` is preserved.
+- PR #14 (AI-ready learning paths) remains intentionally separate from beta readiness.
 
 ## Remaining validation that requires the deployed environment
 
