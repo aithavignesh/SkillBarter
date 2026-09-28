@@ -1,6 +1,7 @@
 export interface UserSummary {
   id: number;
   full_name: string;
+  username?: string;
   avatar_url?: string;
   headline?: string;
   trust_score: number;
@@ -30,6 +31,8 @@ export interface UserSkill {
 export interface User {
   id: number;
   email: string;
+  username?: string;
+  phone?: string;
   full_name: string;
   avatar_url?: string;
   bio?: string;
