@@ -57,10 +57,15 @@ async def lifespan(app: FastAPI):
             Base.metadata.create_all(bind=engine)
             migrate_monetization_columns()
             logger.info("Database schema verified and tables ready.")
-            try:
-                seed_database()
-            except Exception as seed_err:
-                logger.info(f"Seed note: {seed_err}")
+            # Never create demonstration accounts or seed demo data in production.
+            # Production data must be provisioned explicitly and reviewed.
+            if settings.APP_ENV.strip().lower() != "production":
+                try:
+                    seed_database()
+                except Exception as seed_err:
+                    logger.info(f"Seed note: {seed_err}")
+            else:
+                logger.info("Production environment detected; demo seed data is disabled.")
             break
         except Exception as db_err:
             logger.warning(f"Database connection attempt {attempt}/{max_retries} failed: {db_err}")
@@ -108,7 +113,7 @@ def health_check():
         "version": settings.VERSION,
         "zero_cash_policy": "Enforced"
     }
-    if not db_ok:
+    if not db_ok and settings.APP_ENV.strip().lower() != "production":
         err = get_last_db_error()
         if err:
             resp["database_error"] = err
