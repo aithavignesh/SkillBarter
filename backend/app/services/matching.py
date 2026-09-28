@@ -40,6 +40,11 @@ def calculate_match(
         skill_score = 25.0
 
     # 2. Location Proximity (20%)
+    # Respect candidate location privacy. Private-location users are not eligible
+    # for hyperlocal matching because proximity would reveal hidden location data.
+    if (candidate_user.location_visibility or "APPROXIMATE").upper() == "PRIVATE":
+        return None
+
     distance_km = calculate_haversine_distance(
         current_user.latitude, current_user.longitude,
         candidate_user.latitude, candidate_user.longitude
