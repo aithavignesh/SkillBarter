@@ -30,6 +30,10 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "SECRET_KEY must be configured with at least 32 characters in production"
                 )
+            if self.DATABASE_URL.strip() == "sqlite:///./skillbarter.db":
+                raise ValueError(
+                    "DATABASE_URL must be explicitly configured for production; SQLite is local-development only"
+                )
         return self
 
     # Database - default to sqlite for instant local test & standalone execution,
