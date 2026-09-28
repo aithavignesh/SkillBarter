@@ -57,6 +57,6 @@ A final beta-ready declaration should wait until the live checks above are execu
 - Keep PR #14 (AI-ready learning-path feature) separate from core beta readiness; it is not required for the core beta lifecycle.
 
 ### Analytics live-validation status (27 Sep 2026)
-- Frontend analytics instrumentation and backend event allow-list are aligned for all 17 supported events.
+- Frontend analytics instrumentation and backend event allow-list are aligned for all 16 supported events.
 - Production collection is **not yet verified** because `VITE_ANALYTICS_ENDPOINT` remains unset in `frontend/.env.example` by design.
 - Do not mark analytics as live/green until a privacy-reviewed first-party collector endpoint is configured in the actual beta deployment and events are observed in the backend collector.
