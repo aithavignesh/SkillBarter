@@ -487,7 +487,7 @@ class ApiClient {
       const dist = distance(Number(user.latitude), Number(user.longitude));
       if (dist > radiusKm) continue;
       const skills = await this.getUserSkills(Number(user.id));
-      results.push({ id: user.id, username: user.username, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url, headline: user.headline, address_display: user.location_visibility === false ? null : user.address_display, distance_km: dist, distance_display: `${dist.toFixed(1)} km`, trust_score: user.trust_score, reliability_score: user.reliability_score, completed_exchanges_count: user.completed_exchanges_count, badges: user.badges ?? [], skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), availability: user.availability });
+      results.push({ id: user.id, username: user.username, full_name: user.full_name, avatar_url: user.avatar_url, headline: user.headline, address_display: user.location_visibility === false ? null : user.address_display, distance_km: dist, distance_display: `${dist.toFixed(1)} km`, trust_score: user.trust_score, reliability_score: user.reliability_score, completed_exchanges_count: user.completed_exchanges_count, badges: user.badges ?? [], skills_offered: skills.filter((s: any) => s.skill_type === 'OFFERED').map((s: any) => s.skill_name), skills_needed: skills.filter((s: any) => s.skill_type === 'NEEDED').map((s: any) => s.skill_name), availability: user.availability });
     }
     return results.sort((a, b) => a.distance_km - b.distance_km);
   }
