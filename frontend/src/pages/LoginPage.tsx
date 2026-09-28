@@ -35,10 +35,13 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState<number>(0);
-  const [emailFallback, setEmailFallback] = useState(true);
+  const [emailFallback, setEmailFallback] = useState(false);
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailPasswordMode, setEmailPasswordMode] = useState(false);
   const [resetSending, setResetSending] = useState(false);
 
-  const { login, requestPhoneOtp, verifyPhoneOtp, loading } = useAuth();
+  const { login, requestPhoneOtp, verifyPhoneOtp, requestEmailOtp, verifyEmailOtp, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -94,6 +97,35 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const handleEmailOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!email.trim()) {
+      setError('Enter your email address.');
+      return;
+    }
+    try {
+      setError(null);
+      setSuccessMessage(null);
+      if (!emailOtpSent) {
+        await requestEmailOtp(email.trim());
+        setEmailOtpSent(true);
+        setCooldown(30);
+        setSuccessMessage('Verification code sent to your email. Check your inbox.');
+        return;
+      }
+      if (!/^\d{6}$/.test(emailOtp.trim())) {
+        setError('Enter the complete 6-digit email OTP.');
+        return;
+      }
+      await verifyEmailOtp(email.trim(), emailOtp.trim());
+      trackEvent('login_completed', { method: 'email_otp' });
+      navigate('/feed');
+    } catch (err: any) {
+      setError(err.message || 'Unable to verify email OTP.');
+      if (err.waitSeconds) setCooldown(err.waitSeconds);
+    }
+  };
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -106,9 +138,7 @@ export const LoginPage: React.FC = () => {
       if (/compromised|breach|found in.*records|change.*password|password.*(leak|leaked|compromised)/i.test(message)) {
         setEmailFallback(true);
         setError('For your security, this password cannot be used. Enter your email below and use “Forgot password?” to create a new password.');
-      } else {
-        setError(message);
-      }
+      } else setError(message);
     }
   };
 
@@ -153,7 +183,7 @@ export const LoginPage: React.FC = () => {
               <span className="flex h-8 w-8 items-center justify-center border border-[#f1c8ca] bg-[#fff7f7] text-[#d31d24]"><Phone className="h-4 w-4" /></span>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#17233b]">Sign in</p>
-                <p className="mt-0.5 text-[11px] text-[#8a92a0]">Use your email and password to sign in</p>
+                <p className="mt-0.5 text-[11px] text-[#8a92a0]">Use your mobile number for the quickest OTP sign-in</p>
               </div>
             </div>
 
@@ -216,20 +246,46 @@ export const LoginPage: React.FC = () => {
           <div className={`login-divider ${emailFallback ? "hidden" : ""}`}><span>or</span></div>
 
           <Card className="login-email-card p-5 sm:p-6">
-            <button type="button" onClick={() => { setEmailFallback(!emailFallback); setError(null); }} aria-expanded={emailFallback} aria-controls="login-email-form" className="flex w-full items-center justify-between gap-4 text-left">
-              <span><span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#17233b]">Email &amp; password sign in</span><span className="mt-1 block text-[12px] text-[#707884]">Use the email you registered with</span></span>
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#dfe3e7] text-lg font-light text-[#17233b]" aria-hidden="true">{emailFallback ? '−' : '+'}</span>
-            </button>
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <span>
+                <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#17233b]">Email OTP sign in</span>
+                <span className="mt-1 block text-[12px] text-[#707884]">No password required for verified email accounts</span>
+              </span>
+              <Mail className="h-5 w-5 text-[#d31d24]" />
+            </div>
 
-            {emailFallback && (
-              <form id="login-email-form" onSubmit={handleEmailLogin} className="mt-5 space-y-4 border-t border-[#edf0f2] pt-5">
+            {emailOtpSent ? (
+              <form onSubmit={handleEmailOtp} className="space-y-4">
+                <div>
+                  <label className="login-label" htmlFor="login-email-otp">6-Digit Email OTP</label>
+                  <div className="relative mt-1.5">
+                    <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                    <input id="login-email-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={emailOtp} onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))} placeholder="••••••" className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
+                  </div>
+                  <p className="login-help">Code sent to <span className="font-semibold text-[#17233b]">{email.trim()}</span>. It expires after 5 minutes.</p>
+                </div>
+                <Button type="submit" loading={loading} className="login-primary-button w-full">Verify Email OTP &amp; Sign In</Button>
+                <div className="flex items-center justify-center gap-4">
+                  <button type="button" disabled={cooldown > 0 || loading} onClick={() => handleEmailOtp()} className="login-secondary-action disabled:opacity-50">{cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend OTP'}</button>
+                  <button type="button" onClick={() => { setEmailOtpSent(false); setEmailOtp(''); setError(null); }} className="login-secondary-action">Change email</button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleEmailOtp} className="space-y-4">
                 <div>
                   <label className="login-label" htmlFor="login-email">Email Address</label>
                   <div className="relative mt-1.5">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="arjun@skillbarter.com" className="login-input w-full pl-9 pr-3" required />
+                    <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="login-input w-full pl-9 pr-3" required />
                   </div>
                 </div>
+                <Button type="submit" loading={loading} disabled={loading || cooldown > 0} className="login-primary-button w-full">Send OTP to Email</Button>
+                <button type="button" onClick={() => { setEmailPasswordMode(true); setError(null); }} className="login-secondary-action w-full">Use email &amp; password instead</button>
+              </form>
+            )}
+
+            {emailPasswordMode && (
+              <form onSubmit={handleEmailLogin} className="mt-5 space-y-4 border-t border-[#edf0f2] pt-5">
                 <div>
                   <label className="login-label" htmlFor="login-password">Password</label>
                   <div className="relative mt-1.5">
@@ -237,11 +293,9 @@ export const LoginPage: React.FC = () => {
                     <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="login-input w-full pl-9 pr-3" required />
                   </div>
                 </div>
-                <Button type="submit" loading={loading} className="login-primary-button w-full">Sign In with Email</Button>
-                <button type="button" onClick={handleForgotPassword} disabled={resetSending || loading} className="login-reset-action w-full disabled:opacity-50">
-                  {resetSending ? 'Sending reset instructions...' : 'Forgot password?'}
-                </button>
-                <button type="button" onClick={() => { setEmailFallback(false); setError(null); setSuccessMessage(null); }} className="login-secondary-action w-full">Use mobile OTP instead</button>
+                <Button type="submit" loading={loading} className="login-primary-button w-full">Sign In with Password</Button>
+                <button type="button" onClick={handleForgotPassword} disabled={resetSending || loading} className="login-reset-action w-full disabled:opacity-50">{resetSending ? 'Sending reset instructions...' : 'Forgot password?'}</button>
+                <button type="button" onClick={() => { setEmailPasswordMode(false); setError(null); }} className="login-secondary-action w-full">Back to Email OTP</button>
               </form>
             )}
           </Card>
