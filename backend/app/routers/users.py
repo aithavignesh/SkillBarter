@@ -81,9 +81,9 @@ def get_nearby_users(latitude: Optional[float] = None, longitude: Optional[float
     blocking_me = [b.blocker_id for b in db.query(Block.blocker_id).filter(Block.blocked_id == current_user.id).all()]
     excluded_ids = set(blocked_by_me + blocking_me + [current_user.id])
     min_lat, max_lat, min_lon, max_lon = get_bounding_box(center_lat, center_lon, effective_radius)
-    candidates = db.query(User).filter(User.id.notin_(excluded_ids), User.is_active == True, User.latitude.isnot(None), User.longitude.isnot(None), User.latitude.between(min_lat, max_lat), User.longitude.between(min_lon, max_lon)).all()
+    candidates = db.query(User).filter(User.id.notin_(excluded_ids), User.is_active == True, User.latitude.isnot(None), User.longitude.isnot(None), User.location_visibility != "PRIVATE", User.latitude.between(min_lat, max_lat), User.longitude.between(min_lon, max_lon)).all()
     if not candidates:
-        candidates = db.query(User).filter(User.id.notin_(excluded_ids), User.is_active == True).limit(30).all()
+        candidates = db.query(User).filter(User.id.notin_(excluded_ids), User.is_active == True, User.location_visibility != "PRIVATE").limit(30).all()
     results = []
     for cand in candidates:
         dist_km = calculate_haversine_distance(center_lat, center_lon, cand.latitude, cand.longitude)
