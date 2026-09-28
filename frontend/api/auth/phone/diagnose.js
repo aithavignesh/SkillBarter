@@ -2,6 +2,11 @@ import { getEnvConfig, sendJson } from './_utils.js';
 import { getSmsProviderDiagnostics } from './smsProvider.js';
 
 export default async function handler(req, res) {
+  // This endpoint is for deployment diagnostics only and must never expose
+  // configuration state from a production deployment.
+  if (process.env.VERCEL_ENV === 'production') {
+    return sendJson(res, { error: 'Endpoint not available' }, 404);
+  }
   if (req.method === 'OPTIONS') return sendJson(res, { ok: true }, 200);
   try {
     const env = getEnvConfig();
