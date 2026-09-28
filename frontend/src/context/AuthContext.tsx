@@ -22,12 +22,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   const refreshUser = async () => {
+    const hasToken = Boolean(sessionStorage.getItem('skillbarter_token'));
+    const hasPhoneSession = hasPersistedPhoneSession();
+
+    // Anonymous visitors should not enter the auth-provider lookup path.
+    // Without a persisted session there is nothing to restore, and calling
+    // getCurrentUser() can cause the SDK to probe /auth/refresh and return
+    // repeated 401s on the public landing page.
+    if (!hasToken && !hasPhoneSession) {
+      setCurrentUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const user = await api.getMe();
       setCurrentUser(user);
     } catch {
       try {
-        if (!hasPersistedPhoneSession()) throw new Error('No persisted phone session');
+        if (!hasPhoneSession) throw new Error('No persisted phone session');
         const phoneUser = await getCurrentPhoneUser();
         if (phoneUser) {
           setCurrentUser(phoneUser as User);
@@ -90,9 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.logout();
     } finally {
-      // Auth state must be cleared even when the auth provider reports a
-      // sign-out error. The browser session has already been invalidated
-      // locally by ApiClient.logout().
       clearPhoneSession();
       setCurrentUser(null);
     }
