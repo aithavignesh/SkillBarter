@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { requestPhoneOtp, verifyPhoneOtp, normalizePhone } from '../services/phoneAuth';
 import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Repeat, Lock, Mail, User, Phone, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Repeat, Lock, Mail, User, Phone, ArrowRight, Eye, EyeOff, KeyRound, RotateCcw, CheckCircle2 } from 'lucide-react';
 
 export const SignupPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -16,7 +17,17 @@ export const SignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [cooldown, setCooldown] = useState(0);
   const { register, loading } = useAuth();
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setInterval(() => setCooldown((value) => value > 1 ? value - 1 : 0), 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
   const navigate = useNavigate();
   const referralSource = new URLSearchParams(window.location.search).get('ref') || 'direct';
 
@@ -32,32 +43,40 @@ export const SignupPage: React.FC = () => {
     e.preventDefault();
     try {
       setError(null);
-      if (password !== confirmPassword) {
-        setError('Passwords do not match.');
-        return;
-      }
-      if (password.length < 8) {
-        setError('Password must be at least 8 characters.');
-        return;
-      }
+
+      if (password !== confirmPassword) return setError('Passwords do not match.');
+      if (password.length < 8) return setError('Password must be at least 8 characters.');
       if (!fullName.trim() || !username.trim() || !email.trim() || !phone.trim()) {
-        setError('Please complete your full name, username, email, and mobile number.');
-        return;
+        return setError('Please complete your full name, username, email, and mobile number.');
       }
+
       const cleanUsername = username.trim().replace(/^@/, '').toLowerCase();
       if (!/^[a-z0-9_]{3,30}$/.test(cleanUsername)) {
-        setError('Username must be 3–30 characters and use only letters, numbers, or underscores.');
+        return setError('Username must be 3–30 characters and use only letters, numbers, or underscores.');
+      }
+
+      const cleanPhone = normalizePhone(phone);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError('Please enter a valid email address.');
+
+      if (!phoneVerified) {
+        if (!otpSent) {
+          const normalized = await requestPhoneOtp(cleanPhone);
+          setPhone(normalized);
+          setOtpSent(true);
+          setCooldown(30);
+          setError(null);
+          return;
+        }
+
+        if (!/^\d{6}$/.test(otp.trim())) return setError('Enter the complete 6-digit OTP sent to your mobile number.');
+        await verifyPhoneOtp(cleanPhone, otp.trim(), 'register');
+        setPhoneVerified(true);
+        setOtpSent(false);
+        setOtp('');
+        setError(null);
         return;
       }
-      const cleanPhone = phone.replace(/[^0-9+]/g, '');
-      if (!/^\\+[1-9]\\d{7,14}$/.test(cleanPhone)) {
-        setError('Enter your mobile number with country code, e.g. +919876543210.');
-        return;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-        setError('Please enter a valid email address.');
-        return;
-      }
+
       await register({
         full_name: fullName.trim(),
         username: cleanUsername,
@@ -142,7 +161,21 @@ export const SignupPage: React.FC = () => {
                 <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
                 <input id="signup-phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^0-9+\s-]/g, ''))} placeholder="+91 98765 43210" className="signup-input w-full pl-9 pr-3" required />
               </div>
-              <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">Used for account verification and recovery; it is not your public username.</p>
+              <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">Your mobile number must be verified by OTP before the account is created.</p>
+              {phoneVerified ? (
+                <div className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-[#237a43]"><CheckCircle2 className="h-4 w-4" /> Mobile number verified</div>
+              ) : otpSent ? (
+                <div className="mt-3 space-y-2">
+                  <label htmlFor="signup-otp" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Mobile OTP</label>
+                  <div className="relative">
+                    <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                    <input id="signup-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="6-digit OTP" className="signup-input w-full pl-9 pr-3 text-center font-mono tracking-[0.35em]" />
+                  </div>
+                  <button type="button" disabled={cooldown > 0 || loading} onClick={async () => { try { const normalized = await requestPhoneOtp(phone); setPhone(normalized); setCooldown(30); setError(null); } catch (err: any) { setError(err.message || 'Unable to resend OTP.'); } }} className="login-secondary-action inline-flex items-center gap-1.5 disabled:opacity-50">
+                    <RotateCcw className="h-3.5 w-3.5" /> {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             <div>
@@ -183,8 +216,8 @@ export const SignupPage: React.FC = () => {
 
             <p className="text-[11px] leading-5 text-[#8a92a0]">Your learning profile is completed in the next step. You can change your preferences later, and exact GPS coordinates are never shown publicly.</p>
 
-            <Button type="submit" loading={loading} className="signup-submit w-full" icon={<ArrowRight className="h-4 w-4" />}>
-              Continue to learning profile
+            <Button type="submit" loading={loading} disabled={loading || (!phoneVerified && cooldown > 0 && !otpSent)} className="signup-submit w-full" icon={<ArrowRight className="h-4 w-4" />}>
+              {!phoneVerified && !otpSent ? 'Verify Mobile & Continue' : !phoneVerified ? 'Verify OTP & Create Account' : 'Continue to learning profile'}
             </Button>
           </form>
 
