@@ -1,4 +1,4 @@
--- SkillBarter profile identity migration
+﻿-- SkillBarter profile identity migration
 ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS username VARCHAR(30),
   ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
