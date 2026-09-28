@@ -41,9 +41,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     const wsUrl = getWsUrl();
     let socket: WebSocket | null = null;
-    let reconnectTimeout: any = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let stopped = false;
 
     const connect = () => {
+      if (stopped) return;
       try {
         socket = new WebSocket(wsUrl);
         wsRef.current = socket;
@@ -63,8 +65,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         socket.onclose = () => {
           setIsConnected(false);
-          // Try reconnecting after 4 seconds
-          reconnectTimeout = setTimeout(connect, 4000);
+          // Reconnect only while this auth-scoped socket effect is active.
+          if (!stopped) reconnectTimeout = setTimeout(connect, 4000);
         };
 
         socket.onerror = () => {
@@ -78,6 +80,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     connect();
 
     return () => {
+      stopped = true;
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (wsRef.current) {
         wsRef.current.close();
