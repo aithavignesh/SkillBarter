@@ -428,10 +428,6 @@ def cancel_exchange(
     _ensure_not_blocked(current_user.id, e.receiver_id if current_user.id == e.requester_id else e.requester_id, db)
 
     e.status = "CANCELLED"
-
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    e.status = "CANCELLED"
     e.cancellation_reason = req.cancellation_reason
     e.cancelled_by_id = current_user.id
     e.updated_at = datetime.datetime.utcnow()
