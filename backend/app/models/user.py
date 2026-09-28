@@ -8,6 +8,8 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
+    username = Column(String(30), unique=True, index=True, nullable=True)
+    phone = Column(String(20), unique=True, index=True, nullable=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(150), nullable=False)
     avatar_url = Column(String(500), nullable=True)
