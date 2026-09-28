@@ -1,3 +1,4 @@
+// UI preview deployment trigger: keep auth behavior unchanged.
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { clearPhoneSession, getCurrentPhoneUser, hasPersistedPhoneSession, requestPhoneOtp, verifyPhoneOtp } from '../services/phoneAuth';
