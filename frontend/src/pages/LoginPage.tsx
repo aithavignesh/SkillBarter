@@ -148,7 +148,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         <div className="w-full max-w-xl lg:justify-self-end">
-          <Card className="login-card p-5 sm:p-8">
+          <Card className={`login-card p-5 sm:p-8 ${emailFallback ? "hidden" : ""}`}>
             <div className="mb-6 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
               <span className="flex h-8 w-8 items-center justify-center border border-[#f1c8ca] bg-[#fff7f7] text-[#d31d24]"><Phone className="h-4 w-4" /></span>
               <div>
@@ -213,7 +213,7 @@ export const LoginPage: React.FC = () => {
             </form>
           </Card>
 
-          <div className="login-divider"><span>or</span></div>
+          <div className={`login-divider ${emailFallback ? "hidden" : ""}`}><span>or</span></div>
 
           <Card className="login-email-card p-5 sm:p-6">
             <button type="button" onClick={() => { setEmailFallback(!emailFallback); setError(null); }} aria-expanded={emailFallback} aria-controls="login-email-form" className="flex w-full items-center justify-between gap-4 text-left">
@@ -241,6 +241,7 @@ export const LoginPage: React.FC = () => {
                 <button type="button" onClick={handleForgotPassword} disabled={resetSending || loading} className="login-reset-action w-full disabled:opacity-50">
                   {resetSending ? 'Sending reset instructions...' : 'Forgot password?'}
                 </button>
+                <button type="button" onClick={() => { setEmailFallback(false); setError(null); setSuccessMessage(null); }} className="login-secondary-action w-full">Use mobile OTP instead</button>
               </form>
             )}
           </Card>
