@@ -3,13 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useTheme } from '../../context/ThemeContext';
+import { UserAvatar } from '../ui/UserAvatar';
 import {
   Repeat, Compass, Sparkles, ArrowLeftRight, MessageSquare, Bell, Search,
   User as UserIcon, ShieldCheck, LogOut, Shield, Coins, Users, Settings,
   HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy, Sun, Moon, Menu, X, UserPlus,
 } from 'lucide-react';
-
-export const DEFAULT_AVATAR_URL = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160';
 
 type NavFeature = { label: string; path: string };
 type NavItem = { label: string; path: string; icon: React.ComponentType<{ className?: string }>; features?: NavFeature[] };
@@ -398,7 +397,7 @@ if (!currentUser) {
         </div>
         <div className="border-b border-[#edf0f2] px-5 py-4">
           <Link to={`/profile/${currentUser.id}`} className="group flex items-center gap-3 py-1">
-            <img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-10 w-10 rounded-full object-cover" />
+            <UserAvatar src={currentUser.avatar_url} name={currentUser.full_name} className="h-10 w-10 text-xs" />
             <div className="min-w-0 flex-1"><p className="truncate text-[13px] font-semibold text-[#17233b]">{currentUser.full_name}</p><p className="mt-0.5 text-[10px] text-[#8a92a0]">View your profile</p></div>
             <ChevronRight className="h-4 w-4 text-[#b1b7c0] transition-transform group-hover:translate-x-0.5" />
           </Link>
@@ -423,7 +422,10 @@ if (!currentUser) {
         <div className="flex h-full items-center gap-4 px-5 pl-14 sm:px-7 sm:pl-16 lg:px-8 lg:pl-8">
           <div className="min-w-0 flex-1">
             <div className="hidden items-center gap-2 text-[11px] text-[#8a92a0] md:flex"><span>SkillBarter</span><span>/</span><span className="font-semibold text-[#17233b]">{primary.find((x) => isActive(x.path))?.label || 'Community'}</span></div>
-            <form onSubmit={handleSearchSubmit} className="relative mt-0.5 max-w-[520px]"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search learning skills or people" className="h-9 w-full border border-[#e2e5e9] bg-[#fafbfc] pl-9 pr-4 text-[12px] text-[#17233b] outline-none transition focus:border-[#c8cdd5] focus:bg-white focus:ring-0" /></form>
+            <form onSubmit={handleSearchSubmit} className="relative mt-0.5 w-full min-w-0 max-w-[560px] rounded-full bg-white/75 shadow-[0_2px_10px_rgba(23,35,59,0.045),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[6px] transition-[background-color,box-shadow] duration-200 ease-out focus-within:bg-white focus-within:shadow-[0_4px_14px_rgba(23,35,59,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]">
+              <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search learning skills or people" aria-label="Search learning skills or people" className="h-11 w-full min-w-0 rounded-full border-0 bg-transparent py-2 pl-11 pr-5 text-[12px] text-[#17233b] outline-none placeholder:text-[#7f8794] focus:ring-0 sm:text-[13px]" />
+            </form>
           </div>
           <div className="flex items-center gap-1">
             <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Dark mode' : 'Light mode'} className="flex h-9 items-center gap-2 border border-[#e1e4e8] bg-white px-3 text-[11px] font-semibold text-[#4d5b72] hover:border-[#cbd1d8] hover:text-[#17233b]">
@@ -473,7 +475,7 @@ if (!currentUser) {
               </div>
             </div>
             <div ref={profileMenuContainerRef} className="relative">
-              <button ref={profileMenuButtonRef} type="button" aria-label={`Account menu for ${currentUser.full_name}`} aria-expanded={showProfileMenu} aria-haspopup="menu" onClick={() => { setShowProfileMenu((v) => !v); setShowNotifications(false); }} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#f6f7f8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]"><img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt="" className="h-8 w-8 rounded-full object-cover" /><span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-[#17233b] xl:block">{currentUser.full_name}</span><ChevronRight className="hidden h-3.5 w-3.5 rotate-90 text-[#9aa1ac] xl:block" /></button>
+              <button ref={profileMenuButtonRef} type="button" aria-label={`Account menu for ${currentUser.full_name}`} aria-expanded={showProfileMenu} aria-haspopup="menu" onClick={() => { setShowProfileMenu((v) => !v); setShowNotifications(false); }} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#f6f7f8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]"><UserAvatar src={currentUser.avatar_url} name={currentUser.full_name} className="h-8 w-8 text-[10px]" /><span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-[#17233b] xl:block">{currentUser.full_name}</span><ChevronRight className="hidden h-3.5 w-3.5 rotate-90 text-[#9aa1ac] xl:block" /></button>
               {showProfileMenu && <div id="profile-navigation-menu" className="absolute right-0 mt-2 w-60 border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)]"><div className="border-b border-[#edf0f2] px-4 py-3"><p className="text-[12px] font-bold text-[#17233b]">{currentUser.full_name}</p><p className="mt-0.5 truncate text-[10px] text-[#8a92a0]">{currentUser.email}</p></div><div className="py-1"><button type="button" onClick={() => toggleTheme()} className="flex w-full items-center justify-between px-4 py-2.5 text-left text-[12px] font-semibold text-[#4d5b72] hover:bg-[#fafbfc]"><span className="flex items-center gap-2">{theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}{theme === 'light' ? 'Dark mode' : 'Light mode'}</span><span className="text-[10px] text-[#9299a5]">{theme === 'light' ? 'OFF' : 'ON'}</span></button><Link to={`/profile/${currentUser.id}`} onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] text-[#4d5b72] hover:bg-[#fafbfc]"><UserIcon className="h-4 w-4" />My Profile</Link><Link to="/monetization" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><Coins className="h-4 w-4" />Monetization Hub</Link>{currentUser.is_admin && <Link to="/admin" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 border-t border-[#edf0f2] px-4 py-2.5 text-[12px] text-[#8a5a00]"><Shield className="h-4 w-4" />Admin Moderation</Link>}</div><div className="border-t border-[#edf0f2] p-1"><button type="button" onClick={async () => { setShowProfileMenu(false); await logout(); navigate('/'); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><LogOut className="h-4 w-4" />Log out</button></div></div>}
             </div>
           </div>
@@ -495,7 +497,7 @@ if (!currentUser) {
 
           <nav id="mobile-primary-navigation" aria-hidden={!showMobileMenu} className={`mobile-primary-navigation fixed inset-x-0 top-[68px] z-40 max-h-[calc(100dvh-68px)] overflow-y-auto border-b border-[#e1e4e8] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(23,35,59,.12)] ${showMobileMenu ? 'mobile-primary-navigation--open' : ''}`}>
             <div className="mb-4 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
-              <img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-10 w-10 rounded-full object-cover" />
+              <UserAvatar src={currentUser.avatar_url} name={currentUser.full_name} className="h-10 w-10 text-xs" />
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-bold text-[#17233b]">{currentUser.full_name}</p>
                 <p className="truncate text-[10px] text-[#8a92a0]">{currentUser.email}</p>

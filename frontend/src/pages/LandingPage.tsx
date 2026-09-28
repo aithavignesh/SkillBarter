@@ -44,15 +44,19 @@ const MeetingPointVisual: React.FC = () => (
     <div className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-[#7a8290] lg:absolute lg:left-1/2 lg:top-0 lg:h-8 lg:-translate-x-1/2">Two skills, one exchange</div>
 
     <div className="order-1 relative flex h-[112px] w-full max-w-[290px] shrink-0 flex-col items-center justify-center rounded-[32px] border border-[rgba(126,143,151,.42)] bg-[rgba(181,193,195,.18)] lg:absolute lg:left-0 lg:top-12 lg:order-none lg:h-[270px] lg:w-[58%] lg:max-w-none lg:rounded-full lg:pr-10">
-      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7a8290]">You teach</p>
-      <p className="mt-3 text-[clamp(1.15rem,2vw,1.5rem)] font-semibold tracking-[-0.03em] text-[#17233b]">Web Development</p>
-      <span className="mt-3 h-px w-12 bg-[rgba(126,143,151,.42)] lg:mt-4" />
+      <div className="flex flex-col items-center lg:-translate-y-14">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7a8290]">You teach</p>
+        <p className="mt-3 text-[clamp(1.15rem,2vw,1.5rem)] font-semibold tracking-[-0.03em] text-[#17233b]">Web Development</p>
+        <span className="mt-3 h-px w-12 bg-[rgba(126,143,151,.42)] lg:mt-4" />
+      </div>
     </div>
 
     <div className="order-3 relative flex h-[112px] w-full max-w-[290px] shrink-0 flex-col items-center justify-center rounded-[32px] border border-[rgba(201,135,125,.4)] bg-[rgba(218,170,160,.22)] lg:absolute lg:right-0 lg:top-12 lg:order-none lg:h-[270px] lg:w-[58%] lg:max-w-none lg:rounded-full lg:pl-10">
-      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7a8290]">You learn</p>
-      <p className="mt-3 text-[clamp(1.15rem,2vw,1.5rem)] font-semibold tracking-[-0.03em] text-[#17233b]">UI/UX Design</p>
-      <span className="mt-3 h-px w-12 bg-[rgba(201,135,125,.4)] lg:mt-4" />
+      <div className="flex flex-col items-center lg:-translate-y-14">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7a8290]">You learn</p>
+        <p className="mt-3 text-[clamp(1.15rem,2vw,1.5rem)] font-semibold tracking-[-0.03em] text-[#17233b]">UI/UX Design</p>
+        <span className="mt-3 h-px w-12 bg-[rgba(201,135,125,.4)] lg:mt-4" />
+      </div>
     </div>
 
     <div className="order-2 relative z-10 flex h-[76px] w-[76px] shrink-0 flex-col items-center justify-center rounded-full border-[6px] border-[#f7f7f5] bg-[#17233b] text-white shadow-[0_8px_20px_rgba(23,35,59,.12)] ring-1 ring-[#17233b]/10 lg:absolute lg:left-1/2 lg:top-[145px] lg:order-none lg:h-[100px] lg:w-[100px] lg:-translate-x-1/2 lg:border-[7px]">

@@ -16,7 +16,7 @@ import {
 
 export const LinkedInStyleProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { currentUser, refreshUser } = useAuth();
+  const { currentUser, refreshUser, setCurrentUserAvatar } = useAuth();
   const navigate = useNavigate();
   const targetId = Number(id || currentUser?.id || 0);
   const own = Number(currentUser?.id) === targetId;
@@ -299,8 +299,9 @@ export const LinkedInStyleProfilePage: React.FC = () => {
       if (error || !data?.url) throw new Error(error?.message || 'Unable to upload profile picture.');
       await api.updateMe({ avatar_url: data.url });
       setProfile((p: any) => ({ ...p, avatar_url: data.url }));
+      setCurrentUserAvatar(data.url);
       setAvatarLoadError(false);
-      await refreshUser(); setAvatarVersion(v => v + 1);
+      setAvatarVersion(v => v + 1);
       showProfileMessage('Profile picture updated.');
     } catch (e: any) { showProfileMessage(e?.message || 'Unable to update profile picture.', 'error'); }
     finally { setUploading(false); }
@@ -323,7 +324,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
       setMessage('');
       await api.updateMe({ avatar_url: '' });
       setProfile((previous: any) => ({ ...previous, avatar_url: undefined }));
-      await refreshUser();
+      setCurrentUserAvatar(null);
       setAvatarVersion(v => v + 1);
       closePhotoMenu();
       showProfileMessage('Profile picture removed.');

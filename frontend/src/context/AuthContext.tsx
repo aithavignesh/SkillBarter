@@ -14,6 +14,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   demoSwitchUser: (userId: number) => Promise<void>;
   refreshUser: () => Promise<void>;
+  setCurrentUserAvatar: (avatarUrl?: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +56,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
+  };
+
+  const setCurrentUserAvatar = (avatarUrl?: string | null) => {
+    setCurrentUser(user => user ? { ...user, avatar_url: avatarUrl || undefined } : user);
   };
 
   useEffect(() => { refreshUser(); }, []);
@@ -120,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, login, requestPhoneOtp: handleRequestPhoneOtp, verifyPhoneOtp: handleVerifyPhoneOtp, register, logout, demoSwitchUser, refreshUser }}>
+    <AuthContext.Provider value={{ currentUser, loading, login, requestPhoneOtp: handleRequestPhoneOtp, verifyPhoneOtp: handleVerifyPhoneOtp, register, logout, demoSwitchUser, refreshUser, setCurrentUserAvatar }}>
       {children}
     </AuthContext.Provider>
   );
