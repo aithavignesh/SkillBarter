@@ -90,7 +90,9 @@ def get_nearby_users(latitude: Optional[float] = None, longitude: Optional[float
         c_skills = db.query(UserSkill, Skill.name).join(Skill, UserSkill.skill_id == Skill.id).filter(UserSkill.user_id == cand.id).all()
         results.append({
             "id": cand.id, "full_name": cand.full_name, "avatar_url": cand.avatar_url, "headline": cand.headline,
-            "address_display": cand.address_display, "distance_km": dist_km, "distance_display": format_distance(dist_km),
+            "address_display": None if (cand.location_visibility or "APPROXIMATE").upper() == "PRIVATE" else cand.address_display,
+            "distance_km": None if (cand.location_visibility or "APPROXIMATE").upper() == "PRIVATE" else round(dist_km),
+            "distance_display": "Location hidden" if (cand.location_visibility or "APPROXIMATE").upper() == "PRIVATE" else format_distance(round(dist_km)),
             "trust_score": cand.trust_score, "reliability_score": cand.reliability_score,
             "completed_exchanges_count": cand.completed_exchanges_count, "badges": cand.badges or [],
             "verified": cand.verified, "featured_until": cand.featured_until, "premium": cand.premium,
@@ -106,7 +108,18 @@ def get_user_public_profile(user_id: int, current_user: User = Depends(get_curre
     user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    dist_km = calculate_haversine_distance(current_user.latitude, current_user.longitude, user.latitude, user.longitude)
+    # Respect the profile owner's location visibility preference. Public profile
+    # responses must not turn a private location into a precise distance/address leak.
+    location_visibility = (user.location_visibility or "APPROXIMATE").upper()
+    raw_dist_km = calculate_haversine_distance(current_user.latitude, current_user.longitude, user.latitude, user.longitude)
+    if location_visibility == "PRIVATE":
+        dist_km = None
+        public_address = None
+    else:
+        # Public discovery should expose only an approximate distance, not a
+        # high-precision proximity signal that can be combined with other data.
+        dist_km = round(raw_dist_km) if raw_dist_km < 999 else None
+        public_address = user.address_display
     user_skills = db.query(UserSkill).filter(UserSkill.user_id == user.id).all()
     skills_offered, skills_needed, skills_detail = [], [], []
     for us in user_skills:
@@ -116,7 +129,7 @@ def get_user_public_profile(user_id: int, current_user: User = Depends(get_curre
         skills_detail.append({"id": us.id, "user_id": us.user_id, "skill_id": us.skill_id, "skill_name": skill_name, "category": skill.category if skill else "Other", "icon": skill.icon if skill else "Wrench", "skill_type": us.skill_type, "experience_level": us.experience_level, "description": us.description, "created_at": us.created_at})
     return {
         "id": user.id, "full_name": user.full_name, "avatar_url": user.avatar_url, "bio": user.bio, "headline": user.headline,
-        "address_display": user.address_display, "distance_km": dist_km, "availability": user.availability,
+        "address_display": public_address, "distance_km": dist_km, "availability": user.availability,
         "trust_score": user.trust_score, "reliability_score": user.reliability_score, "response_rate": user.response_rate,
         "completed_exchanges_count": user.completed_exchanges_count, "reviews_count": user.reviews_count, "badges": user.badges or [],
         "verified": user.verified, "featured_until": user.featured_until, "premium": user.premium,
