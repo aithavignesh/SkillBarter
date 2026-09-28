@@ -30,6 +30,9 @@ ALLOWED_EVENTS = {
     "exchange_workspace_viewed",
     "exchange_message_sent",
     "exchange_schedule_saved",
+    "review_submitted",
+    "safety_report_submitted",
+    "safety_block_changed",
 }
 
 
