@@ -7,12 +7,20 @@ import { getCurrentPhoneUser } from './phoneAuth';
  */
 class ApiClient {
   private getToken(): string | null { return sessionStorage.getItem('skillbarter_token'); }
-  public setToken(token: string) { sessionStorage.setItem('skillbarter_token', token); }
+  public setToken(token: string) {
+    sessionStorage.setItem('skillbarter_token', token);
+    // Keep both the SDK auth state and its underlying HTTP client aligned.
+    // This guarantees PostgREST requests (for example /rest/v1/users) carry
+    // the same access token immediately after signup/login.
+    try { insforge.setAccessToken(token); } catch {}
+    try { insforge.getHttpClient?.().setAuthToken(token); } catch {}
+  }
   public clearToken() {
     sessionStorage.removeItem('skillbarter_token');
     // Keep the SDK client aligned with browser session storage. This matters
     // when a token expires or a session lookup fails before an explicit logout.
-    try { insforge.setAccessToken(''); } catch {}
+    try { insforge.setAccessToken(null); } catch {}
+    try { insforge.getHttpClient?.().setAuthToken(null); } catch {}
   }
 
   private async getAppUser() {

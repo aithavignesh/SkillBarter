@@ -22,6 +22,7 @@ export const ProfileWorkspacePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(false);
   const [skillName, setSkillName] = useState('');
@@ -54,6 +55,10 @@ export const ProfileWorkspacePage: React.FC = () => {
   };
   useEffect(() => { load(); }, [targetId, own]);
 
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [profile?.avatar_url]);
+
   const offered = useMemo(() => (profile?.skills || []).filter((s: any) => s.skill_type === 'OFFERED'), [profile]);
   const needed = useMemo(() => (profile?.skills || []).filter((s: any) => s.skill_type === 'NEEDED'), [profile]);
   const monetization = useMemo(() => own ? getMonetizationState(targetId) : null, [own, targetId, monetizationTick]);
@@ -72,6 +77,7 @@ export const ProfileWorkspacePage: React.FC = () => {
       if (error || !data?.url) throw new Error(error?.message || 'Unable to upload profile picture.');
       await api.updateMe({ avatar_url: data.url });
       setProfile((previous: any) => ({ ...previous, avatar_url: data.url }));
+      setAvatarLoadError(false);
       await refreshUser();
       setMessage('Profile picture updated successfully.');
     } catch (e: any) {
@@ -129,7 +135,7 @@ export const ProfileWorkspacePage: React.FC = () => {
         <Card className="p-5">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <div className="relative shrink-0">
-              <img src={profile.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160'} className="h-20 w-20 rounded-full border border-[#e1e4e8] object-cover" alt="Profile" />
+              {profile.avatar_url && !avatarLoadError ? <img src={profile.avatar_url} className="h-20 w-20 rounded-full border border-[#e1e4e8] object-cover" alt="Profile" onError={() => setAvatarLoadError(true)} /> : <span className="flex h-20 w-20 items-center justify-center rounded-full border border-[#e1e4e8] bg-slate-100 text-xl font-bold text-slate-500">{(profile.full_name || 'SkillBarter Member').trim().split(/\s+/).slice(0, 2).map((part: string) => part[0]).join('').toUpperCase()}</span>}
               {own && <><button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#d31d24] text-white shadow-sm transition hover:bg-[#b8171d] disabled:cursor-not-allowed disabled:opacity-60" title="Change profile picture"><Camera className="h-3.5 w-3.5" /></button><input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; void uploadAvatar(file); }} /></>}
               {uploadingAvatar && <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/35 text-white"><Loader2 className="h-5 w-5 animate-spin" /></div>}
             </div>

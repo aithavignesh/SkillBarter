@@ -108,7 +108,7 @@ export const ConnectionsPage: React.FC = () => {
 
       {notice && <div className="mt-4 flex items-center justify-between border border-[#ead0d1] bg-[#fff6f6] px-4 py-3 text-xs font-semibold text-[#b8171d]"><span>{notice}</span><button onClick={() => setNotice('')} className="font-bold underline">Dismiss</button></div>}
 
-      <div className="mt-5 border-b border-[#e1e4e8] bg-white px-2"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} /></div>
+      <div className="mt-5 border-b border-[#e1e4e8] bg-white px-2"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} variant="network" /></div>
 
       {loading ? (
         <div className="border border-[#e1e4e8] bg-white py-20 text-center text-sm text-slate-400">Loading your learning network…</div>

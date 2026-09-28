@@ -53,7 +53,7 @@ export const ExchangesPage: React.FC = () => {
       icon={<ArrowLeftRight className="h-3.5 w-3.5" />}
       actions={<Link to="/matches"><Button size="sm" icon={<Sparkles className="h-3.5 w-3.5" />}>Find a learning partner</Button></Link>}
     >
-      <div className="border border-[#e1e4e8] bg-white px-3"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} /></div>
+      <div className="min-w-0 border border-[#e1e4e8] bg-white px-2 sm:px-3"><Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} variant="status" /></div>
       <div className="mt-4 grid gap-px border border-[#e1e4e8] bg-[#e1e4e8] sm:grid-cols-3">
         <div className="bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">1. CONNECT</p><p className="mt-1 text-xs font-semibold text-[#17233b]">Accept a learning request</p><p className="mt-1 text-[10px] text-slate-500">Confirm that the learning goal works for you.</p></div>
         <div className="bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">2. PLAN</p><p className="mt-1 text-xs font-semibold text-[#17233b]">Schedule the session</p><p className="mt-1 text-[10px] text-slate-500">Pick a time, duration and format before you meet.</p></div>

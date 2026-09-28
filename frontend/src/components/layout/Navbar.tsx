@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
@@ -6,23 +6,38 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   Repeat, Compass, Sparkles, ArrowLeftRight, MessageSquare, Bell, Search,
   User as UserIcon, ShieldCheck, LogOut, Shield, Coins, Users, Settings,
-  HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy, Sun, Moon, Menu, X,
+  HelpCircle, ChevronRight, ChevronDown, GraduationCap, LifeBuoy, Sun, Moon, Menu, X, UserPlus,
 } from 'lucide-react';
 
 export const DEFAULT_AVATAR_URL = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160';
 
 type NavFeature = { label: string; path: string };
 type NavItem = { label: string; path: string; icon: React.ComponentType<{ className?: string }>; features?: NavFeature[] };
+const notificationIconFor = (type: string) => type === 'MESSAGE' ? MessageSquare : type.startsWith('EXCHANGE') ? ArrowLeftRight : type.includes('CONNECT') ? UserPlus : type.includes('TRUST') || type.includes('REVIEW') ? ShieldCheck : Repeat;
+const notificationTime = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+};
 
 export const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading: notificationsLoading, error: notificationsError, refreshNotifications, markAsRead, markAllAsRead } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const notificationsContainerRef = useRef<HTMLDivElement>(null);
+  const notificationsButtonRef = useRef<HTMLButtonElement>(null);
+  const profileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const profileMenuContainerRef = useRef<HTMLDivElement>(null);
+  const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -126,30 +141,219 @@ export const Navbar: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
-  if (!currentUser) {
-    return (
-      <header className="sticky top-0 z-40 border-b border-[#e4e6e9] bg-white">
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link to="/" className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center bg-[#d31d24] text-white"><Repeat className="h-[17px] w-[17px]" /></span>
-            <span className="text-[19px] font-bold tracking-[-0.03em] text-[#17233b]">Skill<span className="text-[#d31d24]">Barter</span></span>
-          </Link>
-          <div className="flex items-center gap-1 sm:gap-3">
-            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} className="hidden items-center gap-2 border border-[#e1e4e8] bg-white px-3 py-2 text-[12px] font-semibold text-[#4d5b72] transition hover:border-[#cbd1d8] hover:text-[#17233b] sm:flex">
-              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              {theme === 'light' ? 'Dark mode' : 'Light mode'}
-            </button>
-            <button type="button" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} className="flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] sm:hidden">
-              {theme === 'light' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
-            </button>
-            <Link to="/login" className="px-3 py-2 text-[13px] font-semibold text-[#4d5b72] hover:text-[#17233b]">Log in</Link>
-            <Link to="/signup" className="bg-[#d31d24] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#b8171d]">Join SkillBarter</Link>
-          </div>
-        </div>
-      </header>
-    );
-  }
+  useEffect(() => {
+    setShowMobileMenu(false);
+    setShowNotifications(false);
+    setShowProfileMenu(false);
+  }, [location.pathname]);
 
+  useEffect(() => {
+    if (!showNotifications) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowNotifications(false);
+      notificationsButtonRef.current?.focus();
+    };
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (event.target instanceof Node && !notificationsContainerRef.current?.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+    };
+  }, [showNotifications]);
+
+  useEffect(() => {
+    if (!showProfileMenu && !showMobileMenu && !isMobileMenuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setShowProfileMenu(false);
+      setShowMobileMenu(false);
+      setIsMobileMenuOpen(false);
+      if (showProfileMenu) profileMenuButtonRef.current?.focus();
+      else mobileMenuButtonRef.current?.focus();
+    };
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (!(event.target instanceof Node)) return;
+      if (showProfileMenu && !profileMenuContainerRef.current?.contains(event.target)) setShowProfileMenu(false);
+      if ((showMobileMenu || isMobileMenuOpen) && !mobileMenuContainerRef.current?.contains(event.target)) {
+        setShowMobileMenu(false);
+        setIsMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+    };
+  }, [showProfileMenu, showMobileMenu, isMobileMenuOpen]);
+
+if (!currentUser) {
+    return (
+        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+
+                {/* Logo */}
+                <Link
+                    to="/"
+                    className="flex items-center gap-2"
+                    aria-label="SkillBarter home"
+                >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#c62828] text-white">
+                        <Repeat className="h-5 w-5" />
+                    </div>
+
+                    <span className="text-lg font-semibold tracking-tight text-slate-900">
+                        SkillBarter
+                    </span>
+                </Link>
+
+                {/* Desktop Navigation */}
+                <div className="hidden items-center gap-7 lg:flex">
+                    <a
+                        href="#how-it-works"
+                        className="text-sm font-medium text-slate-600 transition-colors hover:text-[#c62828]"
+                    >
+                        How it works
+                    </a>
+
+                    <a
+                        href="#explore"
+                        className="text-sm font-medium text-slate-600 transition-colors hover:text-[#c62828]"
+                    >
+                        Explore
+                    </a>
+
+                    <a
+                        href="#why-skillbarter"
+                        className="text-sm font-medium text-slate-600 transition-colors hover:text-[#c62828]"
+                    >
+                        Why SkillBarter
+                    </a>
+
+                    <a
+                        href="#faq"
+                        className="text-sm font-medium text-slate-600 transition-colors hover:text-[#c62828]"
+                    >
+                        FAQ
+                    </a>
+                </div>
+
+                {/* Desktop Actions */}
+                <div className="hidden items-center gap-3 lg:flex">
+                    {/* Theme Toggle */}
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                        aria-label="Toggle theme"
+                    >
+                        {theme === 'dark' ? (
+                            <Sun className="h-4 w-4" />
+                        ) : (
+                            <Moon className="h-4 w-4" />
+                        )}
+                    </button>
+
+                    {/* Login */}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/login')}
+                        className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    >
+                        Log in
+                    </button>
+                </div>
+
+                {/* Mobile Menu Button */}
+                <div className="flex items-center gap-2 lg:hidden">
+                    {/* Theme Toggle */}
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                        aria-label="Toggle theme"
+                    >
+                        {theme === 'dark' ? (
+                            <Sun className="h-4 w-4" />
+                        ) : (
+                            <Moon className="h-4 w-4" />
+                        )}
+                    </button>
+
+                    <button
+                        ref={mobileMenuButtonRef}
+                        type="button"
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
+                        aria-label="Toggle navigation menu"
+                        aria-expanded={isMobileMenuOpen}
+                        aria-controls="public-mobile-navigation"
+                    >
+                        {isMobileMenuOpen ? (
+                            <X className="h-5 w-5" />
+                        ) : (
+                            <Menu className="h-5 w-5" />
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile Navigation */}
+                <div id="public-mobile-navigation" aria-hidden={!isMobileMenuOpen} className={`public-mobile-navigation absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-4 shadow-md lg:hidden ${isMobileMenuOpen ? 'public-mobile-navigation--open' : ''}`}>
+                    <div className="flex flex-col gap-1">
+
+                        <a
+                            href="#how-it-works"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#c62828]"
+                        >
+                            How it works
+                        </a>
+
+                        <a
+                            href="#explore"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#c62828]"
+                        >
+                            Explore
+                        </a>
+
+                        <a
+                            href="#why-skillbarter"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#c62828]"
+                        >
+                            Why SkillBarter
+                        </a>
+
+                        <a
+                            href="#faq"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#c62828]"
+                        >
+                            FAQ
+                        </a>
+
+                        <div className="my-2 border-t border-slate-200" />
+
+                        <button
+                            type="button"
+                            onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
+                            className="rounded-lg px-3 py-3 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                            Log in
+                        </button>
+                    </div>
+                </div>
+        </nav>
+    );
+}
   const navLink = (item: NavItem) => {
     const active = isActive(item.path);
     const expanded = expandedNav === item.path || Boolean(item.features?.some(feature => isActive(feature.path)));
@@ -157,7 +361,7 @@ export const Navbar: React.FC = () => {
     return (
       <div key={item.path}>
         <div className={`flex items-center border-l-2 transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7]' : 'border-transparent'}`}>
-          <Link to={item.path} className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:text-[#17233b]'}`}>
+          <Link to={item.path} aria-current={active ? 'page' : undefined} className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:text-[#17233b]'}`}>
             <Icon className={`h-[17px] w-[17px] shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
             <span>{item.label}</span>
           </Link>
@@ -216,7 +420,7 @@ export const Navbar: React.FC = () => {
       </aside>
 
       <header className="sticky top-0 z-30 h-[68px] border-b border-[#e4e6e9] bg-white lg:ml-[312px]">
-        <div className="flex h-full items-center gap-4 px-5 sm:px-7 lg:px-8">
+        <div className="flex h-full items-center gap-4 px-5 pl-14 sm:px-7 sm:pl-16 lg:px-8 lg:pl-8">
           <div className="min-w-0 flex-1">
             <div className="hidden items-center gap-2 text-[11px] text-[#8a92a0] md:flex"><span>SkillBarter</span><span>/</span><span className="font-semibold text-[#17233b]">{primary.find((x) => isActive(x.path))?.label || 'Community'}</span></div>
             <form onSubmit={handleSearchSubmit} className="relative mt-0.5 max-w-[520px]"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search learning skills or people" className="h-9 w-full border border-[#e2e5e9] bg-[#fafbfc] pl-9 pr-4 text-[12px] text-[#17233b] outline-none transition focus:border-[#c8cdd5] focus:bg-white focus:ring-0" /></form>
@@ -226,30 +430,70 @@ export const Navbar: React.FC = () => {
               {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               <span className="hidden sm:inline">{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
             </button>
-            <div className="relative">
-              <button type="button" aria-label="Notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-9 w-9 items-center justify-center text-[#6f7887] hover:bg-[#f6f7f8] hover:text-[#17233b]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
-              {showNotifications && <div className="absolute right-0 mt-2 w-80 border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)]"><div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3"><span className="text-[12px] font-bold text-[#17233b]">Notifications</span>{unreadCount > 0 && <button type="button" onClick={markAllAsRead} className="text-[10px] font-semibold text-[#d31d24]">Mark all read</button>}</div><div className="max-h-80 overflow-y-auto">{notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">No notifications yet</div> : notifications.map((n) => <div key={n.id} onClick={() => { markAsRead(n.id); if (n.link) { navigate(n.link); setShowNotifications(false); } }} className={`cursor-pointer border-b border-[#f0f1f3] px-4 py-3 hover:bg-[#fafbfc] ${!n.is_read ? 'bg-[#fff8f8]' : ''}`}><div className="flex items-start justify-between gap-2"><span className="text-[12px] font-semibold text-[#17233b]">{n.title}</span>{!n.is_read && <span className="mt-1 h-1.5 w-1.5 bg-[#d31d24]" />}</div><p className="mt-1 text-[11px] leading-5 text-[#697386]">{n.message}</p></div>)}</div></div>}
+            <div ref={notificationsContainerRef} className="relative">
+              <button ref={notificationsButtonRef} type="button" aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`} aria-expanded={showNotifications} aria-controls="navbar-notifications" onClick={() => { setShowNotifications((v) => !v); setShowProfileMenu(false); }} className="relative flex h-10 w-10 items-center justify-center text-[#6f7887] transition-colors hover:bg-[#f6f7f8] hover:text-[#17233b] active:bg-[#eef0f2]"><Bell className="h-[18px] w-[18px]" />{unreadCount > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-[#d31d24]" />}</button>
+              <div
+                id="navbar-notifications"
+                className={`notification-dropdown absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)] ${showNotifications ? 'notification-dropdown--open' : ''}`}
+                aria-hidden={!showNotifications}
+              >
+                <div className="flex items-center justify-between border-b border-[#edf0f2] px-4 py-3">
+                  <span className="text-[12px] font-bold text-[#17233b]">Notifications</span>
+                  {unreadCount > 0 && <button tabIndex={showNotifications ? 0 : -1} type="button" onClick={markAllAsRead} className="text-[10px] font-semibold text-[#d31d24] transition-colors hover:text-[#b8171d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]">Mark all read</button>}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notificationsError && <div className="border-b border-[#f0d5d6] bg-[#fff7f7] px-4 py-3" role="alert"><p className="break-words text-[11px] leading-5 text-[#8f1a20]">Notifications couldn’t be updated.</p><button type="button" onClick={() => void refreshNotifications()} className="mt-1 min-h-8 text-[11px] font-bold text-[#b8171d] underline underline-offset-2">Try again</button></div>}
+                  {notificationsLoading && notifications.length === 0 ? <div className="space-y-3 p-4" role="status"><span className="sr-only">Loading notifications…</span>{[0, 1].map(item => <div key={item} aria-hidden="true" className="flex items-center gap-3"><span className="h-8 w-8 shrink-0 rounded-full bg-[#f1f3f5]" /><span className="min-w-0 flex-1 space-y-2"><span className="block h-2.5 w-2/5 bg-[#f1f3f5]" /><span className="block h-2.5 w-4/5 bg-[#f1f3f5]" /></span></div>)}</div> : notifications.length === 0 ? <div className="p-6 text-center text-[12px] text-[#8a92a0]">{notificationsError ? 'Notifications are unavailable right now.' : 'No notifications yet'}</div> : notifications.map((n) => {
+                    const Icon = notificationIconFor(String(n.type || ''));
+                    const title = n.title || 'Notification';
+                    return (
+                      <button
+                        tabIndex={showNotifications ? 0 : -1}
+                        key={n.id}
+                        type="button"
+                        onClick={() => { void markAsRead(n.id); if (n.link) { navigate(n.link); setShowNotifications(false); } }}
+                        aria-label={`${n.is_read ? '' : 'Unread notification: '}${title}`}
+                        className={`notification-dropdown__item flex w-full items-start gap-3 border-b border-[#f0f1f3] px-4 py-3 text-left last:border-0 ${!n.is_read ? 'notification-dropdown__item--unread bg-[#fff8f8]' : 'notification-dropdown__item--read'}`}
+                      >
+                        <span className={`notification-dropdown__icon flex h-8 w-8 shrink-0 items-center justify-center ${!n.is_read ? 'bg-[#fff0f0] text-[#d31d24]' : 'bg-[#f3f5f7] text-[#697386]'}`}>
+                          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-start justify-between gap-2">
+                            <span className="notification-dropdown__title min-w-0 break-words text-[12px] font-semibold text-[#17233b]">{title}</span>
+                            <span className={`notification-dropdown__indicator mt-1 h-1.5 w-1.5 shrink-0 ${!n.is_read ? 'bg-[#d31d24]' : ''}`} aria-hidden="true" />
+                          </span>
+                          <span className="notification-dropdown__message mt-1 block break-words text-[11px] leading-5 text-[#697386]">{n.message}</span>
+                          {n.created_at && <time className="mt-1 block text-[10px] text-slate-500" dateTime={n.created_at}>{notificationTime(n.created_at)}</time>}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-            <div className="relative">
-              <button type="button" onClick={() => { setShowProfileMenu((v) => !v); setShowNotifications(false); }} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#f6f7f8]"><img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-8 w-8 rounded-full object-cover" /><span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-[#17233b] xl:block">{currentUser.full_name}</span><ChevronRight className="hidden h-3.5 w-3.5 rotate-90 text-[#9aa1ac] xl:block" /></button>
-              {showProfileMenu && <div className="absolute right-0 mt-2 w-60 border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)]"><div className="border-b border-[#edf0f2] px-4 py-3"><p className="text-[12px] font-bold text-[#17233b]">{currentUser.full_name}</p><p className="mt-0.5 truncate text-[10px] text-[#8a92a0]">{currentUser.email}</p></div><div className="py-1"><button type="button" onClick={() => toggleTheme()} className="flex w-full items-center justify-between px-4 py-2.5 text-left text-[12px] font-semibold text-[#4d5b72] hover:bg-[#fafbfc]"><span className="flex items-center gap-2">{theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}{theme === 'light' ? 'Dark mode' : 'Light mode'}</span><span className="text-[10px] text-[#9299a5]">{theme === 'light' ? 'OFF' : 'ON'}</span></button><Link to={`/profile/${currentUser.id}`} onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] text-[#4d5b72] hover:bg-[#fafbfc]"><UserIcon className="h-4 w-4" />My Profile</Link><Link to="/monetization" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><Coins className="h-4 w-4" />Monetization Hub</Link>{currentUser.is_admin && <Link to="/admin" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 border-t border-[#edf0f2] px-4 py-2.5 text-[12px] text-[#8a5a00]"><Shield className="h-4 w-4" />Admin Moderation</Link>}</div><div className="border-t border-[#edf0f2] p-1"><button type="button" onClick={async () => { setShowProfileMenu(false); await logout(); navigate('/'); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><LogOut className="h-4 w-4" />Log out</button></div></div>}
+            <div ref={profileMenuContainerRef} className="relative">
+              <button ref={profileMenuButtonRef} type="button" aria-label={`Account menu for ${currentUser.full_name}`} aria-expanded={showProfileMenu} aria-haspopup="menu" onClick={() => { setShowProfileMenu((v) => !v); setShowNotifications(false); }} className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#f6f7f8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d31d24]"><img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt="" className="h-8 w-8 rounded-full object-cover" /><span className="hidden max-w-[120px] truncate text-[12px] font-semibold text-[#17233b] xl:block">{currentUser.full_name}</span><ChevronRight className="hidden h-3.5 w-3.5 rotate-90 text-[#9aa1ac] xl:block" /></button>
+              {showProfileMenu && <div id="profile-navigation-menu" className="absolute right-0 mt-2 w-60 border border-[#e1e4e8] bg-white shadow-[0_12px_32px_rgba(23,35,59,.12)]"><div className="border-b border-[#edf0f2] px-4 py-3"><p className="text-[12px] font-bold text-[#17233b]">{currentUser.full_name}</p><p className="mt-0.5 truncate text-[10px] text-[#8a92a0]">{currentUser.email}</p></div><div className="py-1"><button type="button" onClick={() => toggleTheme()} className="flex w-full items-center justify-between px-4 py-2.5 text-left text-[12px] font-semibold text-[#4d5b72] hover:bg-[#fafbfc]"><span className="flex items-center gap-2">{theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}{theme === 'light' ? 'Dark mode' : 'Light mode'}</span><span className="text-[10px] text-[#9299a5]">{theme === 'light' ? 'OFF' : 'ON'}</span></button><Link to={`/profile/${currentUser.id}`} onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] text-[#4d5b72] hover:bg-[#fafbfc]"><UserIcon className="h-4 w-4" />My Profile</Link><Link to="/monetization" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><Coins className="h-4 w-4" />Monetization Hub</Link>{currentUser.is_admin && <Link to="/admin" onClick={() => setShowProfileMenu(false)} className="flex items-center gap-2 border-t border-[#edf0f2] px-4 py-2.5 text-[12px] text-[#8a5a00]"><Shield className="h-4 w-4" />Admin Moderation</Link>}</div><div className="border-t border-[#edf0f2] p-1"><button type="button" onClick={async () => { setShowProfileMenu(false); await logout(); navigate('/'); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[12px] font-semibold text-[#d31d24] hover:bg-[#fff7f7]"><LogOut className="h-4 w-4" />Log out</button></div></div>}
             </div>
           </div>
         </div>
       </header>
 
-      <div className="lg:hidden">
+      <div ref={mobileMenuContainerRef} className="lg:hidden">
         <button
+          ref={mobileMenuButtonRef}
           type="button"
           onClick={() => setShowMobileMenu(v => !v)}
           aria-label={showMobileMenu ? 'Close navigation menu' : 'Open navigation menu'}
-          className="fixed left-5 top-[15px] z-50 flex h-9 w-9 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm"
+          aria-expanded={showMobileMenu}
+          aria-controls="mobile-primary-navigation"
+          className="fixed left-5 top-[13px] z-50 flex h-11 w-11 items-center justify-center border border-[#e1e4e8] bg-white text-[#17233b] shadow-sm transition-colors hover:bg-[#f7f8f7] active:bg-[#eef0f2]"
         >
           {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
-        {showMobileMenu && (
-          <div className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100vh-68px)] overflow-y-auto border-b border-[#e1e4e8] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(23,35,59,.12)]">
+          <nav id="mobile-primary-navigation" aria-hidden={!showMobileMenu} className={`mobile-primary-navigation fixed inset-x-0 top-[68px] z-40 max-h-[calc(100dvh-68px)] overflow-y-auto border-b border-[#e1e4e8] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(23,35,59,.12)] ${showMobileMenu ? 'mobile-primary-navigation--open' : ''}`}>
             <div className="mb-4 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
               <img src={currentUser.avatar_url || DEFAULT_AVATAR_URL} alt={currentUser.full_name} className="h-10 w-10 rounded-full object-cover" />
               <div className="min-w-0">
@@ -271,17 +515,19 @@ export const Navbar: React.FC = () => {
                     <Link
                       to={item.path}
                       onClick={() => setShowMobileMenu(false)}
-                      className={`flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#4d5b72]'}`}
+                      aria-current={active ? 'page' : undefined}
+                      className={`flex min-w-0 flex-1 items-center gap-3 border-l-2 px-2 py-3 text-[13px] transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#4d5b72]'}`}
                     >
-                      <Icon className={`h-4 w-4 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
-                      {item.label}
+                      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
+                      <span className="min-w-0 break-words">{item.label}</span>
                     </Link>
                     {item.features && (
                       <button
                         type="button"
                         onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)}
-                        className="flex h-9 w-9 items-center justify-center text-[#8a92a0]"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center text-[#8a92a0]"
                         aria-label={`Show ${item.label} features`}
+                        aria-expanded={expanded}
                       >
                         <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
                       </button>
@@ -294,7 +540,7 @@ export const Navbar: React.FC = () => {
                           key={feature.path}
                           to={feature.path}
                           onClick={() => setShowMobileMenu(false)}
-                          className={`block px-3 py-2 text-[11px] ${isActive(feature.path) ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}
+                          className={`block break-words px-3 py-2.5 text-[11px] ${isActive(feature.path) ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}
                         >
                           {feature.label}
                         </Link>
@@ -304,8 +550,7 @@ export const Navbar: React.FC = () => {
                 </div>
               );
             })}
-          </div>
-        )}
+          </nav>
       </div>
     </>
   );
