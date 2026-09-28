@@ -261,12 +261,13 @@ if (!currentUser) {
                     </button>
 
                     {/* Login */}
-                    <Link
-                        to="/login"
+                    <button
+                        type="button"
+                        onClick={() => navigate('/login')}
                         className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
                     >
                         Log in
-                    </Link>
+                    </button>
                 </div>
 
                 {/* Mobile Menu Button */}
@@ -341,13 +342,13 @@ if (!currentUser) {
 
                         <div className="my-2 border-t border-slate-200" />
 
-                        <Link
-                            to="/login"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="rounded-lg px-3 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        <button
+                            type="button"
+                            onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
+                            className="rounded-lg px-3 py-3 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                         >
                             Log in
-                        </Link>
+                        </button>
                     </div>
                 </div>
         </nav>
