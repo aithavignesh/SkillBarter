@@ -137,7 +137,10 @@ class ApiClient {
     const { data, error } = await insforge.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message || 'Invalid credentials');
     if (!data?.user) throw new Error('Login succeeded but no user was returned.');
-    if (data.accessToken) this.setToken(data.accessToken);
+    if (data.accessToken) {
+      this.setToken(data.accessToken);
+      try { insforge.setAccessToken(data.accessToken); } catch {}
+    }
     const appUser = await this.syncAppUser(data.user, data.user?.profile ?? {});
     const user = this.authUserToLegacyUser(data.user, appUser);
     return { access_token: data.accessToken ?? '', user_id: user.id, email: user.email, full_name: user.full_name, is_admin: user.is_admin };
@@ -192,7 +195,10 @@ class ApiClient {
       }
     }
 
-    if (accessToken) this.setToken(accessToken);
+    if (accessToken) {
+      this.setToken(accessToken);
+      try { insforge.setAccessToken(accessToken); } catch {}
+    }
 
     const profile = {
       nickname: payload.full_name,
