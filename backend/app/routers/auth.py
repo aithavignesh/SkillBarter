@@ -12,10 +12,16 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=Token)
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
+    normalized_username = req.username.strip().lower() if req.username else None
+    normalized_phone = req.phone.strip() if req.phone else None
     existing = db.query(User).filter(User.email == req.email.lower()).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="An account with this email address already exists")
-    user = User(email=req.email.lower(), password_hash=hash_password(req.password), full_name=req.full_name,
+    if normalized_username and db.query(User).filter(User.username == normalized_username).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="That username is already taken")
+    if normalized_phone and db.query(User).filter(User.phone == normalized_phone).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="That mobile number is already registered")
+    user = User(email=req.email.lower(), username=normalized_username, phone=normalized_phone, password_hash=hash_password(req.password), full_name=req.full_name,
         address_display=req.address_display or "Hyderabad", latitude=req.latitude or 17.4485, longitude=req.longitude or 78.3748,
         primary_intent=req.primary_intent or "EXCHANGE", trust_score=85.0, reliability_score=90.0, response_rate=95.0,
         skill_quality_score=90.0, badges=["Verified Member"])
@@ -53,7 +59,7 @@ def get_me(current_user: User = Depends(get_current_user), db: Session = Depends
             "skill_name": skill.name if skill else "Unknown", "category": skill.category if skill else "Other",
             "icon": skill.icon if skill else "Wrench", "skill_type": us.skill_type,
             "experience_level": us.experience_level, "description": us.description, "created_at": us.created_at})
-    return {"id": current_user.id, "full_name": current_user.full_name, "email": current_user.email,
+    return {"id": current_user.id, "full_name": current_user.full_name, "email": current_user.email, "username": current_user.username, "phone": current_user.phone,
         "avatar_url": current_user.avatar_url, "bio": current_user.bio, "headline": current_user.headline,
         "address_display": current_user.address_display, "latitude": current_user.latitude, "longitude": current_user.longitude,
         "exchange_radius_km": current_user.exchange_radius_km, "location_visibility": current_user.location_visibility,
