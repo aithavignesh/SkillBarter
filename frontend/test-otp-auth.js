@@ -7,6 +7,7 @@ import {
   checkVerifyRateLimit,
   clearVerifyRateLimit,
   validatePhoneAuthSession,
+  requireRegisteredPhoneProfile,
 } from './api/auth/phone/_utils.js';
 import { getSmsProviderConfig } from './api/auth/phone/smsProvider.js';
 
@@ -85,6 +86,16 @@ assert.deepStrictEqual(
   { valid: false, reason: 'MISSING_ACCESS_TOKEN' }
 );
 console.log('  [PASS] Phone login session contract validation');
+
+assert.deepStrictEqual(
+  requireRegisteredPhoneProfile({ id: 42, phone: '+917028554230' }),
+  { id: 42, phone: '+917028554230' }
+);
+assert.throws(
+  () => requireRegisteredPhoneProfile(null),
+  (error) => error?.code === 'PHONE_NOT_REGISTERED' && error?.statusCode === 404
+);
+console.log('  [PASS] Phone OTP cannot create an account for an unregistered number');
 
 if (previousProvider === undefined) delete process.env.SMS_PROVIDER;
 else process.env.SMS_PROVIDER = previousProvider;
