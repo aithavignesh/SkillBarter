@@ -18,13 +18,18 @@ export async function requestEmailOtp(emailInput: string) {
   // SkillBarter requires new users to complete the full signup flow first.
   // InsForge Email OTP can create a passwordless user for an unknown email,
   // so guard this login-only path with the existing SkillBarter profile.
-  const { data: profile, error: profileError } = await insforge.database
+  // Use a bounded list instead of maybeSingle(). The InsForge database
+  // endpoint can return 400 for single-row negotiation on this public lookup.
+  // We only need to know whether at least one SkillBarter profile exists.
+  const { data: profiles, error: profileError } = await insforge.database
     .from('users')
     .select('id')
     .eq('email', email)
-    .maybeSingle();
+    .limit(1);
   if (profileError) throw new Error('Unable to verify your SkillBarter account. Please try again.');
-  if (!profile) throw new Error('No SkillBarter account exists for this email. Please sign up first.');
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    throw new Error('No SkillBarter account exists for this email. Please sign up first.');
+  }
   const response = await fetch(`${getBaseUrl()}/api/auth/email/send-otp`, {
     method: 'POST',
     headers: getHeaders(),
