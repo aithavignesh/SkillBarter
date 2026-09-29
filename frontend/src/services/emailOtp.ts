@@ -15,22 +15,10 @@ export async function requestEmailOtp(emailInput: string) {
   const email = emailInput.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address.');
 
-  // SkillBarter requires new users to complete the full signup flow first.
-  // InsForge Email OTP can create a passwordless user for an unknown email,
-  // so guard this login-only path with the existing SkillBarter profile.
-  // Use a bounded list instead of maybeSingle(). The InsForge database
-  // endpoint can return 400 for single-row negotiation on this public lookup.
-  // We only need to know whether at least one SkillBarter profile exists.
-  const { data: profiles, error: profileError } = await insforge.database
-    .from('users')
-    .select('id')
-    .eq('email', email)
-    .limit(1);
-  if (profileError) throw new Error('Unable to verify your SkillBarter account. Please try again.');
-  if (!Array.isArray(profiles) || profiles.length === 0) {
-    throw new Error('No SkillBarter account exists for this email. Please sign up first.');
-  }
-  const response = await fetch(`${getBaseUrl()}/api/auth/email/send-otp`, {
+  // Account existence is checked server-side. This avoids the browser-side
+  // InsForge database lookup that was returning 400 and keeps unknown emails
+  // from reaching InsForge's passwordless user-creation OTP flow.
+  const response = await fetch('/api/auth/email/request-otp', {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ email }),
@@ -45,11 +33,10 @@ export async function verifyEmailOtp(emailInput: string, otpInput: string) {
   const otp = otpInput.trim();
   if (!/^\d{6}$/.test(otp)) throw new Error('Enter the complete 6-digit email OTP.');
 
-  const response = await fetch(`${getBaseUrl()}/api/auth/sessions?client_type=web`, {
+  const response = await fetch('/api/auth/email/verify-otp', {
     method: 'POST',
     headers: getHeaders(),
-    credentials: 'include',
-    body: JSON.stringify({ method: 'otp', email, otp }),
+    body: JSON.stringify({ email, otp }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data?.accessToken) {
@@ -60,7 +47,7 @@ export async function verifyEmailOtp(emailInput: string, otpInput: string) {
   sessionStorage.setItem('skillbarter_token', data.accessToken);
   // Email OTP sessions return an access token but no browser refresh cookie.
   // Mark this session so the app restores it through the access-token path
-  // instead of calling InsForge /auth/refresh, which returns 403 for this flow.
+  // instead of calling InsForge /auth/refresh.
   sessionStorage.setItem('skillbarter_email_session', '1');
   sessionStorage.setItem('skillbarter_email', email);
   sessionStorage.removeItem('skillbarter_email_otp');
