@@ -113,6 +113,14 @@ export function verifyOtpChallenge(phone, enteredOtp, token, customSecret=null) 
   return otpHash.length===eh.length&&crypto.timingSafeEqual(Buffer.from(otpHash),Buffer.from(eh));
 }
 
+export function requireRegisteredPhoneProfile(profile) {
+  if (profile) return profile;
+  const error = new Error('No SkillBarter account is registered with this mobile number. Please sign up first.');
+  error.code = 'PHONE_NOT_REGISTERED';
+  error.statusCode = 404;
+  throw error;
+}
+
 function invalidCredentials(error) { const s=Number(error?.statusCode??error?.status??0), c=String(error?.error??error?.code??'').toUpperCase(), m=String(error?.message??'').toLowerCase(); return s===401||c==='INVALID_CREDENTIALS'||m.includes('invalid login credentials'); }
 
 async function dbRequest(baseUrl, anonKey, method, query='', body) {
@@ -179,12 +187,7 @@ export async function createOrSignInPhoneUser(phone) {
     `?phone=eq.${encodeURIComponent(phone)}&limit=1`,
   );
   const phoneProfile = Array.isArray(existingByPhone) ? existingByPhone[0] : existingByPhone;
-  if (!phoneProfile) {
-    const error = new Error('No SkillBarter account is registered with this mobile number. Please sign up first.');
-    error.code = 'PHONE_NOT_REGISTERED';
-    error.statusCode = 404;
-    throw error;
-  }
+  requireRegisteredPhoneProfile(phoneProfile);
 
   const {createClient}=await import('@insforge/sdk');
   const client=createClient({baseUrl:insforgeUrl,anonKey:insforgeAnonKey});
