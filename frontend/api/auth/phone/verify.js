@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     // Registration verification proves ownership of the mobile number without
     // creating a passwordless phone-only account. The actual SkillBarter account
     // is created only after the user submits name, email, username and password.
-    if (purpose === 'register') {
+    if (purpose === 'register' || purpose === 'verify_only') {
       return sendJson(res, {
         success: true,
         verified: true,
