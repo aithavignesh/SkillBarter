@@ -64,7 +64,7 @@ export async function findSkillBarterProfile(email) {
   }
 
   const baseUrl = insforgeUrl.replace(/\/+$/, '');
-  const url = `${baseUrl}/api/database/records/users?select=id,email&email=eq.${encodeURIComponent(email)}&limit=1`;
+  const url = `${baseUrl}/api/database/records/users?select=id,email,full_name,avatar_url,bio,headline,address_display,latitude,longitude,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at&email=eq.${encodeURIComponent(email)}&limit=1`;
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${insforgeApiKey}`,
