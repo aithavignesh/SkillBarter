@@ -50,6 +50,7 @@ export default async function handler(req, res) {
       success: true,
       accessToken: data.accessToken,
       user: data.user,
+      profile,
     }, 200);
   } catch (err) {
     console.error('[Email OTP Verification Failed]', err.message);
