@@ -28,6 +28,7 @@ export function getEnvConfig() {
     phoneAuthSecret: sanitizeEnvValue(process.env.PHONE_AUTH_SECRET),
     insforgeUrl: sanitizeEnvValue(process.env.INSFORGE_URL || process.env.VITE_INSFORGE_URL),
     insforgeAnonKey: sanitizeEnvValue(process.env.INSFORGE_ANON_KEY || process.env.VITE_INSFORGE_ANON_KEY),
+    insforgeApiKey: sanitizeEnvValue(process.env.INSFORGE_API_KEY || process.env.INSFORGE_ADMIN_KEY),
   };
 }
 
@@ -123,9 +124,10 @@ export function requireRegisteredPhoneProfile(profile) {
 
 function invalidCredentials(error) { const s=Number(error?.statusCode??error?.status??0), c=String(error?.error??error?.code??'').toUpperCase(), m=String(error?.message??'').toLowerCase(); return s===401||c==='INVALID_CREDENTIALS'||m.includes('invalid login credentials'); }
 
-async function dbRequest(baseUrl, anonKey, method, query='', body) {
+async function dbRequest(baseUrl, anonKey, method, query='', body, apiKey='') {
   const url=`${baseUrl.replace(/\/+$/,'')}/api/database/records/users${query}`;
-  const r=await fetch(url,{method,headers:{Authorization:`Bearer ${anonKey}`,'Content-Type':'application/json',Accept:'application/json',Prefer:'return=representation'},body:body===undefined?undefined:JSON.stringify(body)});
+  const authKey=apiKey || anonKey;
+  const r=await fetch(url,{method,headers:{Authorization:`Bearer ${authKey}`,'Content-Type':'application/json',Accept:'application/json',Prefer:'return=representation'},body:body===undefined?undefined:JSON.stringify(body)});
   const text=await r.text(); let data=null; try{data=text?JSON.parse(text):null;}catch{}
   if(!r.ok) throw new Error(data?.message||data?.error||text||`InsForge database request failed (${r.status})`);
   return data;
@@ -173,7 +175,7 @@ async function authSession(client,email,password,baseUrl,anonKey) {
 }
 
 export async function createOrSignInPhoneUser(phone) {
-  const {insforgeUrl,insforgeAnonKey,phoneAuthSecret}=getEnvConfig();
+  const {insforgeUrl,insforgeAnonKey,insforgeApiKey,phoneAuthSecret}=getEnvConfig();
   if(!phoneAuthSecret) throw new Error('PHONE_AUTH_SECRET environment variable is missing.');
   if(!insforgeUrl||!insforgeAnonKey) throw new Error('INSFORGE_URL or INSFORGE_ANON_KEY environment variable is missing.');
 
@@ -185,6 +187,8 @@ export async function createOrSignInPhoneUser(phone) {
     insforgeAnonKey,
     'GET',
     `?phone=eq.${encodeURIComponent(phone)}&limit=1`,
+    undefined,
+    insforgeApiKey,
   );
   const phoneProfile = Array.isArray(existingByPhone) ? existingByPhone[0] : existingByPhone;
   requireRegisteredPhoneProfile(phoneProfile);
