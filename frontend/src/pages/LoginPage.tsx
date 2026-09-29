@@ -5,31 +5,9 @@ import { api } from '../services/api';
 import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Repeat, Lock, Mail, ArrowRight, Phone, ShieldCheck, RotateCcw, KeyRound, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Repeat, Lock, Mail, ArrowRight, ShieldCheck, RotateCcw, KeyRound, CheckCircle2 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const [phone, setPhone] = useState('');
-  const [countryCode, setCountryCode] = useState('+91');
-  const [otp, setOtp] = useState('');
-  const countries = [
-    ['IN','India','+91'],['US','United States','+1'],['CA','Canada','+1'],['GB','United Kingdom','+44'],['AU','Australia','+61'],
-    ['AE','United Arab Emirates','+971'],['SA','Saudi Arabia','+966'],['SG','Singapore','+65'],['MY','Malaysia','+60'],
-    ['DE','Germany','+49'],['FR','France','+33'],['IT','Italy','+39'],['ES','Spain','+34'],['NL','Netherlands','+31'],
-    ['CH','Switzerland','+41'],['SE','Sweden','+46'],['NO','Norway','+47'],['DK','Denmark','+45'],['FI','Finland','+358'],
-    ['IE','Ireland','+353'],['PT','Portugal','+351'],['BE','Belgium','+32'],['AT','Austria','+43'],['PL','Poland','+48'],
-    ['CZ','Czechia','+420'],['RO','Romania','+40'],['GR','Greece','+30'],['TR','Türkiye','+90'],['UA','Ukraine','+380'],
-    ['RU','Russia','+7'],['IL','Israel','+972'],['EG','Egypt','+20'],['ZA','South Africa','+27'],['NG','Nigeria','+234'],
-    ['KE','Kenya','+254'],['GH','Ghana','+233'],['MA','Morocco','+212'],['BR','Brazil','+55'],['MX','Mexico','+52'],
-    ['AR','Argentina','+54'],['CL','Chile','+56'],['CO','Colombia','+57'],['PE','Peru','+51'],['VE','Venezuela','+58'],
-    ['NZ','New Zealand','+64'],['JP','Japan','+81'],['KR','South Korea','+82'],['CN','China','+86'],['HK','Hong Kong','+852'],
-    ['TW','Taiwan','+886'],['TH','Thailand','+66'],['VN','Vietnam','+84'],['ID','Indonesia','+62'],['PH','Philippines','+63'],
-    ['PK','Pakistan','+92'],['BD','Bangladesh','+880'],['LK','Sri Lanka','+94'],['NP','Nepal','+977'],['BT','Bhutan','+975'],
-    ['QA','Qatar','+974'],['KW','Kuwait','+965'],['OM','Oman','+968'],['BH','Bahrain','+973'],['JO','Jordan','+962'],
-    ['IR','Iran','+98'],['IQ','Iraq','+964'],['ET','Ethiopia','+251'],['TZ','Tanzania','+255'],['UG','Uganda','+256'],
-    ['DZ','Algeria','+213'],['TN','Tunisia','+216'],['FJ','Fiji','+679'],['IS','Iceland','+354']
-  ];
-
-  const [otpSent, setOtpSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +19,7 @@ export const LoginPage: React.FC = () => {
   const [emailPasswordMode, setEmailPasswordMode] = useState(false);
   const [resetSending, setResetSending] = useState(false);
 
-  const { login, requestPhoneOtp, verifyPhoneOtp, requestEmailOtp, verifyEmailOtp, loading } = useAuth();
+  const { login, requestEmailOtp, verifyEmailOtp, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,51 +29,6 @@ export const LoginPage: React.FC = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, [cooldown]);
-
-  const handleSendOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!phone.trim()) {
-      setError('Please enter your mobile phone number.');
-      return;
-    }
-
-    try {
-      setError(null);
-      setSuccessMessage(null);
-      const digits = phone.replace(/\D/g, '');
-      if (digits.length < 6 || digits.length > 15) {
-        setError('Please enter a valid mobile number.');
-        return;
-      }
-      const normalizedPhone = await requestPhoneOtp(`${countryCode}${digits}`);
-      setPhone(normalizedPhone);
-      setOtpSent(true);
-      setCooldown(30);
-      setSuccessMessage(`Verification SMS sent to ${normalizedPhone}. Check your phone.`);
-    } catch (err: any) {
-      setError(err.message || 'Unable to send OTP via SMS. Please try again.');
-      if (err.waitSeconds) {
-        setCooldown(err.waitSeconds);
-      }
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp.trim() || otp.trim().length !== 6) {
-      setError('Please enter the complete 6-digit OTP received via SMS.');
-      return;
-    }
-
-    try {
-      setError(null);
-      await verifyPhoneOtp(phone.trim(), otp.trim());
-      trackEvent('login_completed', { method: 'phone_otp' });
-      navigate('/feed');
-    } catch (err: any) {
-      setError(err.message || 'Invalid or expired OTP. Please check the code and try again.');
-    }
-  };
 
   const handleEmailOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -173,83 +106,16 @@ export const LoginPage: React.FC = () => {
           <p className="mt-4 max-w-md text-[13px] leading-6 text-[#707884]">Sign in to continue learning, teaching and finding your next peer.</p>
           <div className="mt-8 border-l-2 border-[#d31d24] pl-4 text-[12px] leading-5 text-[#707884]">
             <p className="font-semibold text-[#17233b]">Your next useful conversation is close.</p>
-            <p className="mt-1">Use your mobile number for the quickest sign-in, or continue with email and password.</p>
+            <p className="mt-1">Use email OTP for quick sign-in, or continue with email and password.</p>
           </div>
         </div>
 
         <div className="w-full max-w-xl lg:justify-self-end">
-          <Card className={`login-card p-5 sm:p-8 ${emailFallback ? "hidden" : ""}`}>
-            <div className="mb-6 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
-              <span className="flex h-8 w-8 items-center justify-center border border-[#f1c8ca] bg-[#fff7f7] text-[#d31d24]"><Phone className="h-4 w-4" /></span>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#17233b]">Sign in</p>
-                <p className="mt-0.5 text-[11px] text-[#8a92a0]">Use your mobile number for the quickest OTP sign-in</p>
-              </div>
-            </div>
-
-            {error && <div role="alert" className="login-error mb-5">{error}</div>}
-
-            {successMessage && !error && (
-              <div className="login-success mb-5">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#d31d24]" />
-                <span>{successMessage}</span>
-              </div>
-            )}
-
-            <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-5">
-              <div>
-                <label className="login-label" htmlFor="login-phone">Mobile Number</label>
-                <div className="mt-1.5 flex min-w-0 flex-col gap-2 sm:flex-row">
-                  <div className="relative w-full shrink-0 sm:w-[150px]">
-                    <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} disabled={otpSent} aria-label="Country code" className="login-input h-[42px] w-full appearance-none pl-3 pr-8 font-semibold disabled:opacity-60">
-                      {countries.map(([iso, name, code]) => <option key={iso + code} value={code}>{name} ({code})</option>)}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                  </div>
-                  <div className="relative min-w-0 flex-1">
-                    <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))} placeholder="98765 43210" disabled={otpSent} className="login-input h-[42px] w-full pl-9 pr-3 font-mono disabled:opacity-60" required />
-                  </div>
-                </div>
-                {!otpSent && <p className="login-help">Select your country, then enter your mobile number. The country code is added automatically.</p>}
-              </div>
-
-              {otpSent && (
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between gap-3">
-                    <label className="login-label" htmlFor="login-otp">6-Digit OTP</label>
-                    <button type="button" onClick={() => { setOtpSent(false); setOtp(''); setError(null); setSuccessMessage(null); }} className="login-secondary-action">Change mobile number</button>
-                  </div>
-                  <div className="relative">
-                    <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="••••••" className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
-                  </div>
-                  <p className="login-help">Sent via 2Factor SMS to <span className="font-semibold text-[#17233b]">{phone}</span>. Valid for 10 minutes.</p>
-                </div>
-              )}
-
-              <Button type="submit" loading={loading} disabled={loading || (!otpSent && cooldown > 0)} className="login-primary-button mt-2 w-full" icon={<ArrowRight className="h-4 w-4" />}>
-                {otpSent ? 'Verify OTP & Sign In' : cooldown > 0 ? `Resend Available in ${cooldown}s` : 'Send OTP via SMS'}
-              </Button>
-
-              {otpSent && (
-                <div className="flex items-center justify-center">
-                  <button type="button" disabled={cooldown > 0 || loading} onClick={() => handleSendOtp()} className={`login-secondary-action inline-flex items-center gap-1.5 ${cooldown > 0 ? 'cursor-not-allowed text-[#9aa1ac]' : ''}`}>
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
-                  </button>
-                </div>
-              )}
-            </form>
-          </Card>
-
-          <div className={`login-divider ${emailFallback ? "hidden" : ""}`}><span>or</span></div>
-
-          <Card className="login-email-card p-5 sm:p-6">
+          <Card className="login-card login-email-card p-5 sm:p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
               <span>
-                <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#17233b]">Email OTP sign in</span>
-                <span className="mt-1 block text-[12px] text-[#707884]">No password required for verified email accounts</span>
+                <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#17233b]">Sign in with Email OTP</span>
+                <span className="mt-1 block text-[12px] text-[#707884]">Use your registered email for OTP sign-in</span>
               </span>
               <Mail className="h-5 w-5 text-[#d31d24]" />
             </div>
