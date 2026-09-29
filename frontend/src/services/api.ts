@@ -19,6 +19,7 @@ class ApiClient {
     sessionStorage.removeItem('skillbarter_token');
     sessionStorage.removeItem('skillbarter_email_session');
     sessionStorage.removeItem('skillbarter_email');
+    sessionStorage.removeItem('skillbarter_email_profile');
     // Keep the SDK client aligned with browser session storage. This matters
     // when a token expires or a session lookup fails before an explicit logout.
     try { insforge.setAccessToken(null); } catch {}
