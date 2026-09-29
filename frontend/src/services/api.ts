@@ -37,9 +37,16 @@ class ApiClient {
       const token = this.getToken();
       const email = sessionStorage.getItem('skillbarter_email');
       if (!token || !email) throw new Error('Not authenticated');
+      const cached = sessionStorage.getItem('skillbarter_email_profile');
+      if (cached) {
+        try {
+          const appUser = JSON.parse(cached);
+          if (appUser?.id && appUser?.email) return { authUser: { email: appUser.email }, appUser };
+        } catch {}
+      }
       const result = await insforge.database
         .from('users')
-        .select('id,email,username,phone,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
+        .select('id,email,username,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
         .eq('email', email)
         .maybeSingle();
       if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
@@ -287,18 +294,17 @@ class ApiClient {
   async getMe() {
     const emailSession = sessionStorage.getItem('skillbarter_email_session');
     if (emailSession) {
-      // Restore an email-OTP session without invoking the provider refresh flow.
+      // Email OTP returns the verified SkillBarter profile from the server-side
+      // route. Reuse that profile instead of refreshing or querying users.phone.
       const token = this.getToken();
       const email = sessionStorage.getItem('skillbarter_email');
       if (!token || !email) throw new Error('Not authenticated');
-      const result = await insforge.database
-        .from('users')
-        .select('id,email,username,phone,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
-        .eq('email', email)
-        .maybeSingle();
-      if (result.error) throw new Error(result.error.message || 'Unable to load current user');
-      if (!result.data) throw new Error('Application profile not found');
-      const user = { ...result.data, id: Number(result.data.id) };
+      const cached = sessionStorage.getItem('skillbarter_email_profile');
+      if (!cached) throw new Error('Email OTP session profile is missing. Please sign in again.');
+      let appUser: any;
+      try { appUser = JSON.parse(cached); } catch { throw new Error('Email OTP session profile is invalid. Please sign in again.'); }
+      if (!appUser?.id || !appUser?.email) throw new Error('Email OTP session profile is invalid. Please sign in again.');
+      const user = { ...appUser, id: Number(appUser.id) };
       user.skills = await this.getUserSkills(user.id);
       return user;
     }
