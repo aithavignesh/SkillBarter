@@ -112,8 +112,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       clearPhoneSession();
-      await verifyEmailOtp(email, otp);
-      await refreshUser();
+      const user = await verifyEmailOtp(email, otp);
+      if (!user) throw new Error('Email OTP verified, but the SkillBarter profile could not be loaded.');
+      setCurrentUser(user as User);
     } finally { setLoading(false); }
   };
 
