@@ -53,5 +53,10 @@ export async function verifyEmailOtp(emailInput: string, otpInput: string) {
 
   insforge.setAccessToken(data.accessToken);
   sessionStorage.setItem('skillbarter_token', data.accessToken);
+  // Email OTP sessions return an access token but no browser refresh cookie.
+  // Mark this session so the app restores it through the access-token path
+  // instead of calling InsForge /auth/refresh, which returns 403 for this flow.
+  sessionStorage.setItem('skillbarter_email_session', '1');
+  sessionStorage.setItem('skillbarter_email', email);
   sessionStorage.removeItem('skillbarter_email_otp');
 }
