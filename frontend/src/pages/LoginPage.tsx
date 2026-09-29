@@ -43,7 +43,7 @@ export const LoginPage: React.FC = () => {
   const [emailPasswordMode, setEmailPasswordMode] = useState(false);
   const [resetSending, setResetSending] = useState(false);
 
-  const { login, requestPhoneOtp, verifyPhoneOtp, requestEmailOtp, verifyEmailOtp, loading } = useAuth();
+  const { login, requestPhoneOtp, requestEmailOtp, verifyEmailOtp, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -96,7 +96,7 @@ export const LoginPage: React.FC = () => {
       setOtpSent(false);
       setOtp('');
       setError(null);
-      setSuccessMessage('Mobile number verified. Now enter your registered email below to complete sign-in.');
+      setSuccessMessage('Mobile number verified. You can now use any available sign-in method.');
     } catch (err: any) {
       setError(err.message || 'Invalid or expired OTP. Please check the code and try again.');
     }
@@ -178,7 +178,7 @@ export const LoginPage: React.FC = () => {
           <p className="mt-4 max-w-md text-[13px] leading-6 text-[#707884]">Sign in to continue learning, teaching and finding your next peer.</p>
           <div className="mt-8 border-l-2 border-[#d31d24] pl-4 text-[12px] leading-5 text-[#707884]">
             <p className="font-semibold text-[#17233b]">Your next useful conversation is close.</p>
-            <p className="mt-1">Use your mobile number for the quickest sign-in, or continue with email and password.</p>
+            <p className="mt-1">Choose any available sign-in method: mobile OTP verification, email OTP, or email and password.</p>
           </div>
         </div>
 
@@ -187,8 +187,8 @@ export const LoginPage: React.FC = () => {
             <div className="mb-6 flex items-center gap-3 border-b border-[#edf0f2] pb-4">
               <span className="flex h-8 w-8 items-center justify-center border border-[#f1c8ca] bg-[#fff7f7] text-[#d31d24]"><Phone className="h-4 w-4" /></span>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#17233b]">Sign in</p>
-                <p className="mt-0.5 text-[11px] text-[#8a92a0]">Use your mobile number for the quickest OTP sign-in</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#17233b]">Mobile OTP</p>
+                <p className="mt-0.5 text-[11px] text-[#8a92a0]">Verify your mobile number with an SMS OTP</p>
               </div>
             </div>
 
@@ -216,7 +216,7 @@ export const LoginPage: React.FC = () => {
                     <input id="login-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))} placeholder="98765 43210" disabled={otpSent} className="login-input h-[42px] w-full pl-9 pr-3 font-mono disabled:opacity-60" required />
                   </div>
                 </div>
-                {!otpSent && !phoneVerified && <p className="login-help">Select your country, then enter your mobile number. The country code is added automatically.</p>}{phoneVerified && <p className="login-help">Mobile verification is complete. Continue with your registered email below.</p>}
+                {!otpSent && !phoneVerified && <p className="login-help">Select your country, then enter your mobile number. The country code is added automatically.</p>}{phoneVerified && <p className="login-help">Mobile verification is complete. You can choose another sign-in method below.</p>}
               </div>
 
               {otpSent && (
@@ -284,7 +284,7 @@ export const LoginPage: React.FC = () => {
                     <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="login-input w-full pl-9 pr-3" required />
                   </div>
                 </div>
-                <Button type="submit" loading={loading} disabled={loading || cooldown > 0} className="login-primary-button w-full">{phoneVerified ? 'Send Email OTP to Complete Sign In' : 'Send OTP to Email'}</Button>
+                <Button type="submit" loading={loading} disabled={loading || cooldown > 0} className="login-primary-button w-full">Send OTP to Email</Button>
                 <button type="button" onClick={() => { setEmailPasswordMode(true); setError(null); }} className="login-secondary-action w-full">Use email &amp; password instead</button>
               </form>
             )}
