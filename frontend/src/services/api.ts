@@ -17,6 +17,8 @@ class ApiClient {
   }
   public clearToken() {
     sessionStorage.removeItem('skillbarter_token');
+    sessionStorage.removeItem('skillbarter_email_session');
+    sessionStorage.removeItem('skillbarter_email');
     // Keep the SDK client aligned with browser session storage. This matters
     // when a token expires or a session lookup fails before an explicit logout.
     try { insforge.setAccessToken(null); } catch {}
@@ -27,6 +29,23 @@ class ApiClient {
     // Phone OTP sessions are intentionally access-token based and do not expose
     // a refresh token to the browser. Avoid calling getCurrentUser() for those
     // sessions because the SDK may attempt a refresh and show "No refresh token provided".
+    const emailSession = sessionStorage.getItem('skillbarter_email_session');
+    if (emailSession) {
+      // Email OTP sessions intentionally use the returned access token directly.
+      // Do not call auth.getCurrentUser(), because the SDK may attempt the
+      // browser refresh endpoint even though this OTP flow has no refresh cookie.
+      const token = this.getToken();
+      const email = sessionStorage.getItem('skillbarter_email');
+      if (!token || !email) throw new Error('Not authenticated');
+      const result = await insforge.database
+        .from('users')
+        .select('id,email,username,phone,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
+        .eq('email', email)
+        .maybeSingle();
+      if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
+      if (!result.data) throw new Error('Application profile not found');
+      return { authUser: { email: result.data.email }, appUser: result.data };
+    }
     const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone) {
       // Phone OTP sessions intentionally do not use the provider refresh flow.
@@ -266,6 +285,23 @@ class ApiClient {
   async demoSwitch(_userId: number) { throw new Error('Demo switching is not available until demo accounts are migrated to InsForge Auth.'); }
 
   async getMe() {
+    const emailSession = sessionStorage.getItem('skillbarter_email_session');
+    if (emailSession) {
+      // Restore an email-OTP session without invoking the provider refresh flow.
+      const token = this.getToken();
+      const email = sessionStorage.getItem('skillbarter_email');
+      if (!token || !email) throw new Error('Not authenticated');
+      const result = await insforge.database
+        .from('users')
+        .select('id,email,username,phone,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
+        .eq('email', email)
+        .maybeSingle();
+      if (result.error) throw new Error(result.error.message || 'Unable to load current user');
+      if (!result.data) throw new Error('Application profile not found');
+      const user = { ...result.data, id: Number(result.data.id) };
+      user.skills = await this.getUserSkills(user.id);
+      return user;
+    }
     const phone = sessionStorage.getItem('skillbarter_phone');
     if (phone) {
       // Keep phone-session restoration on the access-token path; do not invoke
