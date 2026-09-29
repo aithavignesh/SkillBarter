@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     const rawPhone = body?.phone;
     const rawOtp = body?.otp;
     const challenge = body?.challenge;
-    const purpose = body?.purpose === 'register' ? 'register' : 'login';
+    const purpose = body?.purpose === 'register' || body?.purpose === 'verify_only' ? body.purpose : 'login';
 
     if (!rawPhone || !rawOtp || !challenge) {
       return sendJson(res, { error: 'Phone number, OTP code, and verification challenge are required.', code: 'MISSING_FIELDS' }, 400);
