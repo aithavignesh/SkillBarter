@@ -50,5 +50,7 @@ export async function verifyEmailOtp(emailInput: string, otpInput: string) {
   // instead of calling InsForge /auth/refresh.
   sessionStorage.setItem('skillbarter_email_session', '1');
   sessionStorage.setItem('skillbarter_email', email);
+  if (data.profile) sessionStorage.setItem('skillbarter_email_profile', JSON.stringify(data.profile));
   sessionStorage.removeItem('skillbarter_email_otp');
+  return data.profile;
 }
