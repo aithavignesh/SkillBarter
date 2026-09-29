@@ -96,7 +96,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-labelledby={titleId}
         aria-describedby={subtitle ? subtitleId : undefined}
         tabIndex={-1}
-        className={`modal-panel relative z-10 my-auto flex max-h-[calc(100dvh-1rem)] w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_12px_32px_rgba(23,35,59,0.14)] sm:max-h-[calc(100dvh-2rem)] ${maxWidthStyles[maxWidth]}`}
+        className={`theme-modal modal-panel relative z-10 my-auto flex max-h-[calc(100dvh-1rem)] w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_12px_32px_rgba(23,35,59,0.14)] sm:max-h-[calc(100dvh-2rem)] ${maxWidthStyles[maxWidth]}`}
       >
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6">
           <div className="min-w-0">

@@ -49,7 +49,7 @@ export const AppPageShell: React.FC<AppPageShellProps> = ({
                   value={search.value}
                   onChange={(e) => search.onChange(e.target.value)}
                   placeholder={search.placeholder || 'Search'}
-                  className="h-10 w-full min-w-0 border border-[#d9dde2] bg-white pl-9 pr-3 text-xs text-[#17233b] outline-none transition focus:border-[#d31d24]"
+                  className="theme-field h-10 w-full min-w-0 border pl-9 pr-3 text-xs outline-none transition"
                 />
               </label>
             )}
