@@ -134,7 +134,7 @@ export const OnboardingPage: React.FC = () => {
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1 transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1 transition-[background-color,color,box-shadow] duration-200 ${
                     step === s.num
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30 ring-4 ring-emerald-100'
                       : step > s.num
@@ -347,13 +347,13 @@ export const OnboardingPage: React.FC = () => {
                     { id: 'EXCHANGE', label: 'Learn & Teach', desc: 'Exchange skills with another student' },
                     { id: 'TEACH', label: 'Teach & Share', desc: 'Help someone learn what you know' },
                     { id: 'MEET', label: 'Build My Network', desc: 'Meet peers around shared interests' },
-                  ].map(item => <button key={item.id} type="button" aria-pressed={primaryIntent === item.id} onClick={() => setPrimaryIntent(item.id)} className={`rounded-xl border p-3 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${primaryIntent === item.id ? 'border-emerald-500 bg-emerald-50/70' : 'border-slate-200 bg-white hover:border-slate-300'}`}><p className="text-xs font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10px] text-slate-500">{item.desc}</p></button>)}
+                  ].map(item => <button key={item.id} type="button" aria-pressed={primaryIntent === item.id} onClick={() => setPrimaryIntent(item.id)} className={`rounded-xl border p-3 text-left transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${primaryIntent === item.id ? 'border-emerald-500 bg-emerald-50/70' : 'border-slate-200 bg-white hover:border-slate-300'}`}><p className="text-xs font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10px] text-slate-500">{item.desc}</p></button>)}
                 </div>
               </div>
               <div>
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">How far should we search?</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {[2, 5, 10, 25].map(r => <button key={r} type="button" aria-pressed={exchangeRadius === r} onClick={() => setExchangeRadius(r)} className={`min-h-10 rounded-xl border p-2.5 text-xs font-bold transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${exchangeRadius === r ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>{r} km</button>)}
+                  {[2, 5, 10, 25].map(r => <button key={r} type="button" aria-pressed={exchangeRadius === r} onClick={() => setExchangeRadius(r)} className={`min-h-10 rounded-xl border p-2.5 text-xs font-bold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${exchangeRadius === r ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>{r} km</button>)}
                 </div>
               </div>
               <div className="border border-slate-200 bg-slate-50 p-4 rounded-xl">

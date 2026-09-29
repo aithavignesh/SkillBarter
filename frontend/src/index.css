@@ -122,7 +122,7 @@
 .notification-dropdown__icon,
 .notification-item__icon {
   border: 1px solid transparent;
-  transition: color 240ms ease, background-color 240ms ease, border-color 240ms ease, transform 220ms ease;
+  transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease;
 }
 
 .notification-dropdown__item:hover .notification-dropdown__icon,
@@ -130,7 +130,6 @@
 .notification-item:hover .notification-item__icon,
 .notification-item:focus-visible .notification-item__icon {
   border-color: #e1e4e8;
-  transform: translateY(-1px);
 }
 
 .notification-dropdown__item--read .notification-dropdown__title,
@@ -173,22 +172,20 @@
 }
 
 .profile-avatar {
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  transition: box-shadow 200ms ease;
 }
 
 .profile-avatar:not(:disabled):focus-visible {
   box-shadow: 0 8px 20px rgba(23, 35, 59, .16);
-  transform: translateY(-2px);
 }
 
 .profile-section {
-  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 
 .profile-section:focus-within {
   border-color: #d4d9df;
   box-shadow: 0 6px 16px rgba(23, 35, 59, .055);
-  transform: translateY(-1px);
 }
 
 .profile-skill-chip {
@@ -423,13 +420,11 @@
 @media (hover: hover) and (pointer: fine) {
   .profile-avatar:not(:disabled):hover {
     box-shadow: 0 8px 20px rgba(23, 35, 59, .16);
-    transform: translateY(-2px);
   }
 
   .profile-section:hover {
     border-color: #d4d9df;
     box-shadow: 0 6px 16px rgba(23, 35, 59, .055);
-    transform: translateY(-1px);
   }
 
   .profile-skill-chip:hover {
@@ -443,13 +438,13 @@
 }
 
 @keyframes notifications-list-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes profile-edit-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes photoMenuIn {
@@ -471,12 +466,6 @@
   .notification-dropdown__item:focus-visible,
   .notification-item:hover,
   .notification-item:focus-visible {
-    transform: none;
-  }
-
-  .profile-section:hover,
-  .profile-avatar:not(:disabled):hover,
-  .profile-section:focus-within {
     transform: none;
   }
 
@@ -664,7 +653,7 @@ html:not(.dark) .feed-activation-panel__description {
 .discover-person-card,
 .match-person-card {
   border-color: #e1e4e8;
-  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  transition: border-color 220ms ease, box-shadow 220ms ease;
 }
 
 .discover-person-card [class*="border"][class*="px-2"] {
@@ -680,7 +669,6 @@ html:not(.dark) .feed-activation-panel__description {
 .match-person-card--expanded {
   border-color: #c9ced6;
   box-shadow: 0 10px 24px rgba(23, 35, 59, .08);
-  transform: translateY(-3px);
 }
 
 .discover-person-card__detail,
@@ -752,11 +740,6 @@ html:not(.dark) .feed-activation-panel__description {
 }
 
 @media (max-width: 767px) {
-  .discover-person-card:hover,
-  .match-person-card:hover {
-    transform: none;
-  }
-
   .discover-person-card__detail,
   .match-person-card__detail {
     max-height: none;
@@ -782,15 +765,6 @@ html:not(.dark) .feed-activation-panel__description {
   .discover-person-card__detail,
   .match-person-card__detail {
     transition: none;
-  }
-
-  .discover-person-card:hover,
-  .discover-person-card:focus-visible,
-  .discover-person-card--expanded,
-  .match-person-card:hover,
-  .match-person-card:focus-visible,
-  .match-person-card--expanded {
-    transform: none;
   }
 
   .first-exchange-guidance,
@@ -830,6 +804,7 @@ html:not(.dark) .feed-activation-panel__description {
 }
 
 .login-input {
+  min-height: 2.75rem;
   border: 1px solid #dfe3e7;
   background: #fff;
   color: #17233b;
@@ -993,6 +968,26 @@ html:not(.dark) .feed-activation-panel__description {
   box-shadow: 0 6px 16px rgba(211, 29, 36, .14);
 }
 
+.exchange-proposal-form input,
+.exchange-proposal-form textarea,
+.exchange-proposal-form select {
+  max-width: 100%;
+  min-width: 0;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.exchange-proposal-form input:focus-visible,
+.exchange-proposal-form textarea:focus-visible,
+.exchange-proposal-form select:focus-visible {
+  border-color: #d31d24;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(211, 29, 36, .1);
+}
+
+.exchange-proposal-form [aria-invalid="true"] {
+  border-color: #b8171d;
+}
+
 @media (max-width: 479px) {
   .signup-page {
     padding-top: 5rem;
@@ -1018,6 +1013,9 @@ html:not(.dark) .feed-activation-panel__description {
   .schedule-form input,
   .conversation-text-input,
   .exchange-text-input,
+  .exchange-proposal-form input,
+  .exchange-proposal-form textarea,
+  .exchange-proposal-form select,
   .review-text-input {
     font-size: 16px;
   }
@@ -1045,7 +1043,10 @@ html:not(.dark) .feed-activation-panel__description {
   .signup-brand,
   .signup-input,
   .signup-password-toggle,
-  .signup-submit {
+  .signup-submit,
+  .exchange-proposal-form input,
+  .exchange-proposal-form textarea,
+  .exchange-proposal-form select {
     transition: none;
   }
 }
@@ -1078,7 +1079,7 @@ html:not(.dark) .feed-activation-panel__description {
   background: #fff;
   outline: none;
   padding: 1.75rem;
-  transition: transform 220ms ease-out, border-color 220ms ease-out, box-shadow 220ms ease-out, background-color 220ms ease-out;
+  transition: border-color 220ms ease-out, box-shadow 220ms ease-out, background-color 220ms ease-out;
 }
 
 .explore-option:hover,
@@ -1087,7 +1088,6 @@ html:not(.dark) .feed-activation-panel__description {
   border-color: #b9bec3;
   background: #fbfbfa;
   box-shadow: 0 5px 16px rgba(23, 35, 59, .07);
-  transform: translateY(-3px);
 }
 
 .explore-option:focus-visible {
@@ -1099,13 +1099,6 @@ html:not(.dark) .feed-activation-panel__description {
   width: 1.25rem;
   height: 1.25rem;
   color: #d31d24;
-  transition: transform 220ms ease-out;
-}
-
-.explore-option:hover .explore-option__icon,
-.explore-option:focus-visible .explore-option__icon,
-.explore-option--active .explore-option__icon {
-  transform: scale(1.06);
 }
 
 .explore-option__summary h3 {
@@ -1221,14 +1214,13 @@ html:not(.dark) .feed-activation-panel__description {
   cursor: pointer;
   outline: none;
   padding: 1.75rem;
-  transition: opacity 260ms ease-out, transform 260ms ease-out, border-color 260ms ease-out, box-shadow 260ms ease-out, background-color 260ms ease-out;
+  transition: opacity 220ms ease-out, border-color 220ms ease-out, box-shadow 220ms ease-out, background-color 220ms ease-out;
 }
 
 .feature-card__icon {
   width: 1.25rem;
   height: 1.25rem;
   color: #d31d24;
-  transition: transform 260ms ease-out;
 }
 
 .feature-card h3 {
@@ -1282,11 +1274,6 @@ html:not(.dark) .feed-activation-panel__description {
   border: 1px solid #aeb5bb;
   background: #fff;
   box-shadow: 0 14px 32px rgba(23, 35, 59, .13);
-  transform: scale(1.02) translateY(-4px);
-}
-
-.feature-card--active .feature-card__icon {
-  transform: scale(1.08);
 }
 
 .feature-card--active h3 {
@@ -1317,7 +1304,6 @@ html:not(.dark) .feed-activation-panel__description {
     position: relative;
     inset: auto;
     min-height: 0;
-    transform: translateY(-4px);
   }
 }
 
@@ -1325,7 +1311,6 @@ html:not(.dark) .feed-activation-panel__description {
   .feature-card--active {
     inset: -.75rem;
     min-height: 16rem;
-    transform: scale(1.01) translateY(-3px);
   }
 }
 
@@ -1339,7 +1324,7 @@ html:not(.dark) .feed-activation-panel__description {
 
 .landing-step-block,
 .landing-outcome-block {
-  transition: transform 220ms ease-out, border-color 220ms ease-out, box-shadow 220ms ease-out, background-color 220ms ease-out, color 220ms ease-out;
+  transition: border-color 220ms ease-out, box-shadow 220ms ease-out, background-color 220ms ease-out, color 220ms ease-out;
 }
 
 .landing-step-block {
@@ -1350,7 +1335,6 @@ html:not(.dark) .feed-activation-panel__description {
 .landing-step-block:hover,
 .landing-step-block:focus-visible,
 .landing-info-block--active {
-  transform: translateY(-3px);
   border-color: #c7cbce;
   box-shadow: 0 5px 14px rgba(23, 35, 59, .06);
 }
@@ -1401,7 +1385,6 @@ html:not(.dark) .feed-activation-panel__description {
 .landing-outcome-block:hover,
 .landing-outcome-block:focus-visible,
 .landing-info-block--active {
-  transform: translateY(-3px);
   background-color: #1b2943;
   box-shadow: 0 5px 14px rgba(0, 0, 0, .1);
 }

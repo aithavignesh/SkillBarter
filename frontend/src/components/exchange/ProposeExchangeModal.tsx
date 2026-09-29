@@ -84,7 +84,7 @@ export const ProposeExchangeModal: React.FC<ProposeExchangeModalProps> = ({
       subtitle={`Send ${partner.full_name} a clear, low-friction learning plan`}
       maxWidth="md"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="exchange-proposal-form space-y-4">
         <div className="exchange-progress" aria-label="Exchange progress">
           {[
             { step: '01', label: 'Choose', active: true },

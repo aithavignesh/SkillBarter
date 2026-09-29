@@ -16,12 +16,20 @@ export const ExchangesPage: React.FC = () => {
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [activeTab, setActiveTab] = useState('ALL');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [reviewExchange, setReviewExchange] = useState<Exchange | null>(null);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const loadExchanges = async () => {
-    try { setLoading(true); setExchanges(await api.getExchanges()); }
-    catch (e) { console.error(e); }
+    try {
+      setLoading(true);
+      setLoadError('');
+      setExchanges(await api.getExchanges());
+    } catch (e) {
+      console.error(e);
+      setLoadError(e instanceof Error ? e.message : 'Unable to load your learning exchanges.');
+    }
     finally { setLoading(false); }
   };
   useEffect(() => { loadExchanges(); }, []);
@@ -33,8 +41,14 @@ export const ExchangesPage: React.FC = () => {
       : exchange.status === activeTab);
 
   const action = async (fn: () => Promise<any>, event?: Parameters<typeof trackEvent>[0], properties?: Record<string, string | number | boolean | undefined>) => {
-    try { await fn(); if (event) trackEvent(event, properties); await loadExchanges(); }
-    catch (e: any) { alert(e?.message || 'Action failed'); }
+    try {
+      setActionError('');
+      await fn();
+      if (event) trackEvent(event, properties);
+      await loadExchanges();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Unable to update this learning exchange.');
+    }
   };
 
   const tabs = [
@@ -65,8 +79,15 @@ export const ExchangesPage: React.FC = () => {
           <Link to="/matches"><Button size="sm" variant="outline" icon={<Repeat className="h-3.5 w-3.5" />}>Find another partner</Button></Link>
         </div>
       </div>}
+      {actionError && <div className="mt-4 border border-[#f1c8ca] bg-[#fff7f7] px-4 py-3 text-xs leading-5 text-[#8f1a20]" role="alert">{actionError}</div>}
       {loading ? (
         <div className="mt-5 border border-[#e1e4e8] bg-white py-20 text-center text-sm text-slate-400">Loading exchange workspace…</div>
+      ) : loadError ? (
+        <div className="mt-5 border border-[#f1c8ca] bg-white px-5 py-14 text-center" role="alert">
+          <h3 className="text-sm font-bold text-[#17233b]">Your exchanges couldn’t be loaded</h3>
+          <p className="mx-auto mt-2 max-w-md break-words text-xs leading-5 text-slate-500">{loadError}</p>
+          <Button size="sm" variant="outline" className="mt-4" onClick={() => void loadExchanges()}>Try again</Button>
+        </div>
       ) : visibleExchanges.length === 0 ? (
         <div className="mt-5 border border-[#e1e4e8] bg-white py-20 text-center"><Repeat className="mx-auto h-9 w-9 text-slate-300" /><h3 className="mt-3 text-sm font-bold text-[#17233b]">No learning exchanges here yet</h3><p className="mt-1 text-xs text-slate-500">Find a peer who can teach what you want to learn and send a simple learning request.</p><Link to="/discover" className="mt-4 inline-block"><Button size="sm">Find learning partners</Button></Link></div>
       ) : (

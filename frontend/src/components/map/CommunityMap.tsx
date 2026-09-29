@@ -111,7 +111,7 @@ export const CommunityMap: React.FC<CommunityMapProps> = ({ users, centerUser })
               <div className="relative flex flex-col items-center">
                 {/* Avatar Pin */}
                 <div
-                  className={`w-9 h-9 rounded-full overflow-hidden border-2 transition-transform transform group-hover:scale-125 shadow-md ${
+                  className={`w-9 h-9 rounded-full overflow-hidden border-2 transition-[transform,border-color] duration-200 shadow-md ${
                     isSelected
                       ? 'border-emerald-400 ring-4 ring-emerald-500/30 scale-110'
                       : 'border-slate-400 group-hover:border-emerald-400'
