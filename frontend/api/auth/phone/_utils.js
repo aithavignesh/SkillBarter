@@ -168,6 +168,24 @@ export async function createOrSignInPhoneUser(phone) {
   const {insforgeUrl,insforgeAnonKey,phoneAuthSecret}=getEnvConfig();
   if(!phoneAuthSecret) throw new Error('PHONE_AUTH_SECRET environment variable is missing.');
   if(!insforgeUrl||!insforgeAnonKey) throw new Error('INSFORGE_URL or INSFORGE_ANON_KEY environment variable is missing.');
+
+  // Login OTP must never create a new SkillBarter account. Signup is the only
+  // path allowed to create a profile, and it already requires mobile OTP
+  // verification before account creation.
+  const existingByPhone = await dbRequest(
+    insforgeUrl,
+    insforgeAnonKey,
+    'GET',
+    `?phone=eq.${encodeURIComponent(phone)}&limit=1`,
+  );
+  const phoneProfile = Array.isArray(existingByPhone) ? existingByPhone[0] : existingByPhone;
+  if (!phoneProfile) {
+    const error = new Error('No SkillBarter account is registered with this mobile number. Please sign up first.');
+    error.code = 'PHONE_NOT_REGISTERED';
+    error.statusCode = 404;
+    throw error;
+  }
+
   const {createClient}=await import('@insforge/sdk');
   const client=createClient({baseUrl:insforgeUrl,anonKey:insforgeAnonKey});
   const digits=phone.replace(/[^\d]/g,''), email=`${digits}@phone.skillbarter.com`;
@@ -181,10 +199,11 @@ export async function createOrSignInPhoneUser(phone) {
     const old=Array.isArray(legacyRows)?legacyRows[0]:legacyRows;
     if(old){ const updated=await dbRequest(insforgeUrl,insforgeAnonKey,'PATCH',`?id=eq.${encodeURIComponent(old.id)}`,{email,updated_at:new Date().toISOString()}); profile=Array.isArray(updated)?updated[0]:updated; }
   }
-  if(!profile){
-    const now=new Date().toISOString();
-    const newUser={email,password_hash:'insforge-managed',full_name:'SkillBarter Member',address_display:'Local Neighborhood',latitude:17.4485,longitude:78.3748,primary_intent:'EXCHANGE',trust_score:85,reliability_score:90,response_rate:95,skill_quality_score:90,completed_exchanges_count:0,reviews_count:0,badges:['Verified Member','Mobile Verified'],is_active:true,is_admin:false,onboarding_completed:false,created_at:now,updated_at:now};
-    const created=await dbRequest(insforgeUrl,insforgeAnonKey,'POST','', [newUser]); profile=Array.isArray(created)?created[0]:created;
+  if(!profile) {
+    const error = new Error('Phone authentication account is not provisioned for this registered profile. Please use email OTP or password login until phone-session provisioning is enabled.');
+    error.code = 'PHONE_AUTH_NOT_PROVISIONED';
+    error.statusCode = 409;
+    throw error;
   }
   if(!profile) throw new Error('InsForge created the authentication session but returned no SkillBarter profile.');
   return {accessToken:session.accessToken,user:{id:profile.id,email:profile.email,full_name:profile.full_name,phone,trust_score:profile.trust_score??85,reliability_score:profile.reliability_score??90,response_rate:profile.response_rate??95,skill_quality_score:profile.skill_quality_score??90,completed_exchanges_count:profile.completed_exchanges_count??0,reviews_count:profile.reviews_count??0,badges:profile.badges??['Verified Member','Mobile Verified'],is_active:profile.is_active!==false,is_admin:profile.is_admin===true,onboarding_completed:profile.onboarding_completed??false,primary_intent:profile.primary_intent??'EXCHANGE'},authUser:session.user};
