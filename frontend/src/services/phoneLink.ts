@@ -1,0 +1,35 @@
+import { requestPhoneOtp, normalizePhone } from './phoneAuth';
+
+export async function linkPhoneToAccount(phoneInput: string, otpInput: string): Promise<string> {
+  const phone = normalizePhone(phoneInput);
+  const otp = String(otpInput ?? '').trim();
+  if (!/^\d{6}$/.test(otp)) throw new Error('Please enter a valid 6-digit numeric OTP code.');
+
+  const challenge = sessionStorage.getItem('skillbarter_otp_challenge');
+  if (!challenge) throw new Error('Verification challenge expired or missing. Please request a new OTP.');
+  const token = sessionStorage.getItem('skillbarter_token');
+  if (!token) throw new Error('Please log in before linking a mobile number.');
+
+  const response = await fetch('/api/auth/phone/link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ phone, otp, challenge }),
+  });
+
+  let data: any = {};
+  try { data = await response.json(); } catch {}
+  if (!response.ok || !data.success) {
+    const error: any = new Error(data.error || ('Unable to link mobile number (' + response.status + ')'));
+    error.code = data.code;
+    throw error;
+  }
+
+  sessionStorage.removeItem('skillbarter_otp_phone');
+  sessionStorage.removeItem('skillbarter_otp_challenge');
+  sessionStorage.removeItem('skillbarter_otp_sent_at');
+  sessionStorage.removeItem('skillbarter_demo_otp');
+  sessionStorage.removeItem('skillbarter_otp_expires');
+  return data.phone || phone;
+}
+
+export { requestPhoneOtp };
