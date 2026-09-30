@@ -19,8 +19,15 @@ export async function linkPhoneToAccount(phoneInput: string, otpInput: string): 
   let data: any = {};
   try { data = await response.json(); } catch {}
   if (!response.ok || !data.success) {
-    const error: any = new Error(data.error || ('Unable to link mobile number (' + response.status + ')'));
-    error.code = data.code;
+    const rawError = data?.error;
+    const message =
+      (typeof rawError === 'string' && rawError) ||
+      (typeof rawError?.message === 'string' && rawError.message) ||
+      (typeof rawError?.error === 'string' && rawError.error) ||
+      ('Unable to link mobile number (' + response.status + ')');
+    const error: any = new Error(message);
+    error.code = data?.code;
+    error.status = response.status;
     throw error;
   }
 
