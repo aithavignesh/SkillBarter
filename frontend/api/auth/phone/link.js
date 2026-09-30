@@ -149,10 +149,18 @@ export default async function handler(req, res) {
       message: 'Mobile number linked successfully. You can now log in with Mobile OTP.',
     }, 200);
   } catch (err) {
-    console.error('[Phone Link Failed]', err.message);
+    const message =
+      (typeof err?.message === 'string' && err.message) ||
+      (typeof err?.error === 'string' && err.error) ||
+      (typeof err === 'string' && err) ||
+      'Unable to link mobile number.';
+    const statusCode = Number.isInteger(err?.statusCode) && err.statusCode >= 400 && err.statusCode <= 599
+      ? err.statusCode
+      : 500;
+    console.error('[Phone Link Failed]', message);
     return sendJson(res, {
-      error: err.message || 'Unable to link mobile number.',
-      code: err.code || 'PHONE_LINK_FAILED',
-    }, err.statusCode || 400);
+      error: message,
+      code: err?.code || 'PHONE_LINK_FAILED',
+    }, statusCode);
   }
 }
