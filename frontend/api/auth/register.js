@@ -41,9 +41,9 @@ export default async function handler(req, res) {
       return sendJson(res, { error: 'Registration succeeded but no authentication identity was returned.', code: 'AUTH_IDENTITY_MISSING' }, 502);
     }
 
-    const { insforgeUrl, insforgeServiceKey } = getEnvConfig();
+    const { insforgeUrl: serviceInsforgeUrl, insforgeServiceKey } = getEnvConfig();
     await dbServiceRequest(
-      insforgeUrl,
+      serviceInsforgeUrl,
       insforgeServiceKey,
       'phone_identities',
       'POST',
