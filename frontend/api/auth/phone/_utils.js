@@ -163,7 +163,15 @@ export async function dbServiceRequest(baseUrl, serviceKey, table, method, query
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch {}
   if (!response.ok) {
-    const error = new Error(data?.message || data?.error || text || 'InsForge request failed (' + response.status + ')');
+    const nestedError = data?.error;
+    const message =
+      (typeof data?.message === 'string' && data.message) ||
+      (typeof nestedError === 'string' && nestedError) ||
+      (typeof nestedError?.message === 'string' && nestedError.message) ||
+      (typeof nestedError?.error === 'string' && nestedError.error) ||
+      text ||
+      'InsForge request failed (' + response.status + ')';
+    const error = new Error(message);
     error.statusCode = response.status;
     throw error;
   }
