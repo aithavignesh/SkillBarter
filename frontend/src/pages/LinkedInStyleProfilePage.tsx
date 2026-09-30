@@ -75,9 +75,17 @@ export const LinkedInStyleProfilePage: React.FC = () => {
       setLoading(true);
       setLoadError(false);
       setMessage('');
-      const [p, r] = await Promise.all([api.getUserProfile(targetId), api.getUserReviews(targetId)]);
+      // Load the core profile independently from optional sections such as reviews.
+      // A review/RLS/query failure should not make the whole profile unavailable.
+      const p = await api.getUserProfile(targetId);
       if (!mounted) return;
-      setProfile(p); setReviews(Array.isArray(r) ? r : []);
+      setProfile(p);
+      try {
+        const r = await api.getUserReviews(targetId);
+        if (mounted) setReviews(Array.isArray(r) ? r : []);
+      } catch {
+        if (mounted) setReviews([]);
+      }
       if (!own) {
         try {
           const status = await (api as any).getConnectionStatus(targetId);
