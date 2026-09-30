@@ -72,7 +72,7 @@ export const SignupPage: React.FC = () => {
   ];
 
   return (
-    <div className="signup-page min-h-[85vh] bg-[#f7f7f5] px-5 py-12 sm:px-8 sm:py-16">
+    <div className="signup-page min-h-[85vh] bg-[#f7f7f5] px-5 pt-24 pb-12 sm:px-8 sm:pt-28 sm:pb-16">
       <div className="mx-auto w-full max-w-[560px]">
         <header className="text-center">
           <Link to="/" className="signup-brand inline-flex items-center gap-2" aria-label="SkillBarter home">

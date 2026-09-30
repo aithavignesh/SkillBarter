@@ -95,7 +95,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-<<<<<<< HEAD
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -122,10 +121,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleReport = async () => {
-    const reason = prompt('Please describe why you are reporting this user to moderators:');
-    if (!reason) return;
-=======
   const handleReport = async (event: React.FormEvent) => {
     event.preventDefault();
     const details = reportDetails.trim();
@@ -133,7 +128,6 @@ export const ProfilePage: React.FC = () => {
       setReportError('Describe what happened so the safety team can review it.');
       return;
     }
->>>>>>> d6a5c4b (implemented sept27 task)
     try {
       setReportSending(true);
       setReportError('');
@@ -258,18 +252,12 @@ export const ProfilePage: React.FC = () => {
                   Message Partner
                 </Button>
               </Link>
-<<<<<<< HEAD
-              <Button size="sm" variant="ghost" onClick={handleReport} className="text-slate-400 hover:text-rose-600">
-                <Flag className="w-4 h-4" />
-                <span className="hidden sm:inline">Report</span>
+              <Button size="sm" variant="ghost" onClick={() => { setReportError(''); setReportDetails(''); setReportDialogOpen(true); }} icon={<Flag className="w-4 h-4" />}>
+                Report
               </Button>
               <Button size="sm" variant="ghost" onClick={handleBlock} disabled={safetyBusy} className="text-slate-400 hover:text-slate-900">
                 <ShieldCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">{safetyBusy ? 'Saving…' : isBlocked ? 'Unblock' : 'Block'}</span>
-=======
-              <Button size="sm" variant="ghost" onClick={() => { setReportError(''); setReportDetails(''); setReportDialogOpen(true); }} icon={<Flag className="w-4 h-4" />}>
-                Report
->>>>>>> d6a5c4b (implemented sept27 task)
               </Button>
             </div>
           ) : (
