@@ -204,19 +204,29 @@ class ApiClient {
   }
 
   async register(payload: any) {
-    // Do not let an expired token from an older session contaminate signup.
+    // Signup is server-gated by a short-lived signed mobile OTP verification.
     this.clearToken();
 
-    const { data, error } = await insforge.auth.signUp({ email: payload.email, password: payload.password, name: payload.full_name });
-    if (error) {
-      const message = String(error.message || 'Registration failed');
-      if (/already|exist|registered/i.test(message)) throw new Error('An account with this email already exists. Please log in instead.');
-      throw new Error(message);
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        full_name: payload.full_name,
+        username: payload.username,
+        email: payload.email,
+        password: payload.password,
+        phone: payload.phone,
+        phone_verification_token: payload.phone_verification_token,
+      }),
+    });
+
+    let data: any = {};
+    try { data = await response.json(); } catch {}
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || `Registration failed (${response.status})`);
     }
     if (!data?.user) throw new Error('Registration succeeded but no user was returned.');
 
-    // Some InsForge projects require email verification and therefore return a user
-    // without an access token. Try an immediate password sign-in when possible.
     let authUser = data.user;
     let accessToken = data.accessToken;
     if (!accessToken) {
@@ -233,10 +243,7 @@ class ApiClient {
       }
     }
 
-    if (accessToken) {
-      this.setToken(accessToken);
-      try { insforge.setAccessToken(accessToken); } catch {}
-    }
+    if (accessToken) this.setToken(accessToken);
 
     const profile = {
       nickname: payload.full_name,
@@ -252,9 +259,6 @@ class ApiClient {
       onboarding_completed: false,
     };
 
-    // Profile metadata is useful but should never turn a successful account creation
-    // into the generic "Invalid token" screen. Retry once after sign-in and continue
-    // with the application profile when the auth provider accepts the session.
     try {
       const profileResult = await insforge.auth.setProfile(profile as any);
       if (profileResult.error) console.warn('InsForge profile update warning:', profileResult.error);
