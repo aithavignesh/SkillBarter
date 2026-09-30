@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link2, CheckCircle2, Loader2, Phone } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -16,6 +16,28 @@ export const MobilePhoneLinkCard: React.FC<Props> = ({ linkedPhone, onLinked }) 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [linked, setLinked] = useState(Boolean(linkedPhone));
+
+  useEffect(() => {
+    if (linked || linkedPhone) {
+      setLinked(true);
+      return;
+    }
+    const token = sessionStorage.getItem('skillbarter_token');
+    if (!token) return;
+    fetch('/api/auth/phone/link', {
+      method: 'GET',
+      headers: { Accept: 'application/json', Authorization: 'Bearer ' + token },
+    })
+      .then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.linked) {
+          setPhone(data.phone || '');
+          setLinked(true);
+        }
+      })
+      .catch(() => {});
+  }, [linkedPhone]);
 
   const sendOtp = async () => {
     try {
@@ -39,6 +61,7 @@ export const MobilePhoneLinkCard: React.FC<Props> = ({ linkedPhone, onLinked }) 
       setMessage('');
       const normalized = await linkPhoneToAccount(phone, otp);
       setPhone(normalized);
+      setLinked(true);
       setOtp('');
       setOtpSent(false);
       setMessage('Mobile number linked successfully. You can now log in with Mobile OTP.');
