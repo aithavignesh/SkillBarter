@@ -94,6 +94,7 @@ class ApiClient {
     if (existing.data) {
       const updates = {
                 full_name: profile.full_name ?? profile.nickname ?? authUser?.name ?? existing.data.full_name,
+        username: profile.username ?? existing.data.username,
         avatar_url: profile.avatar_url ?? existing.data.avatar_url,
         bio: profile.bio ?? existing.data.bio,
         headline: profile.headline ?? existing.data.headline,
