@@ -28,7 +28,7 @@ export function getEnvConfig() {
     phoneAuthSecret: sanitizeEnvValue(process.env.PHONE_AUTH_SECRET),
     insforgeUrl: sanitizeEnvValue(process.env.INSFORGE_URL || process.env.VITE_INSFORGE_URL),
     insforgeAnonKey: sanitizeEnvValue(process.env.INSFORGE_ANON_KEY || process.env.VITE_INSFORGE_ANON_KEY),
-    insforgeServiceKey: sanitizeEnvValue(process.env.INSFORGE_SERVICE_KEY),
+    insforgeServiceKey: sanitizeEnvValue(process.env.INSFORGE_SERVICE_KEY || process.env.INSFORGE_API_KEY),
     insforgeJwtSecret: sanitizeEnvValue(process.env.INSFORGE_JWT_SECRET),
   };
 }
