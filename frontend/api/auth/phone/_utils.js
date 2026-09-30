@@ -113,6 +113,31 @@ export function verifyOtpChallenge(phone, enteredOtp, token, customSecret=null) 
   return otpHash.length===eh.length&&crypto.timingSafeEqual(Buffer.from(otpHash),Buffer.from(eh));
 }
 
+
+export function createPhoneVerificationToken(phone, customSecret=null) {
+  const secret = customSecret || getEnvConfig().phoneAuthSecret;
+  if (!secret) throw new Error('PHONE_AUTH_SECRET environment variable is missing.');
+  const verifiedAt = Date.now();
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const payload = { phone, verifiedAt, expiresAt: verifiedAt + 15 * 60 * 1000, nonce };
+  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(encoded).digest('hex');
+  return encoded + '.' + sig;
+}
+
+export function verifyPhoneVerificationToken(phone, token, customSecret=null) {
+  if (!token || typeof token !== 'string') return false;
+  const secret = customSecret || getEnvConfig().phoneAuthSecret;
+  if (!secret) return false;
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+  const encoded = parts[0], sig = parts[1];
+  let payload;
+  try { payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')); } catch { return false; }
+  if (!payload?.phone || payload.phone !== phone || !payload.expiresAt || Date.now() > Number(payload.expiresAt)) return false;
+  const expected = crypto.createHmac('sha256', secret).update(encoded).digest('hex');
+  return sig.length === expected.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+}
 export function requireRegisteredPhoneProfile(profile) {
   if (profile) return profile;
   const error = new Error('No SkillBarter account is registered with this mobile number. Please sign up first.');
