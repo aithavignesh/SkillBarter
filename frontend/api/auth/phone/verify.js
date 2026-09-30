@@ -8,6 +8,8 @@ import {
   checkVerifyRateLimit,
   clearVerifyRateLimit,
   validatePhoneAuthSession,
+  getPhoneIdentity,
+  createInsforgeSessionToken,
 } from './_utils.js';
 
 export default async function handler(req, res) {
@@ -61,21 +63,24 @@ export default async function handler(req, res) {
       }, 200);
     }
 
-    const session = await createOrSignInPhoneUser(phone);
-    const sessionValidation = validatePhoneAuthSession(session);
-    if (!sessionValidation.valid) {
-      throw Object.assign(
-        new Error('Phone authentication completed, but no valid login session was returned. Please try again.'),
-        { code: 'SESSION_CREATION_FAILED', statusCode: 502 }
-      );
+    const identity = await getPhoneIdentity(phone);
+    if (!identity?.auth_user_id || !identity?.email) {
+      return sendJson(res, {
+        error: 'This mobile number is not linked to a SkillBarter account. Please sign up first or use email login.',
+        code: 'PHONE_NOT_REGISTERED',
+      }, 404);
     }
 
+    const accessToken = await createInsforgeSessionToken(identity.auth_user_id, identity.email);
     return sendJson(res, {
       success: true,
-      accessToken: session.accessToken,
-      token: session.accessToken,
-      user: session.user,
-      message: 'Phone authenticated successfully.',
+      accessToken,
+      token: accessToken,
+      user: {
+        id: identity.auth_user_id,
+        email: identity.email,
+      },
+      message: 'Mobile OTP verified. Login successful.',
     }, 200);
   } catch (err) {
     console.error('[Phone OTP Verification Failed]', err.message);
