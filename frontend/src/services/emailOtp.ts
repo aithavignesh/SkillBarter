@@ -1,11 +1,5 @@
 import { insforge } from '../lib/insforge';
 
-const getBaseUrl = () => {
-  const baseUrl = import.meta.env.VITE_INSFORGE_URL?.replace(/\/+$/, '');
-  if (!baseUrl) throw new Error('InsForge is not configured for this deployment.');
-  return baseUrl;
-};
-
 const getHeaders = () => ({
   'Content-Type': 'application/json',
   Accept: 'application/json',
