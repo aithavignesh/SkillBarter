@@ -28,6 +28,8 @@ export function getEnvConfig() {
     phoneAuthSecret: sanitizeEnvValue(process.env.PHONE_AUTH_SECRET),
     insforgeUrl: sanitizeEnvValue(process.env.INSFORGE_URL || process.env.VITE_INSFORGE_URL),
     insforgeAnonKey: sanitizeEnvValue(process.env.INSFORGE_ANON_KEY || process.env.VITE_INSFORGE_ANON_KEY),
+    insforgeServiceKey: sanitizeEnvValue(process.env.INSFORGE_SERVICE_KEY),
+    insforgeJwtSecret: sanitizeEnvValue(process.env.INSFORGE_JWT_SECRET),
   };
 }
 
@@ -138,6 +140,72 @@ export function verifyPhoneVerificationToken(phone, token, customSecret=null) {
   const expected = crypto.createHmac('sha256', secret).update(encoded).digest('hex');
   return sig.length === expected.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
 }
+
+export async function dbServiceRequest(baseUrl, serviceKey, table, method, query='', body) {
+  if (!baseUrl || !serviceKey) {
+    const error = new Error('InsForge service key is not configured for phone authentication.');
+    error.code = 'INSFORGE_SERVICE_KEY_MISSING';
+    error.statusCode = 500;
+    throw error;
+  }
+  const url = baseUrl.replace(/\/+$/,'') + '/api/database/records/' + table + query;
+  const response = await fetch(url, {
+    method,
+    headers: {
+      Authorization: 'Bearer ' + serviceKey,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await response.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch {}
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.error || text || 'InsForge request failed (' + response.status + ')');
+    error.statusCode = response.status;
+    throw error;
+  }
+  return data;
+}
+
+export async function createInsforgeSessionToken(authUserId, email) {
+  const { insforgeJwtSecret } = getEnvConfig();
+  if (!insforgeJwtSecret) {
+    const error = new Error('INSFORGE_JWT_SECRET environment variable is missing.');
+    error.code = 'INSFORGE_JWT_SECRET_MISSING';
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    sub: String(authUserId),
+    email,
+    role: 'authenticated',
+    aud: 'insforge-api',
+    iat: now,
+    exp: now + 60 * 60,
+  })).toString('base64url');
+  const unsigned = header + '.' + payload;
+  const signature = crypto.createHmac('sha256', insforgeJwtSecret).update(unsigned).digest('base64url');
+  return unsigned + '.' + signature;
+}
+
+export async function getPhoneIdentity(phone) {
+  const { insforgeUrl, insforgeServiceKey } = getEnvConfig();
+  const rows = await dbServiceRequest(
+    insforgeUrl,
+    insforgeServiceKey,
+    'phone_identities',
+    'GET',
+    '?phone=eq.' + encodeURIComponent(phone) + '&limit=1',
+  );
+  return Array.isArray(rows) ? rows[0] || null : rows || null;
+}
+
 export function requireRegisteredPhoneProfile(profile) {
   if (profile) return profile;
   const error = new Error('No SkillBarter account is registered with this mobile number. Please sign up first.');
