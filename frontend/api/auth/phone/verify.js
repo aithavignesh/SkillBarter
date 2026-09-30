@@ -1,5 +1,6 @@
 import {
   createOrSignInPhoneUser,
+  createPhoneVerificationToken,
   normalizePhone,
   parseRequestBody,
   sendJson,
@@ -55,6 +56,7 @@ export default async function handler(req, res) {
         success: true,
         verified: true,
         phone,
+        verificationToken: createPhoneVerificationToken(phone),
         message: 'Mobile number verified. Continue registration.',
       }, 200);
     }
