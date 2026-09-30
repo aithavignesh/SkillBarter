@@ -1,5 +1,4 @@
 import {
-  createOrSignInPhoneUser,
   createPhoneVerificationToken,
   normalizePhone,
   parseRequestBody,
@@ -7,7 +6,6 @@ import {
   verifyOtpChallenge,
   checkVerifyRateLimit,
   clearVerifyRateLimit,
-  validatePhoneAuthSession,
   getPhoneIdentity,
   createInsforgeSessionToken,
 } from './_utils.js';
