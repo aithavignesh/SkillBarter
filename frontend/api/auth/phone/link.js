@@ -18,12 +18,28 @@ function getBearerToken(req) {
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return sendJson(res, { ok: true }, 200);
-  if (req.method !== 'POST') return sendJson(res, { error: 'Method Not Allowed. Use POST.' }, 405);
+  if (req.method !== 'GET' && req.method !== 'POST') return sendJson(res, { error: 'Method Not Allowed. Use GET or POST.' }, 405);
 
   try {
     const accessToken = getBearerToken(req);
     if (!accessToken) {
       return sendJson(res, { error: 'You must be logged in to link a mobile number.', code: 'AUTH_REQUIRED' }, 401);
+    }
+
+    if (req.method === 'GET') {
+      const existingByEmail = await dbServiceRequest(
+        insforgeUrl,
+        insforgeServiceKey,
+        'phone_identities',
+        'GET',
+        '?email=eq.' + encodeURIComponent(String(authUser.email).trim().toLowerCase()) + '&limit=1',
+      );
+      const identity = Array.isArray(existingByEmail) ? existingByEmail[0] || null : existingByEmail || null;
+      return sendJson(res, {
+        success: true,
+        linked: Boolean(identity),
+        phone: identity?.phone || null,
+      }, 200);
     }
 
     const body = await parseRequestBody(req);
