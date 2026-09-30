@@ -26,6 +26,23 @@ export default async function handler(req, res) {
       return sendJson(res, { error: 'You must be logged in to link a mobile number.', code: 'AUTH_REQUIRED' }, 401);
     }
 
+    const { insforgeUrl, insforgeAnonKey, insforgeServiceKey } = getEnvConfig();
+    if (!insforgeUrl || !insforgeAnonKey) {
+      return sendJson(res, { error: 'Authentication service is not configured.', code: 'AUTH_CONFIG_MISSING' }, 500);
+    }
+    // Let InsForge validate the existing login token. We never trust an email
+    // or user id supplied by the browser.
+    const client = createClient({
+      baseUrl: insforgeUrl,
+      anonKey: insforgeAnonKey,
+      accessToken,
+    });
+    const { data: authData, error: authError } = await client.auth.getCurrentUser();
+    const authUser = authData?.user;
+    if (authError || !authUser?.id || !authUser?.email) {
+      return sendJson(res, { error: 'Your login session is invalid or expired. Please log in again.', code: 'AUTH_INVALID' }, 401);
+    }
+
     if (req.method === 'GET') {
       const existingByEmail = await dbServiceRequest(
         insforgeUrl,
@@ -49,24 +66,6 @@ export default async function handler(req, res) {
 
     if (!/^\d{6}$/.test(otp) || !challenge) {
       return sendJson(res, { error: 'Mobile number, OTP and verification challenge are required.', code: 'MISSING_FIELDS' }, 400);
-    }
-
-    const { insforgeUrl, insforgeAnonKey, insforgeServiceKey } = getEnvConfig();
-    if (!insforgeUrl || !insforgeAnonKey) {
-      return sendJson(res, { error: 'Authentication service is not configured.', code: 'AUTH_CONFIG_MISSING' }, 500);
-    }
-
-    // Let InsForge validate the existing login token. We never trust an email
-    // or user id supplied by the browser.
-    const client = createClient({
-      baseUrl: insforgeUrl,
-      anonKey: insforgeAnonKey,
-      accessToken,
-    });
-    const { data: authData, error: authError } = await client.auth.getCurrentUser();
-    const authUser = authData?.user;
-    if (authError || !authUser?.id || !authUser?.email) {
-      return sendJson(res, { error: 'Your login session is invalid or expired. Please log in again.', code: 'AUTH_INVALID' }, 401);
     }
 
     const verifyLimit = checkVerifyRateLimit(phone, challenge);
