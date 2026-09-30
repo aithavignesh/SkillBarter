@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { verifyPhoneOtpOwnership } from '../services/phoneAuth';
 import { api } from '../services/api';
 import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
@@ -43,7 +42,7 @@ export const LoginPage: React.FC = () => {
   const [emailPasswordMode, setEmailPasswordMode] = useState(false);
   const [resetSending, setResetSending] = useState(false);
 
-  const { login, requestPhoneOtp, requestEmailOtp, verifyEmailOtp, loading } = useAuth();
+  const { login, requestPhoneOtp, verifyPhoneOtp, requestEmailOtp, verifyEmailOtp, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -91,12 +90,14 @@ export const LoginPage: React.FC = () => {
 
     try {
       setError(null);
-      await verifyPhoneOtpOwnership(phone.trim(), otp.trim());
+      await verifyPhoneOtp(phone.trim(), otp.trim());
       setPhoneVerified(true);
       setOtpSent(false);
       setOtp('');
       setError(null);
-      setSuccessMessage('Mobile number verified. You can now use any available sign-in method.');
+      setSuccessMessage('Mobile OTP verified. Login successful.');
+      trackEvent('login_completed', { method: 'mobile_otp' });
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Invalid or expired OTP. Please check the code and try again.');
     }
@@ -216,7 +217,7 @@ export const LoginPage: React.FC = () => {
                     <input id="login-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))} placeholder="98765 43210" disabled={otpSent} className="login-input h-[42px] w-full pl-9 pr-3 font-mono disabled:opacity-60" required />
                   </div>
                 </div>
-                {!otpSent && !phoneVerified && <p className="login-help">Select your country, then enter your mobile number. The country code is added automatically.</p>}{phoneVerified && <p className="login-help">Mobile verification is complete. You can choose another sign-in method below.</p>}
+                {!otpSent && !phoneVerified && <p className="login-help">Select your country, then enter your mobile number. The country code is added automatically.</p>}{phoneVerified && <p className="login-help">Mobile OTP login is complete.</p>}
               </div>
 
               {otpSent && (
