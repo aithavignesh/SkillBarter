@@ -1,5 +1,5 @@
 import { createClient } from '@insforge/sdk';
-import { normalizePhone, parseRequestBody, sendJson, verifyPhoneVerificationToken } from './phone/_utils.js';
+import { dbServiceRequest, getEnvConfig, normalizePhone, parseRequestBody, sendJson, verifyPhoneVerificationToken } from './phone/_utils.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return sendJson(res, { ok: true }, 200);
@@ -37,10 +37,24 @@ export default async function handler(req, res) {
       return sendJson(res, { error: message, code: 'REGISTRATION_FAILED' }, 400);
     }
 
+    if (!data?.user?.id) {
+      return sendJson(res, { error: 'Registration succeeded but no authentication identity was returned.', code: 'AUTH_IDENTITY_MISSING' }, 502);
+    }
+
+    const { insforgeUrl, insforgeServiceKey } = getEnvConfig();
+    await dbServiceRequest(
+      insforgeUrl,
+      insforgeServiceKey,
+      'phone_identities',
+      'POST',
+      '',
+      [{ phone, email, auth_user_id: String(data.user.id) }],
+    );
+
     return sendJson(res, {
       success: true,
-      user: data?.user || null,
-      accessToken: data?.accessToken || null,
+      user: data.user,
+      accessToken: data.accessToken || null,
       phone,
       username,
       full_name: fullName,
