@@ -254,7 +254,7 @@ export const LoginPage: React.FC = () => {
             <div className="mb-5 flex items-center justify-between gap-4">
               <span>
                 <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#17233b]">Email OTP sign in</span>
-                <span className="mt-1 block text-[12px] text-[#707884]">Complete sign-in after your mobile OTP is verified</span>
+                <span className="mt-1 block text-[12px] text-[#707884]">Sign in independently with Email OTP or your password</span>
               </span>
               <Mail className="h-5 w-5 text-[#d31d24]" />
             </div>
