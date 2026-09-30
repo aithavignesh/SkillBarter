@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button';
 import { ProposeExchangeModal } from '../components/exchange/ProposeExchangeModal';
 import { Modal } from '../components/ui/Modal';
 import { getMonetizationState } from '../services/monetization';
+import { MobilePhoneLinkCard } from '../components/MobilePhoneLinkCard';
 import {
   BadgeCheck, Camera, CheckCircle2, Crown, Edit3, ExternalLink, GraduationCap,
   Loader2, MapPin, MessageSquare, Plus, Repeat, Rocket, Save, ShieldCheck,
@@ -534,6 +535,8 @@ export const LinkedInStyleProfilePage: React.FC = () => {
               )}
             </section>
           )}
+
+          {own && <MobilePhoneLinkCard />}
 
           {showOrientation && (
             <section className="border border-[#d9dfe6] bg-white px-4 py-4 shadow-sm sm:px-5" aria-label="Onboarding complete">
