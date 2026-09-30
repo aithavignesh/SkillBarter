@@ -73,7 +73,7 @@ export const MobilePhoneLinkCard: React.FC<Props> = ({ linkedPhone, onLinked }) 
     }
   };
 
-  if (linkedPhone) {
+  if (linked || linkedPhone) {
     return (
       <Card className="p-5 border-emerald-200 bg-emerald-50/40">
         <div className="flex items-start gap-3">
