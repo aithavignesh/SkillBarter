@@ -69,6 +69,16 @@ export const OnboardingPage: React.FC = () => {
     try {
       setLoading(true);
       setSubmitError('');
+      // Save the required skills first. Do not mark onboarding complete if any
+      // skill write fails, otherwise a partially configured profile could become
+      // eligible for matching.
+      for (const skill of offeredSkills) {
+        await api.addUserSkill({ skill_name: skill, skill_type: 'OFFERED' });
+      }
+      for (const skill of neededSkills) {
+        await api.addUserSkill({ skill_name: skill, skill_type: 'NEEDED' });
+      }
+
       await api.updateMe({
         address_display: locationName,
         headline: headline || `${neededSkills[0] || 'Skill'} learner • ${offeredSkills[0] || 'Skill'} contributor`,
@@ -77,22 +87,6 @@ export const OnboardingPage: React.FC = () => {
         primary_intent: primaryIntent,
         onboarding_completed: true,
       });
-
-      // Save user skills
-      for (const skill of offeredSkills) {
-        try {
-          await api.addUserSkill({ skill_name: skill, skill_type: 'OFFERED' });
-        } catch {
-          // ignore duplicates
-        }
-      }
-      for (const skill of neededSkills) {
-        try {
-          await api.addUserSkill({ skill_name: skill, skill_type: 'NEEDED' });
-        } catch {
-          // ignore duplicates
-        }
-      }
 
       await refreshUser();
       const referralSource = new URLSearchParams(window.location.search).get('ref') || sessionStorage.getItem('skillbarter_referral_source') || undefined;
