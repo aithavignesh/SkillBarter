@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { requestPhoneOtp, normalizePhone } from '../services/phoneAuth';
 import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -12,6 +13,11 @@ export const SignupPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneVerificationToken, setPhoneVerificationToken] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +34,50 @@ export const SignupPage: React.FC = () => {
     trackEvent('signup_started', { referral_source: referralSource });
   }, [referralSource]);
 
+  const handleSendPhoneOtp = async () => {
+    try {
+      setError(null);
+      const normalized = normalizePhone(phone);
+      await requestPhoneOtp(normalized);
+      setPhone(normalized);
+      setOtpSent(true);
+    } catch (err: any) {
+      setError(err.message || 'Unable to send mobile OTP.');
+    }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
+    try {
+      setError(null);
+      const challenge = sessionStorage.getItem('skillbarter_otp_challenge');
+      if (!challenge) return setError('Verification challenge expired. Please request a new OTP.');
+      const response = await fetch('/api/auth/phone/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ phone: normalizePhone(phone), otp: otp.trim(), challenge, purpose: 'register' }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success || !data.verified || !data.verificationToken) {
+        throw new Error(data.error || 'Invalid or expired OTP. Please try again.');
+      }
+      setPhoneVerified(true);
+      setPhoneVerificationToken(data.verificationToken);
+      sessionStorage.removeItem('skillbarter_otp_challenge');
+      sessionStorage.removeItem('skillbarter_otp_phone');
+      sessionStorage.removeItem('skillbarter_otp_sent_at');
+      setOtp('');
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Mobile OTP verification failed.');
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setError(null);
 
+      if (!phoneVerified || !phoneVerificationToken) return setError('Please verify your mobile number with OTP before creating your account.');
       if (password !== confirmPassword) return setError('Passwords do not match.');
       if (password.length < 8) return setError('Password must be at least 8 characters.');
       if (!fullName.trim() || !username.trim() || !email.trim()) {
@@ -51,6 +96,8 @@ export const SignupPage: React.FC = () => {
         username: cleanUsername,
         email: email.trim(),
         password,
+        phone: normalizePhone(phone),
+        phone_verification_token: phoneVerificationToken,
       });
       trackEvent('signup_completed', { referral_source: referralSource });
       navigate('/onboarding');
@@ -84,7 +131,7 @@ export const SignupPage: React.FC = () => {
           </Link>
           <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.2em] text-[#d31d24]">Create your SkillBarter account</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] text-[#17233b] sm:text-4xl">Start with the basics.</h1>
-          <p className="mx-auto mt-3 max-w-md text-[13px] leading-6 text-[#707884]">Your learning profile comes next.</p>
+          <p className="mx-auto mt-3 max-w-md text-[13px] leading-6 text-[#707884]">Verify your mobile number, then create your account.</p>
         </header>
 
         <div className="signup-progress mt-8 flex items-center justify-center gap-3 text-[10px] font-bold tracking-[0.14em]">
@@ -121,6 +168,21 @@ export const SignupPage: React.FC = () => {
                 <input id="signup-username" type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 30))} placeholder="e.g. vignesh_aitha" className="signup-input w-full pl-9 pr-3" minLength={3} maxLength={30} required />
               </div>
               <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">Your unique public name for search and your profile.</p>
+            </div>
+
+            <div>
+              <label htmlFor="signup-phone" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Mobile Number</label>
+              <div className="flex gap-2">
+                <input id="signup-phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setPhoneVerified(false); setPhoneVerificationToken(''); }} placeholder="+91 70285 54230" className="signup-input min-w-0 flex-1" required disabled={phoneVerified} />
+                <Button type="button" onClick={handleSendPhoneOtp} disabled={loading || phoneVerified || !phone.trim()}>{otpSent ? 'Resend OTP' : 'Send OTP'}</Button>
+              </div>
+              {otpSent && !phoneVerified && (
+                <div className="mt-3 flex gap-2">
+                  <input aria-label="Mobile OTP" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit OTP" className="signup-input min-w-0 flex-1" />
+                  <Button type="button" onClick={handleVerifyPhoneOtp} disabled={loading || otp.length !== 6}>Verify</Button>
+                </div>
+              )}
+              <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">{phoneVerified ? 'Mobile number verified.' : 'Mobile OTP verification is required before account creation.'}</p>
             </div>
 
             <div>
