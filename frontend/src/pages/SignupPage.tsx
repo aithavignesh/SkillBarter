@@ -109,7 +109,7 @@ export const SignupPage: React.FC = () => {
               <label htmlFor="signup-full-name" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Full Name</label>
               <div className="relative">
                 <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                <input id="signup-full-name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Ramesh Kumar" className="signup-input w-full pl-9 pr-3" required />
+                <input id="signup-full-name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Ramesh Kumar" disabled={loading} className="signup-input w-full pl-9 pr-3" required />
               </div>
             </div>
 
@@ -117,7 +117,7 @@ export const SignupPage: React.FC = () => {
               <label htmlFor="signup-email" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Email Address</label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                <input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ramesh@example.com" className="signup-input w-full pl-9 pr-3" required />
+                <input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ramesh@example.com" disabled={loading} className="signup-input w-full pl-9 pr-3" required />
               </div>
             </div>
 
@@ -125,8 +125,8 @@ export const SignupPage: React.FC = () => {
               <label htmlFor="signup-password" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Password</label>
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                <input id="signup-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 8 characters" className="signup-input w-full pl-9 pr-11" required minLength={8} />
-                <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="signup-password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+                <input id="signup-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 8 characters" disabled={loading} className="signup-input w-full pl-9 pr-11" required minLength={8} />
+                <button type="button" onClick={() => setShowPassword((visible) => !visible)} disabled={loading} className="signup-password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               </div>
               <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">Use at least 8 characters.</p>
             </div>
@@ -135,8 +135,8 @@ export const SignupPage: React.FC = () => {
               <label htmlFor="signup-confirm-password" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Confirm Password</label>
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                <input id="signup-confirm-password" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" className="signup-input w-full pl-9 pr-11" required minLength={8} />
-                <button type="button" onClick={() => setShowConfirmPassword((visible) => !visible)} className="signup-password-toggle" aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}>{showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+                <input id="signup-confirm-password" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" disabled={loading} className="signup-input w-full pl-9 pr-11" required minLength={8} />
+                <button type="button" onClick={() => setShowConfirmPassword((visible) => !visible)} disabled={loading} className="signup-password-toggle" aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}>{showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               </div>
             </div>
 

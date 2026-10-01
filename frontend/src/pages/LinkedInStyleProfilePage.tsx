@@ -572,9 +572,10 @@ export const LinkedInStyleProfilePage: React.FC = () => {
               <div className="mt-5 space-y-3">
                 {reviews.slice(0, 3).map((review: any, index: number) => (
                   <article key={review.id || index} className="border-t border-[#edf0f3] pt-3">
-                    <div className="flex items-center gap-1 text-[#d31d24]" aria-label={`${review.rating || 0} out of 5 stars`}>
+                    <div className="flex items-center gap-1 text-[#d31d24]" role="img" aria-label={`${review.rating || 0} out of 5 stars`}>
                       {[1, 2, 3, 4, 5].map(star => <Star key={star} className={`h-3.5 w-3.5 ${star <= Number(review.rating || 0) ? 'fill-current' : ''}`} aria-hidden="true" />)}
                     </div>
+                    <p className="mt-1 text-[10px] font-semibold text-[#697386]">{review.reviewer?.full_name || 'Community member'}{review.created_at ? ` · ${new Date(review.created_at).toLocaleDateString()}` : ''}</p>
                     <p className="mt-2 break-words text-sm leading-6 text-[#4f5d73]">{review.comment || review.review || 'Positive exchange experience.'}</p>
                   </article>
                 ))}

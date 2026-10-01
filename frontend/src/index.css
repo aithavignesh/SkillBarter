@@ -756,18 +756,6 @@
   color: #e5e7eb;
 }
 
-html:not(.dark) .feed-activation-panel__headline {
-  display: block;
-  visibility: visible;
-  opacity: 1;
-  color: #17233b !important;
-}
-
-html:not(.dark) .feed-activation-panel__description {
-  color: #475569 !important;
-  opacity: 1;
-}
-
 .feed-activation-panel__step {
   border: 1px solid rgba(255, 255, 255, .16);
   background: #22314f;
@@ -779,32 +767,6 @@ html:not(.dark) .feed-activation-panel__description {
   border-color: rgba(255, 255, 255, .4);
   background: #2a3a5a;
   outline: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .feed-activation-panel {
-    border-color: rgba(255, 255, 255, .2);
-    background: #0d1424;
-  }
-
-  .feed-activation-panel__eyebrow,
-  .feed-activation-panel__step-number {
-    color: #ff4a50;
-  }
-
-  .feed-activation-panel__description {
-    color: #d1d5db;
-  }
-
-  .feed-activation-panel__step {
-    border-color: rgba(255, 255, 255, .18);
-    background: #17233b;
-  }
-
-  .feed-activation-panel__step:hover,
-  .feed-activation-panel__step:focus-visible {
-    background: #22314f;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -966,6 +928,7 @@ html:not(.dark) .feed-activation-panel__description {
 
 .login-page {
   color: var(--ui-text);
+  padding-top: 6rem;
 }
 
 .login-brand {
@@ -2055,6 +2018,30 @@ html.dark,
 
 .dark .ricoz-theme .landing-hero-background {
   background-image: linear-gradient(90deg, #101720 0%, rgba(16, 23, 32, .96) 24%, rgba(16, 23, 32, .72) 58%, rgba(16, 23, 32, .24) 100%), url("/images/landingpageimage.png") !important;
+}
+
+.dark .ricoz-theme .feed-activation-panel {
+  border-color: rgba(255, 255, 255, .2);
+  background: #0d1424;
+}
+
+.dark .ricoz-theme .feed-activation-panel__eyebrow,
+.dark .ricoz-theme .feed-activation-panel__step-number {
+  color: #ff737a;
+}
+
+.dark .ricoz-theme .feed-activation-panel__description {
+  color: #d1d5db;
+}
+
+.dark .ricoz-theme .feed-activation-panel__step {
+  border-color: rgba(255, 255, 255, .18);
+  background: #17233b;
+}
+
+.dark .ricoz-theme .feed-activation-panel__step:hover,
+.dark .ricoz-theme .feed-activation-panel__step:focus-visible {
+  background: #22314f;
 }
 
 .dark .ricoz-theme :is(.feature-card--active, .explore-option--active, .landing-info-block--active) {

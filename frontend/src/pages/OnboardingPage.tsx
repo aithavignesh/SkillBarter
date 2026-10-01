@@ -144,7 +144,7 @@ export const OnboardingPage: React.FC = () => {
                 >
                   {step > s.num ? '✓' : s.num}
                 </div>
-                <span className="text-[10px] hidden sm:block truncate">{s.title}</span>
+                <span className="text-[9px] leading-3 sm:text-[10px]">{s.title}</span>
               </div>
             ))}
           </div>
@@ -171,7 +171,7 @@ export const OnboardingPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="onboarding-location" className="block text-xs font-semibold text-slate-700 mb-1">
                   Campus / Area
                 </label>
                 <div className="relative">
@@ -225,7 +225,7 @@ export const OnboardingPage: React.FC = () => {
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOffer())}
                   className="onboarding-text-input w-full min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <Button type="button" size="sm" onClick={handleAddOffer} disabled={!newOfferSkill.trim()} icon={<Plus className="w-4 h-4" />}>
+                <Button type="button" size="sm" className="w-full sm:w-auto" onClick={handleAddOffer} disabled={!newOfferSkill.trim()} icon={<Plus className="w-4 h-4" />}>
                   Add Skill
                 </Button>
               </div>
@@ -286,7 +286,7 @@ export const OnboardingPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   aria-label="Skill you want to learn"
                   aria-invalid={step === 3 && Boolean(stepError)}
@@ -298,7 +298,7 @@ export const OnboardingPage: React.FC = () => {
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNeed())}
                   className="onboarding-text-input min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <Button type="button" size="sm" onClick={handleAddNeed} disabled={!newNeedSkill.trim()} icon={<Plus className="w-4 h-4" />}>
+                <Button type="button" size="sm" className="w-full sm:w-auto" onClick={handleAddNeed} disabled={!newNeedSkill.trim()} icon={<Plus className="w-4 h-4" />}>
                   Add
                 </Button>
               </div>
@@ -374,6 +374,7 @@ export const OnboardingPage: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="w-full sm:w-auto"
                 disabled={loading}
                 onClick={() => goToStep(step - 1)}
                 icon={<ArrowLeft className="w-4 h-4" />}
@@ -386,6 +387,7 @@ export const OnboardingPage: React.FC = () => {
               <Button
                 type="button"
                 size="sm"
+                className="w-full sm:w-auto"
                 disabled={loading}
                 onClick={() => {
                   if (step === 1 && !locationName.trim()) { setStepError('Add your campus or area to continue.'); return; }
@@ -401,6 +403,7 @@ export const OnboardingPage: React.FC = () => {
               <Button
                 type="button"
                 size="sm"
+                className="w-full sm:w-auto"
                 loading={loading}
                 disabled={loading}
                 onClick={handleCompleteOnboarding}

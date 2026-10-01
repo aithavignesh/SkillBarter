@@ -192,7 +192,7 @@ export const LoginPage: React.FC = () => {
                   </div>
                   <div className="relative">
                     <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="••••••" className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
+                    <input id="login-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="••••••" disabled={loading} className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
                   </div>
                   <p className="login-help">Sent via 2Factor SMS to <span className="font-semibold text-[#17233b]">{phone}</span>. Valid for 10 minutes.</p>
                 </div>
@@ -227,14 +227,14 @@ export const LoginPage: React.FC = () => {
                   <label className="login-label" htmlFor="login-email">Email Address</label>
                   <div className="relative mt-1.5">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="arjun@skillbarter.com" className="login-input w-full pl-9 pr-3" required />
+                    <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="arjun@skillbarter.com" disabled={loading || resetSending} className="login-input w-full pl-9 pr-3" required />
                   </div>
                 </div>
                 <div>
                   <label className="login-label" htmlFor="login-password">Password</label>
                   <div className="relative mt-1.5">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="login-input w-full pl-9 pr-3" required />
+                    <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" disabled={loading} className="login-input w-full pl-9 pr-3" required />
                   </div>
                 </div>
                 <Button type="submit" loading={loading} className="login-primary-button w-full">Sign In with Email</Button>
