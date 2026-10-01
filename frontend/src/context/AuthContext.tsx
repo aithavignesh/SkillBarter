@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   const refreshUser = async () => {
-    const hasToken = Boolean(sessionStorage.getItem('skillbarter_token'));
+    const hasToken = Boolean(localStorage.getItem('skillbarter_token'));
     const hasPhoneSession = hasPersistedPhoneSession();
 
     // Anonymous visitors should not enter the auth-provider lookup path.
