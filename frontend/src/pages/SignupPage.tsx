@@ -171,6 +171,15 @@ export const SignupPage: React.FC = () => {
             </div>
 
             <div>
+              <label htmlFor="signup-email" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Email</label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
+                <input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. you@example.com" className="signup-input w-full pl-9 pr-3" required />
+              </div>
+              <p className="mt-1.5 text-[11px] leading-5 text-[#8a92a0]">Your email is used for account access and important notifications.</p>
+            </div>
+
+            <div>
               <label htmlFor="signup-phone" className="mb-1.5 block text-xs font-semibold text-[#17233b]">Mobile Number</label>
               <div className="flex gap-2">
                 <input id="signup-phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setPhoneVerified(false); setPhoneVerificationToken(''); }} placeholder="+91 70285 54230" className="signup-input min-w-0 flex-1" required disabled={phoneVerified} />
