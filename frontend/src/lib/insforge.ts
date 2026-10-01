@@ -26,7 +26,7 @@ const unavailableClient = new Proxy(
 // browser refresh endpoint when that token expires, producing repeated 401s.
 // Initialize the client without a token and attach the active token explicitly.
 const persistedToken =
-  typeof window !== 'undefined' ? sessionStorage.getItem('skillbarter_token') ?? '' : '';
+  typeof window !== 'undefined' ? localStorage.getItem('skillbarter_token') ?? '' : '';
 
 export const insforge: any = isInsforgeConfigured
   ? createClient({
