@@ -6,9 +6,9 @@ import { getCurrentPhoneUser } from './phoneAuth';
  * Production data access is direct from the browser to InsForge.
  */
 class ApiClient {
-  private getToken(): string | null { return sessionStorage.getItem('skillbarter_token'); }
+  private getToken(): string | null { return localStorage.getItem('skillbarter_token'); }
   public setToken(token: string) {
-    sessionStorage.setItem('skillbarter_token', token);
+    localStorage.setItem('skillbarter_token', token);
     // Keep both the SDK auth state and its underlying HTTP client aligned.
     // This guarantees PostgREST requests (for example /rest/v1/users) carry
     // the same access token immediately after signup/login.
@@ -16,10 +16,10 @@ class ApiClient {
     try { insforge.getHttpClient?.().setAuthToken(token); } catch {}
   }
   public clearToken() {
-    sessionStorage.removeItem('skillbarter_token');
-    sessionStorage.removeItem('skillbarter_email_session');
-    sessionStorage.removeItem('skillbarter_email');
-    sessionStorage.removeItem('skillbarter_email_profile');
+    localStorage.removeItem('skillbarter_token');
+    localStorage.removeItem('skillbarter_email_session');
+    localStorage.removeItem('skillbarter_email');
+    localStorage.removeItem('skillbarter_email_profile');
     // Keep the SDK client aligned with browser session storage. This matters
     // when a token expires or a session lookup fails before an explicit logout.
     try { insforge.setAccessToken(null); } catch {}
@@ -30,15 +30,15 @@ class ApiClient {
     // Phone OTP sessions are intentionally access-token based and do not expose
     // a refresh token to the browser. Avoid calling getCurrentUser() for those
     // sessions because the SDK may attempt a refresh and show "No refresh token provided".
-    const emailSession = sessionStorage.getItem('skillbarter_email_session');
+    const emailSession = localStorage.getItem('skillbarter_email_session');
     if (emailSession) {
       // Email OTP sessions intentionally use the returned access token directly.
       // Do not call auth.getCurrentUser(), because the SDK may attempt the
       // browser refresh endpoint even though this OTP flow has no refresh cookie.
       const token = this.getToken();
-      const email = sessionStorage.getItem('skillbarter_email');
+      const email = localStorage.getItem('skillbarter_email');
       if (!token || !email) throw new Error('Not authenticated');
-      const cached = sessionStorage.getItem('skillbarter_email_profile');
+      const cached = localStorage.getItem('skillbarter_email_profile');
       if (cached) {
         try {
           const appUser = JSON.parse(cached);
@@ -292,14 +292,14 @@ class ApiClient {
   async demoSwitch(_userId: number) { throw new Error('Demo switching is not available until demo accounts are migrated to InsForge Auth.'); }
 
   async getMe() {
-    const emailSession = sessionStorage.getItem('skillbarter_email_session');
+    const emailSession = localStorage.getItem('skillbarter_email_session');
     if (emailSession) {
       // Email OTP returns the verified SkillBarter profile from the server-side
       // route. Reuse that profile instead of refreshing or querying users.phone.
       const token = this.getToken();
-      const email = sessionStorage.getItem('skillbarter_email');
+      const email = localStorage.getItem('skillbarter_email');
       if (!token || !email) throw new Error('Not authenticated');
-      const cached = sessionStorage.getItem('skillbarter_email_profile');
+      const cached = localStorage.getItem('skillbarter_email_profile');
       if (!cached) throw new Error('Email OTP session profile is missing. Please sign in again.');
       let appUser: any;
       try { appUser = JSON.parse(cached); } catch { throw new Error('Email OTP session profile is invalid. Please sign in again.'); }
