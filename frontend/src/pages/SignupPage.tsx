@@ -49,7 +49,7 @@ export const SignupPage: React.FC = () => {
   const handleVerifyPhoneOtp = async () => {
     try {
       setError(null);
-      const challenge = sessionStorage.getItem('skillbarter_otp_challenge');
+      const challenge = localStorage.getItem('skillbarter_otp_challenge');
       if (!challenge) return setError('Verification challenge expired. Please request a new OTP.');
       const response = await fetch('/api/auth/phone/verify', {
         method: 'POST',
@@ -62,9 +62,9 @@ export const SignupPage: React.FC = () => {
       }
       setPhoneVerified(true);
       setPhoneVerificationToken(data.verificationToken);
-      sessionStorage.removeItem('skillbarter_otp_challenge');
-      sessionStorage.removeItem('skillbarter_otp_phone');
-      sessionStorage.removeItem('skillbarter_otp_sent_at');
+      localStorage.removeItem('skillbarter_otp_challenge');
+      localStorage.removeItem('skillbarter_otp_phone');
+      localStorage.removeItem('skillbarter_otp_sent_at');
       setOtp('');
       setError(null);
     } catch (err: any) {
