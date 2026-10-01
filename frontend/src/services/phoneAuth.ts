@@ -85,11 +85,11 @@ export async function requestPhoneOtp(phoneInput: string): Promise<string> {
     throw error;
   }
 
-  sessionStorage.setItem('skillbarter_otp_phone', data.phone || phone);
-  sessionStorage.setItem('skillbarter_otp_challenge', data.challenge);
-  sessionStorage.setItem('skillbarter_otp_sent_at', String(Date.now()));
-  sessionStorage.removeItem('skillbarter_demo_otp');
-  sessionStorage.removeItem('skillbarter_otp_expires');
+  localStorage.setItem('skillbarter_otp_phone', data.phone || phone);
+  localStorage.setItem('skillbarter_otp_challenge', data.challenge);
+  localStorage.setItem('skillbarter_otp_sent_at', String(Date.now()));
+  localStorage.removeItem('skillbarter_demo_otp');
+  localStorage.removeItem('skillbarter_otp_expires');
 
   return data.phone || phone;
 }
@@ -103,7 +103,7 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpo
     throw new Error('Please enter a valid 6-digit numeric OTP code.');
   }
 
-  const challenge = sessionStorage.getItem('skillbarter_otp_challenge');
+  const challenge = localStorage.getItem('skillbarter_otp_challenge');
   if (!challenge) {
     throw new Error('Verification challenge expired or missing. Please request a new OTP.');
   }
@@ -145,21 +145,21 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpo
   const token = data.accessToken || data.token;
   if (!token) throw new Error('OTP verified, but no login session was returned. Please try again.');
   insforge.setAccessToken(token);
-  sessionStorage.setItem('skillbarter_token', token);
+  localStorage.setItem('skillbarter_token', token);
 
   const user = data.user;
   if (!user?.email) {
     throw new Error('OTP verified, but the login session did not include a user. Please try again.');
   }
-  if (user?.id) sessionStorage.setItem('skillbarter_user_id', String(user.id));
-  if (user?.email) sessionStorage.setItem('skillbarter_phone_email', String(user.email));
-  sessionStorage.setItem('skillbarter_phone', phone);
+  if (user?.id) localStorage.setItem('skillbarter_user_id', String(user.id));
+  if (user?.email) localStorage.setItem('skillbarter_phone_email', String(user.email));
+  localStorage.setItem('skillbarter_phone', phone);
 
-  sessionStorage.removeItem('skillbarter_otp_phone');
-  sessionStorage.removeItem('skillbarter_otp_challenge');
-  sessionStorage.removeItem('skillbarter_otp_sent_at');
-  sessionStorage.removeItem('skillbarter_demo_otp');
-  sessionStorage.removeItem('skillbarter_otp_expires');
+  localStorage.removeItem('skillbarter_otp_phone');
+  localStorage.removeItem('skillbarter_otp_challenge');
+  localStorage.removeItem('skillbarter_otp_sent_at');
+  localStorage.removeItem('skillbarter_demo_otp');
+  localStorage.removeItem('skillbarter_otp_expires');
 
   return {
     id: Number(user?.id) || 0,
@@ -189,7 +189,7 @@ export async function verifyPhoneOtpOwnership(phoneInput: string, otpInput: stri
   const otp = String(otpInput ?? '').trim();
   if (!/^\d{6}$/.test(otp)) throw new Error('Please enter a valid 6-digit numeric OTP code.');
 
-  const challenge = sessionStorage.getItem('skillbarter_otp_challenge');
+  const challenge = localStorage.getItem('skillbarter_otp_challenge');
   if (!challenge) throw new Error('Verification challenge expired or missing. Please request a new OTP.');
 
   const response = await fetch('/api/auth/phone/verify', {
@@ -205,20 +205,20 @@ export async function verifyPhoneOtpOwnership(phoneInput: string, otpInput: stri
     throw error;
   }
 
-  sessionStorage.removeItem('skillbarter_otp_phone');
-  sessionStorage.removeItem('skillbarter_otp_challenge');
-  sessionStorage.removeItem('skillbarter_otp_sent_at');
-  sessionStorage.removeItem('skillbarter_demo_otp');
-  sessionStorage.removeItem('skillbarter_otp_expires');
+  localStorage.removeItem('skillbarter_otp_phone');
+  localStorage.removeItem('skillbarter_otp_challenge');
+  localStorage.removeItem('skillbarter_otp_sent_at');
+  localStorage.removeItem('skillbarter_demo_otp');
+  localStorage.removeItem('skillbarter_otp_expires');
 }
 
 export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
   // Phone sessions intentionally keep only the access token in the browser.
   // Do not call getCurrentUser(), which can invoke the refresh flow and fail
   // with a CSRF error because there is no browser-managed refresh cookie.
-  const phone = sessionStorage.getItem('skillbarter_phone');
-  const email = sessionStorage.getItem('skillbarter_phone_email');
-  const userId = Number(sessionStorage.getItem('skillbarter_user_id') || 0);
+  const phone = localStorage.getItem('skillbarter_phone');
+  const email = localStorage.getItem('skillbarter_phone_email');
+  const userId = Number(localStorage.getItem('skillbarter_user_id') || 0);
   if (!phone || !email) return null;
 
   const { data: appUser, error } = await insforge.database
@@ -250,20 +250,20 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
     skills: [],
   };
 }
-export function clearPhoneSession() {
-  sessionStorage.removeItem('skillbarter_phone');
-  sessionStorage.removeItem('skillbarter_phone_email');
-  sessionStorage.removeItem('skillbarter_user_id');
-  sessionStorage.removeItem('skillbarter_otp_phone');
-  sessionStorage.removeItem('skillbarter_otp_challenge');
-  sessionStorage.removeItem('skillbarter_otp_sent_at');
-  sessionStorage.removeItem('skillbarter_demo_otp');
-  sessionStorage.removeItem('skillbarter_otp_expires');
+// Phone OTP access-token sessions must survive browser refreshes.\n// These values are client-side session state; logout explicitly clears them.\nexport function clearPhoneSession() {
+  localStorage.removeItem('skillbarter_phone');
+  localStorage.removeItem('skillbarter_phone_email');
+  localStorage.removeItem('skillbarter_user_id');
+  localStorage.removeItem('skillbarter_otp_phone');
+  localStorage.removeItem('skillbarter_otp_challenge');
+  localStorage.removeItem('skillbarter_otp_sent_at');
+  localStorage.removeItem('skillbarter_demo_otp');
+  localStorage.removeItem('skillbarter_otp_expires');
 }
 
 export function hasPersistedPhoneSession() {
   return Boolean(
-    sessionStorage.getItem('skillbarter_token') &&
-    sessionStorage.getItem('skillbarter_phone')
+    localStorage.getItem('skillbarter_token') &&
+    localStorage.getItem('skillbarter_phone')
   );
 }
