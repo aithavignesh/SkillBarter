@@ -250,7 +250,9 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
     skills: [],
   };
 }
-// Phone OTP access-token sessions must survive browser refreshes.\n// These values are client-side session state; logout explicitly clears them.\nexport function clearPhoneSession() {
+// Phone OTP access-token sessions must survive browser refreshes.
+// These values are client-side session state; logout explicitly clears them.
+export function clearPhoneSession() {
   localStorage.removeItem('skillbarter_phone');
   localStorage.removeItem('skillbarter_phone_email');
   localStorage.removeItem('skillbarter_user_id');
