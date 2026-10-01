@@ -54,7 +54,7 @@ class ApiClient {
       if (!result.data) throw new Error('Application profile not found');
       return { authUser: { email: result.data.email }, appUser: result.data };
     }
-    const phone = sessionStorage.getItem('skillbarter_phone');
+    const phone = localStorage.getItem('skillbarter_phone');
     if (phone) {
       // Phone OTP sessions intentionally do not use the provider refresh flow.
       // Resolve the application profile through the access-token-backed phone
