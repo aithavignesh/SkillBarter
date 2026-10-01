@@ -19,7 +19,7 @@ export async function requestEmailOtp(emailInput: string) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.message || data?.error || 'Unable to send email OTP.');
-  sessionStorage.setItem('skillbarter_email_otp', email);
+  localStorage.setItem('skillbarter_email_otp', email);
 }
 
 export async function verifyEmailOtp(emailInput: string, otpInput: string) {
@@ -38,13 +38,13 @@ export async function verifyEmailOtp(emailInput: string, otpInput: string) {
   }
 
   insforge.setAccessToken(data.accessToken);
-  sessionStorage.setItem('skillbarter_token', data.accessToken);
+  localStorage.setItem('skillbarter_token', data.accessToken);
   // Email OTP sessions return an access token but no browser refresh cookie.
   // Mark this session so the app restores it through the access-token path
   // instead of calling InsForge /auth/refresh.
-  sessionStorage.setItem('skillbarter_email_session', '1');
-  sessionStorage.setItem('skillbarter_email', email);
-  if (data.profile) sessionStorage.setItem('skillbarter_email_profile', JSON.stringify(data.profile));
-  sessionStorage.removeItem('skillbarter_email_otp');
+  localStorage.setItem('skillbarter_email_session', '1');
+  localStorage.setItem('skillbarter_email', email);
+  if (data.profile) localStorage.setItem('skillbarter_email_profile', JSON.stringify(data.profile));
+  localStorage.removeItem('skillbarter_email_otp');
   return data.profile;
 }
