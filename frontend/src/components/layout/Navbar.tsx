@@ -36,6 +36,11 @@ export const Navbar: React.FC = () => {
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    Workspace: true,
+    Community: true,
+    Explore: true,
+  });
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -68,6 +73,16 @@ export const Navbar: React.FC = () => {
     { label: 'Help & Support', path: '/support/support', icon: HelpCircle },
     { label: 'Settings', path: '/settings/account-settings', icon: Settings },
   ];
+
+  const sidebarSections: Array<{ label: string; items: NavItem[] }> = [
+    { label: 'Workspace', items: primary },
+    { label: 'Community', items: community },
+    { label: 'Explore', items: support },
+  ];
+
+  const toggleSection = (label: string) => {
+    setExpandedSections(current => ({ ...current, [label]: !current[label] }));
+  };
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
@@ -290,19 +305,19 @@ if (!currentUser) {
     const Icon = item.icon;
     return (
       <div key={item.path}>
-        <div className={`flex items-center border-l-2 transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7]' : 'border-transparent'}`}>
-          <Link to={item.path} aria-current={active ? 'page' : undefined} className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:text-[#17233b]'}`}>
+        <div className={`flex items-center gap-1 rounded-lg transition-colors ${active ? 'bg-[#f5f6f8]' : 'bg-transparent'}`}>
+          <Link to={item.path} aria-current={active ? 'page' : undefined} className={`flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}>
             <Icon className={`h-[17px] w-[17px] shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
-            <span>{item.label}</span>
+            <span className="truncate">{item.label}</span>
           </Link>
           {item.features && item.features.length > 0 && (
-            <button type="button" onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)} className={`mr-1 flex h-8 w-8 items-center justify-center ${expanded ? 'text-[#d31d24]' : 'text-[#a0a6af] hover:text-[#17233b]'}`} aria-label={`Show ${item.label} features`} aria-expanded={expanded}>
+            <button type="button" onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)} className={`mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${expanded ? 'text-[#d31d24]' : 'text-[#a0a6af] hover:bg-[#fafbfc] hover:text-[#17233b]'}`} aria-label={`Show ${item.label} features`} aria-expanded={expanded}>
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
             </button>
           )}
         </div>
         {expanded && item.features && (
-          <div className="ml-7 border-l border-[#edf0f2] pl-2 py-1">
+          <div className="ml-6 border-l border-[#dfe3e7] pl-3 py-1">
             {item.features.map(feature => {
               const featureActive = isActive(feature.path);
               return (
@@ -333,15 +348,33 @@ if (!currentUser) {
             <ChevronRight className="h-4 w-4 text-[#b1b7c0] transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
-        <nav className="flex-1 overflow-y-auto px-5 py-5">
-          <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9aa1ac]">Workspace</p>
-          <div className="space-y-0.5">{primary.map(navLink)}</div>
-          <div className="my-6 border-t border-[#edf0f2]" />
-          <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9aa1ac]">Community</p>
-          <div className="space-y-0.5">{community.map(navLink)}</div>
-          <div className="my-6 border-t border-[#edf0f2]" />
-          <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9aa1ac]">Support</p>
-          <div className="space-y-0.5">{support.map(navLink)}</div>
+        <nav className="flex-1 overflow-y-auto px-4 py-5">
+          <div className="space-y-5">
+            {sidebarSections.map((section, index) => {
+              const expanded = expandedSections[section.label] !== false;
+              const sectionActive = section.items.some(item => isActive(item.path) || Boolean(item.features?.some(feature => isActive(feature.path))));
+              return (
+                <section key={section.label} className={index > 0 ? 'border-t border-[#edf0f2] pt-4' : ''}>
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(section.label)}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[10px] font-bold uppercase tracking-[0.14em] transition-colors ${
+                      sectionActive ? 'text-[#17233b]' : 'text-[#9aa1ac] hover:text-[#596579]'
+                    }`}
+                    aria-expanded={expanded}
+                  >
+                    <span className="flex-1">{section.label}</span>
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {expanded && (
+                    <div className="mt-1 space-y-0.5">
+                      {section.items.map(navLink)}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
         </nav>
         <div className="border-t border-[#edf0f2] px-5 py-4">
           <div className="flex items-center justify-between text-[10px]"><span className="font-medium text-[#8a92a0]">Trust score</span><span className="font-bold text-[#17233b]">{Math.round(currentUser.trust_score)}/100</span></div>
@@ -435,7 +468,7 @@ if (!currentUser) {
                 {theme === 'light' ? 'Dark mode' : 'Light mode'}
               </button>
             </div>
-            {[...primary, ...community, ...support].map(item => {
+            {sidebarSections.flatMap(section => section.items).map(item => {
               const active = isActive(item.path);
               const expanded = expandedNav === item.path || Boolean(item.features?.some(feature => isActive(feature.path)));
               const Icon = item.icon;
