@@ -1154,6 +1154,18 @@
 }
 
 @media (max-width: 767px) {
+  .mobile-content-bottom-padding {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-bottom-nav {
+    padding-bottom: calc(.375rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-features-dropdown {
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+  }
+
   .login-input,
   .signup-input,
   .onboarding-text-input,
@@ -1167,6 +1179,12 @@
   .exchange-proposal-form textarea,
   .exchange-proposal-form select,
   .review-text-input {
+    font-size: 16px;
+  }
+
+  .ricoz-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .ricoz-theme select,
+  .ricoz-theme textarea {
     font-size: 16px;
   }
 

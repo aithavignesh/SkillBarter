@@ -115,7 +115,7 @@ export const MessagesPage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 pb-24 sm:px-6 lg:px-8">
-      <Card className="message-workspace grid h-[min(750px,calc(100dvh-8rem))] min-h-[min(440px,calc(100dvh-10rem))] min-w-0 grid-cols-1 overflow-hidden border-[#e1e4e8] md:grid-cols-12">
+      <Card className="message-workspace grid h-[min(750px,calc(100dvh-12rem))] min-h-[min(440px,calc(100dvh-14rem))] min-w-0 grid-cols-1 overflow-hidden border-[#e1e4e8] md:h-[min(750px,calc(100dvh-8rem))] md:min-h-[min(440px,calc(100dvh-10rem))] md:grid-cols-12">
         <aside
           className={`message-workspace__sidebar ${mobileChatOpen ? 'hidden md:flex' : 'flex'} h-full min-h-0 min-w-0 flex-col border-r border-[#e1e4e8] bg-[#f7f8f7] md:col-span-4`}
         >
