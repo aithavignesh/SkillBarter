@@ -223,7 +223,7 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
 
   const { data: appUser, error } = await insforge.database
     .from('users')
-    .select('id,email,username,full_name,avatar_url,bio,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent')
+    .select('id,email,full_name,avatar_url,bio,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent')
     .eq('email', email)
     .maybeSingle();
   if (error || !appUser) return null;
@@ -269,3 +269,4 @@ export function hasPersistedPhoneSession() {
     localStorage.getItem('skillbarter_phone')
   );
 }
+
