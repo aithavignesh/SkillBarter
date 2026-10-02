@@ -5,6 +5,6 @@ import { hydrateMonetizationState } from './monetization';
 // those sessions do not have the browser-managed refresh cookie. Feature pages
 // can hydrate explicitly once an authenticated user is available.
 export async function hydrateCurrentUserMonetization(userId: number) {
-  if (sessionStorage.getItem('skillbarter_phone')) return;
+  if (localStorage.getItem('skillbarter_phone')) return;
   return hydrateMonetizationState(userId);
 }

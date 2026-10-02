@@ -5,9 +5,9 @@ export async function linkPhoneToAccount(phoneInput: string, otpInput: string): 
   const otp = String(otpInput ?? '').trim();
   if (!/^\d{6}$/.test(otp)) throw new Error('Please enter a valid 6-digit numeric OTP code.');
 
-  const challenge = sessionStorage.getItem('skillbarter_otp_challenge');
+  const challenge = localStorage.getItem('skillbarter_otp_challenge');
   if (!challenge) throw new Error('Verification challenge expired or missing. Please request a new OTP.');
-  const token = sessionStorage.getItem('skillbarter_token');
+  const token = localStorage.getItem('skillbarter_token');
   if (!token) throw new Error('Please log in before linking a mobile number.');
 
   const response = await fetch('/api/auth/phone/link', {
@@ -31,12 +31,13 @@ export async function linkPhoneToAccount(phoneInput: string, otpInput: string): 
     throw error;
   }
 
-  sessionStorage.removeItem('skillbarter_otp_phone');
-  sessionStorage.removeItem('skillbarter_otp_challenge');
-  sessionStorage.removeItem('skillbarter_otp_sent_at');
-  sessionStorage.removeItem('skillbarter_demo_otp');
-  sessionStorage.removeItem('skillbarter_otp_expires');
+  localStorage.removeItem('skillbarter_otp_phone');
+  localStorage.removeItem('skillbarter_otp_challenge');
+  localStorage.removeItem('skillbarter_otp_sent_at');
+  localStorage.removeItem('skillbarter_demo_otp');
+  localStorage.removeItem('skillbarter_otp_expires');
   return data.phone || phone;
 }
 
 export { requestPhoneOtp };
+

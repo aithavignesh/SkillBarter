@@ -308,7 +308,7 @@ class ApiClient {
       user.skills = await this.getUserSkills(user.id);
       return user;
     }
-    const phone = sessionStorage.getItem('skillbarter_phone');
+    const phone = localStorage.getItem('skillbarter_phone');
     if (phone) {
       // Keep phone-session restoration on the access-token path; do not invoke
       // the provider refresh flow from a browser session without refresh cookies.
@@ -387,7 +387,7 @@ class ApiClient {
       primary_intent: typeof payload.primary_intent === 'string' ? payload.primary_intent.trim().slice(0, 30) : undefined,
     };
     // Keep privileged account fields out of profile-form updates.
-    const phone = sessionStorage.getItem('skillbarter_phone');
+    const phone = localStorage.getItem('skillbarter_phone');
     if (phone) {
       const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
       if (authError || !authData?.user?.email) throw new Error(authError?.message || 'Not authenticated');
@@ -409,7 +409,7 @@ class ApiClient {
   }
 
   async logout() {
-    const phoneSession = Boolean(sessionStorage.getItem('skillbarter_phone'));
+    const phoneSession = Boolean(localStorage.getItem('skillbarter_phone'));
     let signOutError: any = null;
 
     try {
@@ -425,13 +425,13 @@ class ApiClient {
       // Clear the SDK's in-memory token as well. Storage cleanup alone is not
       // sufficient when provider signOut fails for an access-token-only phone session.
       try { insforge.setAccessToken(''); } catch {}
-      sessionStorage.removeItem('skillbarter_user_id');
-      sessionStorage.removeItem('skillbarter_phone');
-      sessionStorage.removeItem('skillbarter_otp_phone');
-      sessionStorage.removeItem('skillbarter_otp_challenge');
-      sessionStorage.removeItem('skillbarter_otp_sent_at');
-      sessionStorage.removeItem('skillbarter_demo_otp');
-      sessionStorage.removeItem('skillbarter_otp_expires');
+      localStorage.removeItem('skillbarter_user_id');
+      localStorage.removeItem('skillbarter_phone');
+      localStorage.removeItem('skillbarter_otp_phone');
+      localStorage.removeItem('skillbarter_otp_challenge');
+      localStorage.removeItem('skillbarter_otp_sent_at');
+      localStorage.removeItem('skillbarter_demo_otp');
+      localStorage.removeItem('skillbarter_otp_expires');
     }
 
     // Phone OTP sessions intentionally use an access-token-only flow. If the
@@ -1725,3 +1725,6 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
+
+
+
