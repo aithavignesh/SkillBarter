@@ -23,7 +23,7 @@ export const MobilePhoneLinkCard: React.FC<Props> = ({ linkedPhone, onLinked }) 
       setLinked(true);
       return;
     }
-    const token = sessionStorage.getItem('skillbarter_token');
+    const token = localStorage.getItem('skillbarter_token');
     if (!token) return;
     fetch('/api/auth/phone/link', {
       method: 'GET',
