@@ -38,8 +38,11 @@ export const Navbar: React.FC = () => {
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     Workspace: true,
+    Learning: true,
+    Requests: true,
     Community: true,
-    Explore: true,
+    Workshops: false,
+    'Support & Settings': false,
   });
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -55,29 +58,130 @@ export const Navbar: React.FC = () => {
   // Keep the sidebar focused on the core GTM journey. Secondary screens remain
   // reachable from their parent pages instead of competing with the main actions.
   const primary: NavItem[] = [
-    { label: 'Home', path: '/feed', icon: Repeat },
-    { label: 'Find a Learning Partner', path: '/discover', icon: Compass },
-    { label: 'My Learning Matches', path: '/matches', icon: Sparkles },
-    { label: 'Learning Exchanges', path: '/exchanges', icon: ArrowLeftRight },
-    { label: 'Messages', path: '/messages', icon: MessageSquare },
+    {
+      label: 'Home',
+      path: '/feed',
+      icon: Repeat,
+      features: [
+        { label: 'Dashboard', path: '/home/dashboard' },
+        { label: 'Activity', path: '/activity/activity' },
+        { label: 'Invite Peers', path: '/invite' },
+        { label: 'Beta Feedback', path: '/feedback' },
+      ],
+    },
+    {
+      label: 'Find a Learning Partner',
+      path: '/discover',
+      icon: Compass,
+      features: [
+        { label: 'Search', path: '/discover/search' },
+        { label: 'Advanced Search', path: '/discover/advanced-search' },
+        { label: 'Recommended', path: '/discover/recommended' },
+      ],
+    },
+    {
+      label: 'My Learning Matches',
+      path: '/matches',
+      icon: Sparkles,
+      features: [
+        { label: 'AI Matching', path: '/matches/ai-matching' },
+        { label: 'Match Details', path: '/matches/match-details' },
+      ],
+    },
+    {
+      label: 'Learning Exchanges',
+      path: '/exchanges',
+      icon: ArrowLeftRight,
+      features: [
+        { label: 'Active Exchange', path: '/exchanges/active-exchange' },
+        { label: 'Exchange History', path: '/exchanges/exchange-history' },
+        { label: 'Exchange Rating', path: '/exchanges/exchange-rating' },
+        { label: 'Schedule', path: '/exchanges/schedule' },
+        { label: 'Calendar', path: '/exchanges/calendar' },
+      ],
+    },
+    {
+      label: 'Messages',
+      path: '/messages',
+      icon: MessageSquare,
+      features: [
+        { label: 'Chat Details', path: '/messages/chat-details' },
+      ],
+    },
   ];
 
   const community: NavItem[] = [
     { label: 'Learning Network', path: '/connections', icon: Users },
-    { label: 'Student Community', path: '/community', icon: GraduationCap },
-    { label: 'My Profile', path: `/profile/${currentUser?.id}`, icon: UserIcon },
-    { label: 'Trust & Reputation', path: '/trust', icon: ShieldCheck },
+    {
+      label: 'Student Community',
+      path: '/community',
+      icon: GraduationCap,
+      features: [
+        { label: 'Create Post', path: '/community/create-post' },
+        { label: 'Post Details', path: '/community/post-details' },
+        { label: 'Groups', path: '/community/groups' },
+        { label: 'Group Details', path: '/community/group-details' },
+      ],
+    },
+    {
+      label: 'My Profile',
+      path: `/profile/${currentUser?.id}`,
+      icon: UserIcon,
+      features: [
+        { label: 'Edit Profile', path: '/profile/edit-profile' },
+        { label: 'Public Profile', path: '/profile/public-profile' },
+        { label: 'My Skills', path: '/profile/skills' },
+        { label: 'Add Skill', path: '/profile/add-skill' },
+      ],
+    },
+    {
+      label: 'Trust & Reputation',
+      path: '/trust',
+      icon: ShieldCheck,
+      features: [
+        { label: 'Verification', path: '/trust/verification' },
+      ],
+    },
+  ];
+
+  const learning: NavItem[] = [
+    { label: 'Learning Goals', path: '/learning/learning-goals', icon: GraduationCap },
+    { label: 'Teaching Skills', path: '/learning/teaching-skills', icon: Sparkles },
+    { label: 'Learning Credits', path: '/learning/credits', icon: Coins },
+  ];
+
+  const requests: NavItem[] = [
+    { label: 'Send Request', path: '/requests/send-request', icon: UserPlus },
+    { label: 'Incoming Requests', path: '/requests/incoming-requests', icon: UserPlus },
+    { label: 'Sent Requests', path: '/requests/sent-requests', icon: ArrowLeftRight },
+    { label: 'Request Details', path: '/requests/request-details', icon: Search },
+  ];
+
+  const workshops: NavItem[] = [
+    { label: 'Workshops', path: '/workshops/workshops', icon: GraduationCap },
+    { label: 'Create Workshop', path: '/workshops/create-workshop', icon: UserPlus },
+    { label: 'Workshop Details', path: '/workshops/workshop-details', icon: Search },
+    { label: 'My Workshops', path: '/workshops/my-workshops', icon: UserIcon },
   ];
 
   const support: NavItem[] = [
+    { label: 'Notifications', path: '/notifications', icon: Bell },
+    { label: 'Notification Settings', path: '/notifications/notification-settings', icon: Settings },
     { label: 'Help & Support', path: '/support/support', icon: HelpCircle },
+    { label: 'FAQ', path: '/support/faq', icon: HelpCircle },
+    { label: 'Privacy', path: '/settings/privacy', icon: ShieldCheck },
     { label: 'Settings', path: '/settings/account-settings', icon: Settings },
+    { label: 'Premium', path: '/membership/premium', icon: Coins },
+    { label: 'Monetization Hub', path: '/monetization', icon: Coins },
   ];
 
   const sidebarSections: Array<{ label: string; items: NavItem[] }> = [
     { label: 'Workspace', items: primary },
+    { label: 'Learning', items: learning },
+    { label: 'Requests', items: requests },
     { label: 'Community', items: community },
-    { label: 'Explore', items: support },
+    { label: 'Workshops', items: workshops },
+    { label: 'Support & Settings', items: support },
   ];
 
   const toggleSection = (label: string) => {
