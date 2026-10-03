@@ -154,6 +154,9 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpo
   if (user?.id) localStorage.setItem('skillbarter_user_id', String(user.id));
   if (user?.email) localStorage.setItem('skillbarter_phone_email', String(user.email));
   localStorage.setItem('skillbarter_phone', phone);
+  // Cache the verified phone-session profile so onboarding can continue even
+  // if the SDK's direct users lookup is temporarily unavailable after refresh.
+  try { localStorage.setItem('skillbarter_phone_profile', JSON.stringify(user)); } catch {}
 
   localStorage.removeItem('skillbarter_otp_phone');
   localStorage.removeItem('skillbarter_otp_challenge');
@@ -226,6 +229,36 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
   const userId = Number(localStorage.getItem('skillbarter_user_id') || 0);
   if (!phone || !email) return null;
 
+  const cachedProfile = localStorage.getItem('skillbarter_phone_profile');
+  if (cachedProfile) {
+    try {
+      const cached = JSON.parse(cachedProfile);
+      if (cached?.email) {
+        return {
+          id: Number(cached?.id || userId || 0),
+          email: String(cached.email),
+          username: cached?.username || '',
+          phone,
+          full_name: cached?.full_name || 'SkillBarter Member',
+          avatar_url: cached?.avatar_url,
+          bio: cached?.bio,
+          trust_score: Number(cached?.trust_score ?? 0),
+          reliability_score: Number(cached?.reliability_score ?? 0),
+          response_rate: Number(cached?.response_rate ?? 0),
+          skill_quality_score: Number(cached?.skill_quality_score ?? 0),
+          completed_exchanges_count: Number(cached?.completed_exchanges_count ?? 0),
+          reviews_count: Number(cached?.reviews_count ?? 0),
+          badges: Array.isArray(cached?.badges) ? cached.badges : [],
+          is_active: cached?.is_active !== false,
+          is_admin: cached?.is_admin === true,
+          onboarding_completed: cached?.onboarding_completed ?? false,
+          primary_intent: cached?.primary_intent ?? 'EXCHANGE',
+          skills: [],
+        };
+      }
+    } catch {}
+  }
+
   const { data: appUser, error } = await insforge.database
     .from('users')
     .select('id,email,full_name,avatar_url,bio,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,is_active,is_admin,onboarding_completed,primary_intent')
@@ -260,6 +293,7 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
 export function clearPhoneSession() {
   localStorage.removeItem('skillbarter_phone');
   localStorage.removeItem('skillbarter_phone_email');
+  localStorage.removeItem('skillbarter_phone_profile');
   localStorage.removeItem('skillbarter_user_id');
   localStorage.removeItem('skillbarter_otp_phone');
   localStorage.removeItem('skillbarter_otp_challenge');
