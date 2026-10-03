@@ -421,12 +421,27 @@ if (!currentUser) {
           )}
         </div>
         {expanded && item.features && (
-          <div className="ml-6 border-l border-[#dfe3e7] pl-3 py-1">
-            {item.features.map(feature => {
+          <div className="ml-7 mt-0.5">
+            {item.features.map((feature, index) => {
               const featureActive = isActive(feature.path);
+              const isLast = index === item.features!.length - 1;
               return (
-                <Link key={feature.path} to={feature.path} className={`block border-l-2 px-3 py-1.5 text-[10px] transition-colors ${featureActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}>
-                  {feature.label}
+                <Link
+                  key={feature.path}
+                  to={feature.path}
+                  className={`group relative flex min-h-8 items-center rounded-md pl-6 pr-2 text-[11px] transition-colors ${featureActive ? 'bg-[#fff7f7] font-semibold text-[#d31d24]' : 'text-[#66738a] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`absolute left-0 top-0 w-4 border-l border-[#d9dde3] ${isLast ? 'h-4' : 'h-full'}`}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-1/2 w-4 border-t border-[#d9dde3]"
+                  />
+                  <span className={`relative z-10 ${featureActive ? 'text-[#d31d24]' : ''}`}>
+                    {feature.label}
+                  </span>
                 </Link>
               );
             })}
