@@ -67,8 +67,35 @@ class ApiClient {
         .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,response_rate,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
         .eq('email', phoneUser.email)
         .maybeSingle();
-      if (result.error) throw new Error(result.error.message || 'Unable to load application profile');
-      if (!result.data) throw new Error('Application profile not found');
+
+      // Phone OTP sessions can authenticate successfully while the direct
+      // browser profile lookup is unavailable. In that case use the verified
+      // profile returned by the phone-login endpoint instead of blocking
+      // onboarding with "Application profile not found".
+      if (result.error || !result.data) {
+        return {
+          authUser: { id: phoneUser.id, email: phoneUser.email },
+          appUser: {
+            id: phoneUser.id,
+            email: phoneUser.email,
+            full_name: phoneUser.full_name,
+            avatar_url: phoneUser.avatar_url,
+            bio: phoneUser.bio,
+            trust_score: phoneUser.trust_score,
+            reliability_score: phoneUser.reliability_score,
+            response_rate: phoneUser.response_rate,
+            skill_quality_score: phoneUser.skill_quality_score,
+            completed_exchanges_count: phoneUser.completed_exchanges_count,
+            reviews_count: phoneUser.reviews_count,
+            badges: phoneUser.badges,
+            is_active: phoneUser.is_active,
+            is_admin: phoneUser.is_admin,
+            onboarding_completed: phoneUser.onboarding_completed,
+            primary_intent: phoneUser.primary_intent,
+          },
+        };
+      }
+
       return { authUser: { id: phoneUser.id, email: phoneUser.email }, appUser: result.data };
     }
     const { data, error } = await insforge.auth.getCurrentUser();
