@@ -70,13 +70,47 @@ export default async function handler(req, res) {
     }
 
     const accessToken = await createInsforgeSessionToken(identity.auth_user_id, identity.email);
+
+    // Return the application profile as well as the auth identity. The phone
+    // login flow uses a short-lived access token without a refresh cookie, so
+    // the browser needs a stable application-user id/profile for onboarding.
+    const { insforgeUrl, insforgeServiceKey } = {
+      insforgeUrl: process.env.INSFORGE_URL || process.env.VITE_INSFORGE_URL,
+      insforgeServiceKey: process.env.INSFORGE_SERVICE_KEY || process.env.INSFORGE_API_KEY,
+    };
+    let appProfile = null;
+    if (insforgeUrl && insforgeServiceKey) {
+      const rows = await dbServiceRequest(
+        insforgeUrl,
+        insforgeServiceKey,
+        'users',
+        'GET',
+        '?email=eq.' + encodeURIComponent(identity.email) + '&limit=1',
+      );
+      appProfile = Array.isArray(rows) ? rows[0] || null : rows || null;
+    }
+
     return sendJson(res, {
       success: true,
       accessToken,
       token: accessToken,
       user: {
-        id: identity.auth_user_id,
-        email: identity.email,
+        id: appProfile?.id ?? identity.auth_user_id,
+        email: appProfile?.email ?? identity.email,
+        full_name: appProfile?.full_name ?? '',
+        avatar_url: appProfile?.avatar_url ?? null,
+        bio: appProfile?.bio ?? null,
+        trust_score: appProfile?.trust_score ?? 0,
+        reliability_score: appProfile?.reliability_score ?? 0,
+        response_rate: appProfile?.response_rate ?? 0,
+        skill_quality_score: appProfile?.skill_quality_score ?? 0,
+        completed_exchanges_count: appProfile?.completed_exchanges_count ?? 0,
+        reviews_count: appProfile?.reviews_count ?? 0,
+        badges: Array.isArray(appProfile?.badges) ? appProfile.badges : [],
+        is_active: appProfile?.is_active !== false,
+        is_admin: appProfile?.is_admin === true,
+        onboarding_completed: appProfile?.onboarding_completed ?? false,
+        primary_intent: appProfile?.primary_intent ?? 'EXCHANGE',
       },
       message: 'Mobile OTP verified. Login successful.',
     }, 200);
