@@ -268,14 +268,12 @@ if (!currentUser) {
                         Log in
                     </button>
                 </div>
-
-                {/* Mobile Menu Button */}
+                {/* Compact / Mobile Actions */}
                 <div className="flex items-center gap-2 lg:hidden">
-                    {/* Theme Toggle */}
                     <button
                         type="button"
                         onClick={toggleTheme}
-                        className="flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                         aria-label="Toggle theme"
                     >
                         {theme === 'dark' ? (
@@ -286,10 +284,18 @@ if (!currentUser) {
                     </button>
 
                     <button
+                        type="button"
+                        onClick={() => navigate('/login')}
+                        className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    >
+                        Log in
+                    </button>
+
+                    <button
                         ref={mobileMenuButtonRef}
                         type="button"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
                         aria-label="Toggle navigation menu"
                         aria-expanded={isMobileMenuOpen}
                         aria-controls="public-mobile-navigation"
@@ -301,6 +307,7 @@ if (!currentUser) {
                         )}
                     </button>
                 </div>
+
             </div>
 
             {/* Mobile Navigation */}
@@ -359,13 +366,13 @@ if (!currentUser) {
     const Icon = item.icon;
     return (
       <div key={item.path}>
-        <div className={`flex items-center border-l-2 transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7]' : 'border-transparent'}`}>
-          <Link to={item.path} aria-current={active ? 'page' : undefined} className={`flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:text-[#17233b]'}`}>
+        <div className={`flex items-center border-l-2 transition-colors duration-200 ${active ? 'border-[#d31d24] bg-[#fff7f7]' : 'border-transparent'}`}>
+          <Link to={item.path} aria-current={active ? 'page' : undefined} className={`flex min-h-11 min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] focus-visible:relative focus-visible:z-10 ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:text-[#17233b]'}`}>
             <Icon className={`h-[17px] w-[17px] shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
-            <span>{item.label}</span>
+            <span className="min-w-0 break-words">{item.label}</span>
           </Link>
           {item.features && item.features.length > 0 && (
-            <button type="button" onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)} className={`mr-1 flex h-8 w-8 items-center justify-center ${expanded ? 'text-[#d31d24]' : 'text-[#a0a6af] hover:text-[#17233b]'}`} aria-label={`Show ${item.label} features`} aria-expanded={expanded}>
+            <button type="button" onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)} className={`mr-1 flex h-10 w-10 shrink-0 items-center justify-center transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${expanded ? 'text-[#d31d24]' : 'text-[#a0a6af] hover:text-[#17233b]'}`} aria-label={`Show ${item.label} features`} aria-expanded={expanded}>
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
             </button>
           )}
@@ -375,7 +382,7 @@ if (!currentUser) {
             {item.features.map(feature => {
               const featureActive = isActive(feature.path);
               return (
-                <Link key={feature.path} to={feature.path} className={`block border-l-2 px-3 py-1.5 text-[10px] transition-colors ${featureActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}>
+                <Link key={feature.path} to={feature.path} aria-current={featureActive ? 'page' : undefined} className={`flex min-h-10 items-center break-words border-l-2 px-3 py-1.5 text-[10px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${featureActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}>
                   {feature.label}
                 </Link>
               );
@@ -402,7 +409,7 @@ if (!currentUser) {
             <ChevronRight className="h-4 w-4 text-[#b1b7c0] transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
-        <nav className="flex-1 overflow-y-auto px-5 py-5">
+        <nav aria-label="Workspace navigation" className="flex-1 overflow-y-auto overscroll-contain px-5 py-5">
           <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9aa1ac]">Workspace</p>
           <div className="space-y-0.5">{primary.map(navLink)}</div>
           <div className="my-6 border-t border-[#edf0f2]" />

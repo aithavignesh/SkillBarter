@@ -120,16 +120,20 @@ export const OnboardingPage: React.FC = () => {
   ];
 
   return (
-    <div className="onboarding-page min-h-[85vh] bg-slate-50 py-10 px-4">
+    <div className="onboarding-page min-h-[85vh] bg-slate-50 px-4 py-6 sm:py-10">
       <div className="mx-auto max-w-2xl">
         {/* Step Indicator */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-slate-700">Step {step} of 4</p>
+            <p className="min-w-0 text-right text-xs text-slate-500">{stepTitles[step - 1].desc}</p>
+          </div>
+          <div className="mb-2 flex items-center justify-between">
             {stepTitles.map((s) => (
               <div
                 key={s.num}
                 aria-current={step === s.num ? 'step' : undefined}
-                className={`flex flex-col items-center flex-1 ${
+                className={`flex min-w-0 flex-1 flex-col items-center ${
                   step >= s.num ? 'text-emerald-700 font-bold' : 'text-slate-400'
                 }`}
               >
@@ -144,11 +148,11 @@ export const OnboardingPage: React.FC = () => {
                 >
                   {step > s.num ? '✓' : s.num}
                 </div>
-                <span className="text-[9px] leading-3 sm:text-[10px]">{s.title}</span>
+                <span className="text-[10px] leading-4 sm:text-[11px]">{s.title}</span>
               </div>
             ))}
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label="Onboarding progress" aria-valuemin={1} aria-valuemax={4} aria-valuenow={step}>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label="Onboarding progress" aria-valuemin={1} aria-valuemax={4} aria-valuenow={step} aria-valuetext={`Step ${step} of 4: ${stepTitles[step - 1].title}. ${stepTitles[step - 1].desc}`}>
             <div
               className="h-full rounded-full bg-emerald-600 transition-[width] duration-300 motion-reduce:transition-none"
               style={{ width: `${(step / 4) * 100}%` }}
@@ -246,7 +250,7 @@ export const OnboardingPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setOfferedSkills(offeredSkills.filter(s => s !== skill))}
-                        className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]"
+                        className="ml-1 flex h-10 w-10 shrink-0 items-center justify-center hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]"
                         aria-label={`Remove ${skill}`}
                       >
                         <X className="w-3.5 h-3.5" />
@@ -319,7 +323,7 @@ export const OnboardingPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setNeededSkills(neededSkills.filter(s => s !== skill))}
-                        className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]"
+                        className="ml-1 flex h-10 w-10 shrink-0 items-center justify-center hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24]"
                         aria-label={`Remove ${skill}`}
                       >
                         <X className="w-3.5 h-3.5" />
@@ -409,7 +413,7 @@ export const OnboardingPage: React.FC = () => {
                 onClick={handleCompleteOnboarding}
                 icon={<CheckCircle2 className="w-4 h-4" />}
               >
-                Show My Learning Matches
+                {loading ? 'Saving your profile…' : 'Show My Learning Matches'}
               </Button>
             )}
           </div>

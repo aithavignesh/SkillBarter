@@ -72,8 +72,57 @@ export const ProductNavigationMobile: React.FC = () => {
   const location = useLocation();
   const active = productNavigationGroups.some(group => group.items.some(([, path]) => location.pathname === path || location.pathname.startsWith(path + '/')));
   const filteredGroups = productNavigationGroups.map(group => ({ ...group, items: group.items.filter(([label]) => label.toLowerCase().includes(query.trim().toLowerCase()) || group.label.toLowerCase().includes(query.trim().toLowerCase())) })).filter(group => group.items.length);
-  return <div className="relative flex-1">
-    <button type="button" onClick={() => setOpen(v => !v)} className={`flex min-h-11 w-full flex-col items-center justify-center px-1 py-1 text-[10px] font-medium ${active || open ? 'font-bold text-[#d31d24]' : 'text-[#7b8492]'}`} aria-expanded={open}><LayoutGrid className="h-5 w-5" /><span className="mt-0.5">More</span></button>
-    {open && <div className="mobile-features-dropdown fixed left-2 right-2 z-50 overflow-hidden border border-[#e1e4e8] bg-white shadow-[0_14px_36px_rgba(23,35,59,.14)]"><div className="border-b border-[#edf0f2] p-3"><div className="flex items-center justify-between"><span className="text-xs font-bold text-[#17233b]">All features</span><button type="button" onClick={() => setOpen(false)} className="text-[#8a92a0]"><X className="h-4 w-4" /></button></div><div className="relative mt-2"><Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9aa1ac]" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search features" className="h-8 w-full border border-[#e1e4e8] bg-[#fafbfc] pl-8 text-[10px] outline-none" /></div></div><div className="max-h-[62vh] overflow-y-auto p-2">{filteredGroups.map(group => <div key={group.label} className="mb-3 last:mb-0"><p className="px-2 pb-1 text-[9px] font-bold uppercase tracking-wide text-[#9aa1ac]">{group.label}</p><div className="grid grid-cols-2 gap-px bg-[#edf0f2]">{group.items.map(([label,path]) => <Link key={path} to={path} onClick={() => { setOpen(false); setQuery(''); }} className={`flex min-h-11 items-center bg-white px-2.5 py-2 text-[10px] ${location.pathname === path ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}>{label}</Link>)}</div></div>)}</div></div>}
-  </div>;
+  return (
+    <div className="relative flex-1">
+      <button
+        type="button"
+        onClick={() => setOpen(value => !value)}
+        className={`flex min-h-11 w-full flex-col items-center justify-center px-1 py-1 text-[10px] font-medium transition-colors focus-visible:z-10 ${active || open ? 'font-bold text-[#d31d24]' : 'text-[#7b8492]'}`}
+        aria-expanded={open}
+        aria-controls="mobile-skillbarter-features"
+      >
+        <LayoutGrid className="h-5 w-5" />
+        <span className="mt-0.5">More</span>
+      </button>
+      {open && (
+        <div id="mobile-skillbarter-features" className="mobile-features-dropdown fixed left-2 right-2 z-50 overflow-hidden border border-[#e1e4e8] bg-white shadow-[0_14px_36px_rgba(23,35,59,.14)]">
+          <div className="border-b border-[#edf0f2] p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#17233b]">All features</span>
+              <button type="button" onClick={() => setOpen(false)} className="flex h-10 w-10 items-center justify-center text-[#8a92a0] focus-visible:z-10" aria-label="Close all features">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="relative mt-2">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9aa1ac]" />
+              <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search features" className="h-10 w-full border border-[#e1e4e8] bg-[#fafbfc] pl-8 pr-3 text-xs outline-none focus:border-[#cbd0d6]" />
+            </div>
+          </div>
+          <div className="max-h-[62vh] overflow-y-auto p-2">
+            {filteredGroups.map(group => (
+              <div key={group.label} className="mb-3 last:mb-0">
+                <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-[#697386]">{group.label}</p>
+                <div className="grid grid-cols-2 gap-px bg-[#edf0f2]">
+                  {group.items.map(([label, path]) => {
+                    const itemActive = location.pathname === path || location.pathname.startsWith(path + '/');
+                    return (
+                      <Link
+                        key={path}
+                        to={path}
+                        onClick={() => { setOpen(false); setQuery(''); }}
+                        aria-current={itemActive ? 'page' : undefined}
+                        className={`flex min-h-11 min-w-0 items-center break-words bg-white px-2.5 py-2 text-[11px] transition-colors focus-visible:z-10 ${itemActive ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}
+                      >
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };

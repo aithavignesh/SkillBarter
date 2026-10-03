@@ -16,7 +16,7 @@
   --ui-text: #17233b;
   --ui-text-secondary: #4d5b72;
   --ui-text-muted: #697386;
-  --ui-text-subtle: #8a92a0;
+  --ui-text-subtle: #66738a;
   --ui-accent: #d31d24;
   --ui-accent-hover: #b8171d;
   --ui-accent-active: #a91319;
@@ -1688,8 +1688,8 @@
 .ricoz-theme .text-slate-800 { color: #25324a !important; }
 .ricoz-theme .text-slate-700 { color: #4d5b72 !important; }
 .ricoz-theme .text-slate-600 { color: #66738a !important; }
-.ricoz-theme .text-slate-500 { color: #7b8492 !important; }
-.ricoz-theme .text-slate-400 { color: #8b95a5 !important; }
+.ricoz-theme .text-slate-500 { color: #66738a !important; }
+.ricoz-theme .text-slate-400 { color: var(--ui-text-muted) !important; }
 .ricoz-theme .border-slate-200 { border-color: var(--ricoz-border) !important; }
 .ricoz-theme .border-slate-100 { border-color: #edf0f2 !important; }
 .ricoz-theme .border-slate-300 { border-color: #d4d9df !important; }
@@ -1716,7 +1716,7 @@
   background-color: #f8fafb;
   border-color: #dfe3e7;
 }
-.ricoz-theme input::placeholder, .ricoz-theme textarea::placeholder { color: #8a92a0; }
+.ricoz-theme input::placeholder, .ricoz-theme textarea::placeholder { color: var(--ui-text-muted); opacity: 1; }
 .ricoz-theme input:focus, .ricoz-theme textarea:focus, .ricoz-theme select:focus {
   border-color: #d31d24 !important;
   box-shadow: 0 0 0 2px rgba(211,29,36,.08);
@@ -1764,6 +1764,24 @@ header.sticky.top-0.z-30 .border-slate-100, header.sticky.top-0.z-30 .border-sla
 header.sticky.top-0.z-30 .text-slate-900 { color: #17233b !important; }
 header.sticky.top-0.z-30 .text-slate-700 { color: #4d5b72 !important; }
 header.sticky.top-0.z-30 .text-slate-600 { color: #66738a !important; }
+
+/* Keep legacy muted text swatches readable against light surfaces. */
+.ricoz-theme :is(
+  [class~="text-[#8a92a0]"],
+  [class~="text-[#8a93a1]"],
+  [class~="text-[#8a94a6]"],
+  [class~="text-[#8b929d]"],
+  [class~="text-[#8f98a5]"],
+  [class~="text-[#9299a5]"],
+  [class~="text-[#9aa1ac]"],
+  [class~="text-[#a0a6af]"],
+  [class~="text-[#aeb8c8]"],
+  [class~="text-[#b1b7c0]"],
+  [class~="text-[#c1c6cd]"],
+  [class~="text-[#c3c9d3]"]
+) {
+  color: var(--ui-text-muted) !important;
+}
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
