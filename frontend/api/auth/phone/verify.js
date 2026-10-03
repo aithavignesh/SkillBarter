@@ -7,6 +7,7 @@ import {
   checkVerifyRateLimit,
   clearVerifyRateLimit,
   getPhoneIdentity,
+  dbServiceRequest,
   createInsforgeSessionToken,
 } from './_utils.js';
 
