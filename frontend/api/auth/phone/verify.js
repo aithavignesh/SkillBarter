@@ -96,8 +96,37 @@ export default async function handler(req, res) {
           ? rows.data
           : Array.isArray(rows?.records)
             ? rows.records
-            : [];
+            : (rows?.data && typeof rows.data === 'object' ? [rows.data] : []);
       appProfile = profileRows[0] || null;
+
+      // A valid phone identity can exist even when the legacy application
+      // profile was never provisioned (for example, after an older signup
+      // flow). Provision the minimal users row so phone onboarding can proceed.
+      if (!appProfile) {
+        const createdRows = await dbServiceRequest(
+          insforgeUrl,
+          insforgeServiceKey,
+          'users',
+          'POST',
+          '',
+          [{
+            email: identity.email,
+            password_hash: 'insforge-managed',
+            full_name: identity.email.split('@')[0] || 'SkillBarter Member',
+            primary_intent: 'EXCHANGE',
+            onboarding_completed: false,
+            is_active: true,
+          }],
+        );
+        const createdList = Array.isArray(createdRows)
+          ? createdRows
+          : Array.isArray(createdRows?.data)
+            ? createdRows.data
+            : Array.isArray(createdRows?.records)
+              ? createdRows.records
+              : (createdRows?.data && typeof createdRows.data === 'object' ? [createdRows.data] : []);
+        appProfile = createdList[0] || null;
+      }
     }
 
     const applicationUserId = Number(appProfile?.id);
