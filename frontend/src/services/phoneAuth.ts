@@ -214,8 +214,13 @@ export async function verifyPhoneOtpOwnership(phoneInput: string, otpInput: stri
 
 export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
   // Phone sessions intentionally keep only the access token in the browser.
-  // Do not call getCurrentUser(), which can invoke the refresh flow and fail
-  // with a CSRF error because there is no browser-managed refresh cookie.
+  // After a full page refresh, restore that persisted token into the InsForge
+  // SDK before making any database request.
+  const persistedToken = localStorage.getItem('skillbarter_token');
+  if (persistedToken) {
+    try { insforge.setAccessToken(persistedToken); } catch {}
+    try { insforge.getHttpClient?.().setAuthToken(persistedToken); } catch {}
+  }
   const phone = localStorage.getItem('skillbarter_phone');
   const email = localStorage.getItem('skillbarter_phone_email');
   const userId = Number(localStorage.getItem('skillbarter_user_id') || 0);
