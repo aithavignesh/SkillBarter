@@ -233,9 +233,14 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
   if (cachedProfile) {
     try {
       const cached = JSON.parse(cachedProfile);
-      if (cached?.email) {
+      const cachedId = Number(cached?.id);
+      const persistedUserId = Number(userId);
+      const normalizedId = Number.isFinite(cachedId) && cachedId > 0
+        ? cachedId
+        : (Number.isFinite(persistedUserId) && persistedUserId > 0 ? persistedUserId : 0);
+      if (cached?.email && normalizedId > 0) {
         return {
-          id: Number(cached?.id || userId || 0),
+          id: normalizedId,
           email: String(cached.email),
           username: cached?.username || '',
           phone,
@@ -267,7 +272,9 @@ export async function getCurrentPhoneUser(): Promise<PhoneAuthUser | null> {
   if (error || !appUser) return null;
 
   return {
-    id: Number(appUser?.id || userId || 0),
+    id: Number.isFinite(Number(appUser?.id)) && Number(appUser?.id) > 0
+      ? Number(appUser.id)
+      : (Number.isFinite(userId) && userId > 0 ? userId : 0),
     email: appUser?.email || email,
     username: appUser?.username || '',
     phone,
