@@ -88,7 +88,24 @@ export default async function handler(req, res) {
         'GET',
         '?email=eq.' + encodeURIComponent(identity.email) + '&limit=1',
       );
-      appProfile = Array.isArray(rows) ? rows[0] || null : rows || null;
+      // InsForge database responses may be returned either as a raw row array
+      // or wrapped in a data/records property depending on the API runtime.
+      const profileRows = Array.isArray(rows)
+        ? rows
+        : Array.isArray(rows?.data)
+          ? rows.data
+          : Array.isArray(rows?.records)
+            ? rows.records
+            : [];
+      appProfile = profileRows[0] || null;
+    }
+
+    const applicationUserId = Number(appProfile?.id);
+    if (!Number.isFinite(applicationUserId) || applicationUserId <= 0) {
+      return sendJson(res, {
+        error: 'Application profile could not be loaded for this mobile account. Please use email login or contact support.',
+        code: 'APPLICATION_PROFILE_NOT_FOUND',
+      }, 404);
     }
 
     return sendJson(res, {
@@ -96,7 +113,7 @@ export default async function handler(req, res) {
       accessToken,
       token: accessToken,
       user: {
-        id: appProfile?.id ?? identity.auth_user_id,
+        id: applicationUserId,
         email: appProfile?.email ?? identity.email,
         full_name: appProfile?.full_name ?? '',
         avatar_url: appProfile?.avatar_url ?? null,
