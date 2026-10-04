@@ -21,7 +21,10 @@ import {
   Clock,
   ArrowRight,
   Filter,
-  Users, BadgeCheck, Crown
+  Users, BadgeCheck, Crown,
+  MessageCircle,
+  Share2,
+  X
 } from 'lucide-react';
 
 export const FeedPage: React.FC = () => {
@@ -44,6 +47,14 @@ export const FeedPage: React.FC = () => {
   const [selectedPartner, setSelectedPartner] = useState<UserSummary | null>(null);
   const [isProposeOpen, setIsProposeOpen] = useState(false);
   const [defaultPartnerSkill, setDefaultPartnerSkill] = useState('');
+
+  // Post interaction state
+  const [openCommentsFor, setOpenCommentsFor] = useState<number | null>(null);
+  const [postComments, setPostComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
 
   const loadData = async () => {
     try {
@@ -94,6 +105,77 @@ export const FeedPage: React.FC = () => {
       setPosts(posts.map(p => p.id === postId ? { ...p, likes_count: res.likes_count } : p));
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleToggleComments = async (postId: number) => {
+    if (openCommentsFor === postId) {
+      setOpenCommentsFor(null);
+      setPostComments([]);
+      setCommentText('');
+      return;
+    }
+
+    try {
+      setCommentsLoading(true);
+      setOpenCommentsFor(postId);
+      const comments = await api.getPostComments(postId);
+      setPostComments(comments);
+    } catch (e) {
+      console.error(e);
+      setPostComments([]);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const handleAddComment = async (postId: number) => {
+    if (!commentText.trim() || commentSubmitting) return;
+
+    try {
+      setCommentSubmitting(true);
+      const comment = await api.addPostComment(postId, commentText);
+      setPostComments(prev => [...prev, comment]);
+      setCommentText('');
+      setPosts(prev => prev.map(post =>
+        post.id === postId
+          ? { ...post, comments_count: Number(post.comments_count ?? 0) + 1 }
+          : post
+      ));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  const handleSharePost = async (post: Post) => {
+    const shareUrl = `${window.location.origin}/feed?post=${post.id}`;
+    const shareData = {
+      title: post.title || 'SkillBarter learning update',
+      text: post.content,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareMessage('Post shared successfully.');
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareMessage('Post link copied to clipboard.');
+      } else {
+        window.prompt('Copy this SkillBarter post link:', shareUrl);
+      }
+    } catch (e) {
+      // Browser share dialogs can be cancelled by the user. Do not surface
+      // cancellation as an error.
+      if ((e as DOMException)?.name !== 'AbortError') {
+        console.error(e);
+        setShareMessage('Unable to share this post.');
+      }
+    } finally {
+      window.setTimeout(() => setShareMessage(''), 2500);
     }
   };
 
@@ -447,14 +529,35 @@ export const FeedPage: React.FC = () => {
                 )}
 
                 {/* Footer / Actions */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <button
-                    onClick={() => handleLikePost(post.id)}
-                    className="flex items-center gap-1 text-slate-500 hover:text-rose-600 transition-colors"
-                  >
-                    <Heart className="w-4 h-4 text-rose-500 fill-rose-500/20" />
-                    <span>{post.likes_count} Likes</span>
-                  </button>
+                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => handleLikePost(post.id)}
+                      className="flex items-center gap-1 text-slate-500 hover:text-rose-600 transition-colors"
+                    >
+                      <Heart className="w-4 h-4 text-rose-500 fill-rose-500/20" />
+                      <span>{post.likes_count} Likes</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleComments(post.id)}
+                      className="flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>{post.comments_count ?? 0} Comments</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSharePost(post)}
+                      className="flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Share</span>
+                    </button>
+                  </div>
 
                   {post.author?.id !== currentUser?.id && (
                     <Button
@@ -469,6 +572,66 @@ export const FeedPage: React.FC = () => {
                     </Button>
                   )}
                 </div>
+
+                {openCommentsFor === post.id && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">Comments</p>
+                        <p className="text-[10px] text-slate-400">Share a useful thought or question.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setOpenCommentsFor(null)}
+                        className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-700"
+                        aria-label="Close comments"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {commentsLoading ? (
+                      <p className="py-3 text-center text-[11px] text-slate-400">Loading comments...</p>
+                    ) : postComments.length === 0 ? (
+                      <p className="py-3 text-center text-[11px] text-slate-400">No comments yet. Be the first to comment.</p>
+                    ) : (
+                      <div className="mb-3 max-h-52 space-y-2 overflow-y-auto">
+                        {postComments.map((comment) => (
+                          <div key={comment.id} className="flex gap-2 rounded-lg bg-white p-2.5">
+                            <img
+                              src={comment.author?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&auto=format&fit=crop&q=80'}
+                              alt={comment.author?.full_name || 'User'}
+                              className="h-7 w-7 shrink-0 rounded-full object-cover"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-bold text-slate-800">{comment.author?.full_name || 'SkillBarter member'}</p>
+                              <p className="mt-0.5 whitespace-pre-wrap break-words text-[11px] leading-relaxed text-slate-600">{comment.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void handleAddComment(post.id);
+                      }}
+                      className="flex gap-2"
+                    >
+                      <input
+                        value={commentText}
+                        onChange={(event) => setCommentText(event.target.value)}
+                        maxLength={1000}
+                        placeholder="Write a comment..."
+                        className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                      />
+                      <Button type="submit" size="sm" loading={commentSubmitting} disabled={!commentText.trim()}>
+                        Comment
+                      </Button>
+                    </form>
+                  </div>
+                )}
               </Card>
             ))
           )}
@@ -551,6 +714,12 @@ export const FeedPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {shareMessage && (
+        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900 px-4 py-2 text-[11px] font-semibold text-white shadow-lg">
+          {shareMessage}
+        </div>
+      )}
 
       {/* Propose Exchange Modal */}
       {selectedPartner && (
