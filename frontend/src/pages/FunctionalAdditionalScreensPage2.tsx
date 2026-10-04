@@ -24,7 +24,16 @@ export const AdditionalScreen:React.FC=()=>{
  useEffect(()=>{if(['search','advanced-search','recommended','public-profile','match-details'].includes(id))loadUsers();if(['edit-profile','account-settings','public-profile'].includes(id))loadProfile(routeUser>0?routeUser:selfId);if(['skills','add-skill','teaching-skills','learning-goals'].includes(id))loadSkills();if(['incoming-requests','sent-requests','request-details','active-exchange','exchange-history','exchange-rating','schedule','calendar'].includes(id))loadExchanges();if(['notifications','notification-settings','activity'].includes(id))loadNotifications();if(['post-details','groups','group-details','workshops','workshop-details','my-workshops'].includes(id))loadPosts();if(id==='ai-matching')api.getMatches().then(setMatches).catch((e:any)=>setMessage(e?.message||'Unable to load matches.'));},[id,selfId,routeUser]);
  const filteredUsers=useMemo(()=>{const q=query.trim().toLowerCase();return users.filter((u:any)=>!q||[u.full_name,u.headline,...(u.skills_offered||[]),...(u.skills_needed||[])].some((v:any)=>String(v||'').toLowerCase().includes(q))).filter((u:any)=>!minTrust||Number(u.trust_score||0)>=Number(minTrust));},[users,query,minTrust]);
  const saveProfile=async(e:FormEvent)=>{e.preventDefault();await run(async()=>{await api.updateMe({full_name:profile.full_name,headline:profile.headline,bio:profile.bio,address_display:profile.address_display,availability:profile.availability});await loadProfile(selfId);},'Profile updated.');};
- const saveSkill=async(e:FormEvent)=>{e.preventDefault();if(!skill.trim()){setMessage('Enter a skill name.');return;}await run(async()=>{await api.addUserSkill({skill_name:skill.trim(),skill_type:skillType,experience_level:'Intermediate'});setSkill('');await loadSkills();},'Skill saved.');};
+ const saveSkill=async(e:FormEvent)=>{
+  e.preventDefault();
+  if(!skill.trim()){setMessage('Enter a skill name.');return;}
+  await run(async()=>{
+    await api.addUserSkill({skill_name:skill.trim(),skill_type:skillType,experience_level:'Intermediate'});
+    setSkill('');
+    await loadSkills();
+  },'Skill saved.');
+  window.setTimeout(()=>setMessage(''),3000);
+};
  const removeSkill=async(skillId:number)=>{if(!skillId)return;await run(async()=>{await api.deleteUserSkill(skillId);await loadSkills();},'Skill removed.');};
   const searchMembers=async(e:FormEvent)=>{e.preventDefault();setMessage('');setUsers((current)=>current);};
  const sendMessage=async(e:FormEvent)=>{e.preventDefault();const uid=Number(target)||routeUser;if(!uid){setMessage('Choose a member first.');return;}if(!text.trim()){setMessage('Message cannot be empty.');return;}await run(async()=>{await api.sendMessage({receiver_id:uid,content:text.trim()});setText('');},'Message sent.');};
