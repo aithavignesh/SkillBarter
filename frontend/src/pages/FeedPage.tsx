@@ -132,6 +132,68 @@ export const FeedPage: React.FC = () => {
         </div>
       </Card>
 
+      {/* Quick reputation and progress summary */}
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { label: 'Trust Score', value: Math.round(currentUser?.trust_score ?? 0), suffix: '/100', tone: 'text-[#d31d24]', icon: ShieldCheck },
+          { label: 'Completed Exchanges', value: currentUser?.completed_exchanges_count ?? 0, suffix: '', tone: 'text-emerald-700', icon: CheckCircle2 },
+          { label: 'Reviews', value: currentUser?.reviews_count ?? 0, suffix: '', tone: 'text-amber-600', icon: Heart },
+          { label: 'Response Rate', value: currentUser?.response_rate ?? 0, suffix: '%', tone: 'text-sky-700', icon: Clock },
+        ].map(({ label, value, suffix, tone, icon: Icon }) => (
+          <Card key={label} className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</p>
+                <p className={`mt-1 text-2xl font-black ${tone}`}>{value}<span className="ml-0.5 text-xs font-bold text-slate-400">{suffix}</span></p>
+              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-500">
+                <Icon className="h-4 w-4" />
+              </span>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="mb-6 overflow-hidden border-slate-200">
+        <div className="p-5 sm:p-6">
+          {(() => {
+            const milestones = [
+              { done: Boolean(currentUser?.skills?.some(s => s.skill_type === 'OFFERED')), label: 'Add a skill you can teach' },
+              { done: Boolean(currentUser?.skills?.some(s => s.skill_type === 'NEEDED')), label: 'Add a skill you want to learn' },
+              { done: Boolean(currentUser?.headline), label: 'Complete your learning profile' },
+              { done: Number(currentUser?.completed_exchanges_count ?? 0) > 0, label: 'Complete your first exchange' },
+              { done: Number(currentUser?.reviews_count ?? 0) > 0, label: 'Receive your first review' },
+            ];
+            const completed = milestones.filter(item => item.done).length;
+            const progress = Math.round((completed / milestones.length) * 100);
+            const next = milestones.find(item => !item.done);
+            return (
+              <>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#d31d24]">Your progress</p>
+                    <h2 className="mt-1 text-base font-bold text-[#17233b]">Build your SkillBarter reputation</h2>
+                    <p className="mt-1 text-xs text-slate-500">{next ? `Next: ${next.label}` : 'You have completed every starter milestone.'}</p>
+                  </div>
+                  <span className="text-xl font-black text-[#d31d24]">{progress}%</span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full bg-[#d31d24] transition-[width] duration-500" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                  {milestones.map((item) => (
+                    <div key={item.label} className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-[10px] font-semibold ${item.done ? 'border-emerald-100 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                      {item.done ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <Clock className="h-3.5 w-3.5 shrink-0" />}
+                      <span>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      </Card>
+
       {/* Returning-user next step */}
       <Card className="mb-6 border-emerald-200 bg-emerald-50/50">
         <div className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
