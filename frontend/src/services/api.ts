@@ -1330,6 +1330,22 @@ class ApiClient {
     }
 
     const posts = (r.data ?? []).filter((post: any) => !excluded.has(Number(post.author_id)));
+
+    // Load comment counts separately so the posts query remains compatible
+    // with existing post records while comments are stored in post_comments.
+    const postIds = posts.map((post: any) => Number(post.id)).filter((id: number) => Number.isInteger(id) && id > 0);
+    const commentCounts = new Map<number, number>();
+    if (postIds.length) {
+      const commentsResult = await insforge.database
+        .from('post_comments')
+        .select('post_id')
+        .in('post_id', postIds);
+      if (commentsResult.error) throw new Error(commentsResult.error.message || 'Unable to load post comments');
+      for (const row of commentsResult.data ?? []) {
+        const postId = Number(row.post_id);
+        commentCounts.set(postId, (commentCounts.get(postId) ?? 0) + 1);
+      }
+    }
     const authorIds = [...new Set(posts.map((post: any) => Number(post.author_id)).filter((id: number) => Number.isInteger(id) && id > 0))];
     if (!authorIds.length) return posts;
 
@@ -1374,6 +1390,7 @@ class ApiClient {
         : null;
       return {
         ...post,
+        comments_count: commentCounts.get(Number(post.id)) ?? 0,
         author: {
           id: author.id,
           full_name: author.full_name,
@@ -1469,6 +1486,109 @@ class ApiClient {
     }
     return updated.data;
   }
+  async getPostComments(postId: number) {
+    const { appUser } = await this.getAppUser();
+    const id = Number(postId);
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Invalid post.');
+
+    const post = await insforge.database
+      .from('posts')
+      .select('id,author_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (post.error || !post.data) throw new Error(post.error?.message || 'Post not found');
+
+    const blocked = await insforge.database
+      .from('blocks')
+      .select('blocker_id,blocked_id')
+      .or(`blocker_id.eq.${appUser.id},blocked_id.eq.${appUser.id}`);
+    if (blocked.error) throw new Error(blocked.error.message || 'Unable to check community safety settings');
+    if ((blocked.data ?? []).some((b: any) =>
+      Number(b.blocker_id) === Number(post.data.author_id) ||
+      Number(b.blocked_id) === Number(post.data.author_id)
+    )) {
+      throw new Error('You cannot view comments on this member’s post.');
+    }
+
+    const result = await insforge.database
+      .from('post_comments')
+      .select('id,post_id,user_id,content,created_at')
+      .eq('post_id', id)
+      .order('created_at', { ascending: true });
+    if (result.error) throw new Error(result.error.message || 'Unable to load comments');
+
+    const userIds = [...new Set((result.data ?? []).map((row: any) => Number(row.user_id)).filter((value: number) => Number.isInteger(value) && value > 0))];
+    const authorsResult = userIds.length
+      ? await insforge.database.from('users').select('id,full_name,avatar_url,trust_score,verified').in('id', userIds)
+      : { data: [], error: null as any };
+    if (authorsResult.error) throw new Error(authorsResult.error.message || 'Unable to load comment authors');
+
+    const authors = new Map<number, any>((authorsResult.data ?? []).map((user: any) => [Number(user.id), user]));
+    return (result.data ?? []).map((row: any) => ({
+      id: Number(row.id),
+      post_id: Number(row.post_id),
+      user_id: Number(row.user_id),
+      content: row.content,
+      created_at: row.created_at,
+      author: authors.get(Number(row.user_id)) ? {
+        id: Number(row.user_id),
+        full_name: authors.get(Number(row.user_id)).full_name,
+        avatar_url: authors.get(Number(row.user_id)).avatar_url,
+        trust_score: Number(authors.get(Number(row.user_id)).trust_score ?? 0),
+        verified: authors.get(Number(row.user_id)).verified === true,
+      } : undefined,
+    }));
+  }
+
+  async addPostComment(postId: number, content: string) {
+    const { appUser } = await this.getAppUser();
+    const id = Number(postId);
+    const text = String(content || '').trim();
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Invalid post.');
+    if (!text) throw new Error('Comment cannot be empty.');
+    if (text.length > 1000) throw new Error('Comment must be 1000 characters or fewer.');
+
+    const post = await insforge.database
+      .from('posts')
+      .select('id,author_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (post.error || !post.data) throw new Error(post.error?.message || 'Post not found');
+
+    const blocked = await insforge.database
+      .from('blocks')
+      .select('blocker_id,blocked_id')
+      .or(`blocker_id.eq.${appUser.id},blocked_id.eq.${appUser.id}`);
+    if (blocked.error) throw new Error(blocked.error.message || 'Unable to check community safety settings');
+    if ((blocked.data ?? []).some((b: any) =>
+      Number(b.blocker_id) === Number(post.data.author_id) ||
+      Number(b.blocked_id) === Number(post.data.author_id)
+    )) {
+      throw new Error('You cannot comment on this member’s post.');
+    }
+
+    const result = await insforge.database
+      .from('post_comments')
+      .insert({ post_id: id, user_id: appUser.id, content: text })
+      .select('id,post_id,user_id,content,created_at')
+      .single();
+    if (result.error) throw new Error(result.error.message || 'Unable to add comment');
+
+    return {
+      ...result.data,
+      id: Number(result.data.id),
+      post_id: Number(result.data.post_id),
+      user_id: Number(result.data.user_id),
+      author: {
+        id: Number(appUser.id),
+        full_name: appUser.full_name,
+        avatar_url: appUser.avatar_url,
+        trust_score: Number(appUser.trust_score ?? 0),
+        verified: appUser.verified === true,
+      },
+    };
+  }
+
   private async recalculateTrustScore(userId: number) {
     const [reviewsResult, exchangesResult] = await Promise.all([
       insforge.database.from('reviews').select('rating,reliability_score,skill_quality_score,would_exchange_again').eq('reviewee_id', userId),
