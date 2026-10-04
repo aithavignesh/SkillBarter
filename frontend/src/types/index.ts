@@ -183,6 +183,7 @@ export interface Post {
   exchange_id?: number;
   partner_id?: number;
   likes_count: number;
+  comments_count?: number;
   created_at: string;
   author: UserSummary;
   skill?: Skill;
