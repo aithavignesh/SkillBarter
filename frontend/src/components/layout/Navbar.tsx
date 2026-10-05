@@ -33,8 +33,8 @@ export const Navbar: React.FC = () => {
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const profileMenuContainerRef = useRef<HTMLDivElement>(null);
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
+  const keepMobileMenuOpenOnNavigationRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -138,10 +138,40 @@ export const Navbar: React.FC = () => {
     },
   ];
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const matchesPath = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const allNavItems = [...primary, ...community, ...support];
+  const activeParentPath = allNavItems.find(item => item.features?.some(feature => matchesPath(feature.path)))?.path ?? null;
+  const [expandedNavState, setExpandedNavState] = useState(() => ({
+    path: activeParentPath,
+    pathname: location.pathname,
+  }));
+  const expandedNav = expandedNavState.pathname === location.pathname
+    ? expandedNavState.path
+    : activeParentPath ?? expandedNavState.path;
+  const activeNavigationPath = allNavItems
+    .flatMap(item => [
+      { path: item.path, isParent: true },
+      ...(item.features || []).map(feature => ({ path: feature.path, isParent: false })),
+    ])
+    .filter(entry => matchesPath(entry.path))
+    .sort((a, b) => b.path.length - a.path.length || Number(a.isParent) - Number(b.isParent))[0]?.path;
+  const isActive = (path: string) => path === activeNavigationPath;
+  const toggleNavSection = (path: string) => {
+    setExpandedNavState({
+      path: expandedNav === path ? null : path,
+      pathname: location.pathname,
+    });
+  };
+  const handleExpandableNavKeyDown = (event: React.KeyboardEvent<HTMLAnchorElement>, path: string) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+      toggleNavSection(path);
+    }
+  };
 
   useEffect(() => {
-    setShowMobileMenu(false);
+    if (!keepMobileMenuOpenOnNavigationRef.current) setShowMobileMenu(false);
+    keepMobileMenuOpenOnNavigationRef.current = false;
     setShowNotifications(false);
     setShowProfileMenu(false);
   }, [location.pathname]);
@@ -362,31 +392,46 @@ if (!currentUser) {
 }
   const navLink = (item: NavItem) => {
     const active = isActive(item.path);
-    const expanded = expandedNav === item.path || Boolean(item.features?.some(feature => isActive(feature.path)));
+    const expanded = expandedNav === item.path;
+    const submenuId = `sidebar-submenu-${item.path.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
     const Icon = item.icon;
     return (
       <div key={item.path}>
         <div className={`flex items-center border-l-2 transition-colors duration-200 ${active ? 'border-[#d31d24] bg-[#fff7f7]' : 'border-transparent'}`}>
-          <Link to={item.path} aria-current={active ? 'page' : undefined} className={`flex min-h-11 min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] focus-visible:relative focus-visible:z-10 ${active ? 'font-semibold text-[#d31d24]' : 'text-[#596579] hover:text-[#17233b]'}`}>
+          <Link
+            to={item.path}
+            onClick={() => item.features?.length && toggleNavSection(item.path)}
+            onKeyDown={item.features?.length ? event => handleExpandableNavKeyDown(event, item.path) : undefined}
+            aria-current={active ? 'page' : undefined}
+            aria-expanded={item.features?.length ? expanded : undefined}
+            aria-controls={item.features?.length ? submenuId : undefined}
+            className={`flex min-h-11 w-full min-w-0 flex-1 cursor-pointer items-center gap-3 px-3 py-2.5 text-[13px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${active ? 'font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+          >
             <Icon className={`h-[17px] w-[17px] shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
             <span className="min-w-0 break-words">{item.label}</span>
+            {item.features && item.features.length > 0 && (
+              <span className="pointer-events-none ml-auto mr-1 flex h-10 w-10 shrink-0 items-center justify-center">
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? 'rotate-180 text-[#d31d24]' : 'text-[#a0a6af]'}`} />
+              </span>
+            )}
           </Link>
-          {item.features && item.features.length > 0 && (
-            <button type="button" onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)} className={`mr-1 flex h-10 w-10 shrink-0 items-center justify-center transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${expanded ? 'text-[#d31d24]' : 'text-[#a0a6af] hover:text-[#17233b]'}`} aria-label={`Show ${item.label} features`} aria-expanded={expanded}>
-              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-            </button>
-          )}
         </div>
-        {expanded && item.features && (
-          <div className="ml-7 border-l border-[#edf0f2] pl-2 py-1">
-            {item.features.map(feature => {
-              const featureActive = isActive(feature.path);
-              return (
-                <Link key={feature.path} to={feature.path} aria-current={featureActive ? 'page' : undefined} className={`flex min-h-10 items-center break-words border-l-2 px-3 py-1.5 text-[10px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${featureActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}>
-                  {feature.label}
-                </Link>
-              );
-            })}
+        {item.features && item.features.length > 0 && (
+          <div id={submenuId} className={`sidebar-tree-collapse ${expanded ? 'sidebar-tree-collapse--open' : ''}`} aria-hidden={!expanded}>
+            <div className="sidebar-tree-collapse__inner">
+              <div className="sidebar-tree ml-7 py-1">
+                {item.features.map(feature => {
+                  const featureActive = isActive(feature.path);
+                  return (
+                    <div key={feature.path} className="sidebar-tree__item">
+                      <Link to={feature.path} aria-current={featureActive ? 'page' : undefined} className={`flex min-h-10 items-center break-words border-l-2 px-3 py-1.5 text-[10px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${featureActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}>
+                        {feature.label}
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -428,7 +473,7 @@ if (!currentUser) {
       <header className="sticky top-0 z-30 h-[68px] border-b border-[#e4e6e9] bg-white lg:ml-[312px]">
         <div className="flex h-full items-center gap-4 px-5 pl-14 sm:px-7 sm:pl-16 lg:px-8 lg:pl-8">
           <div className="min-w-0 flex-1">
-            <div className="hidden items-center gap-2 text-[11px] text-[#8a92a0] md:flex"><span>SkillBarter</span><span>/</span><span className="font-semibold text-[#17233b]">{primary.find((x) => isActive(x.path))?.label || 'Community'}</span></div>
+            <div className="hidden items-center gap-2 text-[11px] text-[#8a92a0] md:flex"><span>SkillBarter</span><span>/</span><span className="font-semibold text-[#17233b]">{primary.find(item => isActive(item.path) || item.features?.some(feature => isActive(feature.path)))?.label || 'Community'}</span></div>
             <form onSubmit={handleSearchSubmit} className="relative mt-0.5 w-full min-w-0 max-w-[560px] rounded-full bg-white/75 shadow-[0_2px_10px_rgba(23,35,59,0.045),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-[6px] transition-[background-color,box-shadow] duration-200 ease-out focus-within:bg-white focus-within:shadow-[0_4px_14px_rgba(23,35,59,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]">
               <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9299a5]" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search learning skills or people" aria-label="Search learning skills or people" className="h-11 w-full min-w-0 rounded-full border-0 bg-transparent py-2 pl-11 pr-5 text-[12px] text-[#17233b] outline-none placeholder:text-[#7f8794] focus:ring-0 sm:text-[13px]" />
@@ -516,44 +561,54 @@ if (!currentUser) {
             </div>
             {[...primary, ...community, ...support].map(item => {
               const active = isActive(item.path);
-              const expanded = expandedNav === item.path || Boolean(item.features?.some(feature => isActive(feature.path)));
+              const expanded = expandedNav === item.path;
+              const submenuId = `mobile-sidebar-submenu-${item.path.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
               const Icon = item.icon;
               return (
                 <div key={item.path} className="border-b border-[#f0f1f3] last:border-b-0">
-                  <div className="flex items-center">
+                  <div className="flex items-center border-l-2 border-transparent">
                     <Link
                       to={item.path}
-                      onClick={() => setShowMobileMenu(false)}
+                      onClick={() => {
+                        if (item.features?.length) {
+                          toggleNavSection(item.path);
+                          keepMobileMenuOpenOnNavigationRef.current = showMobileMenu && location.pathname !== item.path;
+                        }
+                        else setShowMobileMenu(false);
+                      }}
+                      onKeyDown={item.features?.length ? event => handleExpandableNavKeyDown(event, item.path) : undefined}
                       aria-current={active ? 'page' : undefined}
-                      className={`flex min-w-0 flex-1 items-center gap-3 border-l-2 px-2 py-3 text-[13px] transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#4d5b72]'}`}
+                      aria-expanded={item.features?.length ? expanded : undefined}
+                      aria-controls={item.features?.length ? submenuId : undefined}
+                      className={`flex min-h-11 w-full min-w-0 flex-1 cursor-pointer items-center gap-3 border-l-2 px-2 py-3 text-[13px] transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'border-transparent text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
                     >
                       <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
                       <span className="min-w-0 break-words">{item.label}</span>
+                      {item.features && (
+                        <span className="pointer-events-none -mr-2 ml-auto flex h-10 w-10 shrink-0 items-center justify-center">
+                          <ChevronDown className={`h-4 w-4 text-[#8a92a0] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+                        </span>
+                      )}
                     </Link>
-                    {item.features && (
-                      <button
-                        type="button"
-                        onClick={() => setExpandedNav(expandedNav === item.path ? null : item.path)}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center text-[#8a92a0]"
-                        aria-label={`Show ${item.label} features`}
-                        aria-expanded={expanded}
-                      >
-                        <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-                      </button>
-                    )}
                   </div>
-                  {expanded && item.features && (
-                    <div className="ml-9 border-l border-[#edf0f2] pb-2 pl-2">
-                      {item.features.map(feature => (
-                        <Link
-                          key={feature.path}
-                          to={feature.path}
-                          onClick={() => setShowMobileMenu(false)}
-                          className={`block break-words px-3 py-2.5 text-[11px] ${isActive(feature.path) ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}
-                        >
-                          {feature.label}
-                        </Link>
-                      ))}
+                  {item.features && (
+                    <div id={submenuId} className={`sidebar-tree-collapse ${expanded ? 'sidebar-tree-collapse--open' : ''}`} aria-hidden={!expanded}>
+                      <div className="sidebar-tree-collapse__inner">
+                        <div className="sidebar-tree sidebar-tree--mobile ml-9 pb-2">
+                          {item.features.map(feature => (
+                            <div key={feature.path} className="sidebar-tree__item">
+                              <Link
+                                to={feature.path}
+                                onClick={() => setShowMobileMenu(false)}
+                                aria-current={isActive(feature.path) ? 'page' : undefined}
+                                className={`block break-words px-3 py-2.5 text-[11px] ${isActive(feature.path) ? 'font-semibold text-[#d31d24]' : 'text-[#66738a]'}`}
+                              >
+                                {feature.label}
+                              </Link>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
