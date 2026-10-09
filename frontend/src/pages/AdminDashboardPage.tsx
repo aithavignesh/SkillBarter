@@ -59,10 +59,21 @@ export const AdminDashboardPage: React.FC = () => {
   };
 
   const handleResolveReport = async (reportId: number, status: 'RESOLVED' | 'DISMISSED') => {
-    const action = status === 'RESOLVED' ? 'resolve and penalize' : 'dismiss';
+    const action = status === 'RESOLVED' ? 'resolve' : 'dismiss';
     if (!window.confirm(`Are you sure you want to ${action} this safety report?`)) return;
+
+    const note = window.prompt(
+      'Add a moderation note for the audit trail (optional):',
+      status === 'RESOLVED' ? 'Resolved by community moderator' : 'Dismissed by community moderator',
+    );
+    if (note === null) return;
+    if (note.trim().length > 2000) {
+      window.alert('Moderation notes must be 2000 characters or less.');
+      return;
+    }
+
     try {
-      await api.resolveAdminReport(reportId, status, status === 'RESOLVED' ? 'Resolved by community moderator' : 'Dismissed by community moderator');
+      await api.resolveAdminReport(reportId, status, note.trim());
       await loadAdminData();
     } catch (e: any) {
       alert(e.message);
@@ -294,8 +305,8 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="space-y-4">
             {filteredReports.map((r) => (
               <Card key={r.id} className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
-                <div className="space-y-1 text-xs"><div className="flex items-center gap-2"><Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">{r.status}</Badge><span className="font-bold text-slate-900">{r.category}</span><span className="text-slate-400">• Reported by {r.reporter_name}</span></div><p className="text-slate-700 italic">"{r.details}"</p><p className="text-[10px] text-slate-400">Against user: {r.reported_name}{r.reported_exchange_id ? ` • Exchange #${r.reported_exchange_id}` : ""}</p></div>
-                {r.status === 'PENDING' && <div className="flex shrink-0 items-center gap-2"><Button size="sm" variant="outline" onClick={() => handleResolveReport(r.id, 'DISMISSED')}>Dismiss</Button><Button size="sm" variant="danger" onClick={() => handleResolveReport(r.id, 'RESOLVED')}>Resolve & Penalize</Button></div>}
+                <div className="space-y-1 text-xs"><div className="flex items-center gap-2"><Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">{r.status}</Badge><span className="font-bold text-slate-900">{r.category}</span><span className="text-slate-400">• Reported by {r.reporter_name}</span></div><p className="text-slate-700 italic">"{r.details}"</p><p className="text-[10px] text-slate-400">Against user: {r.reported_name}{r.reported_exchange_id ? ` • Exchange #${r.reported_exchange_id}` : ""}</p>{r.admin_note && <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-600">Moderator note: {r.admin_note}</p>}</div>
+                {r.status === 'PENDING' && <div className="flex shrink-0 items-center gap-2"><Button size="sm" variant="outline" onClick={() => handleResolveReport(r.id, 'DISMISSED')}>Dismiss</Button><Button size="sm" variant="danger" onClick={() => handleResolveReport(r.id, 'RESOLVED')}>Resolve report</Button></div>}
               </Card>
             ))}
           </div>
