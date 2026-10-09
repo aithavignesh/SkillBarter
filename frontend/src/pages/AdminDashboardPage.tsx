@@ -16,6 +16,9 @@ export const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('USERS');
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [reportStatusFilter, setReportStatusFilter] = useState<'ALL' | 'PENDING' | 'RESOLVED' | 'DISMISSED'>('PENDING');
 
   const loadAdminData = async () => {
     try {
@@ -79,6 +82,17 @@ export const AdminDashboardPage: React.FC = () => {
     { id: 'REPORTS', label: 'Safety Reports Queue', count: reports.filter(r => r.status === 'PENDING').length },
     { id: 'EXCHANGES', label: 'Exchange Audit Log', count: exchanges.length },
   ];
+
+  const normalizedUserSearch = userSearch.trim().toLowerCase();
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch = !normalizedUserSearch || [user.full_name, user.email, user.headline]
+      .some((value) => String(value ?? '').toLowerCase().includes(normalizedUserSearch));
+    const matchesStatus = userStatusFilter === 'ALL'
+      || (userStatusFilter === 'ACTIVE' && user.is_active !== false)
+      || (userStatusFilter === 'INACTIVE' && user.is_active === false);
+    return matchesSearch && matchesStatus;
+  });
+  const filteredReports = reports.filter((report) => reportStatusFilter === 'ALL' || report.status === reportStatusFilter);
 
   const activeRate = stats?.total_users ? Math.round((stats.active_users / stats.total_users) * 100) : 0;
   const completionRate = stats?.total_exchanges ? Math.round((stats.completed_exchanges / stats.total_exchanges) * 100) : 0;
@@ -226,14 +240,30 @@ export const AdminDashboardPage: React.FC = () => {
           <div className="mt-4"><Button size="sm" onClick={loadAdminData}>Retry loading</Button></div>
         </Card>
       ) : activeTab === 'USERS' ? (
-        <Card className="overflow-hidden">
+        <div className="space-y-3">
+          <Card className="p-4">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+              <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+                Search learners
+                <input value={userSearch} onChange={(event) => setUserSearch(event.target.value)} placeholder="Search name, email, or headline" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+              </label>
+              <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+                Account status
+                <select value={userStatusFilter} onChange={(event) => setUserStatusFilter(event.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
+                  <option value="ALL">All accounts</option><option value="ACTIVE">Active only</option><option value="INACTIVE">Deactivated only</option>
+                </select>
+              </label>
+            </div>
+            <p className="mt-2 text-[11px] text-slate-400">Showing {filteredUsers.length} of {users.length} loaded learner accounts.</p>
+          </Card>
+          <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <tr><th className="px-6 py-3">User</th><th className="px-6 py-3">Email</th><th className="px-6 py-3">Trust Score</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-right">Action</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.map((u) => (
+                {filteredUsers.map((u) => (
                   <tr key={u.id} className="transition-colors hover:bg-slate-50/80">
                     <td className="flex items-center gap-2 px-6 py-3.5 font-bold text-slate-900"><span>{u.full_name}</span>{u.is_admin && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">Admin</span>}</td>
                     <td className="px-6 py-3.5 text-slate-600">{u.email}</td>
@@ -245,20 +275,32 @@ export const AdminDashboardPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </Card>
+          </Card>
+        </div>
       ) : activeTab === 'REPORTS' ? (
-        reports.length === 0 ? (
-          <Card className="p-12 text-center text-xs text-slate-400">No safety reports on record. Keep reviewing reports as the student community grows.</Card>
-        ) : (
+        <div className="space-y-3">
+          <Card className="p-4">
+            <label className="block max-w-xs space-y-1.5 text-xs font-semibold text-slate-600">
+              Report status
+              <select value={reportStatusFilter} onChange={(event) => setReportStatusFilter(event.target.value as 'ALL' | 'PENDING' | 'RESOLVED' | 'DISMISSED')} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
+                <option value="PENDING">Pending review</option><option value="RESOLVED">Resolved</option><option value="DISMISSED">Dismissed</option><option value="ALL">All reports</option>
+              </select>
+            </label>
+            <p className="mt-2 text-[11px] text-slate-400">Showing {filteredReports.length} of {reports.length} loaded reports.</p>
+          </Card>
+          {filteredReports.length === 0 ? (
+            <Card className="p-12 text-center text-xs text-slate-400">No reports match this filter.</Card>
+          ) : (
           <div className="space-y-4">
-            {reports.map((r) => (
+            {filteredReports.map((r) => (
               <Card key={r.id} className="flex flex-col justify-between gap-4 p-5 md:flex-row md:items-center">
                 <div className="space-y-1 text-xs"><div className="flex items-center gap-2"><Badge variant={r.status === 'PENDING' ? 'rose' : 'emerald'} size="sm">{r.status}</Badge><span className="font-bold text-slate-900">{r.category}</span><span className="text-slate-400">• Reported by {r.reporter_name}</span></div><p className="text-slate-700 italic">"{r.details}"</p><p className="text-[10px] text-slate-400">Against user: {r.reported_name}{r.reported_exchange_id ? ` • Exchange #${r.reported_exchange_id}` : ""}</p></div>
                 {r.status === 'PENDING' && <div className="flex shrink-0 items-center gap-2"><Button size="sm" variant="outline" onClick={() => handleResolveReport(r.id, 'DISMISSED')}>Dismiss</Button><Button size="sm" variant="danger" onClick={() => handleResolveReport(r.id, 'RESOLVED')}>Resolve & Penalize</Button></div>}
               </Card>
             ))}
           </div>
-        )
+          )}
+        </div>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
