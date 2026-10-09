@@ -15,10 +15,12 @@ export const AdminDashboardPage: React.FC = () => {
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<string>('USERS');
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadAdminData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const [s, u, r, e] = await Promise.all([
         api.getAdminStats(),
         api.getAdminUsers(),
@@ -30,7 +32,8 @@ export const AdminDashboardPage: React.FC = () => {
       setReports(r);
       setExchanges(e);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load admin dashboard data:', err);
+      setLoadError(err instanceof Error ? err.message : 'Unable to load admin dashboard data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -92,11 +95,28 @@ export const AdminDashboardPage: React.FC = () => {
             <h1 className="text-3xl font-black tracking-tight text-slate-950">Admin Dashboard</h1>
             <p className="mt-1 text-sm text-slate-500">Track student activation, learning exchanges, trust signals, and safety so we can see where the learning journey needs improvement.</p>
           </div>
-          <span className="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-sm">
-            Live platform view
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-sm">
+              Live platform view
+            </span>
+            <Button size="sm" variant="outline" disabled={loading} onClick={loadAdminData}>
+              {loading ? 'Refreshing…' : 'Refresh data'}
+            </Button>
+          </div>
         </div>
       </div>
+
+      {loadError && (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold">Admin data could not be fully loaded.</p>
+            <p className="mt-1 break-words text-xs">{loadError}</p>
+          </div>
+          <Button size="sm" variant="outline" disabled={loading} onClick={loadAdminData}>
+            Try again
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
@@ -198,6 +218,13 @@ export const AdminDashboardPage: React.FC = () => {
 
       {loading ? (
         <div className="py-20 text-center text-xs text-slate-400">Loading admin data...</div>
+      ) : loadError && !stats ? (
+        <Card className="p-10 text-center">
+          <AlertTriangle className="mx-auto h-8 w-8 text-rose-500" />
+          <p className="mt-3 font-semibold text-slate-900">Unable to display the admin dashboard</p>
+          <p className="mt-1 text-sm text-slate-500">Check the connection and your administrative permissions, then try again.</p>
+          <div className="mt-4"><Button size="sm" onClick={loadAdminData}>Retry loading</Button></div>
+        </Card>
       ) : activeTab === 'USERS' ? (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
