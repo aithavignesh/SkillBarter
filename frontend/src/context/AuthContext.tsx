@@ -1,4 +1,4 @@
-// UI preview deployment trigger: keep auth behavior unchanged.
+﻿// UI preview deployment trigger: keep auth behavior unchanged.
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { clearPhoneSession, getCurrentPhoneUser, hasPersistedPhoneSession, requestPhoneOtp, verifyPhoneOtp } from '../services/phoneAuth';
@@ -10,7 +10,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   requestPhoneOtp: (phone: string) => Promise<string>;
-  verifyPhoneOtp: (phone: string, otp: string) => Promise<void>;
+  verifyPhoneOtp: (phone: string, otp: string) => Promise<any>;
   requestEmailOtp: (email: string) => Promise<void>;
   verifyEmailOtp: (email: string, otp: string) => Promise<void>;
   register: (payload: any) => Promise<void>;
@@ -85,8 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleVerifyPhoneOtp = async (phone: string, otp: string) => {
     setLoading(true);
     try {
-      const user = await verifyPhoneOtp(phone, otp);
-      setCurrentUser(user as User);
+      return await verifyPhoneOtp(phone, otp);
+
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearPhoneSession();
       const user = await verifyEmailOtp(email, otp);
       if (!user) throw new Error('Email OTP verified, but the SkillBarter profile could not be loaded.');
-      setCurrentUser(user as User);
+
     } finally { setLoading(false); }
   };
 
@@ -149,3 +149,4 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
+

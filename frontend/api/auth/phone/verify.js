@@ -1,4 +1,4 @@
-import {
+﻿import {
   createPhoneVerificationToken,
   normalizePhone,
   parseRequestBody,
@@ -8,7 +8,6 @@ import {
   clearVerifyRateLimit,
   getPhoneIdentity,
   dbServiceRequest,
-  createInsforgeSessionToken,
 } from './_utils.js';
 
 export default async function handler(req, res) {
@@ -70,9 +69,7 @@ export default async function handler(req, res) {
       }, 404);
     }
 
-    const accessToken = await createInsforgeSessionToken(identity.auth_user_id, identity.email);
-
-    // Return the application profile as well as the auth identity. The phone
+// Return the application profile as well as the auth identity. The phone
     // login flow uses a short-lived access token without a refresh cookie, so
     // the browser needs a stable application-user id/profile for onboarding.
     const { insforgeUrl, insforgeServiceKey } = {
@@ -139,9 +136,8 @@ export default async function handler(req, res) {
 
     return sendJson(res, {
       success: true,
-      accessToken,
-      token: accessToken,
-      user: {
+
+user: {
         id: applicationUserId,
         email: appProfile?.email ?? identity.email,
         full_name: appProfile?.full_name ?? '',
@@ -159,7 +155,9 @@ export default async function handler(req, res) {
         onboarding_completed: appProfile?.onboarding_completed ?? false,
         primary_intent: appProfile?.primary_intent ?? 'EXCHANGE',
       },
-      message: 'Mobile OTP verified. Login successful.',
+      verificationToken: createPhoneVerificationToken(phone),
+      requiresEmailOtp: true,
+      message: 'Mobile verified. Complete email OTP verification to sign in.',
     }, 200);
   } catch (err) {
     console.error('[Phone OTP Verification Failed]', err.message);
@@ -169,3 +167,4 @@ export default async function handler(req, res) {
     }, err.statusCode || 400);
   }
 }
+

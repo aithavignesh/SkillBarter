@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { requestPhoneLoginEmailOtp } from '../services/phoneAuth';
 import { api } from '../services/api';
 import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
@@ -17,7 +18,7 @@ export const LoginPage: React.FC = () => {
     ['DE','Germany','+49'],['FR','France','+33'],['IT','Italy','+39'],['ES','Spain','+34'],['NL','Netherlands','+31'],
     ['CH','Switzerland','+41'],['SE','Sweden','+46'],['NO','Norway','+47'],['DK','Denmark','+45'],['FI','Finland','+358'],
     ['IE','Ireland','+353'],['PT','Portugal','+351'],['BE','Belgium','+32'],['AT','Austria','+43'],['PL','Poland','+48'],
-    ['CZ','Czechia','+420'],['RO','Romania','+40'],['GR','Greece','+30'],['TR','Türkiye','+90'],['UA','Ukraine','+380'],
+    ['CZ','Czechia','+420'],['RO','Romania','+40'],['GR','Greece','+30'],['TR','TÃ¼rkiye','+90'],['UA','Ukraine','+380'],
     ['RU','Russia','+7'],['IL','Israel','+972'],['EG','Egypt','+20'],['ZA','South Africa','+27'],['NG','Nigeria','+234'],
     ['KE','Kenya','+254'],['GH','Ghana','+233'],['MA','Morocco','+212'],['BR','Brazil','+55'],['MX','Mexico','+52'],
     ['AR','Argentina','+54'],['CL','Chile','+56'],['CO','Colombia','+57'],['PE','Peru','+51'],['VE','Venezuela','+58'],
@@ -83,6 +84,7 @@ export const LoginPage: React.FC = () => {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!otp.trim() || otp.trim().length !== 6) {
       setError('Please enter the complete 6-digit OTP received via SMS.');
       return;
@@ -90,19 +92,31 @@ export const LoginPage: React.FC = () => {
 
     try {
       setError(null);
-      await verifyPhoneOtp(phone.trim(), otp.trim());
+      setSuccessMessage(null);
+
+      const verification: any = await verifyPhoneOtp(phone.trim(), otp.trim());
+
+      if (!verification?.verificationToken) {
+        throw new Error('Mobile verification succeeded, but the verification proof was missing. Please request a new SMS OTP.');
+      }
+
+      const registeredEmail = await requestPhoneLoginEmailOtp(
+        phone.trim(),
+        verification.verificationToken
+      );
+
+      setEmail(registeredEmail);
+      setEmailOtp('');
+      setEmailOtpSent(true);
       setPhoneVerified(true);
       setOtpSent(false);
       setOtp('');
-      setError(null);
-      setSuccessMessage('Mobile OTP verified. Login successful.');
-      trackEvent('login_completed', { method: 'mobile_otp' });
-      navigate('/');
+      setCooldown(30);
+      setSuccessMessage(`Mobile verified. An email verification code was sent to ${registeredEmail}. Enter it below to finish signing in.`);
     } catch (err: any) {
-      setError(err.message || 'Invalid or expired OTP. Please check the code and try again.');
+      setError(err.message || 'Unable to continue verification. Please try again.');
     }
   };
-
   const handleEmailOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!email.trim()) {
@@ -143,7 +157,7 @@ export const LoginPage: React.FC = () => {
       const message = String(err.message || 'Invalid credentials');
       if (/compromised|breach|found in.*records|change.*password|password.*(leak|leaked|compromised)/i.test(message)) {
         setEmailFallback(true);
-        setError('For your security, this password cannot be used. Enter your email below and use “Forgot password?” to create a new password.');
+        setError('For your security, this password cannot be used. Enter your email below and use â€œForgot password?â€ to create a new password.');
       } else setError(message);
     }
   };
@@ -228,7 +242,7 @@ export const LoginPage: React.FC = () => {
                   </div>
                   <div className="relative">
                     <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="••••••" className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
+                    <input id="login-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢" className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
                   </div>
                   <p className="login-help">Sent via 2Factor SMS to <span className="font-semibold text-[#17233b]">{phone}</span>. Valid for 10 minutes.</p>
                 </div>
@@ -266,7 +280,7 @@ export const LoginPage: React.FC = () => {
                   <label className="login-label" htmlFor="login-email-otp">6-Digit Email OTP</label>
                   <div className="relative mt-1.5">
                     <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-email-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={emailOtp} onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))} placeholder="••••••" className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
+                    <input id="login-email-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={emailOtp} onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢" className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
                   </div>
                   <p className="login-help">Code sent to <span className="font-semibold text-[#17233b]">{email.trim()}</span>. It expires after 5 minutes.</p>
                 </div>
@@ -296,7 +310,7 @@ export const LoginPage: React.FC = () => {
                   <label className="login-label" htmlFor="login-password">Password</label>
                   <div className="relative mt-1.5">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="login-input w-full pl-9 pr-3" required />
+                    <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" className="login-input w-full pl-9 pr-3" required />
                   </div>
                 </div>
                 <Button type="submit" loading={loading} className="login-primary-button w-full">Sign In with Password</Button>
@@ -320,3 +334,4 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+

@@ -1,4 +1,4 @@
-import { insforge } from '../lib/insforge';
+﻿import { insforge } from '../lib/insforge';
 
 export interface PhoneAuthUser {
   id: number;
@@ -95,7 +95,7 @@ export async function requestPhoneOtp(phoneInput: string): Promise<string> {
 }
 
 /** Verify the received OTP against the server-side cryptographic challenge. */
-export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpose: 'login' | 'register' = 'login'): Promise<PhoneAuthUser | { phone: string; verified: true }> {
+export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpose: 'login' | 'register' = 'login'): Promise<PhoneAuthUser | { phone: string; verified: true } | { phone: string; verified: true; verificationToken: string; email: string }> {
   const phone = normalizePhone(phoneInput);
   const otp = String(otpInput ?? '').trim();
 
@@ -142,21 +142,16 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpo
 
   if (purpose === 'register') return { phone, verified: true };
 
-  const token = data.accessToken || data.token;
-  if (!token) throw new Error('OTP verified, but no login session was returned. Please try again.');
-  insforge.setAccessToken(token);
-  localStorage.setItem('skillbarter_token', token);
-
-  const user = data.user;
-  if (!user?.email) {
-    throw new Error('OTP verified, but the login session did not include a user. Please try again.');
+  if (!data.verified || !data.verificationToken || !data.user?.email) {
+    throw new Error(data.error || 'Mobile verified, but email verification could not be started.');
   }
-  if (user?.id) localStorage.setItem('skillbarter_user_id', String(user.id));
-  if (user?.email) localStorage.setItem('skillbarter_phone_email', String(user.email));
-  localStorage.setItem('skillbarter_phone', phone);
-  // Cache the verified phone-session profile so onboarding can continue even
-  // if the SDK's direct users lookup is temporarily unavailable after refresh.
-  try { localStorage.setItem('skillbarter_phone_profile', JSON.stringify(user)); } catch {}
+
+  // SMS verification is only step one; never persist its response as an auth session.
+  localStorage.removeItem('skillbarter_token');
+  localStorage.removeItem('skillbarter_email_session');
+  localStorage.removeItem('skillbarter_phone');
+  localStorage.removeItem('skillbarter_phone_profile');
+  try { insforge.setAccessToken(''); } catch {}
 
   localStorage.removeItem('skillbarter_otp_phone');
   localStorage.removeItem('skillbarter_otp_challenge');
@@ -165,27 +160,12 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpo
   localStorage.removeItem('skillbarter_otp_expires');
 
   return {
-    id: Number(user?.id) || 0,
-    email: user?.email || '',
-    full_name: user?.full_name || 'SkillBarter Member',
     phone,
-    avatar_url: user?.avatar_url,
-    bio: user?.bio,
-    trust_score: Number(user?.trust_score ?? 0),
-    reliability_score: Number(user?.reliability_score ?? 0),
-    response_rate: Number(user?.response_rate ?? 0),
-    skill_quality_score: Number(user?.skill_quality_score ?? 0),
-    completed_exchanges_count: Number(user?.completed_exchanges_count ?? 0),
-    reviews_count: Number(user?.reviews_count ?? 0),
-    badges: Array.isArray(user?.badges) ? user.badges : [],
-    is_active: user?.is_active !== false,
-    is_admin: user?.is_admin === true,
-    onboarding_completed: user?.onboarding_completed ?? false,
-    primary_intent: user?.primary_intent ?? 'EXCHANGE',
-    skills: [],
+    verified: true as const,
+    verificationToken: data.verificationToken as string,
+    email: String(data.user.email),
   };
 }
-
 
 export async function verifyPhoneOtpOwnership(phoneInput: string, otpInput: string): Promise<void> {
   const phone = normalizePhone(phoneInput);
@@ -315,4 +295,32 @@ export function hasPersistedPhoneSession() {
     localStorage.getItem('skillbarter_phone')
   );
 }
+
+
+/** Request email OTP after successful SMS verification. */
+export async function requestPhoneLoginEmailOtp(
+  phoneInput: string,
+  verificationToken: string
+): Promise<string> {
+  const phone = normalizePhone(phoneInput);
+
+  const response = await fetch('/api/auth/phone/request-email-otp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({ phone, verificationToken }),
+  });
+
+  const data: any = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data?.success || !data?.email) {
+    throw new Error(data?.error || `Could not request email OTP (${response.status}).`);
+  }
+
+  localStorage.setItem('skillbarter_email_otp', data.email);
+  return data.email;
+}
+
 
