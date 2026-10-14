@@ -390,14 +390,17 @@ class ApiClient {
       primary_intent: typeof payload.primary_intent === 'string' ? payload.primary_intent.trim().slice(0, 30) : undefined,
     };
     // Keep privileged account fields out of profile-form updates.
-    const phone = sessionStorage.getItem('skillbarter_phone');
+    // Phone OTP sessions are stored in localStorage and intentionally do not
+    // use the provider refresh-token flow. Resolve the application user from
+    // the persisted phone session, matching getMe() and phoneAuth.ts.
+    const phone = localStorage.getItem('skillbarter_phone');
     if (phone) {
-      const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
-      if (authError || !authData?.user?.email) throw new Error(authError?.message || 'Not authenticated');
+      const phoneUser = await getCurrentPhoneUser();
+      if (!phoneUser?.email) throw new Error('Not authenticated');
       const { data, error } = await insforge.database
         .from('users')
         .update({ ...profilePayload, updated_at: new Date().toISOString() })
-        .eq('email', authData.user.email)
+        .eq('email', phoneUser.email)
         .select('id,email,full_name,avatar_url,bio,headline,latitude,longitude,address_display,exchange_radius_km,location_visibility,availability,trust_score,reliability_score,skill_quality_score,completed_exchanges_count,reviews_count,badges,premium,verified,is_active,is_admin,onboarding_completed,primary_intent,created_at,updated_at')
         .single();
       if (error) throw new Error(error.message || 'Unable to update profile');
