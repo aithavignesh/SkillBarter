@@ -427,6 +427,7 @@ class ApiClient {
       try { insforge.setAccessToken(''); } catch {}
       localStorage.removeItem('skillbarter_user_id');
       localStorage.removeItem('skillbarter_phone');
+      localStorage.removeItem('skillbarter_phone_email');
       localStorage.removeItem('skillbarter_otp_phone');
       localStorage.removeItem('skillbarter_otp_challenge');
       localStorage.removeItem('skillbarter_otp_sent_at');
