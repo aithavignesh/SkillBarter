@@ -35,8 +35,19 @@ export const insforge: any = isInsforgeConfigured
     })
   : unavailableClient;
 
-if (isInsforgeConfigured && persistedToken) {
+/**
+ * Keep the InsForge SDK and its underlying HTTP client on the same access token.
+ * OTP sessions use access tokens without a browser refresh token.
+ */
+export function syncInsforgeAccessToken(token: string | null) {
   try {
-    insforge.setAccessToken(persistedToken);
+    insforge.setAccessToken(token);
   } catch {}
+  try {
+    insforge.getHttpClient?.().setAuthToken(token);
+  } catch {}
+}
+
+if (isInsforgeConfigured && persistedToken) {
+  syncInsforgeAccessToken(persistedToken);
 }
