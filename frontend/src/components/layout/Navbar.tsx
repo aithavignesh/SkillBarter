@@ -272,13 +272,13 @@ if (!currentUser) {
 
                         <div className="my-2 border-t border-slate-200" />
 
-                        <button
-                            type="button"
-                            onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
-                            className="rounded-lg px-3 py-3 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        <Link
+                            to="/login"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className="block rounded-lg px-3 py-3 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                         >
                             Log in
-                        </button>
+                        </Link>
                     </div>
                 </div>
         </nav>
