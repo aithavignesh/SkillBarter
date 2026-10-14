@@ -387,7 +387,7 @@ class ApiClient {
       primary_intent: typeof payload.primary_intent === 'string' ? payload.primary_intent.trim().slice(0, 30) : undefined,
     };
     // Keep privileged account fields out of profile-form updates.
-    const phone = sessionStorage.getItem('skillbarter_phone');
+    const phone = localStorage.getItem('skillbarter_phone');
     if (phone) {
       const phoneUser = await getCurrentPhoneUser();
       if (!phoneUser?.email) throw new Error('Not authenticated');
@@ -409,7 +409,7 @@ class ApiClient {
   }
 
   async logout() {
-    const phoneSession = Boolean(sessionStorage.getItem('skillbarter_phone'));
+    const phoneSession = Boolean(localStorage.getItem('skillbarter_phone'));
     let signOutError: any = null;
 
     try {
