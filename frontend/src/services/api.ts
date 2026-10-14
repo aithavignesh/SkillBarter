@@ -308,7 +308,10 @@ class ApiClient {
       user.skills = await this.getUserSkills(user.id);
       return user;
     }
-    const phone = sessionStorage.getItem('skillbarter_phone');
+    // Phone OTP verification persists the session in localStorage. Read from
+    // the same storage as phoneAuth.ts so preview refreshes/admin routes do not
+    // fall through to InsForge's refresh-token flow and falsely report logout.
+    const phone = localStorage.getItem('skillbarter_phone');
     if (phone) {
       // Keep phone-session restoration on the access-token path; do not invoke
       // the provider refresh flow from a browser session without refresh cookies.
