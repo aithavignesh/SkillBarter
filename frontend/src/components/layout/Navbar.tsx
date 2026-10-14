@@ -34,6 +34,7 @@ export const Navbar: React.FC = () => {
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const profileMenuContainerRef = useRef<HTMLDivElement>(null);
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
+  const publicMobileMenuContainerRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -110,7 +111,9 @@ export const Navbar: React.FC = () => {
     const closeOnOutsidePress = (event: PointerEvent) => {
       if (!(event.target instanceof Node)) return;
       if (showProfileMenu && !profileMenuContainerRef.current?.contains(event.target)) setShowProfileMenu(false);
-      if ((showMobileMenu || isMobileMenuOpen) && !mobileMenuContainerRef.current?.contains(event.target)) {
+      const insideMobileNavigation = mobileMenuContainerRef.current?.contains(event.target)
+        || publicMobileMenuContainerRef.current?.contains(event.target);
+      if ((showMobileMenu || isMobileMenuOpen) && !insideMobileNavigation) {
         setShowMobileMenu(false);
         setIsMobileMenuOpen(false);
       }
@@ -235,7 +238,7 @@ if (!currentUser) {
             </div>
 
             {/* Mobile Navigation */}
-                <div id="public-mobile-navigation" aria-hidden={!isMobileMenuOpen} className={`public-mobile-navigation absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-4 shadow-md lg:hidden ${isMobileMenuOpen ? 'public-mobile-navigation--open' : ''}`}>
+                <div id="public-mobile-navigation" ref={publicMobileMenuContainerRef} aria-hidden={!isMobileMenuOpen} className={`public-mobile-navigation absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-4 shadow-md lg:hidden ${isMobileMenuOpen ? 'public-mobile-navigation--open' : ''}`}>
                     <div className="flex flex-col gap-1">
 
                         <a
