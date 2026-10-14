@@ -1502,7 +1502,11 @@ class ApiClient {
   }
 
   private async requireAdmin() {
-    const { appUser } = await this.getAppUser();
+    // Admin pages must use the same session-restoration path as the app shell.
+    // getAppUser() has a separate legacy phone-session lookup and can fall
+    // through to auth.getCurrentUser(), which requires a refresh token that
+    // passwordless OTP sessions intentionally do not have.
+    const appUser = await this.getMe();
     if (appUser?.is_admin !== true) throw new Error('Administrative privileges required.');
     return appUser;
   }
