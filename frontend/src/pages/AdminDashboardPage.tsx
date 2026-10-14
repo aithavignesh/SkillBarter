@@ -15,25 +15,30 @@ export const AdminDashboardPage: React.FC = () => {
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<string>('USERS');
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadErrors, setLoadErrors] = useState<string[]>([]);
 
   const loadAdminData = async () => {
-    try {
-      setLoading(true);
-      const [s, u, r, e] = await Promise.all([
-        api.getAdminStats(),
-        api.getAdminUsers(),
-        api.getAdminReports(),
-        api.getAdminExchanges(),
-      ]);
-      setStats(s);
-      setUsers(u);
-      setReports(r);
-      setExchanges(e);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    setLoadErrors([]);
+    const tasks = [
+      { label: 'Platform statistics', run: () => api.getAdminStats(), save: setStats },
+      { label: 'User directory', run: () => api.getAdminUsers(), save: setUsers },
+      { label: 'Safety reports', run: () => api.getAdminReports(), save: setReports },
+      { label: 'Exchange audit log', run: () => api.getAdminExchanges(), save: setExchanges },
+    ];
+    const errors: string[] = [];
+    await Promise.all(tasks.map(async (task) => {
+      try {
+        const result = await task.run();
+        task.save(result as never);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        errors.push(`${task.label}: ${detail}`);
+        console.error(`[Admin dashboard] ${task.label} failed`, error);
+      }
+    }));
+    setLoadErrors(errors);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -195,6 +200,16 @@ export const AdminDashboardPage: React.FC = () => {
       </div>
 
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+
+      {loadErrors.length > 0 && (
+        <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          <p className="font-bold">Some admin data could not be loaded.</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {loadErrors.map((error) => <li key={error} className="break-words">{error}</li>)}
+          </ul>
+          <p className="mt-2 text-xs">Successful sections remain available. Retry after checking the reported request.</p>
+        </div>
+      )}
 
       {loading ? (
         <div className="py-20 text-center text-xs text-slate-400">Loading admin data...</div>
