@@ -1,14 +1,14 @@
 import { Router } from "express";
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import rateLimit from "express-rate-limit";
 import User from "../models/User.js";
 import PasswordResetToken from "../models/PasswordResetToken.js";
+import { hashResetToken } from "../utils/security.js";
 
 const router = Router();
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
 const genericResponse = { message: "If an account exists for that email, password reset instructions will be sent." };
-const hashToken = (token) => createHash("sha256").update(token).digest("hex");
 
 router.post("/request", limiter, async (req, res, next) => {
   try {
@@ -23,7 +23,7 @@ router.post("/request", limiter, async (req, res, next) => {
 
     await PasswordResetToken.deleteMany({ user: user._id });
     const rawToken = randomBytes(32).toString("hex");
-    await PasswordResetToken.create({ user: user._id, tokenHash: hashToken(rawToken), expiresAt: new Date(Date.now() + 15 * 60 * 1000) });
+    await PasswordResetToken.create({ user: user._id, tokenHash: hashResetToken(rawToken), expiresAt: new Date(Date.now() + 15 * 60 * 1000) });
 
     const base = process.env.PASSWORD_RESET_URL;
     if (!/^https?:\/\//i.test(base)) {
@@ -50,7 +50,7 @@ router.post("/confirm", limiter, async (req, res, next) => {
     if (!/^[a-f0-9]{64}$/.test(token) || password.length < 10 || password.length > 128) {
       return res.status(400).json({ error: "Provide a valid reset token and a password of 10–128 characters." });
     }
-    const tokenHash = hashToken(token);
+    const tokenHash = hashResetToken(token);
     const record = await PasswordResetToken.findOneAndDelete({ tokenHash, expiresAt: { $gt: new Date() } });
     if (!record) return res.status(400).json({ error: "This reset link is invalid or expired. Request a new one." });
 
