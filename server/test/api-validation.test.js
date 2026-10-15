@@ -86,3 +86,11 @@ test("requests from unapproved browser origins are rejected", async () => {
   assert.equal(response.status, 403);
   assert.match((await response.json()).error, /Origin is not allowed/);
 });
+
+test("password reset request uses a generic response for malformed email addresses", async () => {
+  const response = await post("/api/auth/password-reset/request", { email: "not-an-email" });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    message: "If an account exists for that email, password reset instructions will be sent."
+  });
+});
