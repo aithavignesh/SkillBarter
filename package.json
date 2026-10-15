@@ -1,0 +1,17 @@
+{
+  "name": "skillbarter-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["next-app", "server"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w next-app\" \"npm run dev -w server\"",
+    "dev:web": "npm run dev -w next-app",
+    "dev:api": "npm run dev -w server",
+    "build": "npm run build -w next-app",
+    "start:web": "npm run start -w next-app",
+    "start:api": "npm run start -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
