@@ -17,6 +17,7 @@ const adminUser = {
 };
 const normalUser = { ...adminUser, isAdmin: false };
 const originalUserFindById = User.findById;
+const originalUserFindByIdAndUpdate = User.findByIdAndUpdate;
 const originalReportFindByIdAndUpdate = Report.findByIdAndUpdate;
 let server;
 let baseUrl;
@@ -30,6 +31,7 @@ baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
   User.findById = originalUserFindById;
+  User.findByIdAndUpdate = originalUserFindByIdAndUpdate;
   Report.findByIdAndUpdate = originalReportFindByIdAndUpdate;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
@@ -71,6 +73,21 @@ test("admin user status update requires a boolean", async () => {
   setAuthenticatedUser(adminUser);
   const response = await patch(`/api/admin/users/${otherUserId}/status`, { isActive: "false" });
   assert.equal(response.status, 400);
+});
+
+test("admin status changes revoke the target user's existing sessions", async () => {
+  setAuthenticatedUser(adminUser);
+  let updateArgs;
+  User.findByIdAndUpdate = (...args) => {
+    updateArgs = args;
+    return { select: async () => ({ _id: otherUserId, isActive: false, isAdmin: false }) };
+  };
+
+  const response = await patch(`/api/admin/users/${otherUserId}/status`, { isActive: false });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(updateArgs[1], { $set: { isActive: false }, $inc: { tokenVersion: 1 } });
+  assert.equal(updateArgs[2].runValidators, true);
 });
 
 test("admin report moderation rejects invalid report IDs and statuses", async () => {
