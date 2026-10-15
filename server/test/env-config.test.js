@@ -77,3 +77,24 @@ test("accepts HTTPS password reset URLs in production", () => {
     { origins: ["https://app.example.com"] }
   );
 });
+
+test("rejects password reset URLs on origins not listed in CLIENT_ORIGIN", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...validBase,
+      PASSWORD_RESET_URL: "http://attacker.example/reset-password"
+    }),
+    /must use an origin listed in CLIENT_ORIGIN/
+  );
+});
+
+test("accepts a password reset URL when its origin is one of multiple allowed origins", () => {
+  assert.deepEqual(
+    validateEnvironment({
+      ...validBase,
+      CLIENT_ORIGIN: "http://localhost:3000,http://admin.localhost:3000",
+      PASSWORD_RESET_URL: "http://admin.localhost:3000/reset-password"
+    }),
+    { origins: ["http://localhost:3000", "http://admin.localhost:3000"] }
+  );
+});
