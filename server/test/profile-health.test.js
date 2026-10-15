@@ -1,7 +1,6 @@
 import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 import User from "../src/models/User.js";
 import app from "../src/app.js";
 
@@ -77,7 +76,11 @@ test("profile update rejects malformed skill IDs", async () => {
 
 test("profile update cannot mark onboarding complete without teaching and learning skills", async () => {
   authenticate();
-  User.findById = () => ({ select: async () => ({ skillsToTeach: [], skillsToLearn: [] }) });
+  let calls = 0;
+  User.findById = () => ({ select: async () => {
+    calls += 1;
+    return calls === 1 ? sampleUser : { skillsToTeach: [], skillsToLearn: [] };
+  } });
   const response = await patchProfile({ onboardingCompleted: true });
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /at least one skill/);
