@@ -13,6 +13,8 @@ import messageRoutes from "./routes/messages.js";
 import reviewRoutes from "./routes/reviews.js";
 import reportRoutes from "./routes/reports.js";
 import blockRoutes from "./routes/blocks.js";
+import postRoutes from "./routes/posts.js";
+import notificationRoutes from "./routes/notifications.js";
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -39,6 +41,8 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/blocks", blockRoutes);
+app.use("/api/posts", postRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: "Route not found." }));
 app.use((error, _req, res, _next) => {
