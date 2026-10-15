@@ -26,7 +26,7 @@ router.get("/exchange/:exchangeId", async (req, res) => {
 router.post("/", messageLimiter, async (req, res) => {
   const { exchangeId, body } = req.body || {};
   if (!mongoose.isValidObjectId(exchangeId)) return res.status(400).json({ error: "A valid exchange ID is required." });
-  if (typeof body !== "string" || !body.trim() || body.trim().length > 5000) {
+  if (typeof body !== "string" || !body.trim() || body.length > 5000 || body.trim().length > 5000) {
     return res.status(400).json({ error: "Message must contain 1–5000 characters." });
   }
   const exchange = await Exchange.findById(exchangeId).select("requester recipient status");

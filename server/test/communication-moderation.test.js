@@ -79,6 +79,8 @@ test("message creation rejects blank and oversized message bodies", async () => 
   assert.equal(blank.status, 400);
   const long = await request("POST", "/api/messages", { exchangeId, body: "x".repeat(5001) });
   assert.equal(long.status, 400);
+  const padded = await request("POST", "/api/messages", { exchangeId, body: `${" ".repeat(5001)}a` });
+  assert.equal(padded.status, 400, "oversized raw bodies must be rejected even when trimming makes them short");
 });
 
 test("message creation rejects a user who is not an exchange participant", async () => {
