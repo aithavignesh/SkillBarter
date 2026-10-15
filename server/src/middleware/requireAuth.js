@@ -11,7 +11,7 @@ export async function requireAuth(req, res, next) {
   try {
     const secret = process.env.JWT_SECRET;
     if (!secret) throw new Error("JWT_SECRET is not configured.");
-    const payload = jwt.verify(token, secret);
+    const payload = jwt.verify(token, secret, { issuer: "skillbarter-api", audience: "skillbarter-web" });
     if (typeof payload !== "object" || !payload.sub) {
       return res.status(401).json({ error: "Invalid session." });
     }
