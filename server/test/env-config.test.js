@@ -373,3 +373,21 @@ test("rejects SMTP ports that are not plain decimal integers", () => {
     );
   }
 });
+
+test("rejects line breaks in SMTP_FROM", () => {
+  const base = {
+    ...validBase,
+    PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+    SMTP_HOST: "smtp.example.com",
+    SMTP_PORT: "587",
+    SMTP_USER: "user",
+    SMTP_PASSWORD: "secret"
+  };
+
+  for (const sender of ["no-reply@example.com\\r\\nBcc: attacker@example.com", "no-reply@example.com\\nInjected: value"]) {
+    assert.throws(
+      () => validateEnvironment({ ...base, SMTP_FROM: sender }),
+      /SMTP_FROM must not contain line breaks/
+    );
+  }
+});
