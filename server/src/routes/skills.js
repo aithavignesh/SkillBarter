@@ -8,7 +8,8 @@ router.use(requireAuth);
 
 router.get("/", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 80) : "";
-  const filter = q ? { $or: [{ name: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } }, { category: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } }] } : {};
+  const escaped = q.replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
+  const filter = q ? { $or: [{ name: { $regex: escaped, $options: "i" } }, { category: { $regex: escaped, $options: "i" } }] } : {};
   const skills = await Skill.find(filter).select("name category description createdBy").sort({ name: 1 }).limit(50);
   return res.json({ skills });
 });
