@@ -41,6 +41,19 @@ router.patch("/me", async (req, res, next) => {
     if (typeof update.headline === "string" && update.headline.length > 160) return res.status(400).json({ error: "Headline is too long." });
     if (typeof update.fullName === "string") update.fullName = update.fullName.trim();
     if (typeof update.phone === "string" && update.phone.length > 30) return res.status(400).json({ error: "Phone number is too long." });
+    if (Object.hasOwn(update, "avatarUrl")) {
+      if (typeof update.avatarUrl !== "string") return res.status(400).json({ error: "Avatar URL must be a string." });
+      update.avatarUrl = update.avatarUrl.trim();
+      if (update.avatarUrl.length > 2048) return res.status(400).json({ error: "Avatar URL is too long." });
+      if (update.avatarUrl) {
+        try {
+          const avatarUrl = new URL(update.avatarUrl);
+          if (!["http:", "https:"].includes(avatarUrl.protocol)) throw new Error("Unsupported URL protocol.");
+        } catch {
+          return res.status(400).json({ error: "Avatar URL must be a valid HTTP or HTTPS URL." });
+        }
+      }
+    }
     for (const key of ["skillsToTeach", "skillsToLearn"]) {
       if (update[key] && (!Array.isArray(update[key]) || update[key].length > 30 || update[key].some((id) => !mongoose.isValidObjectId(id)))) {
         return res.status(400).json({ error: "Skill selections are invalid." });

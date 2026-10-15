@@ -10,9 +10,10 @@ const userId = "68f000000000000000000001";
 const sampleUser = {
   _id: userId, id: userId, email: "user@example.com", username: "user",
   fullName: "User", isAdmin: false, isActive: true, onboardingCompleted: false,
-  skillsToTeach: [], skillsToLearn: [], tokenVersion: 0
+  skillsToTeach: [], skillsToLearn: [], tokenVersion: 0, avatarUrl: ""
 };
 const originalFindById = User.findById;
+const originalFindByIdAndUpdate = User.findByIdAndUpdate;
 let server;
 let baseUrl;
 
@@ -25,6 +26,7 @@ baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
   User.findById = originalFindById;
+  User.findByIdAndUpdate = originalFindByIdAndUpdate;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -84,4 +86,19 @@ test("profile update cannot mark onboarding complete without teaching and learni
   const response = await patchProfile({ onboardingCompleted: true });
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /at least one skill/);
+});
+
+test("profile update rejects unsafe avatar URL protocols", async () => {
+  authenticate();
+  const response = await patchProfile({ avatarUrl: "javascript:alert(1)" });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /HTTP or HTTPS/);
+});
+
+test("profile update rejects malformed and oversized avatar URLs", async () => {
+  authenticate();
+  const malformed = await patchProfile({ avatarUrl: "not a URL" });
+  assert.equal(malformed.status, 400);
+  const oversized = await patchProfile({ avatarUrl: "https://example.com/" + "x".repeat(2048) });
+  assert.equal(oversized.status, 400);
 });
