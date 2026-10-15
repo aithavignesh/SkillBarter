@@ -98,3 +98,15 @@ test("accepts a password reset URL when its origin is one of multiple allowed or
     { origins: ["http://localhost:3000", "http://admin.localhost:3000"] }
   );
 });
+
+test("rejects production password reset URLs that are not on an allowed client origin", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...validBase,
+      NODE_ENV: "production",
+      CLIENT_ORIGIN: "https://app.example.com",
+      PASSWORD_RESET_URL: "https://attacker.example/reset-password"
+    }),
+    /must use an origin listed in CLIENT_ORIGIN/
+  );
+});
