@@ -1,6 +1,7 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import User from "../models/User.js";
+import Block from "../models/Block.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -62,7 +63,9 @@ router.get("/", async (req, res) => {
   const rawLimit = Number.parseInt(req.query.limit, 10);
   const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 30) : 20;
   const query = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 80) : "";
-  const filter = { isActive: true, _id: { $ne: req.user._id } };
+  const blocks = await Block.find({ $or: [{ blocker: req.user._id }, { blocked: req.user._id }] }).select("blocker blocked");
+  const excludedIds = blocks.map((block) => String(block.blocker) === String(req.user._id) ? block.blocked : block.blocker);
+  const filter = { isActive: true, _id: { $ne: req.user._id, $nin: excludedIds } };
   if (query) filter.$text = { $search: query };
   const users = await User.find(filter).select("fullName username avatarUrl bio headline skillsToTeach skillsToLearn onboardingCompleted createdAt")
     .populate("skillsToTeach", "name category").populate("skillsToLearn", "name category").limit(limit).sort({ createdAt: -1 });
