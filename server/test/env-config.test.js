@@ -162,3 +162,26 @@ test("rejects invalid SMTP ports when password recovery is enabled", () => {
     /SMTP_PORT must be an integer between 1 and 65535/
   );
 });
+
+test("does not require SMTP settings when password recovery is disabled", () => {
+  assert.deepEqual(validateEnvironment(validBase), { origins: ["http://localhost:3000"] });
+});
+
+test("rejects each missing SMTP setting when password recovery is enabled", () => {
+  const completeMailConfig = {
+    PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+    SMTP_HOST: "smtp.example.com",
+    SMTP_PORT: "587",
+    SMTP_USER: "user",
+    SMTP_PASSWORD: "secret",
+    SMTP_FROM: "no-reply@example.com"
+  };
+
+  for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"]) {
+    assert.throws(
+      () => validateEnvironment({ ...validBase, ...completeMailConfig, [key]: "" }),
+      /requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM/,
+      `expected missing ${key} to be rejected`
+    );
+  }
+});
