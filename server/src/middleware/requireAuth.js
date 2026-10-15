@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { isTokenVersionCurrent } from "../utils/security.js";
 
 export async function requireAuth(req, res, next) {
   const authorization = req.get("authorization") || "";
@@ -21,7 +22,7 @@ export async function requireAuth(req, res, next) {
     // Tokens issued before a password reset (or another explicit revocation)
     // are rejected even if their JWT expiry has not been reached.
     const tokenVersion = Number.isInteger(payload.tokenVersion) ? payload.tokenVersion : 0;
-    if (tokenVersion !== (user.tokenVersion ?? 0)) {
+    if (!isTokenVersionCurrent(tokenVersion, user.tokenVersion ?? 0)) {
       return res.status(401).json({ error: "Session has been revoked. Please sign in again." });
     }
 
