@@ -43,6 +43,10 @@ export function validateEnvironment(env = process.env) {
   }
 
   if (env.PASSWORD_RESET_URL?.trim()) {
+    if (env.PASSWORD_RESET_URL !== env.PASSWORD_RESET_URL.trim()) {
+      throw new Error("PASSWORD_RESET_URL must not contain leading or trailing whitespace.");
+    }
+
     const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
     if (smtpKeys.some((key) => !env[key]?.trim())) {
       throw new Error("PASSWORD_RESET_URL requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM.");
