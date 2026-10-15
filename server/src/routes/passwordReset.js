@@ -10,6 +10,16 @@ const router = Router();
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
 const genericResponse = { message: "If an account exists for that email, password reset instructions will be sent." };
 
+function parsePasswordResetBase(value) {
+  try {
+    const url = new URL(value);
+    if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password) return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 router.post("/request", limiter, async (req, res, next) => {
   try {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
@@ -18,6 +28,8 @@ router.post("/request", limiter, async (req, res, next) => {
     if (mailConfig.some((key) => !process.env[key])) {
       return res.status(503).json({ error: "Password recovery is temporarily unavailable." });
     }
+    const resetBase = parsePasswordResetBase(process.env.PASSWORD_RESET_URL);
+    if (!resetBase) return res.status(503).json({ error: "Password recovery is temporarily unavailable." });
     const user = await User.findOne({ email, isActive: true }).select("_id email");
     if (!user) return res.status(200).json(genericResponse);
 
@@ -25,14 +37,11 @@ router.post("/request", limiter, async (req, res, next) => {
     const rawToken = randomBytes(32).toString("hex");
     await PasswordResetToken.create({ user: user._id, tokenHash: hashResetToken(rawToken), expiresAt: new Date(Date.now() + 15 * 60 * 1000) });
 
-    const base = process.env.PASSWORD_RESET_URL;
-    if (!/^https?:\/\//i.test(base)) {
-      await PasswordResetToken.deleteMany({ user: user._id });
-      return res.status(503).json({ error: "Password recovery is temporarily unavailable." });
-    }
+    resetBase.searchParams.set("token", rawToken);
+    resetBase.hash = "";
     const { sendPasswordResetEmail } = await import("../services/resetEmail.js");
     try {
-      await sendPasswordResetEmail(user.email, new URL(`?token=${rawToken}`, base).toString());
+      await sendPasswordResetEmail(user.email, resetBase.toString());
     } catch (mailError) {
       // Keep the response identical for existing and unknown accounts to prevent email enumeration.
       await PasswordResetToken.deleteMany({ user: user._id });

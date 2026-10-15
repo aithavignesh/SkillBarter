@@ -45,6 +45,19 @@ test("password reset email failure returns the generic response and removes the 
 
   let userTokenDeleteCalls = 0;
   User.findOne = () => ({ select: async () => ({ _id: "68f000000000000000000001", email: "person@example.com" }) });
+
+  process.env.PASSWORD_RESET_URL = "http://";
+  const invalidConfigResponse = await fetch(`${baseUrl}/api/auth/password-reset/request`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email: "person@example.com" })
+  });
+  assert.equal(invalidConfigResponse.status, 503);
+  assert.deepEqual(await invalidConfigResponse.json(), {
+    error: "Password recovery is temporarily unavailable."
+  });
+  assert.equal(userTokenDeleteCalls, 0, "invalid reset URL must be rejected before issuing a token");
+  process.env.PASSWORD_RESET_URL = mailEnvironment.PASSWORD_RESET_URL;
   PasswordResetToken.deleteMany = async (filter) => {
     if (filter.user === "68f000000000000000000001") userTokenDeleteCalls += 1;
     return { deletedCount: 1 };
