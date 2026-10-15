@@ -230,3 +230,20 @@ test("rejects relative password reset URLs", () => {
     /must be a valid absolute URL/
   );
 });
+
+test("rejects an empty comma-separated client origin list", () => {
+  assert.throws(
+    () => validateEnvironment({ ...validBase, CLIENT_ORIGIN: " , , " }),
+    /At least one CLIENT_ORIGIN must be configured/
+  );
+});
+
+test("rejects malformed client origin entries in a comma-separated list", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...validBase,
+      CLIENT_ORIGIN: "http://localhost:3000,not-a-url"
+    }),
+    /CLIENT_ORIGIN must contain valid origin URLs/
+  );
+});
