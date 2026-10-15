@@ -116,6 +116,23 @@ test("login accepts the correct password and returns a signed token", async () =
   assert.equal(jwt.verify(body.token, jwtSecret, { issuer: "skillbarter-api", audience: "skillbarter-web" }).sub, sampleUser.id);
 });
 
+test("login rejects oversized passwords before querying the database", async () => {
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    return selectedQuery(null);
+  };
+
+  const response = await post("/api/auth/login", {
+    email: "test@example.com",
+    password: "x".repeat(129)
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /1–128 characters/);
+  assert.equal(databaseQueried, false);
+});
+
 test("login rejects an incorrect password", async () => {
   const passwordHash = await bcrypt.hash("different-password", 4);
   User.findOne = () => selectedQuery({ ...sampleUser, passwordHash });

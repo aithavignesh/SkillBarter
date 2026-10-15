@@ -59,7 +59,9 @@ router.post("/login", authLimiter, async (req, res, next) => {
   try {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const password = typeof req.body?.password === "string" ? req.body.password : "";
-    if (!emailPattern.test(email) || !password) return res.status(400).json({ error: "Enter your email and password." });
+    if (!emailPattern.test(email) || !password || password.length > 128) {
+      return res.status(400).json({ error: "Enter a valid email and a password of 1–128 characters." });
+    }
 
     const user = await User.findOne({ email }).select("+passwordHash");
     if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
