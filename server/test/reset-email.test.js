@@ -12,7 +12,6 @@ function setMailEnvironment(t) {
     SMTP_FROM: "no-reply@example.com"
   };
   for (const [key, value] of Object.entries(values)) {
-    t.mock.method(process.env, "toString", () => "");
     process.env[key] = value;
     t.after(() => { delete process.env[key]; });
   }
