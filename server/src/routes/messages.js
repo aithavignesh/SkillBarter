@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import Exchange from "../models/Exchange.js";
 import Message from "../models/Message.js";
+import Block from "../models/Block.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -32,6 +33,8 @@ router.post("/", async (req, res) => {
   const requester = String(exchange.requester) === userId;
   const recipient = String(exchange.recipient) === userId;
   if (!requester && !recipient) return res.status(403).json({ error: "Only exchange participants can send messages." });
+  const blocked = await Block.exists({ $or: [{ blocker: exchange.requester, blocked: exchange.recipient }, { blocker: exchange.recipient, blocked: exchange.requester }] });
+  if (blocked) return res.status(403).json({ error: "Messaging is unavailable because one participant has blocked the other." });
   if (["cancelled", "declined"].includes(exchange.status)) return res.status(409).json({ error: "Messaging is disabled for this exchange." });
   const recipientId = requester ? exchange.recipient : exchange.requester;
   const message = await Message.create({ exchange: exchange._id, sender: req.user._id, recipient: recipientId, body: body.trim() });
