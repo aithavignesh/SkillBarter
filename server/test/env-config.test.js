@@ -335,3 +335,22 @@ test("accepts an IPv6 address as SMTP_HOST", () => {
     { origins: ["http://localhost:3000"] }
   );
 });
+
+test("rejects malformed dotted-quad SMTP addresses", () => {
+  const mailConfig = {
+    ...validBase,
+    PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+    SMTP_PORT: "587",
+    SMTP_USER: "user",
+    SMTP_PASSWORD: "secret",
+    SMTP_FROM: "no-reply@example.com"
+  };
+
+  for (const host of ["999.999.999.999", "256.1.1.1", "1.2.3.999"]) {
+    assert.throws(
+      () => validateEnvironment({ ...mailConfig, SMTP_HOST: host }),
+      /SMTP_HOST must be a valid hostname or IP address/,
+      `expected invalid IPv4 address ${host} to be rejected`
+    );
+  }
+});
