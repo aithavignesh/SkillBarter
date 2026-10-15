@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import Block from "../models/Block.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { blockLimiter } from "../middleware/writeLimiters.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -12,7 +13,7 @@ router.get("/", async (req, res) => {
   return res.json({ blocks });
 });
 
-router.post("/:userId", async (req, res) => {
+router.post("/:userId", blockLimiter, async (req, res) => {
   const { userId } = req.params;
   if (!mongoose.isValidObjectId(userId)) return res.status(400).json({ error: "Invalid user ID." });
   if (String(userId) === String(req.user._id)) return res.status(400).json({ error: "You cannot block your own account." });
@@ -27,7 +28,7 @@ router.post("/:userId", async (req, res) => {
   }
 });
 
-router.delete("/:userId", async (req, res) => {
+router.delete("/:userId", blockLimiter, async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.userId)) return res.status(400).json({ error: "Invalid user ID." });
   const result = await Block.findOneAndDelete({ blocker: req.user._id, blocked: req.params.userId });
   if (!result) return res.status(404).json({ error: "Block not found." });
