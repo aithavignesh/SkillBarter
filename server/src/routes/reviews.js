@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import Exchange from "../models/Exchange.js";
 import Review from "../models/Review.js";
+import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -31,6 +32,7 @@ router.post("/", async (req, res) => {
   const reviewee = isRequester ? exchange.recipient : exchange.requester;
   try {
     const review = await Review.create({ exchange: exchange._id, reviewer: req.user._id, reviewee, rating, comment: comment.trim() });
+    await Notification.create({ recipient: reviewee, actor: req.user._id, type: "review", title: "You received a review", body: `A participant left you a ${rating}-star review.`, resourceType: "review", resourceId: review._id });
     await review.populate("reviewer", "fullName username avatarUrl");
     return res.status(201).json({ review });
   } catch (error) {
