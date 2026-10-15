@@ -1,0 +1,42 @@
+import { Router } from "express";
+import mongoose from "mongoose";
+import Exchange from "../models/Exchange.js";
+import Review from "../models/Review.js";
+import { requireAuth } from "../middleware/requireAuth.js";
+
+const router = Router();
+router.use(requireAuth);
+
+router.get("/user/:userId", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.userId)) return res.status(400).json({ error: "Invalid user ID." });
+  const reviews = await Review.find({ reviewee: req.params.userId }).populate("reviewer", "fullName username avatarUrl")
+    .sort({ createdAt: -1 }).limit(100);
+  return res.json({ reviews });
+});
+
+router.post("/", async (req, res) => {
+  const { exchangeId, rating, comment = "" } = req.body || {};
+  if (!mongoose.isValidObjectId(exchangeId)) return res.status(400).json({ error: "A valid exchange ID is required." });
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be an integer from 1 to 5." });
+  if (typeof comment !== "string" || comment.length > 2000) return res.status(400).json({ error: "Review comment is too long." });
+  const exchange = await Exchange.findById(exchangeId);
+  if (!exchange) return res.status(404).json({ error: "Exchange not found." });
+  if (exchange.status !== "completed" || !exchange.completedByRequester || !exchange.completedByRecipient) {
+    return res.status(409).json({ error: "Reviews are available only after both participants complete the exchange." });
+  }
+  const userId = String(req.user._id);
+  const isRequester = String(exchange.requester) === userId;
+  const isRecipient = String(exchange.recipient) === userId;
+  if (!isRequester && !isRecipient) return res.status(403).json({ error: "Only exchange participants can leave a review." });
+  const reviewee = isRequester ? exchange.recipient : exchange.requester;
+  try {
+    const review = await Review.create({ exchange: exchange._id, reviewer: req.user._id, reviewee, rating, comment: comment.trim() });
+    await review.populate("reviewer", "fullName username avatarUrl");
+    return res.status(201).json({ review });
+  } catch (error) {
+    if (error?.code === 11000) return res.status(409).json({ error: "You have already reviewed this exchange." });
+    throw error;
+  }
+});
+
+export default router;
