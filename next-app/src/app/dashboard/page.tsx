@@ -19,6 +19,7 @@ export default function DashboardPage() {
         const data = await response.json().catch(() => ({}));
         if (response.status === 401) { router.replace("/login"); return; }
         if (!response.ok) throw new Error(data.error || "Unable to load your account.");
+        if (active && data.user && !data.user.onboardingCompleted) { router.replace("/onboarding"); return; }
         if (active) setUser(data.user);
       })
       .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Unable to load your account."); })
