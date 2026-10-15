@@ -147,7 +147,7 @@ export const Navbar: React.FC = () => {
   }));
   const expandedNav = expandedNavState.pathname === location.pathname
     ? expandedNavState.path
-    : activeParentPath ?? expandedNavState.path;
+    : activeParentPath;
   const activeNavigationPath = allNavItems
     .flatMap(item => [
       { path: item.path, isParent: true },
@@ -159,8 +159,9 @@ export const Navbar: React.FC = () => {
   const toggleNavSection = (path: string) => {
     setExpandedNavState({
       path: expandedNav === path ? null : path,
-      pathname: location.pathname,
+      pathname: path,
     });
+    if (location.pathname !== path) navigate(path);
   };
   useEffect(() => {
     if (!keepMobileMenuOpenOnNavigationRef.current) setShowMobileMenu(false);
@@ -395,14 +396,10 @@ if (!currentUser) {
           {item.features?.length ? (
             <button
               type="button"
-              onClick={() => {
-                toggleNavSection(item.path);
-                navigate(item.path);
-              }}
+              onClick={() => toggleNavSection(item.path)}
               aria-current={active ? 'page' : undefined}
               aria-expanded={expanded}
               aria-controls={submenuId}
-              aria-label={`Toggle ${item.label} submenu`}
               className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left text-[13px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 active:bg-[#fff0f0] ${sectionActive ? 'font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
             >
               <Icon className={`h-[17px] w-[17px] shrink-0 ${sectionActive ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
@@ -415,7 +412,7 @@ if (!currentUser) {
             <Link
               to={item.path}
               aria-current={active ? 'page' : undefined}
-              className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${active ? 'font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+              className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${active ? 'bg-[#fff7f7] font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
             >
               <Icon className={`h-[17px] w-[17px] shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
               <span className="min-w-0 break-words">{item.label}</span>
@@ -578,20 +575,18 @@ if (!currentUser) {
                       <button
                         type="button"
                         onClick={() => {
-                          toggleNavSection(item.path);
                           keepMobileMenuOpenOnNavigationRef.current = showMobileMenu && location.pathname !== item.path;
-                          navigate(item.path);
+                          toggleNavSection(item.path);
                         }}
                         aria-current={active ? 'page' : undefined}
                         aria-expanded={expanded}
                         aria-controls={submenuId}
-                        aria-label={`Toggle ${item.label} submenu`}
-                        className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 border-l-2 px-2 py-3 text-left text-[13px] transition-colors active:bg-[#fff0f0] ${sectionActive ? 'border-[#d31d24] font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'border-transparent text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+                        className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left text-[13px] transition-colors active:bg-[#fff0f0] ${sectionActive ? 'font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
                       >
                         <Icon className={`h-4 w-4 shrink-0 ${sectionActive ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
                         <span className="min-w-0 flex-1 break-words">{item.label}</span>
                         <span className="pointer-events-none -mr-2 ml-auto flex h-10 w-10 shrink-0 items-center justify-center">
-                          <ChevronDown className={`h-4 w-4 text-[#8a92a0] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-180 text-[#d31d24]' : 'text-[#8a92a0]'}`} />
                         </span>
                       </button>
                     ) : (
@@ -599,7 +594,7 @@ if (!currentUser) {
                         to={item.path}
                         onClick={() => setShowMobileMenu(false)}
                         aria-current={active ? 'page' : undefined}
-                        className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 border-l-2 px-2 py-3 text-[13px] transition-colors ${active ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'border-transparent text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+                        className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-2 py-3 text-[13px] transition-colors ${active ? 'bg-[#fff7f7] font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
                       >
                         <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
                         <span className="min-w-0 flex-1 break-words">{item.label}</span>
@@ -616,7 +611,7 @@ if (!currentUser) {
                                 to={feature.path}
                                 onClick={() => setShowMobileMenu(false)}
                                 aria-current={isActive(feature.path) ? 'page' : undefined}
-                                className={`block min-h-10 break-words px-3 py-2.5 text-[11px] ${isActive(feature.path) ? 'bg-[#fff7f7] font-semibold text-[#d31d24]' : 'text-[#66738a] hover:bg-[#fafbfc]'}`}
+                                className={`flex min-h-10 items-center break-words border-l-2 px-3 py-2.5 text-[10px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${isActive(feature.path) ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:border-[#d9dde2] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
                               >
                                 {feature.label}
                               </Link>

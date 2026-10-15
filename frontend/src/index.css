@@ -1212,7 +1212,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .mobile-content-bottom-padding {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
@@ -1224,9 +1224,9 @@
   .mobile-features-dropdown {
     bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   }
+}
 
-  .login-input,
-  .signup-input,
+@media (max-width: 767px) {
   .onboarding-text-input,
   .profile-edit-input,
   .profile-textarea,
@@ -2168,6 +2168,31 @@ html.dark,
 .dark ::selection { background: rgba(228, 73, 80, .28); color: var(--ui-text); }
 .dark ::-webkit-scrollbar-thumb { background: #465568; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #5a6a7e; }
+
+/* Dark mode: mobile bottom nav */
+.dark .ricoz-theme .mobile-bottom-nav {
+  background-color: rgba(25, 36, 48, .97) !important;
+  border-color: var(--ui-border) !important;
+}
+
+/* Onboarding input focus style using brand token */
+.onboarding-text-input:focus {
+  border-color: #d31d24 !important;
+  box-shadow: 0 0 0 3px rgba(211, 29, 36, .1);
+  outline: none;
+}
+
+.dark .ricoz-theme .onboarding-text-input {
+  background-color: var(--ui-surface-interactive) !important;
+  border-color: var(--ui-border-strong) !important;
+  color: var(--ui-text) !important;
+}
+
+.dark .ricoz-theme .onboarding-text-input:focus {
+  border-color: var(--ui-focus) !important;
+  background-color: var(--ui-surface-raised) !important;
+  box-shadow: 0 0 0 3px var(--ui-focus-ring) !important;
+}
 
 .modal-overlay { overscroll-behavior: contain; }
 .modal-backdrop { z-index: 0; }

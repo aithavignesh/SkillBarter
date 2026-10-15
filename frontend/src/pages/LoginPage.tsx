@@ -131,7 +131,7 @@ export const LoginPage: React.FC = () => {
 
 
   return (
-    <div className="login-page min-h-[85vh] bg-[#f7f7f5] px-5 pb-12 pt-36 sm:px-8 sm:pb-16 sm:pt-40">
+    <div className="login-page min-h-[85vh] px-5 pb-12 sm:px-8 sm:pb-16">
       <div className="mx-auto grid w-full max-w-5xl gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-start lg:gap-16">
         <div className="login-intro lg:sticky lg:top-10">
           <Link to="/" className="login-brand inline-flex items-center gap-3" aria-label="SkillBarter home">

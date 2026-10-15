@@ -14,7 +14,7 @@ const allFeatureCount = productNavigationGroups.reduce((total, group) => total +
 
 export const ProductNavigation: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [expandedGroupState, setExpandedGroupState] = useState<{ label: string | null; pathname: string } | null>(null);
   const [query, setQuery] = useState('');
   const location = useLocation();
   const activeGroup = productNavigationGroups.find(group => group.items.some(([, path]) => location.pathname === path || location.pathname.startsWith(path + '/')));
@@ -24,7 +24,7 @@ export const ProductNavigation: React.FC = () => {
     if (!term) return productNavigationGroups;
     return productNavigationGroups.map(group => ({ ...group, items: group.items.filter(([label]) => label.toLowerCase().includes(term) || group.label.toLowerCase().includes(term)) })).filter(group => group.items.length > 0);
   }, [query]);
-  const toggle = (label: string) => setExpandedGroup(current => current === label ? null : label);
+  const toggle = (label: string, expanded: boolean) => setExpandedGroupState({ label: expanded ? null : label, pathname: location.pathname });
 
   return (
     <div className="relative w-full">
@@ -49,13 +49,15 @@ export const ProductNavigation: React.FC = () => {
               {filteredGroups.length === 0 ? <div className="px-4 py-8 text-center"><Search className="mx-auto h-5 w-5 text-[#c1c6cd]" /><p className="mt-2 text-[11px] font-semibold text-[#697386]">No features found</p><p className="mt-1 text-[9px] text-[#9aa1ac]">Try another search term.</p></div> : filteredGroups.map(group => {
                 const GroupIcon = group.icon;
                 const groupActive = group.items.some(([, path]) => location.pathname === path || location.pathname.startsWith(path + '/'));
-                const expanded = expandedGroup === group.label || groupActive || Boolean(query.trim());
+                const expanded = Boolean(query.trim()) || (expandedGroupState?.pathname === location.pathname
+                  ? expandedGroupState.label === group.label
+                  : groupActive);
                 return <section key={group.label} className="mb-1 last:mb-0">
-                  <button type="button" onClick={() => toggle(group.label)} className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors ${groupActive ? 'bg-[#fff6f6] text-[#d31d24]' : 'bg-white text-[#536075] hover:bg-[#f6f7f8] hover:text-[#17233b]'}`} aria-expanded={expanded}>
+                  <button type="button" onClick={() => toggle(group.label, expanded)} className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors ${groupActive ? 'bg-[#fff6f6] text-[#d31d24]' : 'bg-white text-[#536075] hover:bg-[#f6f7f8] hover:text-[#17233b]'}`} aria-expanded={expanded}>
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center ${groupActive ? 'bg-[#fff0f0] text-[#d31d24]' : 'bg-[#f1f3f5] text-[#697386]'}`}><GroupIcon className="h-3.5 w-3.5" /></span>
                     <span className="flex-1 text-[10px] font-semibold">{group.label}</span><span className="text-[9px] text-[#a0a6af]">{group.items.length}</span><ChevronDown className={`h-3 w-3 text-[#8f98a5] transition-transform ${expanded ? 'rotate-180' : ''}`} />
                   </button>
-                  {expanded && <div className="border-t border-[#f0f1f3] bg-white px-2 py-1.5">{group.items.map(([label, path]) => { const itemActive = location.pathname === path || location.pathname.startsWith(path + '/'); return <Link key={path} to={path} onClick={() => { setOpen(false); setQuery(''); }} className={`flex items-center border-l-2 px-3 py-1.5 text-[10px] transition-colors ${itemActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:border-[#d9dde2] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}><span className="mr-2 h-1 w-1 bg-current opacity-50" />{label}</Link>; })}</div>}
+                  {expanded && <div className="border-t border-[#f0f1f3] bg-white px-2 py-1.5">{group.items.map(([label, path]) => { const itemActive = location.pathname === path || location.pathname.startsWith(path + '/'); return <Link key={path} to={path} onClick={() => { setOpen(false); setQuery(''); }} aria-current={itemActive ? 'page' : undefined} className={`flex items-center border-l-2 px-3 py-1.5 text-[10px] transition-colors ${itemActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:border-[#d9dde2] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}><span className="mr-2 h-1 w-1 bg-current opacity-50" />{label}</Link>; })}</div>}
                 </section>;
               })}
             </div>

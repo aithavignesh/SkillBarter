@@ -120,7 +120,7 @@ export const OnboardingPage: React.FC = () => {
   ];
 
   return (
-    <div className="onboarding-page min-h-[85vh] bg-slate-50 px-4 py-6 sm:py-10">
+    <div className="onboarding-page min-h-[85vh] bg-[var(--ui-page)] px-4 py-6 sm:py-10">
       <div className="mx-auto max-w-2xl">
         {/* Step Indicator */}
         <div className="mb-8">
@@ -134,15 +134,15 @@ export const OnboardingPage: React.FC = () => {
                 key={s.num}
                 aria-current={step === s.num ? 'step' : undefined}
                 className={`flex min-w-0 flex-1 flex-col items-center ${
-                  step >= s.num ? 'text-emerald-700 font-bold' : 'text-slate-400'
+                  step >= s.num ? 'font-bold text-[#d31d24]' : 'text-slate-400'
                 }`}
               >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1 transition-[background-color,color,box-shadow] duration-200 ${
                     step === s.num
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30 ring-4 ring-emerald-100'
+                      ? 'bg-[#d31d24] text-white shadow-md shadow-[#d31d24]/30 ring-4 ring-[#fff7f7]'
                       : step > s.num
-                      ? 'bg-emerald-100 text-emerald-800'
+                      ? 'bg-[#fff0f0] text-[#d31d24]'
                       : 'bg-slate-200 text-slate-600'
                   }`}
                 >
@@ -154,7 +154,7 @@ export const OnboardingPage: React.FC = () => {
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label="Onboarding progress" aria-valuemin={1} aria-valuemax={4} aria-valuenow={step} aria-valuetext={`Step ${step} of 4: ${stepTitles[step - 1].title}. ${stepTitles[step - 1].desc}`}>
             <div
-              className="h-full rounded-full bg-emerald-600 transition-[width] duration-300 motion-reduce:transition-none"
+              className="h-full rounded-full bg-[#d31d24] transition-[width] duration-300 motion-reduce:transition-none"
               style={{ width: `${(step / 4) * 100}%` }}
             />
           </div>
@@ -189,7 +189,7 @@ export const OnboardingPage: React.FC = () => {
                     aria-required="true"
                     aria-invalid={step === 1 && Boolean(stepError)}
                     aria-describedby={step === 1 && stepError ? 'onboarding-step-error' : undefined}
-                    className="onboarding-text-input w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="onboarding-text-input w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -227,7 +227,7 @@ export const OnboardingPage: React.FC = () => {
                   value={newOfferSkill}
                   onChange={(e) => setNewOfferSkill(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOffer())}
-                  className="onboarding-text-input w-full min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="onboarding-text-input w-full min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
                 />
                 <Button type="button" size="sm" className="w-full sm:w-auto" onClick={handleAddOffer} disabled={!newOfferSkill.trim()} icon={<Plus className="w-4 h-4" />}>
                   Add Skill
@@ -300,7 +300,7 @@ export const OnboardingPage: React.FC = () => {
                   value={newNeedSkill}
                   onChange={(e) => setNewNeedSkill(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNeed())}
-                  className="onboarding-text-input min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="onboarding-text-input min-w-0 flex-1 text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
                 />
                 <Button type="button" size="sm" className="w-full sm:w-auto" onClick={handleAddNeed} disabled={!newNeedSkill.trim()} icon={<Plus className="w-4 h-4" />}>
                   Add
@@ -351,13 +351,13 @@ export const OnboardingPage: React.FC = () => {
                     { id: 'EXCHANGE', label: 'Learn & Teach', desc: 'Exchange skills with another student' },
                     { id: 'TEACH', label: 'Teach & Share', desc: 'Help someone learn what you know' },
                     { id: 'MEET', label: 'Build My Network', desc: 'Meet peers around shared interests' },
-                  ].map(item => <button key={item.id} type="button" aria-pressed={primaryIntent === item.id} onClick={() => setPrimaryIntent(item.id)} className={`rounded-xl border p-3 text-left transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${primaryIntent === item.id ? 'border-emerald-500 bg-emerald-50/70' : 'border-slate-200 bg-white hover:border-slate-300'}`}><p className="text-xs font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10px] text-slate-500">{item.desc}</p></button>)}
+                  ].map(item => <button key={item.id} type="button" aria-pressed={primaryIntent === item.id} onClick={() => setPrimaryIntent(item.id)} className={`rounded-xl border p-3 text-left transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${primaryIntent === item.id ? 'border-[#d31d24] bg-[#fff7f7]' : 'border-slate-200 bg-white hover:border-slate-300'}`}><p className="text-xs font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10px] text-slate-500">{item.desc}</p></button>)}
                 </div>
               </div>
               <div>
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">How far should we search?</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {[2, 5, 10, 25].map(r => <button key={r} type="button" aria-pressed={exchangeRadius === r} onClick={() => setExchangeRadius(r)} className={`min-h-10 rounded-xl border p-2.5 text-xs font-bold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${exchangeRadius === r ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>{r} km</button>)}
+                  {[2, 5, 10, 25].map(r => <button key={r} type="button" aria-pressed={exchangeRadius === r} onClick={() => setExchangeRadius(r)} className={`min-h-10 rounded-xl border p-2.5 text-xs font-bold transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d31d24] ${exchangeRadius === r ? 'border-[#d31d24] bg-[#d31d24] text-white' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>{r} km</button>)}
                 </div>
               </div>
               <div className="border border-slate-200 bg-slate-50 p-4 rounded-xl">

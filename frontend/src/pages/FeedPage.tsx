@@ -232,7 +232,7 @@ export const FeedPage: React.FC = () => {
                   onClick={() => setPostType('OFFER')}
                   className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
                     postType === 'OFFER'
-                      ? 'bg-emerald-600 text-white shadow-xs'
+                      ? 'bg-[#d31d24] text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -243,7 +243,7 @@ export const FeedPage: React.FC = () => {
                   onClick={() => setPostType('REQUEST')}
                   className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
                     postType === 'REQUEST'
-                      ? 'bg-teal-600 text-white shadow-xs'
+                      ? 'bg-[#17233b] text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -256,7 +256,7 @@ export const FeedPage: React.FC = () => {
                 placeholder={postType === 'OFFER' ? "What can you teach other students?" : "What do you want to learn?"}
                 value={postTitle}
                 onChange={(e) => setPostTitle(e.target.value)}
-                className="w-full text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
                 required
               />
 
@@ -265,7 +265,7 @@ export const FeedPage: React.FC = () => {
                 placeholder="Share what you are learning, building, or ready to teach..."
                 value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
-                className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none resize-none"
                 required
               />
 

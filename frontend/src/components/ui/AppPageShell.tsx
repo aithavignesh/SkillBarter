@@ -20,31 +20,31 @@ export const AppPageShell: React.FC<AppPageShellProps> = ({
   search,
   children,
 }) => (
-  <main className="min-w-0 min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 pb-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-5 xl:px-10">
+  <main className="min-w-0 min-h-[calc(100vh-1px)] bg-[var(--ui-page)] px-4 py-5 pb-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-5 xl:px-10">
     <div className="mx-auto w-full min-w-0 max-w-[1320px]">
-      <div className="mb-5 flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+      <div className="mb-5 flex items-center gap-1 text-[11px] font-semibold text-[var(--ui-text-muted)]">
         <span>Workspace</span>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-slate-600">{title}</span>
+        <span className="text-[var(--ui-text-secondary)]">{title}</span>
       </div>
 
-      <section className="border-b border-[#e1e4e8] pb-5">
+      <section className="border-b border-[var(--ui-border)] pb-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
             {eyebrow && (
-              <div className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#d31d24]">
+              <div className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ui-accent)]">
                 {icon}
                 <span>{eyebrow}</span>
               </div>
             )}
-            <h1 className="break-words text-2xl font-extrabold tracking-[-0.02em] text-[#17233b] sm:text-3xl">{title}</h1>
-            {description && <p className="mt-1.5 max-w-3xl break-words text-sm leading-6 text-[#697386]">{description}</p>}
+            <h1 className="break-words text-2xl font-extrabold tracking-[-0.02em] text-[var(--ui-text)] sm:text-3xl">{title}</h1>
+            {description && <p className="mt-1.5 max-w-3xl break-words text-sm leading-6 text-[var(--ui-text-muted)]">{description}</p>}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {search && (
               <label className="relative block min-w-0 w-full sm:w-[280px]">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ui-text-muted)]" />
                 <input
                   value={search.value}
                   onChange={(e) => search.onChange(e.target.value)}
