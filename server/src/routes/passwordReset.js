@@ -55,7 +55,12 @@ router.post("/confirm", limiter, async (req, res, next) => {
     if (!record) return res.status(400).json({ error: "This reset link is invalid or expired. Request a new one." });
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.findByIdAndUpdate(record.user, { $set: { passwordHash } }, { new: true });
+    // Increment tokenVersion so every existing JWT is revoked after a password change.
+    const user = await User.findByIdAndUpdate(
+      record.user,
+      { $set: { passwordHash }, $inc: { tokenVersion: 1 } },
+      { new: true }
+    );
     await PasswordResetToken.deleteMany({ user: record.user });
     if (!user) return res.status(400).json({ error: "This reset link is invalid or expired. Request a new one." });
     return res.json({ message: "Password updated. Please sign in again." });
