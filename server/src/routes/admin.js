@@ -28,8 +28,12 @@ router.patch("/users/:id/status", async (req, res) => {
   if (!/^[a-f\d]{24}$/i.test(id)) return res.status(400).json({ error: "Invalid user ID." });
   if (id === String(req.user._id)) return res.status(400).json({ error: "You cannot deactivate your own account." });
   if (typeof req.body?.isActive !== "boolean") return res.status(400).json({ error: "isActive must be a boolean." });
-  const user = await User.findByIdAndUpdate(id, { $set: { isActive: req.body.isActive } }, { new: true })
-    .select("fullName username email isActive isAdmin");
+  // Revoke existing sessions on every administrative status change, including later reactivation.
+  const user = await User.findByIdAndUpdate(
+    id,
+    { $set: { isActive: req.body.isActive }, $inc: { tokenVersion: 1 } },
+    { new: true, runValidators: true }
+  ).select("fullName username email isActive isAdmin");
   if (!user) return res.status(404).json({ error: "User not found." });
   return res.json({ user });
 });
