@@ -43,6 +43,16 @@ export function validateEnvironment(env = process.env) {
   }
 
   if (env.PASSWORD_RESET_URL?.trim()) {
+    const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
+    if (smtpKeys.some((key) => !env[key]?.trim())) {
+      throw new Error("PASSWORD_RESET_URL requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM.");
+    }
+
+    const smtpPort = Number(env.SMTP_PORT);
+    if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+      throw new Error("SMTP_PORT must be an integer between 1 and 65535.");
+    }
+
     let resetUrl;
     try {
       resetUrl = new URL(env.PASSWORD_RESET_URL);
