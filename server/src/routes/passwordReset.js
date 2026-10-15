@@ -60,7 +60,7 @@ router.post("/confirm", limiter, async (req, res, next) => {
     const user = await User.findByIdAndUpdate(
       record.user,
       { $set: { passwordHash }, $inc: { tokenVersion: 1 } },
-      { new: true }
+      { new: true, runValidators: true }
     );
     await PasswordResetToken.deleteMany({ user: record.user });
     if (!user) return res.status(400).json({ error: "This reset link is invalid or expired. Request a new one." });

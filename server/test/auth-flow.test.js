@@ -189,6 +189,7 @@ test("password reset confirmation changes the password and increments tokenVersi
   assert.deepEqual(userUpdate.update.$inc, { tokenVersion: 1 });
   assert.equal(userUpdate.id, sampleUser._id);
   assert.equal(userUpdate.options.new, true);
+  assert.equal(userUpdate.options.runValidators, true);
   assert.equal(cleanedUpUser, sampleUser._id, "all remaining reset tokens for the account must be invalidated");
 });
 
