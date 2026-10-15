@@ -10,6 +10,10 @@ import { requireAuth } from "../middleware/requireAuth.js";
 const router = Router();
 router.use(requireAuth);
 
+// Keep scheduling within a reasonable planning horizon.
+const MAX_SCHEDULING_DAYS = 180;
+const MAX_SCHEDULING_MS = MAX_SCHEDULING_DAYS * 24 * 60 * 60 * 1000;
+
 router.get("/", async (req, res) => {
   const filter = { $or: [{ requester: req.user._id }, { recipient: req.user._id }] };
   if (typeof req.query.status === "string" && ["pending", "accepted", "scheduled", "active", "completed", "declined", "cancelled"].includes(req.query.status)) {
@@ -72,10 +76,43 @@ router.patch("/:id/status", async (req, res) => {
   } else if (nextStatus === "cancelled") {
     if (!requester || !["pending", "accepted", "scheduled"].includes(exchange.status)) return res.status(403).json({ error: "This exchange cannot be cancelled by you." });
   } else if (nextStatus === "scheduled") {
-    if (exchange.status !== "accepted" || !req.body?.scheduledAt || Number.isNaN(Date.parse(req.body.scheduledAt))) return res.status(400).json({ error: "An accepted exchange needs a valid scheduledAt date." });
-    exchange.scheduledAt = new Date(req.body.scheduledAt);
+    if (exchange.status !== "accepted") return res.status(409).json({ error: "Only accepted exchanges can be scheduled." });
+
+    const rawScheduledAt = req.body?.scheduledAt;
+    if (typeof rawScheduledAt !== "string" || !rawScheduledAt.trim()) {
+      return res.status(400).json({ error: "Provide a valid future scheduledAt date." });
+    }
+    const scheduledAtMs = Date.parse(rawScheduledAt);
+    const now = Date.now();
+    if (!Number.isFinite(scheduledAtMs) || scheduledAtMs <= now) {
+      return res.status(400).json({ error: "The exchange must be scheduled for a future date and time." });
+    }
+    if (scheduledAtMs > now + MAX_SCHEDULING_MS) {
+      return res.status(400).json({ error: `Choose a date within the next ${MAX_SCHEDULING_DAYS} days.` });
+    }
+
+    // A block may be created after the exchange request was accepted.
+    // Re-check at scheduling time so the relationship cannot bypass a block.
+    const blocked = await Block.exists({
+      $or: [
+        { blocker: exchange.requester, blocked: exchange.recipient },
+        { blocker: exchange.recipient, blocked: exchange.requester }
+      ]
+    });
+    if (blocked) return res.status(403).json({ error: "This exchange cannot be scheduled because one participant has blocked the other." });
+
+    exchange.scheduledAt = new Date(scheduledAtMs);
   } else if (nextStatus === "active") {
     if (!["accepted", "scheduled"].includes(exchange.status)) return res.status(409).json({ error: "Only accepted or scheduled exchanges can become active." });
+    if (exchange.status === "scheduled") {
+      const blocked = await Block.exists({
+        $or: [
+          { blocker: exchange.requester, blocked: exchange.recipient },
+          { blocker: exchange.recipient, blocked: exchange.requester }
+        ]
+      });
+      if (blocked) return res.status(403).json({ error: "This exchange cannot start because one participant has blocked the other." });
+    }
   } else if (nextStatus === "completed") {
     if (!["active", "scheduled"].includes(exchange.status)) return res.status(409).json({ error: "Only active or scheduled exchanges can be completed." });
     if (requester) exchange.completedByRequester = true;
