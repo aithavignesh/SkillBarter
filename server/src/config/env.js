@@ -69,7 +69,9 @@ export function validateEnvironment(env = process.env) {
         label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)
       );
 
-    if (isIP(env.SMTP_HOST) === 0 && !validHostname) {
+    const looksLikeIPv4 = /^\d+(?:\.\d+){3}$/.test(env.SMTP_HOST);
+    if ((isIP(env.SMTP_HOST) === 0 && !validHostname) ||
+        (looksLikeIPv4 && isIP(env.SMTP_HOST) !== 4)) {
       throw new Error("SMTP_HOST must be a valid hostname or IP address.");
     }
 
