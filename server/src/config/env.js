@@ -54,8 +54,9 @@ export function validateEnvironment(env = process.env) {
       throw new Error("PASSWORD_RESET_URL requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM.");
     }
 
-    const smtpPort = Number(env.SMTP_PORT);
-    if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+    const smtpPortValue = env.SMTP_PORT;
+    const smtpPort = Number(smtpPortValue);
+    if (!/^\d+$/.test(smtpPortValue) || !Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
       throw new Error("SMTP_PORT must be an integer between 1 and 65535.");
     }
 
