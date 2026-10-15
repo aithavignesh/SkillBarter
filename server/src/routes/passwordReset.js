@@ -14,6 +14,10 @@ router.post("/request", limiter, async (req, res, next) => {
   try {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(200).json(genericResponse);
+    const mailConfig = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "PASSWORD_RESET_URL"];
+    if (mailConfig.some((key) => !process.env[key])) {
+      return res.status(503).json({ error: "Password recovery is temporarily unavailable." });
+    }
     const user = await User.findOne({ email, isActive: true }).select("_id email");
     if (!user) return res.status(200).json(genericResponse);
 
@@ -22,9 +26,9 @@ router.post("/request", limiter, async (req, res, next) => {
     await PasswordResetToken.create({ user: user._id, tokenHash: hashToken(rawToken), expiresAt: new Date(Date.now() + 15 * 60 * 1000) });
 
     const base = process.env.PASSWORD_RESET_URL;
-    if (!base || !/^https?:\/\//i.test(base)) {
+    if (!/^https?:\/\//i.test(base)) {
       await PasswordResetToken.deleteMany({ user: user._id });
-      return res.status(503).json({ error: "Password recovery is not configured yet." });
+      return res.status(503).json({ error: "Password recovery is temporarily unavailable." });
     }
     const { sendPasswordResetEmail } = await import("../services/resetEmail.js");
     try {
@@ -47,7 +51,7 @@ router.post("/confirm", limiter, async (req, res, next) => {
       return res.status(400).json({ error: "Provide a valid reset token and a password of 10–128 characters." });
     }
     const tokenHash = hashToken(token);
-    const record = await PasswordResetToken.findOne({ tokenHash, expiresAt: { $gt: new Date() } });
+    const record = await PasswordResetToken.findOneAndDelete({ tokenHash, expiresAt: { $gt: new Date() } });
     if (!record) return res.status(400).json({ error: "This reset link is invalid or expired. Request a new one." });
 
     const passwordHash = await bcrypt.hash(password, 12);
