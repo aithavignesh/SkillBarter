@@ -1,6 +1,7 @@
 import { Router } from "express";
 import Block from "../models/Block.js";
 import User from "../models/User.js";
+import Skill from "../models/Skill.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -13,22 +14,26 @@ router.get("/", async (req, res) => {
 
   const blocks = await Block.find({ $or: [{ blocker: req.user._id }, { blocked: req.user._id }] }).select("blocker blocked");
   const excludedIds = blocks.map((block) => String(block.blocker) === String(req.user._id) ? block.blocked : block.blocker);
-  const candidates = await User.find({
-    _id: { $ne: req.user._id, $nin: excludedIds },
-    isActive: true,
-    skillsToTeach: { $in: learnIds },
-    skillsToLearn: { $in: teachIds }
-  }).select("fullName username avatarUrl bio headline trustScore skillsToTeach skillsToLearn")
-    .populate("skillsToTeach", "name category").populate("skillsToLearn", "name category").limit(50);
+  const [myTeachSkills, myLearnSkills, candidates] = await Promise.all([
+    Skill.find({ _id: { $in: teachIds } }).select("name category"),
+    Skill.find({ _id: { $in: learnIds } }).select("name category"),
+    User.find({
+      _id: { $ne: req.user._id, $nin: excludedIds },
+      isActive: true,
+      skillsToTeach: { $in: learnIds },
+      skillsToLearn: { $in: teachIds }
+    }).select("fullName username avatarUrl bio headline trustScore skillsToTeach skillsToLearn")
+      .populate("skillsToTeach", "name category").populate("skillsToLearn", "name category").limit(50)
+  ]);
 
   const matches = candidates.map((candidate) => {
     const candidateTeach = candidate.skillsToTeach || [];
     const candidateLearn = candidate.skillsToLearn || [];
-    const skillOffered = candidateLearn.length ? (req.user.skillsToTeach || []).find((skill) => candidateLearn.some((item) => String(item._id) === String(skill))) : null;
-    const skillRequested = candidateTeach.length ? candidateTeach.find((skill) => (req.user.skillsToLearn || []).some((item) => String(item) === String(skill._id))) : null;
-    const offeredId = skillOffered ? String(skillOffered) : "";
+    const skillOffered = myTeachSkills.find((skill) => candidateLearn.some((item) => String(item._id) === String(skill._id)));
+    const skillRequested = candidateTeach.find((skill) => learnIds.includes(String(skill._id)));
+    const offeredId = skillOffered ? String(skillOffered._id) : "";
     const requestedId = skillRequested ? String(skillRequested._id) : "";
-    const score = (candidateTeach.filter((skill) => learnIds.includes(String(skill._id))).length + candidateLearn.filter((skill) => teachIds.includes(String(skill._id))).length);
+    const score = candidateTeach.filter((skill) => learnIds.includes(String(skill._id))).length + candidateLearn.filter((skill) => teachIds.includes(String(skill._id))).length;
     return {
       user: { id: candidate.id, fullName: candidate.fullName, username: candidate.username, avatarUrl: candidate.avatarUrl, bio: candidate.bio, headline: candidate.headline, trustScore: candidate.trustScore },
       score,
