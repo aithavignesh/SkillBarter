@@ -55,3 +55,34 @@ test("exchange endpoints reject unauthenticated requests before database access"
   assert.equal(response.status, 401);
   assert.match((await response.json()).error, /Authentication required/);
 });
+
+test("unknown API paths return a consistent 404 response", async () => {
+  const response = await fetch(`${baseUrl}/api/does-not-exist`);
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), { error: "Route not found." });
+});
+
+test("malformed JSON is rejected with a 400 response", async () => {
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{ invalid json"
+  });
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: "Invalid JSON request body." });
+});
+
+test("responses include baseline security headers", async () => {
+  const response = await fetch(`${baseUrl}/`);
+  assert.equal(response.status, 200);
+  assert.ok(response.headers.has("x-content-type-options"));
+  assert.equal(response.headers.get("x-powered-by"), null);
+});
+
+test("requests from unapproved browser origins are rejected", async () => {
+  const response = await fetch(`${baseUrl}/`, {
+    headers: { origin: "https://unapproved.example" }
+  });
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /Origin is not allowed/);
+});
