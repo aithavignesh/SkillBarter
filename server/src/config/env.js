@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 const MIN_SECRET_LENGTH = 32;
 
 export function validateEnvironment(env = process.env) {
@@ -59,6 +61,16 @@ export function validateEnvironment(env = process.env) {
 
     if (/\s|:\/\/|[/?#]/.test(env.SMTP_HOST)) {
       throw new Error("SMTP_HOST must be a hostname or IP address, not a URL.");
+    }
+
+    const smtpHost = env.SMTP_HOST.toLowerCase();
+    const validHostname = smtpHost.length <= 253 &&
+      smtpHost.split(".").every((label) =>
+        label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)
+      );
+
+    if (isIP(env.SMTP_HOST) === 0 && !validHostname) {
+      throw new Error("SMTP_HOST must be a valid hostname or IP address.");
     }
 
     let resetUrl;
