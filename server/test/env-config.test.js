@@ -185,3 +185,48 @@ test("rejects each missing SMTP setting when password recovery is enabled", () =
     );
   }
 });
+
+test("rejects password reset URLs containing credentials", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...validBase,
+      PASSWORD_RESET_URL: "http://user:password@localhost:3000/reset-password",
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "587",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "secret",
+      SMTP_FROM: "no-reply@example.com"
+    }),
+    /without credentials, query, or fragment/
+  );
+});
+
+test("rejects unsupported protocols for password reset URLs", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...validBase,
+      PASSWORD_RESET_URL: "ftp://localhost:3000/reset-password",
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "587",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "secret",
+      SMTP_FROM: "no-reply@example.com"
+    }),
+    /must be an HTTP\(S\) URL/
+  );
+});
+
+test("rejects relative password reset URLs", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...validBase,
+      PASSWORD_RESET_URL: "/reset-password",
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "587",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "secret",
+      SMTP_FROM: "no-reply@example.com"
+    }),
+    /must be a valid absolute URL/
+  );
+});
