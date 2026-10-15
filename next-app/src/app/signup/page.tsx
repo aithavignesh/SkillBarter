@@ -19,7 +19,7 @@ export default function SignupPage() {
       const response = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fullName, username, email, password }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to create account.");
-      router.replace("/dashboard");
+      router.replace("/onboarding");
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to create account."); }
     finally { setBusy(false); }
   }
