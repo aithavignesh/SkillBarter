@@ -7,7 +7,7 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "check": "node --check src/index.js && node --check src/routes/auth.js && node --check src/routes/passwordReset.js && node --check src/middleware/requireAuth.js && node --check src/models/User.js && node --check src/models/PasswordResetToken.js && node --check src/services/resetEmail.js && node --check src/routes/exchanges.js && node --check src/utils/security.js && node --check test/security.test.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
