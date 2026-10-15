@@ -1,0 +1,27 @@
+name: MERN Migration CI
+
+on:
+  push:
+    branches:
+      - migration/next-express-mongodb
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Check Express JavaScript syntax
+        run: find server/src -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Build Next.js frontend
+        run: npm run build
