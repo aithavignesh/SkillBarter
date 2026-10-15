@@ -122,6 +122,10 @@ test("report creation rejects self-reporting and invalid reasons", async () => {
   assert.equal(self.status, 400);
   const invalidReason = await request("POST", "/api/reports", { targetType: "user", targetId: otherUserId, reason: "x" });
   assert.equal(invalidReason.status, 400);
+  const paddedReason = await request("POST", "/api/reports", {
+    targetType: "user", targetId: otherUserId, reason: `${" ".repeat(121)}abc`
+  });
+  assert.equal(paddedReason.status, 400, "oversized raw report reasons must be rejected even when trimming makes them short");
 });
 
 test("reporting an exchange is limited to its participants", async () => {

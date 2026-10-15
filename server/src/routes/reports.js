@@ -14,7 +14,7 @@ router.post("/", reportLimiter, async (req, res) => {
   if (!["user", "exchange"].includes(targetType) || !mongoose.isValidObjectId(targetId)) {
     return res.status(400).json({ error: "Only valid user or exchange targets can be reported right now." });
   }
-  if (typeof reason !== "string" || reason.trim().length < 3 || reason.trim().length > 120) {
+  if (typeof reason !== "string" || reason.trim().length < 3 || reason.length > 120) {
     return res.status(400).json({ error: "Provide a reason between 3 and 120 characters." });
   }
   if (typeof details !== "string" || details.length > 2000) return res.status(400).json({ error: "Report details are too long." });
