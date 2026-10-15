@@ -7,6 +7,7 @@ import Block from "../models/Block.js";
 import { validateScheduledAt } from "../utils/security.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { exchangeLimiter } from "../middleware/writeLimiters.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -22,7 +23,7 @@ router.get("/", async (req, res) => {
   return res.json({ exchanges });
 });
 
-router.post("/", async (req, res) => {
+router.post("/", exchangeLimiter, async (req, res) => {
   const { recipientId, skillOfferedId, skillRequestedId, message = "" } = req.body || {};
   if (![recipientId, skillOfferedId, skillRequestedId].every(mongoose.isValidObjectId)) {
     return res.status(400).json({ error: "Recipient and both skill IDs are required." });
@@ -56,7 +57,7 @@ router.post("/", async (req, res) => {
   return res.status(201).json({ exchange });
 });
 
-router.patch("/:id/status", async (req, res) => {
+router.patch("/:id/status", exchangeLimiter, async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "Invalid exchange ID." });
   const nextStatus = req.body?.status;
   if (!["accepted", "declined", "cancelled", "scheduled", "active", "completed"].includes(nextStatus)) {
