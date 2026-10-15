@@ -14,6 +14,7 @@
 - Express API with Helmet, explicit CORS allow-list, JSON body-size limit, authentication rate limiting, and health endpoint.
 - MongoDB connection module and initial User, Skill, Exchange, Message, Review, Report, and Block models.
 - Email/password registration and login with bcrypt password hashing, JWT authentication with issuer/audience checks, a current-user endpoint, and protected API middleware.
+- Initial password recovery endpoints: `POST /api/auth/password-reset/request` and `POST /api/auth/password-reset/confirm`. Reset tokens are random, stored as SHA-256 hashes, expire after 15 minutes, and are rate-limited. SMTP delivery must be configured before use.
 - APIs for profiles, skill catalog, onboarding validation, reciprocal matching, exchange requests and status transitions, participant-only messages, reviews after mutual exchange completion, user/exchange reports, block/unblock, community posts and likes, notifications, and admin statistics/users/exchanges/reports.
 - Role checks run on the Express server; registration does not allow a user to self-assign admin privileges.
 - Environment-variable templates; no credentials are committed.
@@ -46,7 +47,7 @@ All API requests from the Next.js app go through the same-origin proxy. Configur
 
 ## Remaining work before production cutover
 
-- Migrate phone OTP and email OTP authentication, OTP delivery/provider configuration, password reset, session expiry/revocation, and account recovery. The initial branch currently supports email/password only.
+- Migrate phone OTP and email OTP authentication and delivery configuration; finish password-recovery UI and test SMTP delivery, session expiry/revocation, and account recovery. The initial branch currently supports email/password only.
 - Complete real-time messaging/WebSockets, community comments/interactions, trust-score updates, full review/moderation flows, analytics, and remaining admin capabilities. Scheduling, reciprocal match suggestions, basic community posts, notifications, and review submission now have initial implementations.
 - Add integration and end-to-end tests, request-schema validation, rate limits for sensitive non-auth endpoints, audit logging, and security review. Confirm the block policy is applied consistently to every feature.
 - Build a reviewed data migration from the current InsForge/PostgreSQL system into MongoDB. Map user IDs and references, preserve required history, compare record counts, and validate relationships before any cutover.
