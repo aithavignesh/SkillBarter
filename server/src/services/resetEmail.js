@@ -15,5 +15,14 @@ export async function sendPasswordResetEmail(email, resetUrl) {
     requireTLS: port !== 465,
     auth: { user: username, pass: password }
   });
-  await transport.sendMail({ from: sender, to: email, subject: "Reset your SkillBarter password", text: `Use this link within 15 minutes to reset your password: ${resetUrl}\n\nIgnore this email if you did not request a reset.` });
+  try {
+    await transport.sendMail({
+      from: sender,
+      to: email,
+      subject: "Reset your SkillBarter password",
+      text: `Use this link within 15 minutes to reset your password: ${resetUrl}\n\nIgnore this email if you did not request a reset.`
+    });
+  } finally {
+    transport.close();
+  }
 }
