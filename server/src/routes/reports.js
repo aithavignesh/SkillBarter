@@ -4,11 +4,12 @@ import User from "../models/User.js";
 import Exchange from "../models/Exchange.js";
 import Report from "../models/Report.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { reportLimiter } from "../middleware/writeLimiters.js";
 
 const router = Router();
 router.use(requireAuth);
 
-router.post("/", async (req, res) => {
+router.post("/", reportLimiter, async (req, res) => {
   const { targetType, targetId, reason, details = "" } = req.body || {};
   if (!["user", "exchange"].includes(targetType) || !mongoose.isValidObjectId(targetId)) {
     return res.status(400).json({ error: "Only valid user or exchange targets can be reported right now." });
