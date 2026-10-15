@@ -32,11 +32,11 @@ router.post("/", async (req, res) => {
 
   const [recipient, offered, requested] = await Promise.all([
     User.findOne({ _id: recipientId, isActive: true }).select("skillsToTeach"),
-    Skill.findOne({ _id: skillOfferedId, createdBy: req.user._id }),
+    Skill.findOne({ _id: skillOfferedId }),
     Skill.findById(skillRequestedId)
   ]);
   if (!recipient) return res.status(404).json({ error: "Recipient account not found." });
-  if (!offered) return res.status(400).json({ error: "The offered skill must belong to you." });
+  if (!offered || !req.user.skillsToTeach.some((skillId) => String(skillId) === String(offered._id))) return res.status(400).json({ error: "The offered skill must be in your teaching skills." });
   if (!requested) return res.status(404).json({ error: "Requested skill not found." });
   if (!recipient.skillsToTeach.some((skillId) => String(skillId) === String(requested._id))) return res.status(400).json({ error: "The recipient must list the requested skill among their teaching skills." });
 
