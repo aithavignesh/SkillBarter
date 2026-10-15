@@ -39,3 +39,41 @@ test("accepts a comma-separated list of valid HTTPS production origins", () => {
     { origins: ["https://app.example.com", "https://admin.example.com"] }
   );
 });
+
+test("accepts an optional valid password reset URL in development", () => {
+  assert.deepEqual(
+    validateEnvironment({ ...validBase, PASSWORD_RESET_URL: "http://localhost:3000/reset-password" }),
+    { origins: ["http://localhost:3000"] }
+  );
+});
+
+test("rejects password reset URLs containing query parameters or fragments", () => {
+  assert.throws(
+    () => validateEnvironment({ ...validBase, PASSWORD_RESET_URL: "http://localhost:3000/reset?token=existing" }),
+    /without credentials, query, or fragment/
+  );
+});
+
+test("requires HTTPS for password reset URLs in production", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...validBase,
+      NODE_ENV: "production",
+      CLIENT_ORIGIN: "https://app.example.com",
+      PASSWORD_RESET_URL: "http://app.example.com/reset-password"
+    }),
+    /PASSWORD_RESET_URL must use HTTPS/
+  );
+});
+
+test("accepts HTTPS password reset URLs in production", () => {
+  assert.deepEqual(
+    validateEnvironment({
+      ...validBase,
+      NODE_ENV: "production",
+      CLIENT_ORIGIN: "https://app.example.com",
+      PASSWORD_RESET_URL: "https://app.example.com/reset-password"
+    }),
+    { origins: ["https://app.example.com"] }
+  );
+});
