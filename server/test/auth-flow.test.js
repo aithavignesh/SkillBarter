@@ -129,7 +129,7 @@ test("login rejects oversized passwords before querying the database", async () 
   });
 
   assert.equal(response.status, 400);
-  assert.match((await response.json()).error, /1–128 characters/);
+  assert.match((await response.json()).error, /at most 128 characters/);
   assert.equal(databaseQueried, false);
 });
 
