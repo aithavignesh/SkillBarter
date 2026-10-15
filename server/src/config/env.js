@@ -58,6 +58,10 @@ export function validateEnvironment(env = process.env) {
     if (production && resetUrl.protocol !== "https:") {
       throw new Error("PASSWORD_RESET_URL must use HTTPS in production.");
     }
+
+    if (!origins.some((origin) => new URL(origin).origin === resetUrl.origin)) {
+      throw new Error("PASSWORD_RESET_URL must use an origin listed in CLIENT_ORIGIN.");
+    }
   }
 
   return { origins };
