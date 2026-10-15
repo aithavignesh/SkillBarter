@@ -354,3 +354,22 @@ test("rejects malformed dotted-quad SMTP addresses", () => {
     );
   }
 });
+
+test("rejects SMTP ports that are not plain decimal integers", () => {
+  const base = {
+    ...validBase,
+    PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+    SMTP_HOST: "smtp.example.com",
+    SMTP_USER: "user",
+    SMTP_PASSWORD: "secret",
+    SMTP_FROM: "no-reply@example.com"
+  };
+
+  for (const port of ["587.0", "5.87e2", "0x24b", " 587 "]) {
+    assert.throws(
+      () => validateEnvironment({ ...base, SMTP_PORT: port }),
+      /SMTP_PORT must be an integer between 1 and 65535/,
+      `expected non-decimal SMTP port ${JSON.stringify(port)} to be rejected`
+    );
+  }
+});
