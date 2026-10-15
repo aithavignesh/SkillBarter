@@ -42,5 +42,23 @@ export function validateEnvironment(env = process.env) {
     }
   }
 
+  if (env.PASSWORD_RESET_URL?.trim()) {
+    let resetUrl;
+    try {
+      resetUrl = new URL(env.PASSWORD_RESET_URL);
+    } catch {
+      throw new Error("PASSWORD_RESET_URL must be a valid absolute URL.");
+    }
+
+    if (!["http:", "https:"].includes(resetUrl.protocol) ||
+        resetUrl.username || resetUrl.password || resetUrl.search || resetUrl.hash) {
+      throw new Error("PASSWORD_RESET_URL must be an HTTP(S) URL without credentials, query, or fragment.");
+    }
+
+    if (production && resetUrl.protocol !== "https:") {
+      throw new Error("PASSWORD_RESET_URL must use HTTPS in production.");
+    }
+  }
+
   return { origins };
 }
