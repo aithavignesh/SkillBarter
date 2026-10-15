@@ -12,8 +12,12 @@ function setMailEnvironment(t) {
     SMTP_FROM: "no-reply@example.com"
   };
   for (const [key, value] of Object.entries(values)) {
+    const original = process.env[key];
     process.env[key] = value;
-    t.after(() => { delete process.env[key]; });
+    t.after(() => {
+      if (original === undefined) delete process.env[key];
+      else process.env[key] = original;
+    });
   }
 }
 
