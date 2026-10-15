@@ -15,8 +15,16 @@ export async function requireAuth(req, res, next) {
     if (typeof payload !== "object" || !payload.sub) {
       return res.status(401).json({ error: "Invalid session." });
     }
-    const user = await User.findById(payload.sub).select("_id email username fullName isAdmin isActive onboardingCompleted skillsToTeach skillsToLearn");
+    const user = await User.findById(payload.sub).select("_id email username fullName isAdmin isActive onboardingCompleted skillsToTeach skillsToLearn tokenVersion");
     if (!user || !user.isActive) return res.status(401).json({ error: "Account is unavailable." });
+
+    // Tokens issued before a password reset (or another explicit revocation)
+    // are rejected even if their JWT expiry has not been reached.
+    const tokenVersion = Number.isInteger(payload.tokenVersion) ? payload.tokenVersion : 0;
+    if (tokenVersion !== (user.tokenVersion ?? 0)) {
+      return res.status(401).json({ error: "Session has been revoked. Please sign in again." });
+    }
+
     req.user = user;
     return next();
   } catch {
