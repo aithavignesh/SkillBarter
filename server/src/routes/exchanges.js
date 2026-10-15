@@ -92,15 +92,15 @@ router.patch("/:id/status", async (req, res) => {
     exchange.scheduledAt = new Date(scheduledAtMs);
   } else if (nextStatus === "active") {
     if (!["accepted", "scheduled"].includes(exchange.status)) return res.status(409).json({ error: "Only accepted or scheduled exchanges can become active." });
-    if (exchange.status === "scheduled") {
-      const blocked = await Block.exists({
-        $or: [
-          { blocker: exchange.requester, blocked: exchange.recipient },
-          { blocker: exchange.recipient, blocked: exchange.requester }
-        ]
-      });
-      if (blocked) return res.status(403).json({ error: "This exchange cannot start because one participant has blocked the other." });
-    }
+    // Check both accepted and scheduled exchanges. A block can be added
+    // after acceptance, so direct activation must not bypass block enforcement.
+    const blocked = await Block.exists({
+      $or: [
+        { blocker: exchange.requester, blocked: exchange.recipient },
+        { blocker: exchange.recipient, blocked: exchange.requester }
+      ]
+    });
+    if (blocked) return res.status(403).json({ error: "This exchange cannot start because one participant has blocked the other." });
   } else if (nextStatus === "completed") {
     if (!["active", "scheduled"].includes(exchange.status)) return res.status(409).json({ error: "Only active or scheduled exchanges can be completed." });
     if (requester) exchange.completedByRequester = true;
