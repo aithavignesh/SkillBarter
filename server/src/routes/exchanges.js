@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Exchange from "../models/Exchange.js";
 import Skill from "../models/Skill.js";
 import User from "../models/User.js";
+import Block from "../models/Block.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -25,6 +26,8 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ error: "Recipient and both skill IDs are required." });
   }
   if (String(req.user._id) === String(recipientId)) return res.status(400).json({ error: "You cannot request an exchange with yourself." });
+  const blocked = await Block.exists({ $or: [{ blocker: req.user._id, blocked: recipientId }, { blocker: recipientId, blocked: req.user._id }] });
+  if (blocked) return res.status(403).json({ error: "An exchange cannot be requested across a blocked relationship." });
   if (typeof message !== "string" || message.length > 2000) return res.status(400).json({ error: "Message must be 2000 characters or fewer." });
 
   const [recipient, offered, requested] = await Promise.all([
