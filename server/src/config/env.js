@@ -53,6 +53,10 @@ export function validateEnvironment(env = process.env) {
       throw new Error("SMTP_PORT must be an integer between 1 and 65535.");
     }
 
+    if (/\\s|:\\/\\/|[/?#]/.test(env.SMTP_HOST)) {
+      throw new Error("SMTP_HOST must be a hostname or IP address, not a URL.");
+    }
+
     let resetUrl;
     try {
       resetUrl = new URL(env.PASSWORD_RESET_URL);
