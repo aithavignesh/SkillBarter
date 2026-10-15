@@ -13,6 +13,9 @@ export async function sendPasswordResetEmail(email, resetUrl) {
     secure: port === 465,
     // Require STARTTLS on non-implicit-TLS ports so SMTP credentials are not sent over plaintext.
     requireTLS: port !== 465,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
     auth: { user: username, pass: password }
   });
   try {
