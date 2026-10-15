@@ -4,6 +4,7 @@ import Post from "../models/Post.js";
 import Block from "../models/Block.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { postLimiter } from "../middleware/writeLimiters.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -23,7 +24,7 @@ router.get("/", async (req, res) => {
   return res.json({ posts });
 });
 
-router.post("/", async (req, res) => {
+router.post("/", postLimiter, async (req, res) => {
   const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
   const tags = Array.isArray(req.body?.tags) ? req.body.tags.filter((tag) => typeof tag === "string").map((tag) => tag.trim().replace(/^#/, "").toLowerCase()).filter((tag) => /^[a-z0-9_-]{1,40}$/.test(tag)).slice(0, 10) : [];
   if (content.length < 1 || content.length > 5000) return res.status(400).json({ error: "Post content must contain 1–5000 characters." });
@@ -32,7 +33,7 @@ router.post("/", async (req, res) => {
   return res.status(201).json({ post });
 });
 
-router.post("/:id/like", async (req, res) => {
+router.post("/:id/like", postLimiter, async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "Invalid post ID." });
   const post = await Post.findOne({ _id: req.params.id, isHidden: false });
   if (!post) return res.status(404).json({ error: "Post not found." });
