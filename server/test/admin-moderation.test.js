@@ -75,19 +75,22 @@ test("admin user status update requires a boolean", async () => {
   assert.equal(response.status, 400);
 });
 
-test("admin status changes revoke the target user's existing sessions", async () => {
+test("admin status changes revoke sessions on deactivation and reactivation", async () => {
   setAuthenticatedUser(adminUser);
-  let updateArgs;
-  User.findByIdAndUpdate = (...args) => {
-    updateArgs = args;
-    return { select: async () => ({ _id: otherUserId, isActive: false, isAdmin: false }) };
-  };
 
-  const response = await patch(`/api/admin/users/${otherUserId}/status`, { isActive: false });
+  for (const isActive of [false, true]) {
+    let updateArgs;
+    User.findByIdAndUpdate = (...args) => {
+      updateArgs = args;
+      return { select: async () => ({ _id: otherUserId, isActive, isAdmin: false }) };
+    };
 
-  assert.equal(response.status, 200);
-  assert.deepEqual(updateArgs[1], { $set: { isActive: false }, $inc: { tokenVersion: 1 } });
-  assert.equal(updateArgs[2].runValidators, true);
+    const response = await patch(`/api/admin/users/${otherUserId}/status`, { isActive });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(updateArgs[1], { $set: { isActive }, $inc: { tokenVersion: 1 } });
+    assert.equal(updateArgs[2].runValidators, true);
+  }
 });
 
 test("admin report moderation rejects invalid report IDs and statuses", async () => {
