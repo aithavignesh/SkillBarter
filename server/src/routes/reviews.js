@@ -4,6 +4,7 @@ import Exchange from "../models/Exchange.js";
 import Review from "../models/Review.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { reviewLimiter } from "../middleware/writeLimiters.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -15,7 +16,7 @@ router.get("/user/:userId", async (req, res) => {
   return res.json({ reviews });
 });
 
-router.post("/", async (req, res) => {
+router.post("/", reviewLimiter, async (req, res) => {
   const { exchangeId, rating, comment = "" } = req.body || {};
   if (!mongoose.isValidObjectId(exchangeId)) return res.status(400).json({ error: "A valid exchange ID is required." });
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be an integer from 1 to 5." });
