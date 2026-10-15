@@ -5,6 +5,7 @@ import Message from "../models/Message.js";
 import Block from "../models/Block.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { messageLimiter } from "../middleware/writeLimiters.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -22,7 +23,7 @@ router.get("/exchange/:exchangeId", async (req, res) => {
   return res.json({ messages });
 });
 
-router.post("/", async (req, res) => {
+router.post("/", messageLimiter, async (req, res) => {
   const { exchangeId, body } = req.body || {};
   if (!mongoose.isValidObjectId(exchangeId)) return res.status(400).json({ error: "A valid exchange ID is required." });
   if (typeof body !== "string" || !body.trim() || body.trim().length > 5000) {
