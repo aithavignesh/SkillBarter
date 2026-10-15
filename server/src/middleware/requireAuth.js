@@ -15,7 +15,7 @@ export async function requireAuth(req, res, next) {
     if (typeof payload !== "object" || !payload.sub) {
       return res.status(401).json({ error: "Invalid session." });
     }
-    const user = await User.findById(payload.sub).select("_id email username fullName isAdmin isActive onboardingCompleted");
+    const user = await User.findById(payload.sub).select("_id email username fullName isAdmin isActive onboardingCompleted skillsToTeach skillsToLearn");
     if (!user || !user.isActive) return res.status(401).json({ error: "Account is unavailable." });
     req.user = user;
     return next();
