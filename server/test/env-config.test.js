@@ -110,3 +110,28 @@ test("rejects production password reset URLs that are not on an allowed client o
     /must use an origin listed in CLIENT_ORIGIN/
   );
 });
+
+test("rejects client origins that include credentials", () => {
+  assert.throws(
+    () => validateEnvironment({ ...validBase, CLIENT_ORIGIN: "http://user:password@localhost:3000" }),
+    /without paths or credentials/
+  );
+});
+
+test("rejects client origins that include query parameters or fragments", () => {
+  assert.throws(
+    () => validateEnvironment({ ...validBase, CLIENT_ORIGIN: "http://localhost:3000?next=/app" }),
+    /without paths or credentials/
+  );
+  assert.throws(
+    () => validateEnvironment({ ...validBase, CLIENT_ORIGIN: "http://localhost:3000#section" }),
+    /without paths or credentials/
+  );
+});
+
+test("rejects unsupported protocols for client origins", () => {
+  assert.throws(
+    () => validateEnvironment({ ...validBase, CLIENT_ORIGIN: "ftp://localhost:3000" }),
+    /without paths or credentials/
+  );
+});
