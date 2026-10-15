@@ -42,14 +42,14 @@ test("accepts a comma-separated list of valid HTTPS production origins", () => {
 
 test("accepts an optional valid password reset URL in development", () => {
   assert.deepEqual(
-    validateEnvironment({ ...validBase, PASSWORD_RESET_URL: "http://localhost:3000/reset-password" }),
+    validateEnvironment({ ...validBase, PASSWORD_RESET_URL: "http://localhost:3000/reset-password", SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "secret", SMTP_FROM: "no-reply@example.com" }),
     { origins: ["http://localhost:3000"] }
   );
 });
 
 test("rejects password reset URLs containing query parameters or fragments", () => {
   assert.throws(
-    () => validateEnvironment({ ...validBase, PASSWORD_RESET_URL: "http://localhost:3000/reset?token=existing" }),
+    () => validateEnvironment({ ...validBase, PASSWORD_RESET_URL: "http://localhost:3000/reset?token=existing", SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "secret", SMTP_FROM: "no-reply@example.com" }),
     /without credentials, query, or fragment/
   );
 });
@@ -60,7 +60,8 @@ test("requires HTTPS for password reset URLs in production", () => {
       ...validBase,
       NODE_ENV: "production",
       CLIENT_ORIGIN: "https://app.example.com",
-      PASSWORD_RESET_URL: "http://app.example.com/reset-password"
+      PASSWORD_RESET_URL: "http://app.example.com/reset-password",
+      SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "secret", SMTP_FROM: "no-reply@example.com"
     }),
     /PASSWORD_RESET_URL must use HTTPS/
   );
@@ -72,7 +73,8 @@ test("accepts HTTPS password reset URLs in production", () => {
       ...validBase,
       NODE_ENV: "production",
       CLIENT_ORIGIN: "https://app.example.com",
-      PASSWORD_RESET_URL: "https://app.example.com/reset-password"
+      PASSWORD_RESET_URL: "https://app.example.com/reset-password",
+      SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "secret", SMTP_FROM: "no-reply@example.com"
     }),
     { origins: ["https://app.example.com"] }
   );
@@ -82,7 +84,8 @@ test("rejects password reset URLs on origins not listed in CLIENT_ORIGIN", () =>
   assert.throws(
     () => validateEnvironment({
       ...validBase,
-      PASSWORD_RESET_URL: "http://attacker.example/reset-password"
+      PASSWORD_RESET_URL: "http://attacker.example/reset-password",
+      SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "secret", SMTP_FROM: "no-reply@example.com"
     }),
     /must use an origin listed in CLIENT_ORIGIN/
   );
@@ -93,7 +96,8 @@ test("accepts a password reset URL when its origin is one of multiple allowed or
     validateEnvironment({
       ...validBase,
       CLIENT_ORIGIN: "http://localhost:3000,http://admin.localhost:3000",
-      PASSWORD_RESET_URL: "http://admin.localhost:3000/reset-password"
+      PASSWORD_RESET_URL: "http://admin.localhost:3000/reset-password",
+      SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "secret", SMTP_FROM: "no-reply@example.com"
     }),
     { origins: ["http://localhost:3000", "http://admin.localhost:3000"] }
   );
@@ -105,7 +109,8 @@ test("rejects production password reset URLs that are not on an allowed client o
       ...validBase,
       NODE_ENV: "production",
       CLIENT_ORIGIN: "https://app.example.com",
-      PASSWORD_RESET_URL: "https://attacker.example/reset-password"
+      PASSWORD_RESET_URL: "https://attacker.example/reset-password",
+      SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_USER: "user", SMTP_PASSWORD: "secret", SMTP_FROM: "no-reply@example.com"
     }),
     /must use an origin listed in CLIENT_ORIGIN/
   );
@@ -133,5 +138,27 @@ test("rejects unsupported protocols for client origins", () => {
   assert.throws(
     () => validateEnvironment({ ...validBase, CLIENT_ORIGIN: "ftp://localhost:3000" }),
     /without paths or credentials/
+  );
+});
+
+test("requires complete SMTP configuration when password recovery is enabled", () => {
+  assert.throws(
+    () => validateEnvironment({ ...validBase, PASSWORD_RESET_URL: "http://localhost:3000/reset-password" }),
+    /requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM/
+  );
+});
+
+test("rejects invalid SMTP ports when password recovery is enabled", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...validBase,
+      PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "70000",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "secret",
+      SMTP_FROM: "no-reply@example.com"
+    }),
+    /SMTP_PORT must be an integer between 1 and 65535/
   );
 });
