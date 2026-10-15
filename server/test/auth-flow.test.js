@@ -163,11 +163,15 @@ test("password reset confirmation changes the password and increments tokenVersi
   const rawToken = "a".repeat(64);
   let tokenQuery;
   let userUpdate;
+  let cleanedUpUser;
   PasswordResetToken.findOneAndDelete = async (query) => {
     tokenQuery = query;
     return { user: sampleUser._id };
   };
-  PasswordResetToken.deleteMany = async () => ({ deletedCount: 0 });
+  PasswordResetToken.deleteMany = async (query) => {
+    cleanedUpUser = query.user;
+    return { deletedCount: 1 };
+  };
   User.findByIdAndUpdate = async (id, update, options) => {
     userUpdate = { id, update, options };
     return { ...sampleUser, tokenVersion: 1 };
@@ -185,6 +189,7 @@ test("password reset confirmation changes the password and increments tokenVersi
   assert.deepEqual(userUpdate.update.$inc, { tokenVersion: 1 });
   assert.equal(userUpdate.id, sampleUser._id);
   assert.equal(userUpdate.options.new, true);
+  assert.equal(cleanedUpUser, sampleUser._id, "all remaining reset tokens for the account must be invalidated");
 });
 
 
