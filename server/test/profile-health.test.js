@@ -62,6 +62,14 @@ test("profile update rejects an invalid display name", async () => {
   assert.equal(response.status, 400);
 });
 
+test("profile update rejects non-string text fields", async () => {
+  authenticate();
+  for (const body of [{ fullName: 123 }, { bio: 123 }, { headline: false }]) {
+    const response = await patchProfile(body);
+    assert.equal(response.status, 400);
+  }
+});
+
 test("profile update rejects oversized biography and headline", async () => {
   authenticate();
   const bio = await patchProfile({ bio: "x".repeat(1001) });

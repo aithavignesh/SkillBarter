@@ -34,10 +34,15 @@ router.patch("/me", async (req, res, next) => {
     for (const key of allowed) {
       if (Object.hasOwn(req.body || {}, key)) update[key] = req.body[key];
     }
+    if (Object.hasOwn(update, "fullName") && typeof update.fullName !== "string") {
+      return res.status(400).json({ error: "Name must be a string." });
+    }
     if (typeof update.fullName === "string" && (update.fullName.trim().length < 2 || update.fullName.trim().length > 100)) {
       return res.status(400).json({ error: "Name must be between 2 and 100 characters." });
     }
+    if (Object.hasOwn(update, "bio") && typeof update.bio !== "string") return res.status(400).json({ error: "Bio must be a string." });
     if (typeof update.bio === "string" && update.bio.length > 1000) return res.status(400).json({ error: "Bio is too long." });
+    if (Object.hasOwn(update, "headline") && typeof update.headline !== "string") return res.status(400).json({ error: "Headline must be a string." });
     if (typeof update.headline === "string" && update.headline.length > 160) return res.status(400).json({ error: "Headline is too long." });
     if (typeof update.fullName === "string") update.fullName = update.fullName.trim();
     if (typeof update.phone === "string" && update.phone.length > 30) return res.status(400).json({ error: "Phone number is too long." });
