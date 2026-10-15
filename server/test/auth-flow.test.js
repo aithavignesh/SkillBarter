@@ -186,3 +186,20 @@ test("password reset confirmation changes the password and increments tokenVersi
   assert.equal(userUpdate.id, sampleUser._id);
   assert.equal(userUpdate.options.new, true);
 });
+
+
+test("password reset rejects expired or already-consumed tokens", async () => {
+  PasswordResetToken.findOneAndDelete = async (query) => {
+    assert.match(query.tokenHash, /^[a-f0-9]{64}$/);
+    assert.ok(query.expiresAt.$gt instanceof Date);
+    return null;
+  };
+
+  const response = await post("/api/auth/password-reset/confirm", {
+    token: "c".repeat(64),
+    password: "another-long-password"
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /invalid or expired/);
+});
