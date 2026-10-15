@@ -94,13 +94,18 @@ test("a profile remains visible when there is no block relationship", async () =
   assert.equal(body.user.passwordHash, undefined);
 });
 
-test("an invalid profile ID is rejected before querying the database", async () => {
+test("an invalid profile ID is rejected before querying the target profile", async () => {
   mockUserQueries();
-  let queried = false;
-  User.findById = () => { queried = true; throw new Error("should not query"); };
+  let queriedTargetProfile = false;
+  User.findById = (id) => {
+    // Authentication must still load the requester account.
+    if (String(id) === requesterId) return { select: async () => requester };
+    queriedTargetProfile = true;
+    throw new Error("invalid target profile should not be queried");
+  };
   const response = await fetch(`${baseUrl}/api/users/not-an-object-id`, {
     headers: { authorization: `Bearer ${token}` }
   });
   assert.equal(response.status, 400);
-  assert.equal(queried, false);
+  assert.equal(queriedTargetProfile, false);
 });
