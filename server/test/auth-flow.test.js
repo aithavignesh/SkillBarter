@@ -3,13 +3,16 @@ import assert from "node:assert/strict";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../src/models/User.js";
+import PasswordResetToken from "../src/models/PasswordResetToken.js";
+import { hashResetToken } from "../src/utils/security.js";
 import app from "../src/app.js";
 
 const originalFindOne = User.findOne;
 const originalCreate = User.create;
 const originalFindById = User.findById;
 const originalFindByIdAndUpdate = User.findByIdAndUpdate;
-const originalDeleteMany = undefined;
+const originalResetFindOneAndDelete = PasswordResetToken.findOneAndDelete;
+const originalResetDeleteMany = PasswordResetToken.deleteMany;
 
 let server;
 let baseUrl;
@@ -44,6 +47,8 @@ after(async () => {
   User.create = originalCreate;
   User.findById = originalFindById;
   User.findByIdAndUpdate = originalFindByIdAndUpdate;
+  PasswordResetToken.findOneAndDelete = originalResetFindOneAndDelete;
+  PasswordResetToken.deleteMany = originalResetDeleteMany;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -152,4 +157,32 @@ test("authentication rejects a JWT with a revoked token version", async () => {
 
   assert.equal(response.status, 401);
   assert.match((await response.json()).error, /revoked/);
+});
+
+test("password reset confirmation changes the password and increments tokenVersion", async () => {
+  const rawToken = "a".repeat(64);
+  let tokenQuery;
+  let userUpdate;
+  PasswordResetToken.findOneAndDelete = async (query) => {
+    tokenQuery = query;
+    return { user: sampleUser._id };
+  };
+  PasswordResetToken.deleteMany = async () => ({ deletedCount: 0 });
+  User.findByIdAndUpdate = async (id, update, options) => {
+    userUpdate = { id, update, options };
+    return { ...sampleUser, tokenVersion: 1 };
+  };
+
+  const response = await post("/api/auth/password-reset/confirm", {
+    token: rawToken,
+    password: "new-long-password"
+  });
+
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).message, /Please sign in again/);
+  assert.equal(tokenQuery.tokenHash, hashResetToken(rawToken));
+  assert.notEqual(tokenQuery.tokenHash, rawToken);
+  assert.deepEqual(userUpdate.update.$inc, { tokenVersion: 1 });
+  assert.equal(userUpdate.id, sampleUser._id);
+  assert.equal(userUpdate.options.new, true);
 });
