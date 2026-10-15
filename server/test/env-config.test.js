@@ -302,3 +302,36 @@ test("rejects password reset URLs with leading or trailing whitespace", () => {
     );
   }
 });
+
+test("rejects malformed SMTP hostname labels and embedded ports", () => {
+  const mailConfig = {
+    PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+    SMTP_PORT: "587",
+    SMTP_USER: "user",
+    SMTP_PASSWORD: "secret",
+    SMTP_FROM: "no-reply@example.com"
+  };
+
+  for (const host of ["smtp..example.com", "-smtp.example.com", "smtp-.example.com", "smtp.example.com:587"]) {
+    assert.throws(
+      () => validateEnvironment({ ...validBase, ...mailConfig, SMTP_HOST: host }),
+      /SMTP_HOST must be a (hostname or IP address, not a URL|valid hostname or IP address)/,
+      `expected malformed SMTP host ${host} to be rejected`
+    );
+  }
+});
+
+test("accepts an IPv6 address as SMTP_HOST", () => {
+  assert.deepEqual(
+    validateEnvironment({
+      ...validBase,
+      PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+      SMTP_HOST: "::1",
+      SMTP_PORT: "587",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "secret",
+      SMTP_FROM: "no-reply@example.com"
+    }),
+    { origins: ["http://localhost:3000"] }
+  );
+});
