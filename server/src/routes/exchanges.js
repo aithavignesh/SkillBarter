@@ -4,6 +4,7 @@ import Exchange from "../models/Exchange.js";
 import Skill from "../models/Skill.js";
 import User from "../models/User.js";
 import Block from "../models/Block.js";
+import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -44,6 +45,7 @@ router.post("/", async (req, res) => {
     requester: req.user._id, recipient: recipient._id,
     skillOffered: offered._id, skillRequested: requested._id, message: message.trim()
   });
+  await Notification.create({ recipient: recipient._id, actor: req.user._id, type: "exchange_request", title: "New exchange request", body: `${req.user.fullName} wants to exchange ${offered.name} for ${requested.name}.`, resourceType: "exchange", resourceId: exchange._id });
   await exchange.populate([
     { path: "requester", select: "fullName username avatarUrl" },
     { path: "recipient", select: "fullName username avatarUrl" },
@@ -86,6 +88,8 @@ router.patch("/:id/status", async (req, res) => {
 
   exchange.status = nextStatus;
   await exchange.save();
+  const notifyUserId = requester ? exchange.recipient : exchange.requester;
+  await Notification.create({ recipient: notifyUserId, actor: req.user._id, type: "exchange_update", title: "Exchange updated", body: `Your exchange request was marked ${nextStatus}.`, resourceType: "exchange", resourceId: exchange._id });
   await exchange.populate([
     { path: "requester", select: "fullName username avatarUrl" },
     { path: "recipient", select: "fullName username avatarUrl" },
