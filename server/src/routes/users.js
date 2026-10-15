@@ -77,6 +77,15 @@ router.get("/:id", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "Invalid user ID." });
   const user = await User.findById(req.params.id).populate("skillsToTeach", "name category").populate("skillsToLearn", "name category");
   if (!user || !user.isActive) return res.status(404).json({ error: "User not found." });
+
+  const blocked = await Block.exists({
+    $or: [
+      { blocker: req.user._id, blocked: user._id },
+      { blocker: user._id, blocked: req.user._id }
+    ]
+  });
+  if (blocked) return res.status(404).json({ error: "User not found." });
+
   return res.json({ user: safeProfile(user) });
 });
 
