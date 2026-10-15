@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import User from "../models/User.js";
 import Block from "../models/Block.js";
+import Skill from "../models/Skill.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -44,6 +45,11 @@ router.patch("/me", async (req, res, next) => {
       if (update[key] && (!Array.isArray(update[key]) || update[key].length > 30 || update[key].some((id) => !mongoose.isValidObjectId(id)))) {
         return res.status(400).json({ error: "Skill selections are invalid." });
       }
+    }
+    const skillIds = [...new Set([...(update.skillsToTeach || []), ...(update.skillsToLearn || [])].map(String))];
+    if (skillIds.length) {
+      const existingCount = await Skill.countDocuments({ _id: { $in: skillIds } });
+      if (existingCount !== skillIds.length) return res.status(400).json({ error: "One or more selected skills do not exist." });
     }
     const user = await User.findByIdAndUpdate(req.user.id, { $set: update }, { new: true, runValidators: true })
       .populate("skillsToTeach", "name category").populate("skillsToLearn", "name category");
