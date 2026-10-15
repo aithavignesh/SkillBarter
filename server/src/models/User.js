@@ -5,6 +5,8 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, trim: true, lowercase: true, minlength: 3, maxlength: 30, unique: true, index: true },
   email: { type: String, required: true, trim: true, lowercase: true, unique: true, index: true },
   passwordHash: { type: String, required: true, select: false },
+  // Increment this value to revoke every previously issued JWT for the user.
+  tokenVersion: { type: Number, default: 0, min: 0 },
   phone: { type: String, trim: true, default: "" },
   avatarUrl: { type: String, default: "" },
   bio: { type: String, maxlength: 1000, default: "" },
