@@ -4,15 +4,12 @@ import Exchange from "../models/Exchange.js";
 import Skill from "../models/Skill.js";
 import User from "../models/User.js";
 import Block from "../models/Block.js";
+import { validateScheduledAt } from "../utils/security.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
 router.use(requireAuth);
-
-// Keep scheduling within a reasonable planning horizon.
-const MAX_SCHEDULING_DAYS = 180;
-const MAX_SCHEDULING_MS = MAX_SCHEDULING_DAYS * 24 * 60 * 60 * 1000;
 
 router.get("/", async (req, res) => {
   const filter = { $or: [{ requester: req.user._id }, { recipient: req.user._id }] };
@@ -78,18 +75,9 @@ router.patch("/:id/status", async (req, res) => {
   } else if (nextStatus === "scheduled") {
     if (exchange.status !== "accepted") return res.status(409).json({ error: "Only accepted exchanges can be scheduled." });
 
-    const rawScheduledAt = req.body?.scheduledAt;
-    if (typeof rawScheduledAt !== "string" || !rawScheduledAt.trim()) {
-      return res.status(400).json({ error: "Provide a valid future scheduledAt date." });
-    }
-    const scheduledAtMs = Date.parse(rawScheduledAt);
-    const now = Date.now();
-    if (!Number.isFinite(scheduledAtMs) || scheduledAtMs <= now) {
-      return res.status(400).json({ error: "The exchange must be scheduled for a future date and time." });
-    }
-    if (scheduledAtMs > now + MAX_SCHEDULING_MS) {
-      return res.status(400).json({ error: `Choose a date within the next ${MAX_SCHEDULING_DAYS} days.` });
-    }
+    const scheduling = validateScheduledAt(req.body?.scheduledAt);
+    if (scheduling.error) return res.status(400).json({ error: scheduling.error });
+    const scheduledAtMs = scheduling.date.getTime();
 
     // A block may be created after the exchange request was accepted.
     // Re-check at scheduling time so the relationship cannot bypass a block.
