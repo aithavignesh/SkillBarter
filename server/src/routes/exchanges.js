@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import Exchange from "../models/Exchange.js";
 import Skill from "../models/Skill.js";
+import User from "../models/User.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -27,13 +28,14 @@ router.post("/", async (req, res) => {
   if (typeof message !== "string" || message.length > 2000) return res.status(400).json({ error: "Message must be 2000 characters or fewer." });
 
   const [recipient, offered, requested] = await Promise.all([
-    import("../models/User.js").then(({ default: User }) => User.findOne({ _id: recipientId, isActive: true })),
+    User.findOne({ _id: recipientId, isActive: true }).select("skillsToTeach"),
     Skill.findOne({ _id: skillOfferedId, createdBy: req.user._id }),
     Skill.findById(skillRequestedId)
   ]);
   if (!recipient) return res.status(404).json({ error: "Recipient account not found." });
   if (!offered) return res.status(400).json({ error: "The offered skill must belong to you." });
   if (!requested) return res.status(404).json({ error: "Requested skill not found." });
+  if (!recipient.skillsToTeach.some((skillId) => String(skillId) === String(requested._id))) return res.status(400).json({ error: "The recipient must list the requested skill among their teaching skills." });
 
   const exchange = await Exchange.create({
     requester: req.user._id, recipient: recipient._id,
