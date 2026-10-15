@@ -39,3 +39,9 @@ export const blockLimiter = createWriteLimiter({
   limit: 30,
   message: "Too many block actions. Please try again later."
 });
+
+export const exchangeLimiter = createWriteLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  message: "Too many exchange actions. Please try again later."
+});
