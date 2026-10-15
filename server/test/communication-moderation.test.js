@@ -26,6 +26,7 @@ const originals = {
   exchangeFindById: Exchange.findById,
   blockExists: Block.exists,
   messageCreate: Message.create,
+  messageFindOneAndUpdate: Message.findOneAndUpdate,
   reportCreate: Report.create,
   reviewCreate: Review.create
 };
@@ -47,6 +48,7 @@ after(async () => {
   Exchange.findById = originals.exchangeFindById;
   Block.exists = originals.blockExists;
   Message.create = originals.messageCreate;
+  Message.findOneAndUpdate = originals.messageFindOneAndUpdate;
   Report.create = originals.reportCreate;
   Review.create = originals.reviewCreate;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
@@ -97,6 +99,21 @@ test("message creation is blocked when the exchange participants have blocked ea
   const response = await request("POST", "/api/messages", { exchangeId, body: "hello" });
   assert.equal(response.status, 403);
   assert.match((await response.json()).error, /blocked/);
+});
+
+test("message read receipts are limited to the intended recipient", async () => {
+  authenticate();
+  let filter;
+  Message.findOneAndUpdate = async (query) => {
+    filter = query;
+    return null;
+  };
+  const invalidId = await request("PATCH", "/api/messages/not-an-id/read");
+  assert.equal(invalidId.status, 400);
+  const response = await request("PATCH", "/api/messages/68f000000000000000000006/read");
+  assert.equal(response.status, 404);
+  assert.equal(String(filter.recipient), userId);
+  assert.equal(filter.readAt, null, "only unread messages should be marked as read");
 });
 
 test("report creation rejects self-reporting and invalid reasons", async () => {
