@@ -78,10 +78,12 @@ test("profile update rejects oversized biography and headline", async () => {
   assert.equal(headline.status, 400);
 });
 
-test("profile update rejects malformed skill IDs", async () => {
+test("profile update rejects malformed skill selections", async () => {
   authenticate();
-  const response = await patchProfile({ skillsToTeach: ["not-a-valid-object-id"] });
-  assert.equal(response.status, 400);
+  for (const skillsToTeach of [["not-a-valid-object-id"], "", null, {}]) {
+    const response = await patchProfile({ skillsToTeach });
+    assert.equal(response.status, 400);
+  }
 });
 
 test("profile update cannot mark onboarding complete without teaching and learning skills", async () => {

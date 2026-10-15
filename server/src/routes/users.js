@@ -60,7 +60,7 @@ router.patch("/me", async (req, res, next) => {
       }
     }
     for (const key of ["skillsToTeach", "skillsToLearn"]) {
-      if (update[key] && (!Array.isArray(update[key]) || update[key].length > 30 || update[key].some((id) => !mongoose.isValidObjectId(id)))) {
+      if (Object.hasOwn(update, key) && (!Array.isArray(update[key]) || update[key].length > 30 || update[key].some((id) => !mongoose.isValidObjectId(id)))) {
         return res.status(400).json({ error: "Skill selections are invalid." });
       }
     }
