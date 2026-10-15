@@ -282,3 +282,23 @@ test("accepts a hostname or IP address as SMTP_HOST", () => {
     );
   }
 });
+
+test("rejects password reset URLs with leading or trailing whitespace", () => {
+  const mailConfig = {
+    SMTP_HOST: "smtp.example.com",
+    SMTP_PORT: "587",
+    SMTP_USER: "user",
+    SMTP_PASSWORD: "secret",
+    SMTP_FROM: "no-reply@example.com"
+  };
+
+  for (const resetUrl of [
+    " http://localhost:3000/reset-password",
+    "http://localhost:3000/reset-password "
+  ]) {
+    assert.throws(
+      () => validateEnvironment({ ...validBase, ...mailConfig, PASSWORD_RESET_URL: resetUrl }),
+      /must not contain leading or trailing whitespace/
+    );
+  }
+});
