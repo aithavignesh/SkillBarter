@@ -34,8 +34,9 @@ router.post("/request", limiter, async (req, res, next) => {
     try {
       await sendPasswordResetEmail(user.email, new URL(`?token=${rawToken}`, base).toString());
     } catch (mailError) {
+      // Keep the response identical for existing and unknown accounts to prevent email enumeration.
       await PasswordResetToken.deleteMany({ user: user._id });
-      return res.status(503).json({ error: "Password recovery delivery is temporarily unavailable." });
+      return res.status(200).json(genericResponse);
     }
     return res.status(200).json(genericResponse);
   } catch (error) {
