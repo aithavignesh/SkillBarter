@@ -247,3 +247,38 @@ test("rejects malformed client origin entries in a comma-separated list", () => 
     /CLIENT_ORIGIN must contain valid origin URLs/
   );
 });
+
+test("rejects SMTP_HOST values that contain a URL or path", () => {
+  for (const host of ["https://smtp.example.com", "smtp.example.com/path", "smtp example.com"]) {
+    assert.throws(
+      () => validateEnvironment({
+        ...validBase,
+        PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+        SMTP_HOST: host,
+        SMTP_PORT: "587",
+        SMTP_USER: "user",
+        SMTP_PASSWORD: "secret",
+        SMTP_FROM: "no-reply@example.com"
+      }),
+      /SMTP_HOST must be a hostname or IP address, not a URL/,
+      `expected invalid SMTP host ${host} to be rejected`
+    );
+  }
+});
+
+test("accepts a hostname or IP address as SMTP_HOST", () => {
+  for (const host of ["smtp.example.com", "localhost", "127.0.0.1"]) {
+    assert.deepEqual(
+      validateEnvironment({
+        ...validBase,
+        PASSWORD_RESET_URL: "http://localhost:3000/reset-password",
+        SMTP_HOST: host,
+        SMTP_PORT: "587",
+        SMTP_USER: "user",
+        SMTP_PASSWORD: "secret",
+        SMTP_FROM: "no-reply@example.com"
+      }),
+      { origins: ["http://localhost:3000"] }
+    );
+  }
+});
