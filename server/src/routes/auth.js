@@ -13,7 +13,7 @@ const usernamePattern = /^[a-zA-Z0-9_]{3,30}$/;
 function issueToken(user) {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret.length < 32) throw new Error("JWT_SECRET must contain at least 32 characters.");
-  return jwt.sign({ sub: user.id }, secret, { expiresIn: process.env.JWT_EXPIRES_IN || "1h", issuer: "skillbarter-api", audience: "skillbarter-web" });
+  return jwt.sign({ sub: user.id, tokenVersion: user.tokenVersion ?? 0 }, secret, { expiresIn: process.env.JWT_EXPIRES_IN || "1h", issuer: "skillbarter-api", audience: "skillbarter-web" });
 }
 
 function publicUser(user) {
