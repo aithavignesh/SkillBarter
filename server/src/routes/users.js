@@ -46,6 +46,21 @@ router.patch("/me", async (req, res, next) => {
         return res.status(400).json({ error: "Skill selections are invalid." });
       }
     }
+    if (Object.hasOwn(update, "onboardingCompleted") && typeof update.onboardingCompleted !== "boolean") {
+      return res.status(400).json({ error: "onboardingCompleted must be a boolean." });
+    }
+    if (Object.hasOwn(update, "phone") && typeof update.phone !== "string") {
+      return res.status(400).json({ error: "Phone number must be a string." });
+    }
+    if (update.onboardingCompleted === true) {
+      const current = await User.findById(req.user._id).select("skillsToTeach skillsToLearn");
+      if (!current) return res.status(404).json({ error: "Account not found." });
+      const finalTeach = update.skillsToTeach ?? current.skillsToTeach;
+      const finalLearn = update.skillsToLearn ?? current.skillsToLearn;
+      if (!finalTeach.length || !finalLearn.length) {
+        return res.status(400).json({ error: "Choose at least one skill to teach and one skill to learn before completing onboarding." });
+      }
+    }
     const skillIds = [...new Set([...(update.skillsToTeach || []), ...(update.skillsToLearn || [])].map(String))];
     if (skillIds.length) {
       const existingCount = await Skill.countDocuments({ _id: { $in: skillIds } });
