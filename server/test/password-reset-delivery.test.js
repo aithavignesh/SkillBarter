@@ -43,10 +43,10 @@ test("password reset email failure returns the generic response and removes the 
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   });
 
-  let deletedForUser = false;
+  let userTokenDeleteCalls = 0;
   User.findOne = () => ({ select: async () => ({ _id: "68f000000000000000000001", email: "person@example.com" }) });
   PasswordResetToken.deleteMany = async (filter) => {
-    if (filter.user === "68f000000000000000000001") deletedForUser = true;
+    if (filter.user === "68f000000000000000000001") userTokenDeleteCalls += 1;
     return { deletedCount: 1 };
   };
   PasswordResetToken.create = async () => ({});
@@ -65,5 +65,5 @@ test("password reset email failure returns the generic response and removes the 
   assert.deepEqual(await response.json(), {
     message: "If an account exists for that email, password reset instructions will be sent."
   });
-  assert.equal(deletedForUser, true);
+  assert.equal(userTokenDeleteCalls, 2, "old tokens and the failed-delivery token are both deleted");
 });
