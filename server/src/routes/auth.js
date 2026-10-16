@@ -39,7 +39,9 @@ function publicUser(user) {
     bio: user.bio,
     headline: user.headline,
     onboardingCompleted: user.onboardingCompleted,
-    isAdmin: user.isAdmin
+    isAdmin: user.isAdmin,
+    trustScore: user.trustScore ?? 0,
+    reviewsCount: user.reviewsCount ?? 0
   };
 }
 
