@@ -11,6 +11,10 @@ export function validateEnvironment(env = process.env) {
     throw new Error("JWT_SECRET must contain at least 32 characters.");
   }
 
+  if (env.OTP_SECRET && env.OTP_SECRET.length < MIN_SECRET_LENGTH) {
+    throw new Error("OTP_SECRET must contain at least 32 characters when configured.");
+  }
+
   const production = env.NODE_ENV === "production";
   if (production && !env.CLIENT_ORIGIN?.trim()) {
     throw new Error("CLIENT_ORIGIN must be configured in production.");
