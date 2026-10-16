@@ -5,7 +5,7 @@ This checklist distinguishes implemented code from configuration and migration w
 ## Implemented in the migration branch
 
 - Express authentication uses bcrypt password hashes and JWT signature, issuer, audience, expiry, active-account, and token-version checks.
-- Registration requires a short-lived signed phone-verification proof. Email/password and email OTP sign-in are implemented; email OTP codes are hashed, expire after five minutes, are limited to five attempts, and are consumed once.
+- Email/password registration/login and email OTP sign-in are implemented; email OTP codes are hashed, expire after five minutes, are limited to five attempts, and are consumed once. Phone OTP and phone-ownership verification are not yet ported to the migration branch.
 - Password reset tokens are single-use, stored as SHA-256 hashes, expire after 15 minutes, and increment the user's token version to revoke existing JWTs.
 - Logout increments token version server-side and clears the HttpOnly session cookie through the Next.js proxy.
 - Admin status changes revoke existing JWTs. Admin routes enforce authorization in Express.
@@ -14,7 +14,7 @@ This checklist distinguishes implemented code from configuration and migration w
 
 ## Remaining work before cutover
 
-- Configure Twilio Verify credentials and SMTP credentials in a staging environment; test actual SMS/email delivery, OTP expiry, rate limiting, and provider failures. The migration branch's email OTP flow is implemented; phone OTP provider integration is not yet complete.
+- Port the existing phone OTP request/verify and signup phone-ownership flow to Express, then configure its SMS provider in staging. Configure SMTP and test actual email OTP delivery, expiry, rate limiting, and provider failures.
 - Complete feature parity for real-time messaging/WebSockets, community comments/interactions, trust-score updates, analytics, and any remaining profile/location/privacy workflows.
 - Run full end-to-end tests for signup/login, page refresh/session expiry, onboarding, reciprocal matching, the two-user exchange lifecycle, messaging, mutual completion/reviews, reports/blocks, and admin/non-admin access.
 - Implement and review the InsForge/PostgreSQL-to-MongoDB data migration with a dry run, deterministic ID/reference mapping, source/target count reconciliation, dangling-reference checks, backup, and tested rollback.
