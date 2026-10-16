@@ -2,149 +2,74 @@
 
 > **Learn what you need. Teach what you know.**
 
-SkillBarter is a peer-learning and skill-exchange platform focused on **students and early-career learners**. Users create a profile, choose skills they can teach and skills they want to learn, discover compatible learners, propose exchanges, schedule sessions, complete learning exchanges, and leave verified reviews.
+SkillBarter is a peer-learning and skill-exchange platform for students and early-career learners. Users choose skills they can teach and want to learn, discover compatible peers, request exchanges, schedule sessions, message participants, complete exchanges, and leave reviews.
 
-## Current Product Journey
+## Required technology stack
 
-```
-LANDING
-  ↓
-SIGN UP / LOGIN
-  ↓
-ONBOARDING
-  ↓
-DISCOVER / MATCHES
-  ↓
-PROFILE
-  ↓
-EXCHANGE REQUEST
-  ↓
-ACCEPT
-  ↓
-SCHEDULE
-  ↓
-LEARNING SESSION
-  ↓
-MUTUAL COMPLETION
-  ↓
-REVIEW + TRUST UPDATE
-```
+This migration branch implements the target stack required for ongoing projects:
 
-## Core Features
+- **Frontend:** Next.js App Router, React, TypeScript
+- **Backend:** Node.js + Express.js REST API
+- **Database:** MongoDB with Mongoose
+- **Authentication:** bcrypt password hashing, signed JWTs, server-side authorization, and an HttpOnly session cookie set by the Next.js same-origin API proxy
+- **Hosting target:** Next.js frontend and Express API deployed as separate services
 
-- Student and early-career learner GTM positioning
-- Skill onboarding: skills offered and skills needed
-- Nearby learner discovery and compatibility matching
-- Learning-exchange proposals with participant authorization
-- Exchange lifecycle: pending → active → completed/cancelled
-- Scheduling and learning-session workspace
-- Real-time messaging and notifications
-- Community feed and post interactions
-- Reviews and trust-score calculation
-- Block/report and community-safety workflows
-- Admin user/report management
-- Privacy controls for location visibility
-- Password reset and authenticated sessions
-- Responsive desktop and mobile experience
+The existing `frontend/` (Vite/InsForge) and `backend/` (FastAPI) directories are retained as migration reference and rollback material. They are not evidence that the migration is complete, and they must not be deleted until the replacement is validated and the production cutover is explicitly approved.
 
-## Technology
-
-### Frontend
-
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router
-- Lucide React
-- InsForge SDK
-
-### Data & Authentication
-
-The current production frontend uses the InsForge SDK for authentication and database access. Application-level authorization checks are implemented in the frontend service layer, including participant checks for exchanges/messages/reviews and admin checks for administrative screens.
-
-**Production requirement:** database-level authorization/RLS must be verified in the connected InsForge project before treating the application as fully production-secure. The repository does not contain the InsForge database policy configuration.
-
-## Repository Structure
+## Repository structure
 
 ```
-frontend/
-  src/
-    components/       Shared UI and layout
-    context/          Auth, theme, notifications, socket state
-    lib/              InsForge client
-    pages/            Product screens
-    services/         API/data-access and business logic
-
-.github/
-  workflows/
-    frontend-ci.yml   TypeScript build + OTP test workflow
+next-app/             Next.js App Router frontend
+server/               Express API, Mongoose models, and security tests
+frontend/             Existing Vite app retained during migration
+backend/              Existing FastAPI app retained during migration
+migrations/            Historical SQL migrations from the existing system
+MIGRATION_MERN.md      Target architecture, setup, and remaining cutover work
+MIGRATION_AUDIT_NEXT.md Security and migration audit checklist
 ```
 
-## Local Development
+## Local development
 
-### Frontend
+Requirements: a supported Node.js LTS release and a local MongoDB instance or MongoDB Atlas database.
+
+1. Copy `server/.env.example` to `server/.env`. Set `MONGODB_URI` and a unique `JWT_SECRET` of at least 32 characters.
+2. Copy `next-app/.env.example` to `next-app/.env.local` and set `API_BASE_URL=http://localhost:4000`.
+3. From the repository root, install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. Start the frontend and API together:
+
+   ```bash
+   npm run dev
+   ```
+
+5. Verify the API at `http://localhost:4000/api/health` and the web app at `http://localhost:3000`.
+
+## Validation
 
 ```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Production build:
-
-```bash
+npm run check -w server
+npm run test -w server
 npm run build
 ```
 
-OTP authentication tests:
+GitHub Actions runs the MERN migration checks on pushes to `migration/next-express-mongodb`. Vercel status checks on the legacy project can fail due to account build-rate limits; those are separate from the MERN migration CI workflow.
 
-```bash
-node test-otp-auth.js
-```
+## Security requirements
 
-## CI
+- MongoDB and JWT secrets stay in server-side environment variables; never expose them through `NEXT_PUBLIC_*`.
+- The Next.js proxy stores the JWT in an HttpOnly cookie and forwards it to Express as a Bearer token.
+- Express verifies JWT signature, issuer, audience, expiry, account status, and token version.
+- Admin privileges are checked by middleware on the API, not trusted from client-side UI.
+- Authentication and sensitive write operations use rate limits; user input is validated before persistence.
+- Password-reset tokens are random, hashed at rest, single-use, and expire after 15 minutes. SMTP configuration is required for delivery.
+- Back up the existing source database before any migration. Do not run a production import or change production traffic until source/target counts, IDs, references, auth recovery, security tests, and rollback are verified.
 
-GitHub Actions validates the frontend on pushes and pull requests targeting `main`.
+## Migration status
 
-The workflow currently runs:
+The MERN implementation is a **staging foundation, not a production-ready replacement yet**. Feature parity still needs to be completed and validated, including phone/email OTP parity, full messaging and community interactions, trust/analytics behavior, and a repeatable source-to-MongoDB data migration. Production currently remains on the existing stack until the cutover is approved.
 
-1. Dependency installation
-2. OTP authentication unit tests
-3. TypeScript production build
-
-## Beta Launch
-
-The first release should be run as a controlled beta with a small cohort of real students rather than a broad acquisition push. The operational checklist and daily validation process are documented in [`docs/BETA_LAUNCH_RUNBOOK.md`](docs/BETA_LAUNCH_RUNBOOK.md).
-
-Before inviting users, verify production configuration, database-level RLS/authorization, authentication, and the two-user exchange journey. During beta, prioritize evidence from completed learning exchanges and user feedback over signup volume.
-
-## Deployment
-
-Vercel is configured to build the frontend from the `frontend` directory:
-
-- Build command: `cd frontend && npm run build`
-- Output directory: `frontend/dist`
-
-Production deployment should be followed by a live smoke test covering authentication, onboarding, discovery, exchange requests, messaging, scheduling, completion, reviews, and logout.
-
-## Security Notes
-
-- Authenticated identity is resolved from the InsForge auth session rather than trusting a client-controlled user ID.
-- Auth/session identifiers are kept in session storage.
-- User-created skill, profile, post, report, and review inputs have application-level validation.
-- Administrative actions require an authenticated admin profile.
-- Exchange and messaging operations verify the current user's role/participation.
-- Exact location data is not intended to be exposed as a public profile field.
-
-Application-level checks are **not a substitute for database-level RLS**. Configure and verify InsForge policies for every production table before launch.
-
-## GTM Direction
-
-The current GTM focus is:
-
-**Primary audience:** students and early-career learners.
-
-**Core value proposition:** users can learn practical skills from peers while teaching skills they already know.
-
-The main activation goal is to move a new user from onboarding to their **first relevant learning partner and first exchange request** with minimal friction.
+See [MIGRATION_MERN.md](MIGRATION_MERN.md) for architecture, API inventory, and remaining work.
