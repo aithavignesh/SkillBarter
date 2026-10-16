@@ -178,7 +178,7 @@ router.post("/otp/verify", otpVerifyLimiter, async (req, res, next) => {
     );
     if (!consumed) return res.status(401).json({ error: "The sign-in code is invalid or expired. Request a new code and try again." });
 
-    const user = await User.findOne({ email, isActive: true }).select("_id email username fullName phone avatarUrl bio headline onboardingCompleted isAdmin tokenVersion");
+    const user = await User.findOne({ email, isActive: true }).select("_id email username fullName phone avatarUrl bio headline onboardingCompleted isAdmin tokenVersion trustScore reviewsCount");
     if (!user) return res.status(401).json({ error: "The sign-in code is invalid or expired. Request a new code and try again." });
     return res.json({ token: issueToken(user), user: publicUser(user) });
   } catch (error) {
