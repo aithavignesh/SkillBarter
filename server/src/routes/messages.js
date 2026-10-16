@@ -6,6 +6,7 @@ import Block from "../models/Block.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { messageLimiter } from "../middleware/writeLimiters.js";
+import { recordAnalyticsEvent } from "../services/analytics.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -41,6 +42,7 @@ router.post("/", messageLimiter, async (req, res) => {
   const recipientId = requester ? exchange.recipient : exchange.requester;
   const message = await Message.create({ exchange: exchange._id, sender: req.user._id, recipient: recipientId, body: body.trim() });
   await Notification.create({ recipient: recipientId, actor: req.user._id, type: "message", title: "New exchange message", body: body.trim().slice(0, 180), resourceType: "message", resourceId: message._id });
+  await recordAnalyticsEvent({ actor: req.user._id, name: "message_sent", path: "/exchanges" });
   await message.populate("sender", "fullName username avatarUrl");
   return res.status(201).json({ message });
 });
