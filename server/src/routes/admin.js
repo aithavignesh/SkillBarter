@@ -2,6 +2,7 @@ import { Router } from "express";
 import User from "../models/User.js";
 import Exchange from "../models/Exchange.js";
 import Report from "../models/Report.js";
+import AnalyticsEvent from "../models/AnalyticsEvent.js";
 import { requireAuth, requireAdmin } from "../middleware/requireAuth.js";
 
 const router = Router();
@@ -14,6 +15,41 @@ router.get("/stats", async (_req, res) => {
     Report.countDocuments({ status: "open" })
   ]);
   return res.json({ stats: { users, activeUsers, exchanges, pendingExchanges, openReports } });
+});
+
+router.get("/analytics", async (_req, res) => {
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const match = { createdAt: { $gte: since } };
+  const [totalEvents, activeActors, byEvent, byDay, topPages] = await Promise.all([
+    AnalyticsEvent.countDocuments(match),
+    AnalyticsEvent.distinct("actor", match),
+    AnalyticsEvent.aggregate([
+      { $match: match },
+      { $group: { _id: "$name", count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]),
+    AnalyticsEvent.aggregate([
+      { $match: match },
+      { $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "UTC" } },
+        count: { $sum: 1 }
+      } },
+      { $sort: { _id: 1 } }
+    ]),
+    AnalyticsEvent.aggregate([
+      { $match: { ...match, name: "page_view", path: { $ne: "" } } },
+      { $group: { _id: "$path", views: { $sum: 1 } } },
+      { $sort: { views: -1 } },
+      { $limit: 10 }
+    ])
+  ]);
+  return res.json({
+    periodDays: 30,
+    summary: { totalEvents, activeUsers: activeActors.length },
+    eventsByType: byEvent.map((row) => ({ name: row._id, count: row.count })),
+    dailyEvents: byDay.map((row) => ({ date: row._id, count: row.count })),
+    topPages: topPages.map((row) => ({ path: row._id, views: row.views }))
+  });
 });
 
 router.get("/users", async (req, res) => {
