@@ -1,6 +1,7 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import Post from "../models/Post.js";
+import PostComment from "../models/PostComment.js";
 import Block from "../models/Block.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -31,6 +32,59 @@ router.post("/", postLimiter, async (req, res) => {
   const post = await Post.create({ author: req.user._id, content, tags });
   await post.populate("author", "fullName username avatarUrl");
   return res.status(201).json({ post });
+});
+
+router.get("/:id/comments", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "Invalid post ID." });
+  const post = await Post.findOne({ _id: req.params.id, isHidden: false }).select("author");
+  if (!post) return res.status(404).json({ error: "Post not found." });
+  const blocked = await Block.exists({ $or: [
+    { blocker: req.user._id, blocked: post.author },
+    { blocker: post.author, blocked: req.user._id }
+  ] });
+  if (blocked) return res.status(403).json({ error: "Comments are unavailable because one participant has blocked the other." });
+  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 100);
+  const comments = await PostComment.find({ post: post._id })
+    .populate("author", "fullName username avatarUrl")
+    .sort({ createdAt: 1 }).limit(limit);
+  return res.json({ comments });
+});
+
+router.post("/:id/comments", postLimiter, async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "Invalid post ID." });
+  const rawContent = typeof req.body?.content === "string" ? req.body.content : "";
+  const content = rawContent.trim();
+  if (!content || rawContent.length > 2000 || content.length > 2000) {
+    return res.status(400).json({ error: "Comment must contain 1–2000 characters." });
+  }
+  const post = await Post.findOne({ _id: req.params.id, isHidden: false }).select("author");
+  if (!post) return res.status(404).json({ error: "Post not found." });
+  const blocked = await Block.exists({ $or: [
+    { blocker: req.user._id, blocked: post.author },
+    { blocker: post.author, blocked: req.user._id }
+  ] });
+  if (blocked) return res.status(403).json({ error: "Comments are unavailable because one participant has blocked the other." });
+  const comment = await PostComment.create({ post: post._id, author: req.user._id, content });
+  await comment.populate("author", "fullName username avatarUrl");
+  if (String(post.author) !== String(req.user._id)) {
+    await Notification.create({
+      recipient: post.author, actor: req.user._id, type: "post_comment",
+      title: "New comment on your post", body: content.slice(0, 180),
+      resourceType: "post_comment", resourceId: comment._id
+    });
+  }
+  return res.status(201).json({ comment });
+});
+
+router.delete("/comments/:commentId", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.commentId)) return res.status(400).json({ error: "Invalid comment ID." });
+  const comment = await PostComment.findById(req.params.commentId);
+  if (!comment) return res.status(404).json({ error: "Comment not found." });
+  if (String(comment.author) !== String(req.user._id) && !req.user.isAdmin) {
+    return res.status(403).json({ error: "You cannot delete this comment." });
+  }
+  await comment.deleteOne();
+  return res.json({ success: true });
 });
 
 router.post("/:id/like", postLimiter, async (req, res) => {
