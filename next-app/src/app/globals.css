@@ -45,3 +45,26 @@
 .postComment .postDelete{margin-left:auto}
 .srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:520px){.commentComposer{align-items:stretch}.commentComposer .button{padding-inline:10px}.postCommentMeta{gap:7px}}
+
+
+.exchangeMessages{margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:12px;background:#fbfcf8}
+.exchangeMessagesHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.exchangeMessagesHeader h3{margin:0;font-family:Manrope,sans-serif;font-size:16px;letter-spacing:-.4px}
+.exchangeMessagesHeader span{font-size:10px;color:var(--muted)}
+.exchangeMessageList{display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto;padding:3px 2px 12px}
+.messageEmpty{font-size:12px;line-height:1.6;color:var(--muted);margin:8px 0}
+.exchangeChatMessage{max-width:90%;align-self:flex-start;padding:10px 12px;border:1px solid #e6eadf;border-radius:10px 10px 10px 3px;background:#fff;overflow-wrap:anywhere}
+.exchangeChatMessage.own{align-self:flex-end;background:#f0f7e4;border-color:#dce8c8;border-radius:10px 10px 3px 10px}
+.exchangeChatMeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.exchangeChatMeta strong{font-size:10px;color:var(--ink)}
+.exchangeChatMeta time{font-size:9px;color:var(--muted)}
+.exchangeChatMessage>p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:7px 0 0}
+.messageReadReceipt{display:block;text-align:right;font-size:9px;color:#657d40;margin-top:5px}
+.exchangeMessageComposer{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.exchangeMessageComposer textarea{resize:vertical;width:100%;min-height:58px;border:1px solid #dfe5d8;border-radius:8px;padding:10px 11px;background:#fff;color:var(--ink);font:inherit;font-size:12px;line-height:1.6}
+.exchangeMessageComposer textarea:focus{outline:2px solid #c7f36a;outline-offset:1px}
+.exchangeMessageComposerFooter{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.exchangeMessageComposerFooter span{font-size:10px;color:var(--muted)}
+.exchangeMessageComposerFooter .button{padding:10px 13px;gap:8px;border:0;cursor:pointer;font-family:inherit}
+.exchangeMessageComposerFooter .button:disabled{opacity:.55;cursor:wait}
+@media(max-width:520px){.exchangeMessages{padding:12px}.exchangeChatMessage{max-width:100%}.exchangeMessagesHeader{align-items:flex-start;flex-direction:column;gap:4px}}
