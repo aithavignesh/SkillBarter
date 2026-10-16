@@ -18,8 +18,8 @@ const usernamePattern = /^[a-zA-Z0-9_]{3,30}$/;
 
 function normalizeE164Phone(value) {
   if (typeof value !== "string") return "";
-  const phone = value.trim().replace(/[\\s().-]/g, "");
-  return /^\\+[1-9]\\d{7,14}$/.test(phone) ? phone : "";
+  const phone = value.trim().replace(/[\s().-]/g, "");
+  return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : "";
 }
 
 function issueToken(user) {
@@ -215,7 +215,7 @@ router.post("/phone-otp/verify", otpVerifyLimiter, async (req, res, next) => {
     const phone = normalizeE164Phone(req.body?.phone);
     const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
     const purpose = req.body?.purpose === "register" ? "register" : "login";
-    if (!phone || !/^\\d{6}$/.test(code)) {
+    if (!phone || !/^\d{6}$/.test(code)) {
       return res.status(400).json({ error: "Enter a valid mobile number and 6-digit SMS code." });
     }
     if (!isPhoneOtpConfigured()) return res.status(503).json({ error: "SMS OTP is not configured on the server." });
