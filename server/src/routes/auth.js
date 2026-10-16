@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import EmailOtpChallenge from "../models/EmailOtpChallenge.js";
 import { sendEmailLoginOtp } from "../services/authEmail.js";
 import { emailOtpMatches, generateEmailOtp, hashEmailOtp } from "../utils/emailOtp.js";
+import { isPhoneOtpConfigured, requestPhoneVerification, checkPhoneVerification } from "../services/phoneOtp.js";
 
 const router = Router();
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { error: "Too many authentication attempts. Please try again later." } });
@@ -14,6 +15,12 @@ const otpRequestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standa
 const otpVerifyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { error: "Too many verification attempts. Please request a new code later." } });
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const usernamePattern = /^[a-zA-Z0-9_]{3,30}$/;
+
+function normalizeE164Phone(value) {
+  if (typeof value !== "string") return "";
+  const phone = value.trim().replace(/[\\s().-]/g, "");
+  return /^\\+[1-9]\\d{7,14}$/.test(phone) ? phone : "";
+}
 
 function issueToken(user) {
   const secret = process.env.JWT_SECRET;
@@ -48,14 +55,35 @@ router.post("/register", authLimiter, async (req, res, next) => {
     if (!emailPattern.test(email) || email.length > 254) return res.status(400).json({ error: "Enter a valid email address." });
     if (password.length < 10 || password.length > 128) return res.status(400).json({ error: "Password must be between 10 and 128 characters." });
 
-    const existing = await User.findOne({ $or: [{ email }, { username }] }).select("_id email username");
-    if (existing) return res.status(409).json({ error: existing.email === email ? "An account with this email already exists." : "This username is already taken." });
+    const phone = normalizeE164Phone(req.body?.phone);
+    const phoneVerificationToken = typeof req.body?.phoneVerificationToken === "string" ? req.body.phoneVerificationToken : "";
+    if (!phone) return res.status(400).json({ error: "Enter a valid mobile number in international format, such as +919876543210." });
+
+    let phoneProof;
+    try {
+      phoneProof = jwt.verify(phoneVerificationToken, process.env.JWT_SECRET, {
+        issuer: "skillbarter-api",
+        audience: "skillbarter-web"
+      });
+    } catch {
+      phoneProof = null;
+    }
+    if (phoneProof?.purpose !== "phone_registration" || phoneProof?.phone !== phone) {
+      return res.status(403).json({ error: "Verify your mobile number before creating an account." });
+    }
+
+    const existing = await User.findOne({ $or: [{ email }, { username }, { phone }] }).select("_id email username phone");
+    if (existing) {
+      if (existing.email === email) return res.status(409).json({ error: "An account with this email already exists." });
+      if (existing.username === username) return res.status(409).json({ error: "This username is already taken." });
+      return res.status(409).json({ error: "This mobile number is already registered." });
+    }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ fullName, username, email, passwordHash });
+    const user = await User.create({ fullName, username, email, phone, passwordHash });
     return res.status(201).json({ token: issueToken(user), user: publicUser(user) });
   } catch (error) {
-    if (error?.code === 11000) return res.status(409).json({ error: "Email or username is already registered." });
+    if (error?.code === 11000) return res.status(409).json({ error: "Email, username, or mobile number is already registered." });
     return next(error);
   }
 });
@@ -150,6 +178,69 @@ router.post("/otp/verify", otpVerifyLimiter, async (req, res, next) => {
 
     const user = await User.findOne({ email, isActive: true }).select("_id email username fullName phone avatarUrl bio headline onboardingCompleted isAdmin tokenVersion");
     if (!user) return res.status(401).json({ error: "The sign-in code is invalid or expired. Request a new code and try again." });
+    return res.json({ token: issueToken(user), user: publicUser(user) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/phone-otp/request", otpRequestLimiter, async (req, res, next) => {
+  try {
+    const phone = normalizeE164Phone(req.body?.phone);
+    const purpose = req.body?.purpose === "register" ? "register" : "login";
+    if (!phone) return res.status(400).json({ error: "Enter a valid mobile number in international format, such as +919876543210." });
+    if (!isPhoneOtpConfigured()) return res.status(503).json({ error: "SMS OTP is not configured on the server." });
+
+    if (purpose === "register") {
+      const existing = await User.findOne({ phone }).select("_id");
+      if (existing) return res.status(409).json({ error: "This mobile number is already registered." });
+    } else {
+      const user = await User.findOne({ phone, isActive: true }).select("_id");
+      if (!user) return res.json({ message: "If an active account is linked to that number, a verification code will be sent." });
+    }
+
+    try {
+      await requestPhoneVerification(phone);
+    } catch {
+      return res.status(503).json({ error: "SMS OTP delivery is temporarily unavailable." });
+    }
+    return res.json({ message: "If the mobile number can be used, a verification code has been sent." });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/phone-otp/verify", otpVerifyLimiter, async (req, res, next) => {
+  try {
+    const phone = normalizeE164Phone(req.body?.phone);
+    const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+    const purpose = req.body?.purpose === "register" ? "register" : "login";
+    if (!phone || !/^\\d{6}$/.test(code)) {
+      return res.status(400).json({ error: "Enter a valid mobile number and 6-digit SMS code." });
+    }
+    if (!isPhoneOtpConfigured()) return res.status(503).json({ error: "SMS OTP is not configured on the server." });
+
+    let approved = false;
+    try {
+      approved = await checkPhoneVerification(phone, code);
+    } catch {
+      return res.status(503).json({ error: "SMS verification is temporarily unavailable." });
+    }
+    if (!approved) return res.status(401).json({ error: "The SMS code is invalid or expired. Request a new code and try again." });
+
+    if (purpose === "register") {
+      const existing = await User.findOne({ phone }).select("_id");
+      if (existing) return res.status(409).json({ error: "This mobile number is already registered." });
+      const phoneVerificationToken = jwt.sign(
+        { purpose: "phone_registration", phone },
+        process.env.JWT_SECRET,
+        { expiresIn: "10m", issuer: "skillbarter-api", audience: "skillbarter-web" }
+      );
+      return res.json({ verified: true, phone, phoneVerificationToken });
+    }
+
+    const user = await User.findOne({ phone, isActive: true }).select("_id email username fullName phone avatarUrl bio headline onboardingCompleted isAdmin tokenVersion");
+    if (!user) return res.status(401).json({ error: "The SMS code is invalid or expired. Request a new code and try again." });
     return res.json({ token: issueToken(user), user: publicUser(user) });
   } catch (error) {
     return next(error);
