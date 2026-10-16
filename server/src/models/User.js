@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema({
   isAdmin: { type: Boolean, default: false }
 }, { timestamps: true, versionKey: false });
 
+userSchema.index({ phone: 1 }, { unique: true, partialFilterExpression: { phone: { $gt: "" } } });
 userSchema.index({ fullName: "text", username: "text", headline: "text", bio: "text" });
 
 export default mongoose.models.User || mongoose.model("User", userSchema);
