@@ -45,6 +45,22 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     return response;
   }
 
+  if (apiPath === "auth/phone-otp/verify") {
+    const data = await upstream.json().catch(() => ({}));
+    if (!upstream.ok || typeof data?.token !== "string" || !data.token) {
+      return NextResponse.json(data, { status: upstream.status });
+    }
+    const response = NextResponse.json({ user: data.user }, { status: upstream.status });
+    response.cookies.set(COOKIE_NAME, data.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60
+    });
+    return response;
+  }
+
   if (apiPath === "auth/login" || apiPath === "auth/register" || apiPath === "auth/otp/verify") {
     const data = await upstream.json().catch(() => ({}));
     if (!upstream.ok) return NextResponse.json(data, { status: upstream.status });
