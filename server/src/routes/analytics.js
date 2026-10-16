@@ -11,10 +11,7 @@ const eventLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many analytics events. Please try again shortly." }
 });
-const eventNames = new Set([
-  "page_view", "exchange_view", "message_sent", "exchange_request_created",
-  "exchange_status_changed", "review_submitted", "community_post_created", "comment_created"
-]);
+const eventNames = new Set(["page_view"]);
 const allowedPaths = new Set([
   "/", "/dashboard", "/onboarding", "/matches", "/exchanges", "/notifications",
   "/community", "/profile", "/reviews", "/settings", "/admin"
