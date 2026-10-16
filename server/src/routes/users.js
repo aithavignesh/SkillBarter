@@ -18,6 +18,8 @@ const safeProfile = (user) => ({
   skillsToTeach: user.skillsToTeach,
   skillsToLearn: user.skillsToLearn,
   onboardingCompleted: user.onboardingCompleted,
+  trustScore: user.trustScore ?? 0,
+  reviewsCount: user.reviewsCount ?? 0,
   createdAt: user.createdAt
 });
 
@@ -115,7 +117,7 @@ router.get("/", async (req, res) => {
   const excludedIds = blocks.map((block) => String(block.blocker) === String(req.user._id) ? block.blocked : block.blocker);
   const filter = { isActive: true, _id: { $ne: req.user._id, $nin: excludedIds } };
   if (query) filter.$text = { $search: query };
-  const users = await User.find(filter).select("fullName username avatarUrl bio headline skillsToTeach skillsToLearn onboardingCompleted createdAt")
+  const users = await User.find(filter).select("fullName username avatarUrl bio headline skillsToTeach skillsToLearn onboardingCompleted trustScore reviewsCount createdAt")
     .populate("skillsToTeach", "name category").populate("skillsToLearn", "name category").limit(limit).sort({ createdAt: -1 });
   return res.json({ users: users.map(safeProfile) });
 });
