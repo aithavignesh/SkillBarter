@@ -15,6 +15,7 @@ import blockRoutes from "./routes/blocks.js";
 import postRoutes from "./routes/posts.js";
 import notificationRoutes from "./routes/notifications.js";
 import matchRoutes from "./routes/matches.js";
+import analyticsRoutes from "./routes/analytics.js";
 
 const app = express();
 const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000")
@@ -44,6 +45,7 @@ app.use("/api/blocks", blockRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/matches", matchRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: "Route not found." }));
 app.use((error, _req, res, _next) => {
