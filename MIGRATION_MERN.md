@@ -5,24 +5,25 @@
 - `next-app/`: Next.js App Router frontend.
 - `server/`: Node.js + Express REST API.
 - MongoDB: Mongoose models; only the API server connects to MongoDB.
-- The existing `frontend/` (Vite + InsForge) and current production deployment are intentionally untouched while the replacement is built and validated.
+- `frontend/` (Vite/InsForge) and `backend/` (FastAPI) remain as rollback/reference copies. Production stays on the existing stack until a separately approved cutover.
 
-## Implemented foundation in this branch
+## Implemented on the migration branch
 
-- Responsive Next.js landing page, signup/login screens, skill-selection onboarding, account dashboard, reciprocal match discovery, exchange lifecycle/scheduling, review submission, community feed, notifications page, and admin dashboard for reports, users, and exchanges.
-- Same-origin Next.js API proxy that stores the JWT in an HttpOnly cookie and forwards it to Express as a Bearer token; the JWT is not placed in browser local storage.
-- Express API with Helmet, explicit CORS allow-list, JSON body-size limit, authentication rate limiting, and health endpoint.
-- MongoDB connection module and initial User, Skill, Exchange, Message, Review, Report, and Block models.
-- Email/password registration and login with bcrypt password hashing, JWT authentication with issuer/audience checks, a current-user endpoint, and protected API middleware.
-- Initial password recovery endpoints: `POST /api/auth/password-reset/request` and `POST /api/auth/password-reset/confirm`. Reset tokens are random, stored as SHA-256 hashes, expire after 15 minutes, and are rate-limited. SMTP delivery must be configured before use.
-- APIs for profiles, skill catalog, onboarding validation, reciprocal matching, exchange requests and status transitions, participant-only messages, reviews after mutual exchange completion, user/exchange reports, block/unblock, community posts and likes, notifications, and admin statistics/users/exchanges/reports.
-- Role checks run on the Express server; registration does not allow a user to self-assign admin privileges.
-- Environment-variable templates; no credentials are committed.
+- Next.js pages for landing, signup/login, onboarding, dashboard, matching, exchanges, community posts, notifications, reviews, password recovery, and admin user/report/exchange views.
+- Same-origin Next.js API proxy stores JWTs in an HttpOnly cookie; the browser does not receive the raw JWT in local storage.
+- Express API with Helmet, explicit CORS allow-list, JSON body-size limit, rate limits, and health endpoint.
+- MongoDB/Mongoose models and API routes for users, skills, exchanges, matches, messages, reviews, reports, blocks, posts, notifications, and admin functions.
+- Email/password registration and login with bcrypt hashing and signed JWTs using issuer/audience checks.
+- Email OTP sign-in: six-digit random codes, HMAC-hashed code storage, five-minute expiry, five-attempt limit, one-time consumption, rate-limited request/verification endpoints, and SMTP delivery. Configure SMTP before enabling this flow.
+- Password reset uses random one-time tokens stored as SHA-256 hashes, 15-minute expiry, rate limiting, and token-version increment to revoke existing JWTs after a password reset.
+- Logout revokes the current token version server-side and clears the HttpOnly cookie. Admin account status changes also revoke prior tokens.
+- Server-side role and participant checks are used for admin actions, exchange workflows, messaging, reviews, reports, and blocks.
+- GitHub Actions runs server syntax checks, API/security tests, and the Next.js production build.
 
 ## Local setup
 
-1. Install a supported Node.js LTS version and MongoDB locally, or provision a MongoDB Atlas database.
-2. Copy `server/.env.example` to `server/.env`. Set `MONGODB_URI` and generate a unique `JWT_SECRET` of at least 32 characters.
+1. Install a supported Node.js LTS release and MongoDB locally, or provision MongoDB Atlas.
+2. Copy `server/.env.example` to `server/.env`. Set `MONGODB_URI`, a unique `JWT_SECRET` of at least 32 characters, and a separate `OTP_SECRET` of at least 32 characters. Configure SMTP values to enable email OTP and password recovery.
 3. Copy `next-app/.env.example` to `next-app/.env.local` and set `API_BASE_URL=http://localhost:4000`.
 4. From the repository root, run `npm install`.
 5. Start both services with `npm run dev`. Next.js uses port 3000 and Express uses port 4000.
@@ -30,30 +31,30 @@
 
 ## API foundation
 
-- `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
-- `GET/PATCH /api/users/me`, `GET /api/users`, `GET /api/users/:id`
-- `GET/POST /api/skills`, `DELETE /api/skills/:id`
-- `GET/POST /api/exchanges`, `PATCH /api/exchanges/:id/status`
-- `GET /api/matches` for reciprocal skill suggestions
-- `GET/POST /api/posts`, `POST /api/posts/:id/like`, `DELETE /api/posts/:id`
-- `GET /api/notifications`, `PATCH /api/notifications/read-all`, `PATCH /api/notifications/:id/read`, `DELETE /api/notifications/:id`
-- `GET /api/messages/exchange/:exchangeId`, `POST /api/messages`, `PATCH /api/messages/:id/read`
-- `GET /api/reviews/user/:userId`, `POST /api/reviews`
-- `POST /api/reports`
-- `GET /api/blocks`, `POST /api/blocks/:userId`, `DELETE /api/blocks/:userId`
-- Admin-only: `GET /api/admin/stats`, `GET /api/admin/users`, `PATCH /api/admin/users/:id/status`, `GET /api/admin/exchanges`, `GET /api/admin/reports`, `PATCH /api/admin/reports/:id`
+- Auth: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/otp/request`, `POST /api/auth/otp/verify`, `POST /api/auth/logout`, `GET /api/auth/me`
+- Recovery: `POST /api/auth/password-reset/request`, `POST /api/auth/password-reset/confirm`
+- Profiles: `GET/PATCH /api/users/me`, `GET /api/users`, `GET /api/users/:id`
+- Skills: `GET/POST /api/skills`, `DELETE /api/skills/:id`
+- Exchanges: `GET/POST /api/exchanges`, `PATCH /api/exchanges/:id/status`
+- Matching: `GET /api/matches`
+- Community: `GET/POST /api/posts`, `POST /api/posts/:id/like`, `DELETE /api/posts/:id`
+- Notifications: `GET /api/notifications`, `PATCH /api/notifications/read-all`, `PATCH /api/notifications/:id/read`, `DELETE /api/notifications/:id`
+- Messaging: `GET /api/messages/exchange/:exchangeId`, `POST /api/messages`, `PATCH /api/messages/:id/read`
+- Reviews: `GET /api/reviews/user/:userId`, `POST /api/reviews`
+- Safety: `POST /api/reports`, `GET /api/blocks`, `POST /api/blocks/:userId`, `DELETE /api/blocks/:userId`
+- Admin-only: stats, users/status, exchanges, and report moderation endpoints under `/api/admin`
 
-All API requests from the Next.js app go through the same-origin proxy. Configure `API_BASE_URL` only in the Next.js server environment; do not expose MongoDB credentials or JWT secrets in `NEXT_PUBLIC_*` variables.
+All browser API requests go through the same-origin proxy. Configure `API_BASE_URL` only in the Next.js server environment; never expose MongoDB credentials, JWT secrets, or OTP secrets through `NEXT_PUBLIC_*`.
 
 ## Remaining work before production cutover
 
-- Migrate phone OTP and email OTP authentication and delivery configuration; finish password-recovery UI and test SMTP delivery, session expiry/revocation, and account recovery. The initial branch currently supports email/password only.
-- Complete real-time messaging/WebSockets, community comments/interactions, trust-score updates, full review/moderation flows, analytics, and remaining admin capabilities. Scheduling, reciprocal match suggestions, basic community posts, notifications, and review submission now have initial implementations.
-- Add integration and end-to-end tests, request-schema validation, rate limits for sensitive non-auth endpoints, audit logging, and security review. Confirm the block policy is applied consistently to every feature.
-- Build a reviewed data migration from the current InsForge/PostgreSQL system into MongoDB. Map user IDs and references, preserve required history, compare record counts, and validate relationships before any cutover.
-- Configure production secrets, MongoDB network restrictions/backups, deployment services, domains, monitoring, and a tested rollback plan.
-- Run two-user journeys and admin/non-admin authorization tests on a staging environment before production approval.
+- Port the existing phone OTP request/verify and signup phone-ownership verification to the Express/Mongo stack. The Next.js migration currently supports email/password and email OTP sign-in; phone OTP is not yet implemented in this branch.
+- Complete feature parity for real-time messaging/WebSockets, community comments and interactions, trust-score updates, analytics events, and any legacy profile/location/privacy flows not yet represented in the Next.js pages.
+- Add and execute end-to-end tests for signup/login, OTP delivery, refresh/session expiry, onboarding, matching, two-user exchange lifecycle, messaging, review eligibility, report/block behavior, and admin vs. non-admin access.
+- Implement and review the InsForge/PostgreSQL-to-MongoDB data migration. It must have a dry run, deterministic ID/reference mapping, source/target record-count reconciliation, relationship validation, backup, and tested rollback. Do not run a production import without source access and explicit approval.
+- Configure staging and production secrets, MongoDB network restrictions/backups, service deployment, domains, monitoring, and a tested rollback plan.
+- Run staging smoke tests and verify all source/target records and references before production approval.
 
 ## Safety rule
 
-This branch is a migration foundation, **not a production-ready replacement**. Do not merge, deploy, remove, or overwrite the existing production app or InsForge data until feature migration, data validation, security review, and acceptance tests pass.
+This branch remains a **migration foundation, not a production-ready replacement**. The existing production app and InsForge data must remain untouched until feature migration, data validation, security review, and acceptance tests pass. No production merge, cutover, or deployment is part of this work.
