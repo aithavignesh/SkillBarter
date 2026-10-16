@@ -8,6 +8,7 @@ import { validateScheduledAt } from "../utils/security.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { exchangeLimiter } from "../middleware/writeLimiters.js";
+import { recordAnalyticsEvent } from "../services/analytics.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -48,6 +49,7 @@ router.post("/", exchangeLimiter, async (req, res) => {
     skillOffered: offered._id, skillRequested: requested._id, message: message.trim()
   });
   await Notification.create({ recipient: recipient._id, actor: req.user._id, type: "exchange_request", title: "New exchange request", body: `${req.user.fullName} wants to exchange ${offered.name} for ${requested.name}.`, resourceType: "exchange", resourceId: exchange._id });
+  await recordAnalyticsEvent({ actor: req.user._id, name: "exchange_request_created", path: "/matches" });
   await exchange.populate([
     { path: "requester", select: "fullName username avatarUrl" },
     { path: "recipient", select: "fullName username avatarUrl" },
