@@ -6,6 +6,7 @@ import User from "../models/User.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { reviewLimiter } from "../middleware/writeLimiters.js";
+import { recordAnalyticsEvent } from "../services/analytics.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -45,6 +46,7 @@ router.post("/", reviewLimiter, async (req, res) => {
       }
     }, { runValidators: true });
     await Notification.create({ recipient: reviewee, actor: req.user._id, type: "review", title: "You received a review", body: `A participant left you a ${rating}-star review.`, resourceType: "review", resourceId: review._id });
+    await recordAnalyticsEvent({ actor: req.user._id, name: "review_submitted", path: "/reviews" });
     await review.populate("reviewer", "fullName username avatarUrl");
     return res.status(201).json({ review });
   } catch (error) {
