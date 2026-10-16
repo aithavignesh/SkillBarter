@@ -12,13 +12,15 @@
 - Next.js pages for landing, signup/login, onboarding, dashboard, matching, exchanges, community posts, notifications, reviews, password recovery, and admin user/report/exchange views.
 - Same-origin Next.js API proxy stores JWTs in an HttpOnly cookie; the browser does not receive the raw JWT in local storage.
 - Express API with Helmet, explicit CORS allow-list, JSON body-size limit, rate limits, and health endpoint.
-- MongoDB/Mongoose models and API routes for users, skills, exchanges, matches, messages, reviews, reports, blocks, posts, notifications, and admin functions.
+- MongoDB/Mongoose models and API routes for users, skills, exchanges, matches, messages, reviews, reports, blocks, posts/comments, notifications, analytics, and admin functions.
 - Email/password registration and login with bcrypt hashing and signed JWTs using issuer/audience checks.
 - Email OTP sign-in: six-digit random codes, HMAC-hashed code storage, five-minute expiry, five-attempt limit, one-time consumption, rate-limited request/verification endpoints, and SMTP delivery. Configure SMTP before enabling this flow.
 - Phone OTP login and signup phone ownership verification through Twilio Verify, with E.164 validation, rate limits, provider configuration checks, phone-login session issuance, and a 10-minute signed registration proof. Configure Twilio Verify credentials before enabling this flow.
 - Password reset uses random one-time tokens stored as SHA-256 hashes, 15-minute expiry, rate limiting, and token-version increment to revoke existing JWTs after a password reset.
 - Logout revokes the current token version server-side and clears the HttpOnly cookie. Admin account status changes also revoke prior tokens.
 - Server-side role and participant checks are used for admin actions, exchange workflows, messaging, reviews, reports, and blocks.
+- Exchange conversations use polling-based refresh with read receipts; WebSockets are not implemented yet.
+- Authenticated page views and server-side business events feed an admin-only 30-day analytics summary. Analytics is best-effort and must not interrupt core user actions.
 - GitHub Actions runs server syntax checks, API/security tests, and the Next.js production build.
 
 ## Local setup
@@ -50,9 +52,9 @@ All browser API requests go through the same-origin proxy. Configure `API_BASE_U
 ## Remaining work before production cutover
 
 - Configure Twilio Verify and SMTP credentials in staging and execute actual SMS/email delivery, expiry, rate-limit, and provider-failure tests. Provider delivery has not been exercised without credentials.
-- Complete feature parity for real-time messaging/WebSockets, community comments and interactions, trust-score updates, analytics events, and any legacy profile/location/privacy flows not yet represented in the Next.js pages.
+- Complete feature parity for WebSockets and any legacy profile/location/privacy flows not yet represented in the Next.js pages. Community comments, review trust-score updates, and basic analytics tracking are implemented on the migration branch; staging acceptance tests remain outstanding.
 - Add and execute end-to-end tests for signup/login, OTP delivery, refresh/session expiry, onboarding, matching, two-user exchange lifecycle, messaging, review eligibility, report/block behavior, and admin vs. non-admin access.
-- Implement and review the InsForge/PostgreSQL-to-MongoDB data migration. It must have a dry run, deterministic ID/reference mapping, source/target record-count reconciliation, relationship validation, backup, and tested rollback. Do not run a production import without source access and explicit approval.
+- Implement and review the InsForge/PostgreSQL-to-MongoDB data migration. The safety phases, preliminary table mapping, blockers, and acceptance gates are documented in [MIGRATION_RUNBOOK.md](MIGRATION_RUNBOOK.md). The runbook is a planning contract only; no importer or production import has been run. Require a dry run, deterministic ID/reference mapping, source/target record-count reconciliation, relationship validation, backup, and tested rollback. Do not run a production import without source access and explicit approval.
 - Configure staging and production secrets, MongoDB network restrictions/backups, service deployment, domains, monitoring, and a tested rollback plan.
 - Run staging smoke tests and verify all source/target records and references before production approval.
 
