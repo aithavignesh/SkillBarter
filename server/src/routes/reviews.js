@@ -2,6 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import Exchange from "../models/Exchange.js";
 import Review from "../models/Review.js";
+import User from "../models/User.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { reviewLimiter } from "../middleware/writeLimiters.js";
@@ -33,6 +34,16 @@ router.post("/", reviewLimiter, async (req, res) => {
   const reviewee = isRequester ? exchange.recipient : exchange.requester;
   try {
     const review = await Review.create({ exchange: exchange._id, reviewer: req.user._id, reviewee, rating, comment: comment.trim() });
+    const [summary] = await Review.aggregate([
+      { $match: { reviewee: new mongoose.Types.ObjectId(String(reviewee)) } },
+      { $group: { _id: null, averageRating: { $avg: "$rating" }, count: { $sum: 1 } } }
+    ]);
+    await User.findByIdAndUpdate(reviewee, {
+      $set: {
+        reviewsCount: summary?.count ?? 0,
+        trustScore: summary ? Math.round((summary.averageRating / 5) * 100) : 0
+      }
+    }, { runValidators: true });
     await Notification.create({ recipient: reviewee, actor: req.user._id, type: "review", title: "You received a review", body: `A participant left you a ${rating}-star review.`, resourceType: "review", resourceId: review._id });
     await review.populate("reviewer", "fullName username avatarUrl");
     return res.status(201).json({ review });
