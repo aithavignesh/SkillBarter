@@ -15,6 +15,19 @@ export function validateEnvironment(env = process.env) {
     throw new Error("OTP_SECRET must contain at least 32 characters when configured.");
   }
 
+  const twilioKeys = ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_VERIFY_SERVICE_SID"];
+  const hasTwilioConfig = twilioKeys.some((key) => Boolean(env[key]?.trim()));
+  if (hasTwilioConfig) {
+    if (twilioKeys.some((key) => !env[key]?.trim())) {
+      throw new Error("TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_VERIFY_SERVICE_SID must be configured together.");
+    }
+    if (!/^AC[a-f0-9]{32}$/i.test(env.TWILIO_ACCOUNT_SID) ||
+        !/^VA[a-f0-9]{32}$/i.test(env.TWILIO_VERIFY_SERVICE_SID) ||
+        env.TWILIO_AUTH_TOKEN.length < 16) {
+      throw new Error("Twilio Verify credentials have an invalid format.");
+    }
+  }
+
   const production = env.NODE_ENV === "production";
   if (production && !env.CLIENT_ORIGIN?.trim()) {
     throw new Error("CLIENT_ORIGIN must be configured in production.");
