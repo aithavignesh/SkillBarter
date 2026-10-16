@@ -13,7 +13,7 @@ Status: **planning and validation contract only**. This document does not import
 
 ## Required migration phases
 
-1. **Inventory:** record source table names, columns, types, nullability, defaults, primary keys, foreign keys, indexes, triggers, RLS policies, row counts, and update timestamps from the actual source. Save a schema snapshot with the migration run.
+1. **Inventory:** run the read-only queries in [`migrations/postgres-source-inventory.sql`](migrations/postgres-source-inventory.sql) against a read-only source connection or a disposable export. Record source table names, columns, types, nullability, defaults, primary keys, foreign keys, indexes, triggers, RLS policies, exact row counts, and update timestamps from the actual source. The script includes exact counts for the currently known application tables; revise it if the live inventory differs. Save a schema snapshot with the migration run.
 2. **Export:** create a consistent, read-only export. Record export time, source schema version, per-table row counts, and SHA-256 checksums for each export file. Preserve source IDs and timestamps.
 3. **Mapping review:** approve a field-by-field mapping before writing the importer. Any source field without a destination must be explicitly classified as migrated, transformed, intentionally excluded with a reason, or blocked pending product decision.
 4. **Dry run:** import into an isolated, disposable MongoDB database using deterministic ID conversion and idempotent upserts. Do not send notifications, SMS, email, analytics events, or other external side effects during migration.
