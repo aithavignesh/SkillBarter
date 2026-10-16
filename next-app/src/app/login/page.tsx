@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import AuthShell from "@/components/AuthShell";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -60,22 +61,26 @@ export default function LoginPage() {
     setError("");
   }
 
-  return <main className="authPage">
-    <Link className="brand authBrand" href="/">skill<span>barter</span></Link>
-    <section className="authCard">
-      <p className="eyebrow">Welcome back</p>
-      <h1>Pick up where<br />you left off.</h1>
-      <p className="authIntro">Sign in to continue sharing skills and learning together.</p>
+  return (
+    <AuthShell
+      eyebrow="Welcome back"
+      title={<>Pick up where<br />you left off.</>}
+      description="Sign in to continue sharing skills and learning together."
+      footer={<>
+        <button type="button" className="textLink" onClick={switchMode}>{mode === "password" ? "Use email OTP instead" : mode === "emailOtp" ? "Use phone OTP instead" : "Use password instead"}</button>
+        {" · "}New to SkillBarter? <Link href="/signup">Create an account</Link>
+      </>}
+    >
       <form onSubmit={submit} className="authForm">
         {mode === "phoneOtp" ? (
-          <label>Mobile number<input type="tel" autoComplete="tel" required pattern="\+[1-9][0-9]{7,14}" value={phone} onChange={(e) => { setPhone(e.target.value); setOtpSent(false); setOtpCode(""); }} placeholder="+919876543210" /></label>
+          <label>Mobile number<input type="tel" autoComplete="tel" required pattern="\\+[1-9][0-9]{7,14}" value={phone} onChange={(e) => { setPhone(e.target.value); setOtpSent(false); setOtpCode(""); }} placeholder="+919876543210" /></label>
         ) : (
           <label>Email address<input type="email" autoComplete="email" required maxLength={254} value={email} onChange={(e) => { setEmail(e.target.value); setOtpSent(false); setOtpCode(""); }} placeholder="you@example.com" /></label>
         )}
         {mode === "password" ? (
           <label>Password<input type="password" autoComplete="current-password" required maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" /></label>
         ) : otpSent ? (
-          <label>6-digit {mode === "phoneOtp" ? "SMS" : "email"} code<input type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))} placeholder="123456" /></label>
+          <label>6-digit {mode === "phoneOtp" ? "SMS" : "email"} code<input type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\\D/g, ""))} placeholder="123456" /></label>
         ) : (
           <p className="authIntro">{mode === "phoneOtp" ? "We’ll text a one-time sign-in code if this number belongs to an active account." : "We’ll email a one-time sign-in code if this address belongs to an active account."}</p>
         )}
@@ -84,9 +89,6 @@ export default function LoginPage() {
         <button className="button authSubmit" disabled={busy}>{busy ? "Please wait…" : mode === "password" ? "Log in" : otpSent ? "Verify code & sign in" : mode === "phoneOtp" ? "Send SMS code" : "Send email code"} <span aria-hidden="true">↗</span></button>
         {mode !== "password" && otpSent && <button type="button" className="backHome" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); }}>Resend a code</button>}
       </form>
-      <p className="authFoot"><button type="button" className="textLink" onClick={switchMode}>{mode === "password" ? "Use email OTP instead" : mode === "emailOtp" ? "Use phone OTP instead" : "Use password instead"}</button></p>
-      <p className="authFoot">New to SkillBarter? <Link href="/signup">Create an account</Link></p>
-      <Link className="backHome" href="/">← Back to home</Link>
-    </section>
-  </main>;
+    </AuthShell>
+  );
 }
