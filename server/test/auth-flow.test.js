@@ -76,11 +76,19 @@ test("registration creates an account and returns a signed session token", async
   User.findOne = () => selectedQuery(null);
   User.create = async (document) => ({ ...sampleUser, ...document, id: sampleUser.id, tokenVersion: 0 });
 
+  const phone = "+919876543210";
+  const phoneVerificationToken = jwt.sign(
+    { purpose: "phone_registration", phone },
+    jwtSecret,
+    { expiresIn: "10m", issuer: "skillbarter-api", audience: "skillbarter-web" }
+  );
   const response = await post("/api/auth/register", {
     fullName: " Test User ",
     username: "Test_User",
     email: "TEST@example.com",
-    password: "long-enough-password"
+    password: "long-enough-password",
+    phone,
+    phoneVerificationToken
   });
 
   assert.equal(response.status, 201);
@@ -97,15 +105,47 @@ test("registration creates an account and returns a signed session token", async
 test("registration returns conflict when email or username is already taken", async () => {
   User.findOne = () => selectedQuery({ email: "test@example.com", username: "test_user" });
 
+  const phone = "+919876543210";
+  const phoneVerificationToken = jwt.sign(
+    { purpose: "phone_registration", phone },
+    jwtSecret,
+    { expiresIn: "10m", issuer: "skillbarter-api", audience: "skillbarter-web" }
+  );
   const response = await post("/api/auth/register", {
     fullName: "Test User",
     username: "test_user",
     email: "test@example.com",
-    password: "long-enough-password"
+    password: "long-enough-password",
+    phone,
+    phoneVerificationToken
   });
 
   assert.equal(response.status, 409);
   assert.match((await response.json()).error, /email already exists/);
+});
+
+test("registration rejects a missing phone verification proof", async () => {
+  const response = await post("/api/auth/register", {
+    fullName: "Test User",
+    username: "test_user",
+    email: "test@example.com",
+    password: "long-enough-password",
+    phone: "+919876543210"
+  });
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /Verify your mobile number/);
+});
+
+test("phone OTP request rejects malformed phone numbers before provider access", async () => {
+  const response = await post("/api/auth/phone-otp/request", { phone: "not-a-phone", purpose: "login" });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /valid mobile number/);
+});
+
+test("phone OTP verification rejects malformed codes before provider access", async () => {
+  const response = await post("/api/auth/phone-otp/verify", { phone: "+919876543210", code: "123", purpose: "login" });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /6-digit SMS code/);
 });
 
 test("login accepts the correct password and returns a signed token", async () => {
