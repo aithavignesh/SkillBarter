@@ -6,6 +6,7 @@ import Block from "../models/Block.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { postLimiter } from "../middleware/writeLimiters.js";
+import { recordAnalyticsEvent } from "../services/analytics.js";
 
 const router = Router();
 router.use(requireAuth);
