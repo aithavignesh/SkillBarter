@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema({
   skillsToLearn: [{ type: mongoose.Schema.Types.ObjectId, ref: "Skill" }],
   onboardingCompleted: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
+  trustScore: { type: Number, default: 0, min: 0, max: 100 },
+  reviewsCount: { type: Number, default: 0, min: 0 },
   isAdmin: { type: Boolean, default: false }
 }, { timestamps: true, versionKey: false });
 
