@@ -28,19 +28,32 @@ export default function AdminPage() {
 
   const load = useCallback(async () => {
     setError("");
-    try {
-      const [statsData, userData, reportData, exchangeData] = await Promise.all([
-        api<{ stats: Stats }>("/api/admin/stats"),
-        api<{ users: AdminUser[] }>("/api/admin/users?limit=50"),
-        api<{ reports: Report[] }>("/api/admin/reports?limit=50"),
-        api<{ exchanges: Exchange[] }>("/api/admin/exchanges?limit=50")
-      ]);
-      setStats(statsData.stats); setUsers(userData.users); setReports(reportData.reports); setExchanges(exchangeData.exchanges);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Unable to load admin dashboard.";
-      if (/Authentication required|invalid or expired|unavailable/i.test(message)) router.replace("/login");
-      else setError(message);
+    const failures: string[] = [];
+    const results = await Promise.allSettled([
+      api<{ stats: Stats }>("/api/admin/stats"),
+      api<{ users: AdminUser[] }>("/api/admin/users?limit=50"),
+      api<{ reports: Report[] }>("/api/admin/reports?limit=50"),
+      api<{ exchanges: Exchange[] }>("/api/admin/exchanges?limit=50")
+    ]);
+
+    if (results[0].status === "fulfilled") setStats(results[0].value.stats);
+    else failures.push(`Statistics: ${results[0].reason instanceof Error ? results[0].reason.message : "Unable to load statistics."}`);
+
+    if (results[1].status === "fulfilled") setUsers(results[1].value.users);
+    else failures.push(`Users: ${results[1].reason instanceof Error ? results[1].reason.message : "Unable to load users."}`);
+
+    if (results[2].status === "fulfilled") setReports(results[2].value.reports);
+    else failures.push(`Reports: ${results[2].reason instanceof Error ? results[2].reason.message : "Unable to load reports."}`);
+
+    if (results[3].status === "fulfilled") setExchanges(results[3].value.exchanges);
+    else failures.push(`Exchanges: ${results[3].reason instanceof Error ? results[3].reason.message : "Unable to load exchanges."}`);
+
+    const authFailure = failures.some((message) => /Authentication required|invalid or expired|account is unavailable/i.test(message));
+    if (authFailure) {
+      router.replace("/login");
+      return;
     }
+    if (failures.length) setError(failures.join(" · "));
   }, [router]);
 
   useEffect(() => { void load(); }, [load]);
