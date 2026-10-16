@@ -15,7 +15,7 @@ This checklist distinguishes implemented code from configuration and migration w
 ## Remaining work before cutover
 
 - Configure Twilio Verify and SMTP credentials in staging; test actual SMS/email delivery, OTP expiry, rate limits, and provider failures. The integration code is present, but delivery cannot be verified without provider credentials.
-- Complete feature parity for real-time messaging/WebSockets, trust-score updates, analytics, and any remaining profile/location/privacy workflows. Community post comments are now implemented with authorization, block checks, notifications, and tests.
+- Complete feature parity for real-time messaging/WebSockets, analytics, and any remaining profile/location/privacy workflows. Community post comments are implemented with authorization, block checks, notifications, and tests. Review-based trust scores are recalculated on review creation; real data migration and staging end-to-end validation remain outstanding.
 - Run full end-to-end tests for signup/login, page refresh/session expiry, onboarding, reciprocal matching, the two-user exchange lifecycle, messaging, mutual completion/reviews, reports/blocks, and admin/non-admin access.
 - Implement and review the InsForge/PostgreSQL-to-MongoDB data migration with a dry run, deterministic ID/reference mapping, source/target count reconciliation, dangling-reference checks, backup, and tested rollback.
 - Configure and verify staging/production environment variables, MongoDB network restrictions/backups, monitoring, domains, and service health checks.
