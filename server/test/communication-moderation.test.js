@@ -23,12 +23,15 @@ const sampleUser = {
 const originals = {
   userFindById: User.findById,
   userFindByIdForReport: User.findById,
+  userFindByIdAndUpdate: User.findByIdAndUpdate,
   exchangeFindById: Exchange.findById,
   blockExists: Block.exists,
   messageCreate: Message.create,
   messageFindOneAndUpdate: Message.findOneAndUpdate,
   reportCreate: Report.create,
-  reviewCreate: Review.create
+  reviewCreate: Review.create,
+  reviewAggregate: Review.aggregate,
+  notificationCreate: (await import("../src/models/Notification.js")).default.create
 };
 let server;
 let baseUrl;
@@ -51,6 +54,10 @@ after(async () => {
   Message.findOneAndUpdate = originals.messageFindOneAndUpdate;
   Report.create = originals.reportCreate;
   Review.create = originals.reviewCreate;
+  Review.aggregate = originals.reviewAggregate;
+  User.findByIdAndUpdate = originals.userFindByIdAndUpdate;
+  const Notification = (await import("../src/models/Notification.js")).default;
+  Notification.create = originals.notificationCreate;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -145,6 +152,30 @@ test("review creation rejects invalid ratings and incomplete exchanges", async (
   });
   const incomplete = await request("POST", "/api/reviews", { exchangeId, rating: 5, comment: "Great" });
   assert.equal(incomplete.status, 409);
+});
+
+test("successful reviews update the reviewee trust score and review count", async () => {
+  authenticate();
+  const Notification = (await import("../src/models/Notification.js")).default;
+  Exchange.findById = async () => ({
+    _id: exchangeId, status: "completed", completedByRequester: true, completedByRecipient: true,
+    requester: userId, recipient: otherUserId
+  });
+  Review.create = async (value) => ({ _id: "68f000000000000000000007", ...value, populate: async () => {} });
+  Review.aggregate = async () => [{ averageRating: 4.5, count: 2 }];
+  Notification.create = async () => ({});
+  let update;
+  User.findByIdAndUpdate = async (id, changes, options) => {
+    update = { id: String(id), changes, options };
+    return {};
+  };
+
+  const response = await request("POST", "/api/reviews", { exchangeId, rating: 5, comment: "Great exchange" });
+  assert.equal(response.status, 201);
+  assert.equal(update.id, otherUserId);
+  assert.equal(update.changes.$set.trustScore, 90);
+  assert.equal(update.changes.$set.reviewsCount, 2);
+  assert.equal(update.options.runValidators, true);
 });
 
 test("review creation rejects users who did not participate in the exchange", async () => {
