@@ -70,6 +70,6 @@ GitHub Actions runs the MERN migration checks on pushes to `migration/next-expre
 
 ## Migration status
 
-The MERN implementation is a **staging foundation, not a production-ready replacement yet**. Feature parity still needs to be completed and validated, including configured/live OTP delivery, full messaging and community interactions, trust/analytics behavior, and a repeatable source-to-MongoDB data migration. Production currently remains on the existing stack until the cutover is approved.
+The MERN implementation is a **staging foundation, not a production-ready replacement yet**. Feature parity still needs to be completed and validated, including configured/live OTP delivery, real-time messaging/WebSockets, trust/analytics behavior, and a repeatable source-to-MongoDB data migration. Production currently remains on the existing stack until the cutover is approved.
 
 See [MIGRATION_MERN.md](MIGRATION_MERN.md) for architecture, API inventory, and remaining work.
