@@ -12,11 +12,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (!apiBase) return NextResponse.json({ error: "API_BASE_URL is not configured on the server." }, { status: 503 });
 
   const apiPath = path.join("/");
-  if (apiPath === "auth/logout" && request.method === "POST") {
-    const response = NextResponse.json({ success: true });
-    response.cookies.set(COOKIE_NAME, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
-    return response;
-  }
+  const isLogout = apiPath === "auth/logout" && request.method === "POST";
 
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
@@ -36,7 +32,17 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       cache: "no-store"
     });
   } catch {
-    return NextResponse.json({ error: "The SkillBarter API is unavailable." }, { status: 502 });
+    const response = NextResponse.json({ error: "The SkillBarter API is unavailable." }, { status: 502 });
+    // Clear the browser session even if the API is temporarily unreachable.
+    if (isLogout) response.cookies.set(COOKIE_NAME, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+    return response;
+  }
+
+  if (isLogout) {
+    const data = await upstream.json().catch(() => ({}));
+    const response = NextResponse.json(data, { status: upstream.status });
+    response.cookies.set(COOKIE_NAME, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+    return response;
   }
 
   if (apiPath === "auth/login" || apiPath === "auth/register") {
