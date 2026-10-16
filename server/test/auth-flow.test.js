@@ -176,6 +176,31 @@ test("authentication rejects a JWT with a revoked token version", async () => {
   assert.match((await response.json()).error, /revoked/);
 });
 
+test("logout increments tokenVersion to revoke the active JWT", async () => {
+  let updateCall;
+  User.findById = () => ({ select: async () => ({ ...sampleUser, tokenVersion: 0 }) });
+  User.findByIdAndUpdate = async (id, update, options) => {
+    updateCall = { id, update, options };
+    return { ...sampleUser, tokenVersion: 1 };
+  };
+  const token = jwt.sign({ sub: sampleUser.id, tokenVersion: 0 }, jwtSecret, {
+    expiresIn: "1h",
+    issuer: "skillbarter-api",
+    audience: "skillbarter-web"
+  });
+
+  const response = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { success: true });
+  assert.equal(updateCall.id, sampleUser.id);
+  assert.deepEqual(updateCall.update.$inc, { tokenVersion: 1 });
+  assert.equal(updateCall.options.new, true);
+});
+
 test("password reset confirmation changes the password and increments tokenVersion", async () => {
   const rawToken = "a".repeat(64);
   let tokenQuery;
