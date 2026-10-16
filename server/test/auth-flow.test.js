@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../src/models/User.js";
 import PasswordResetToken from "../src/models/PasswordResetToken.js";
+import EmailOtpChallenge from "../src/models/EmailOtpChallenge.js";
+import { hashEmailOtp } from "../src/utils/emailOtp.js";
 import { hashResetToken } from "../src/utils/security.js";
 import app from "../src/app.js";
 
@@ -13,6 +15,9 @@ const originalFindById = User.findById;
 const originalFindByIdAndUpdate = User.findByIdAndUpdate;
 const originalResetFindOneAndDelete = PasswordResetToken.findOneAndDelete;
 const originalResetDeleteMany = PasswordResetToken.deleteMany;
+const originalOtpFindOne = EmailOtpChallenge.findOne;
+const originalOtpFindOneAndUpdate = EmailOtpChallenge.findOneAndUpdate;
+const originalOtpUpdateOne = EmailOtpChallenge.updateOne;
 
 let server;
 let baseUrl;
@@ -49,6 +54,9 @@ after(async () => {
   User.findByIdAndUpdate = originalFindByIdAndUpdate;
   PasswordResetToken.findOneAndDelete = originalResetFindOneAndDelete;
   PasswordResetToken.deleteMany = originalResetDeleteMany;
+  EmailOtpChallenge.findOne = originalOtpFindOne;
+  EmailOtpChallenge.findOneAndUpdate = originalOtpFindOneAndUpdate;
+  EmailOtpChallenge.updateOne = originalOtpUpdateOne;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -174,6 +182,67 @@ test("authentication rejects a JWT with a revoked token version", async () => {
 
   assert.equal(response.status, 401);
   assert.match((await response.json()).error, /revoked/);
+});
+
+test("email OTP verification issues a signed session and consumes the code once", async () => {
+  const challenge = {
+    _id: "68f000000000000000000099",
+    codeHash: hashEmailOtp("test@example.com", "123456"),
+    attempts: 0
+  };
+  EmailOtpChallenge.findOne = () => ({
+    select() {
+      return { sort: async () => challenge };
+    }
+  });
+  EmailOtpChallenge.findOneAndUpdate = async (query, update, options) => {
+    assert.equal(query._id, challenge._id);
+    assert.deepEqual(update.$set.consumedAt instanceof Date, true);
+    assert.equal(options.new, true);
+    return { ...challenge, consumedAt: update.$set.consumedAt };
+  };
+  User.findOne = () => selectedQuery(sampleUser);
+
+  const response = await post("/api/auth/otp/verify", { email: "TEST@example.com", code: "123456" });
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.user.email, "test@example.com");
+  assert.ok(body.token);
+  assert.equal(jwt.verify(body.token, jwtSecret, { issuer: "skillbarter-api", audience: "skillbarter-web" }).sub, sampleUser.id);
+});
+
+test("email OTP verification increments attempts for an incorrect code", async () => {
+  const challenge = {
+    _id: "68f000000000000000000098",
+    codeHash: hashEmailOtp("test@example.com", "123456"),
+    attempts: 0
+  };
+  let attemptUpdate;
+  EmailOtpChallenge.findOne = () => ({
+    select() {
+      return { sort: async () => challenge };
+    }
+  });
+  EmailOtpChallenge.updateOne = async (query, update) => {
+    attemptUpdate = { query, update };
+    return { modifiedCount: 1 };
+  };
+
+  const response = await post("/api/auth/otp/verify", { email: "test@example.com", code: "999999" });
+  assert.equal(response.status, 401);
+  assert.deepEqual(attemptUpdate.update.$inc, { attempts: 1 });
+  assert.equal(attemptUpdate.query._id, challenge._id);
+});
+
+test("email OTP verification rejects malformed codes before database access", async () => {
+  let queried = false;
+  EmailOtpChallenge.findOne = () => {
+    queried = true;
+    throw new Error("OTP lookup should not run for malformed codes.");
+  };
+  const response = await post("/api/auth/otp/verify", { email: "test@example.com", code: "123" });
+  assert.equal(response.status, 400);
+  assert.equal(queried, false);
 });
 
 test("logout increments tokenVersion to revoke the active JWT", async () => {
