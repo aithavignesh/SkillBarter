@@ -45,7 +45,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     return response;
   }
 
-  if (apiPath === "auth/login" || apiPath === "auth/register") {
+  if (apiPath === "auth/login" || apiPath === "auth/register" || apiPath === "auth/otp/verify") {
     const data = await upstream.json().catch(() => ({}));
     if (!upstream.ok) return NextResponse.json(data, { status: upstream.status });
     if (typeof data?.token !== "string" || !data.token) {
