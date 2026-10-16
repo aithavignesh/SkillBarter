@@ -73,6 +73,16 @@ router.post("/login", authLimiter, async (req, res, next) => {
   }
 });
 
+router.post("/logout", requireAuth, async (req, res, next) => {
+  try {
+    // Revoke the current JWT immediately rather than relying only on cookie deletion.
+    await User.findByIdAndUpdate(req.user._id, { $inc: { tokenVersion: 1 } }, { new: true });
+    return res.json({ success: true });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.get("/me", requireAuth, async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ error: "Account not found." });
