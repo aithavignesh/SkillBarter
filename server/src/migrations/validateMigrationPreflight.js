@@ -9,10 +9,15 @@ export async function validateMigrationPreflight(exportDirectory, mappingContrac
   if (typeof exportDirectory !== "string" || !exportDirectory.trim()) throw new Error("exportDirectory is required.");
   if (typeof mappingContractPath !== "string" || !mappingContractPath.trim()) throw new Error("mappingContractPath is required.");
   const exportReport = await validateExportDirectory(exportDirectory);
-  const manifestPath = path.join(path.resolve(exportDirectory), "manifest.json");
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  // Reuse the table inventory that was already validated. Re-reading manifest.json here
+  // could make the coverage decision use different bytes than the integrity check.
+  const validatedInventory = {
+    sourceSchema: exportReport.sourceSchema,
+    exportedAt: exportReport.exportedAt,
+    tables: exportReport.tables.map(({ name }) => ({ name }))
+  };
   const mappingContract = JSON.parse(await readFile(mappingContractPath, "utf8"));
-  const coverageReport = validateMappingCoverage(manifest, mappingContract);
+  const coverageReport = validateMappingCoverage(validatedInventory, mappingContract);
   return {
     valid: exportReport.valid && coverageReport.valid,
     export: exportReport,
