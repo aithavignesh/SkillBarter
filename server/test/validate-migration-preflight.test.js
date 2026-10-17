@@ -65,7 +65,7 @@ test("detects source table inventory that is not covered by the mapping contract
   try {
     const manifestPath = path.join(f.exportDirectory, "manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-    const data = '{"id":"connection-1"}\\n';
+    const data = '{"id":"connection-1"}\n';
     await writeFile(path.join(f.exportDirectory, "connections.jsonl"), data);
     manifest.tables.push({ name: "connections", file: "connections.jsonl", rowCount: 1, sha256: createHash("sha256").update(data).digest("hex") });
     await writeFile(manifestPath, JSON.stringify(manifest));
