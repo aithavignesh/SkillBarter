@@ -110,6 +110,16 @@ router.patch("/:id/status", exchangeLimiter, async (req, res) => {
     if (recipient) exchange.completedByRecipient = true;
     if (!exchange.completedByRequester || !exchange.completedByRecipient) {
       await exchange.save();
+      const otherParticipantId = requester ? exchange.recipient : exchange.requester;
+      await Notification.create({
+        recipient: otherParticipantId,
+        actor: req.user._id,
+        type: "exchange_update",
+        title: "Completion confirmation needed",
+        body: `${req.user.fullName} marked this exchange complete. Please confirm completion.`,
+        resourceType: "exchange",
+        resourceId: exchange._id
+      });
       return res.json({ exchange, awaitingOtherParticipant: true });
     }
   }

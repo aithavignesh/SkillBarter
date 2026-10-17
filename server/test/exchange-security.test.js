@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../src/models/User.js";
 import Exchange from "../src/models/Exchange.js";
 import Block from "../src/models/Block.js";
+import Notification from "../src/models/Notification.js";
 import app from "../src/app.js";
 
 const jwtSecret = "exchange-tests-only-secret-that-is-at-least-thirty-two-characters";
@@ -30,6 +31,7 @@ const sampleUser = {
 const originalUserFindById = User.findById;
 const originalExchangeFindById = Exchange.findById;
 const originalBlockExists = Block.exists;
+const originalNotificationCreate = Notification.create;
 
 let server;
 let baseUrl;
@@ -50,6 +52,7 @@ after(async () => {
   User.findById = originalUserFindById;
   Exchange.findById = originalExchangeFindById;
   Block.exists = originalBlockExists;
+  Notification.create = originalNotificationCreate;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -89,6 +92,28 @@ async function updateStatus(body, authToken = token) {
     body: JSON.stringify(body)
   });
 }
+
+test("the first completion confirmation notifies the other participant", async () => {
+  mockAuthenticatedUser();
+  const exchange = fakeExchange("active");
+  Exchange.findById = async () => exchange;
+  let notification;
+  Notification.create = async (payload) => {
+    notification = payload;
+    return payload;
+  };
+
+  const response = await updateStatus({ status: "completed" });
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.awaitingOtherParticipant, true);
+  assert.equal(exchange.completedByRequester, true);
+  assert.equal(exchange.status, "active");
+  assert.equal(String(notification.recipient), otherUserId);
+  assert.equal(String(notification.actor), userId);
+  assert.match(notification.title, /confirmation needed/i);
+});
 
 test("a non-participant cannot change an exchange status", async () => {
   const outsider = { ...sampleUser, _id: outsiderId, id: outsiderId };
