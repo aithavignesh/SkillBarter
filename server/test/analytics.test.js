@@ -71,19 +71,26 @@ test("analytics accepts only page views from clients and stores only allowlisted
   assert.deepEqual(created.properties, {});
 });
 
-test("analytics discards unrecognized paths instead of storing arbitrary URLs", async () => {
+test("analytics discards paths that are not routes in the migrated Next.js app", async () => {
   authenticate(user);
-  let created;
-  AnalyticsEvent.create = async (event) => { created = event; return { _id: "event-id" }; };
+  const createdEvents = [];
+  AnalyticsEvent.create = async (event) => {
+    createdEvents.push(event);
+    return { _id: "event-id" };
+  };
 
-  const response = await request("/api/analytics/event", userId, {
-    name: "page_view",
-    path: "https://external.example/collect?email=private@example.com"
-  });
+  for (const path of [
+    "https://external.example/collect?email=private@example.com",
+    "/profile",
+    "/settings",
+    "/admin/users"
+  ]) {
+    const response = await request("/api/analytics/event", userId, { name: "page_view", path });
+    assert.equal(response.status, 201);
+  }
 
-  assert.equal(response.status, 201);
-  assert.equal(created.path, "");
-  assert.deepEqual(created.properties, {});
+  assert.deepEqual(createdEvents.map((event) => event.path), ["", "", "", ""]);
+  assert.ok(createdEvents.every((event) => Object.keys(event.properties).length === 0));
 });
 
 test("analytics summary is restricted to administrators and aggregates a 30-day window", async () => {
