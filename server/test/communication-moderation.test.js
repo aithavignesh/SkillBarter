@@ -188,6 +188,24 @@ test("review listing rejects malformed user IDs before querying storage", async 
   assert.equal(findCalled, false);
 });
 
+test("review creation rejects non-string and oversized comments before database access", async () => {
+  authenticate();
+  let exchangeLookupCalled = false;
+  Exchange.findById = async () => {
+    exchangeLookupCalled = true;
+    throw new Error("Exchange lookup must not run for invalid review comments.");
+  };
+
+  const nonString = await request("POST", "/api/reviews", { exchangeId, rating: 5, comment: 123 });
+  assert.equal(nonString.status, 400);
+
+  const oversized = await request("POST", "/api/reviews", {
+    exchangeId, rating: 5, comment: " ".repeat(2001) + "x"
+  });
+  assert.equal(oversized.status, 400);
+  assert.equal(exchangeLookupCalled, false);
+});
+
 test("review creation rejects invalid ratings and incomplete exchanges", async () => {
   authenticate();
   const invalidRating = await request("POST", "/api/reviews", { exchangeId, rating: 6 });
