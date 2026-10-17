@@ -167,6 +167,27 @@ test("admin report moderation returns 404 when the report does not exist", async
   assert.equal(response.status, 404);
 });
 
+test("report moderation preserves moderator assignment only for terminal statuses", async () => {
+  setAuthenticatedUser(adminUser);
+
+  for (const status of ["reviewing", "dismissed"]) {
+    let updateArgs;
+    Report.findByIdAndUpdate = async (...args) => {
+      updateArgs = args;
+      return { _id: reportId, status, resolvedBy: status === "dismissed" ? adminId : null };
+    };
+
+    const response = await patch(`/api/admin/reports/${reportId}`, { status });
+
+    assert.equal(response.status, 200, `status ${status} should be accepted`);
+    assert.equal(
+      updateArgs[1].$set.resolvedBy,
+      status === "dismissed" ? adminId : null,
+      `status ${status} should set the expected moderator assignment`
+    );
+  }
+});
+
 test("reopening a report clears the current moderator assignment", async () => {
   setAuthenticatedUser(adminUser);
   let updateArgs;
