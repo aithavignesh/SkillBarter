@@ -1,0 +1,81 @@
+{
+  "contractVersion": 1,
+  "sourceSystem": "InsForge/PostgreSQL",
+  "targetSystem": "SkillBarter MERN/MongoDB",
+  "schemaSnapshotReviewed": false,
+  "status": "blocked-pending-source-schema",
+  "tables": [
+    {
+      "name": "users",
+      "status": "pending",
+      "proposedTarget": "User",
+      "reason": "Verify actual source columns, constraints, password-hash compatibility, and profile/auth semantics from a captured schema snapshot."
+    },
+    {
+      "name": "skills",
+      "status": "pending",
+      "proposedTarget": "Skill",
+      "reason": "Verify actual columns, ownership fields, category semantics, and constraints from a captured schema snapshot."
+    },
+    {
+      "name": "user_skills",
+      "status": "pending",
+      "proposedTarget": "User.skillsToTeach / User.skillsToLearn",
+      "reason": "Inspect actual role/type columns before assigning teach-versus-learn semantics."
+    },
+    {
+      "name": "exchanges",
+      "status": "pending",
+      "proposedTarget": "Exchange",
+      "reason": "Verify participant fields, status values, schedule/completion columns, and skill references."
+    },
+    {
+      "name": "messages",
+      "status": "pending",
+      "proposedTarget": "Message",
+      "reason": "Verify exchange/sender/recipient fields and participant constraints."
+    },
+    {
+      "name": "reviews",
+      "status": "pending",
+      "proposedTarget": "Review",
+      "reason": "Verify reviewer/reviewee/exchange references, rating constraints, and uniqueness rules."
+    },
+    {
+      "name": "posts",
+      "status": "pending",
+      "proposedTarget": "Post",
+      "reason": "Verify content, author, tags, likes, visibility, and relationship fields."
+    },
+    {
+      "name": "notifications",
+      "status": "pending",
+      "proposedTarget": "Notification",
+      "reason": "Verify recipient/actor/resource fields and supported notification types."
+    },
+    {
+      "name": "blocks",
+      "status": "pending",
+      "proposedTarget": "Block",
+      "reason": "Verify blocker/blocked fields, uniqueness, and self-block constraints."
+    },
+    {
+      "name": "reports",
+      "status": "pending",
+      "proposedTarget": "Report",
+      "reason": "Verify target types, reporter/resolver fields, statuses, and resolution fields."
+    },
+    {
+      "name": "analytics_events",
+      "status": "pending",
+      "proposedTarget": "AnalyticsEvent",
+      "reason": "Approve retention/privacy rules and verify event/property schema before deciding which data may migrate."
+    },
+    {
+      "name": "connections",
+      "status": "blocked",
+      "proposedTarget": null,
+      "reason": "No target model is approved. Inspect source semantics and explicitly decide whether to map, derive, archive, or exclude; do not convert to exchanges by assumption."
+    }
+  ]
+}

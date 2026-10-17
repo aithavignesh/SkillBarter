@@ -89,3 +89,8 @@ A dry run is **not accepted** until all are true:
 - No migration importer or production import has been run.
 
 **Next implementation step:** capture and review a schema-only inventory plus row counts from a read-only source/export, then approve the mapping before adding importer code.
+
+
+## Mapping-contract validator
+
+The provisional contract lives at `migrations/source-to-target-contract.json`. It records the currently known source tables and proposed targets without inventing unverified column mappings. Run `node server/src/migrations/validateMappingContract.js migrations/source-to-target-contract.json` to validate its explicit decisions. Exit code 2 means the contract is structurally valid but still has pending/blocked tables or invalid approvals; exit code 1 means the input is malformed. The checked-in contract intentionally remains blocked because `schemaSnapshotReviewed` is false and `connections` has no approved target. After a verified schema snapshot is reviewed, add field-level decisions using `mapped`, `transformed`, `excluded`, or `blocked`; excluded/blocked fields require a reason. This validator does not query either database or authorize an import.
