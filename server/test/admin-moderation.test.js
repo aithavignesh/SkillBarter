@@ -442,14 +442,27 @@ test("admin user status update rejects invalid IDs and missing users", async () 
   assert.equal(missingUser.status, 404);
 });
 
-test("admin status changes revoke sessions on deactivation and reactivation", async () => {
+test("admin status changes revoke sessions and return only safe user fields", async () => {
   setAuthenticatedUser(adminUser);
 
   for (const isActive of [false, true]) {
     let updateArgs;
+    let selectedFields;
     User.findByIdAndUpdate = (...args) => {
       updateArgs = args;
-      return { select: async () => ({ _id: otherUserId, isActive, isAdmin: false }) };
+      return {
+        select(fields) {
+          selectedFields = fields;
+          return Promise.resolve({
+            _id: otherUserId,
+            fullName: "Example User",
+            username: "example",
+            email: "example@example.com",
+            isActive,
+            isAdmin: false
+          });
+        }
+      };
     };
 
     const response = await patch(`/api/admin/users/${otherUserId}/status`, { isActive });
@@ -457,6 +470,10 @@ test("admin status changes revoke sessions on deactivation and reactivation", as
     assert.equal(response.status, 200);
     assert.deepEqual(updateArgs[1], { $set: { isActive }, $inc: { tokenVersion: 1 } });
     assert.equal(updateArgs[2].runValidators, true);
+    assert.equal(selectedFields, "fullName username email isActive isAdmin");
+    const body = await response.json();
+    assert.deepEqual(Object.keys(body.user).sort(), ["email", "fullName", "isActive", "isAdmin", "username"].sort());
+    assert.doesNotMatch(JSON.stringify(body), /passwordHash|tokenVersion/);
   }
 });
 
