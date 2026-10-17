@@ -3,11 +3,24 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
+const trackedPaths = new Set([
+  "/dashboard",
+  "/onboarding",
+  "/matches",
+  "/exchanges",
+  "/notifications",
+  "/community",
+  "/reviews",
+  "/admin"
+]);
+
 export default function AnalyticsTracker() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!pathname || ["/login", "/signup", "/forgot-password", "/reset-password"].includes(pathname)) return;
+    // The event API requires authentication. Track only known app routes so public
+    // landing/auth pages and unknown paths do not generate guaranteed 401s or noise.
+    if (!pathname || !trackedPaths.has(pathname)) return;
     void fetch("/api/analytics/event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
