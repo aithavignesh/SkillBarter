@@ -44,6 +44,12 @@ The source table names below reflect the project's previously inspected InsForge
 
 The table above is a starting inventory, not a claim that all source columns or semantics are known. The actual source schema must be queried and reviewed before the importer is written.
 
+## Dry-run reconciliation utility
+
+The utility `server/src/migrations/reconcileImportReport.js` compares the validated source manifest with a separate dry-run import report. Run it with `node server/src/migrations/reconcileImportReport.js <manifest.json> <import-report.json>`. Each import-report table entry must contain `name`, `sourceRows`, `migratedRows`, `excludedRows`, `rejectedRows`, and `unresolvedReferences`; when exclusions exist, provide a non-empty `exclusionReason`. The utility verifies table coverage, source counts, row-accounting equations, exclusions, rejections, and unresolved references. It emits JSON and exits with code 2 when reconciliation issues are found (code 1 for malformed inputs).
+
+This is report validation only: it does not produce a database export, confirm a consistent PostgreSQL snapshot, inspect MongoDB documents, or itself prove that references resolve. Use only after a separately reviewed dry run has produced honest counts and reference-check results. Zero reported issues is necessary but not sufficient for migration approval.
+
 ## Export validation utility
 
 The read-only utility `server/src/migrations/validateExport.js` validates a **local JSON Lines export directory** against `manifest.json`. The manifest must contain `sourceSchema`, an ISO timestamp `exportedAt`, and a non-empty `tables` array. Each table entry declares `name`, relative `file`, exact `rowCount`, and lowercase/uppercase SHA-256 `sha256`. Each data file must contain one JSON object per line; an empty file is valid only with rowCount 0 and its matching checksum.
