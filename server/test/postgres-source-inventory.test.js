@@ -25,3 +25,19 @@ test("foreign-key inventory resolves referenced columns by constraint ordinal", 
   assert.match(sql, /target_key\.ord\s*=\s*source_key\.ord/i);
   assert.match(sql, /target_column\.attrelid\s*=\s*target_table\.oid/i);
 });
+test("source inventory covers schema details needed for mapping review", async () => {
+  const sql = await readFile(inventoryPath, "utf8");
+  assert.match(sql, /FROM\s+information_schema\.columns/i);
+  assert.match(sql, /FROM\s+pg_indexes/i);
+  assert.match(sql, /FROM\s+pg_policies/i);
+  assert.match(sql, /FROM\s+information_schema\.triggers/i);
+  assert.match(sql, /pg_get_constraintdef\(con\.oid/i);
+
+  const knownTables = [
+    "analytics_events", "blocks", "connections", "exchanges", "messages",
+    "notifications", "posts", "reports", "reviews", "skills", "user_skills", "users"
+  ];
+  for (const table of knownTables) {
+    assert.ok(sql.includes("'" + table + "'"), `missing exact row-count entry for ${table}`);
+  }
+});
