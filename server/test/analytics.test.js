@@ -71,6 +71,21 @@ test("analytics accepts only page views from clients and stores only allowlisted
   assert.deepEqual(created.properties, {});
 });
 
+test("analytics discards unrecognized paths instead of storing arbitrary URLs", async () => {
+  authenticate(user);
+  let created;
+  AnalyticsEvent.create = async (event) => { created = event; return { _id: "event-id" }; };
+
+  const response = await request("/api/analytics/event", userId, {
+    name: "page_view",
+    path: "https://external.example/collect?email=private@example.com"
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal(created.path, "");
+  assert.deepEqual(created.properties, {});
+});
+
 test("analytics summary is restricted to administrators and aggregates a 30-day window", async () => {
   authenticate(user);
   const denied = await request("/api/admin/analytics", userId);
