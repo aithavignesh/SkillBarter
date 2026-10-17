@@ -144,6 +144,31 @@ test("reporting an exchange is limited to its participants", async () => {
   assert.equal(response.status, 403);
 });
 
+test("review creation rejects missing or out-of-range ratings before database access", async () => {
+  authenticate();
+  let exchangeLookupCalled = false;
+  Exchange.findById = async () => {
+    exchangeLookupCalled = true;
+    throw new Error("Exchange lookup must not run for invalid ratings.");
+  };
+
+  const missingRating = await request("POST", "/api/reviews", {
+    exchangeId, comment: "Useful exchange"
+  });
+  assert.equal(missingRating.status, 400);
+
+  const lowRating = await request("POST", "/api/reviews", {
+    exchangeId, rating: 0, comment: "Useful exchange"
+  });
+  assert.equal(lowRating.status, 400);
+
+  const highRating = await request("POST", "/api/reviews", {
+    exchangeId, rating: 6, comment: "Useful exchange"
+  });
+  assert.equal(highRating.status, 400);
+  assert.equal(exchangeLookupCalled, false);
+});
+
 test("review creation rejects malformed exchange IDs before database access", async () => {
   authenticate();
   let exchangeLookupCalled = false;
