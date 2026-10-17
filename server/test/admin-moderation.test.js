@@ -2,6 +2,7 @@ import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
 import User from "../src/models/User.js";
+import Exchange from "../src/models/Exchange.js";
 import Report from "../src/models/Report.js";
 import app from "../src/app.js";
 
@@ -17,6 +18,9 @@ const adminUser = {
 };
 const normalUser = { ...adminUser, isAdmin: false };
 const originalUserFind = User.find;
+const originalUserCountDocuments = User.countDocuments;
+const originalExchangeCountDocuments = Exchange.countDocuments;
+const originalReportCountDocuments = Report.countDocuments;
 const originalUserFindById = User.findById;
 const originalUserFindByIdAndUpdate = User.findByIdAndUpdate;
 const originalReportFindByIdAndUpdate = Report.findByIdAndUpdate;
@@ -32,6 +36,9 @@ baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
   User.find = originalUserFind;
+  User.countDocuments = originalUserCountDocuments;
+  Exchange.countDocuments = originalExchangeCountDocuments;
+  Report.countDocuments = originalReportCountDocuments;
   User.findById = originalUserFindById;
   User.findByIdAndUpdate = originalUserFindByIdAndUpdate;
   Report.findByIdAndUpdate = originalReportFindByIdAndUpdate;
@@ -79,6 +86,22 @@ test("non-admin users cannot access any admin read or write endpoint", async () 
     });
     assert.equal(response.status, 403, `${method} ${path} should reject non-admin users`);
   }
+});
+
+test("admin stats returns the expected dashboard counts", async () => {
+  setAuthenticatedUser(adminUser);
+  User.countDocuments = async (filter) => filter?.isActive === true ? 7 : 12;
+  Exchange.countDocuments = async (filter) => filter?.status === "pending" ? 3 : 8;
+  Report.countDocuments = async (filter) => filter?.status === "open" ? 2 : 0;
+
+  const response = await fetch(`${baseUrl}/api/admin/stats`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    stats: { users: 12, activeUsers: 7, exchanges: 8, pendingExchanges: 3, openReports: 2 }
+  });
 });
 
 test("admin user listing caps the requested page size at 100", async () => {
