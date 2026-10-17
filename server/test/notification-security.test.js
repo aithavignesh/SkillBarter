@@ -16,6 +16,8 @@ const sampleUser = {
 };
 const originals = {
   userFindById: User.findById,
+  find: Notification.find,
+  countDocuments: Notification.countDocuments,
   updateMany: Notification.updateMany,
   findOneAndUpdate: Notification.findOneAndUpdate,
   findOneAndDelete: Notification.findOneAndDelete
@@ -32,6 +34,8 @@ baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
   User.findById = originals.userFindById;
+  Notification.find = originals.find;
+  Notification.countDocuments = originals.countDocuments;
   Notification.updateMany = originals.updateMany;
   Notification.findOneAndUpdate = originals.findOneAndUpdate;
   Notification.findOneAndDelete = originals.findOneAndDelete;
@@ -52,6 +56,42 @@ async function request(method, path) {
     headers: { authorization: `Bearer ${token}` }
   });
 }
+
+test("notification listing scopes results and unread count to the current user", async () => {
+  authenticate();
+  const listed = [{ _id: notificationId, recipient: userId, title: "Test notification" }];
+  let listQuery;
+  let countQuery;
+  Notification.find = (filter) => {
+    listQuery = filter;
+    return {
+      populate() {
+        return {
+          sort() {
+            return {
+              limit: async (limit) => {
+                assert.equal(limit, 30);
+                return listed;
+              }
+            };
+          }
+        };
+      }
+    };
+  };
+  Notification.countDocuments = async (filter) => {
+    countQuery = filter;
+    return 1;
+  };
+
+  const response = await request("GET", "/api/notifications");
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.deepEqual(listQuery, { recipient: userId });
+  assert.deepEqual(countQuery, { recipient: userId, readAt: null });
+  assert.equal(body.unreadCount, 1);
+  assert.equal(body.notifications.length, 1);
+});
 
 test("marking all notifications read scopes the update to the current user", async () => {
   authenticate();
