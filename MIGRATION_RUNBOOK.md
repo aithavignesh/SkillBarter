@@ -99,3 +99,8 @@ The provisional contract lives at `migrations/source-to-target-contract.json`. I
 ## Source inventory ↔ mapping coverage check
 
 After producing a manifest from the reviewed source export, run `node server/src/migrations/validateMappingCoverage.js <manifest.json> migrations/source-to-target-contract.json`. This checks that each source-manifest table has a corresponding mapping decision and flags contract entries absent from the manifest for review. It exits with code 2 when coverage or approval gates are incomplete and code 1 for malformed inputs. A passing result requires `schemaSnapshotReviewed: true` and explicit `mapped`, `transformed`, or reasoned `excluded` dispositions for every source table. The current provisional contract intentionally will not pass. Compare names against the actual captured schema; do not delete a mismatch just to make validation pass. This is a static check and does not query databases or validate field-level semantics.
+
+
+## Combined migration preflight
+
+Run `node server/src/migrations/validateMigrationPreflight.js <export-directory> migrations/source-to-target-contract.json` after an export has been captured. This runs the JSONL/checksum/count/path checks and then compares the manifest table inventory to mapping decisions, producing one JSON report. Exit code 2 means export integrity passed but mapping approval/coverage is incomplete; exit code 1 indicates malformed input or an invalid export. It never connects to or writes to PostgreSQL or MongoDB. The checked-in provisional mapping is expected to block readiness until the actual schema snapshot has been reviewed and all source tables have approved dispositions.

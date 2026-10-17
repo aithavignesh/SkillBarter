@@ -1,0 +1,83 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { validateMigrationPreflight } from "../src/migrations/validateMigrationPreflight.js";
+
+async function fixture({ reviewed = true, mappingStatus = "mapped" } = {}) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "skillbarter-preflight-"));
+  const exportDirectory = path.join(root, "export");
+  await mkdir(exportDirectory);
+  const data = '{"id":"source-user-1"}\n';
+  await writeFile(path.join(exportDirectory, "users.jsonl"), data);
+  const manifest = {
+    sourceSchema: "test-schema-snapshot",
+    exportedAt: "2026-10-17T00:00:00.000Z",
+    tables: [{ name: "users", file: "users.jsonl", rowCount: 1, sha256: createHash("sha256").update(data).digest("hex") }]
+  };
+  await writeFile(path.join(exportDirectory, "manifest.json"), JSON.stringify(manifest));
+  const contractPath = path.join(root, "mapping.json");
+  await writeFile(contractPath, JSON.stringify({
+    contractVersion: 1,
+    sourceSystem: "test",
+    targetSystem: "test",
+    schemaSnapshotReviewed: reviewed,
+    tables: [{ name: "users", status: mappingStatus, proposedTarget: "User", reason: "Test decision" }]
+  }));
+  return { root, exportDirectory, contractPath };
+}
+
+test("passes when export integrity and reviewed mapping coverage both pass", async () => {
+  const f = await fixture();
+  try {
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.valid, true);
+    assert.equal(report.export.totalRows, 1);
+    assert.equal(report.mappingCoverage.valid, true);
+    assert.deepEqual(report.blockers, []);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("reports mapping blockers after validating the export", async () => {
+  const f = await fixture({ reviewed: false });
+  try {
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.valid, false);
+    assert.ok(report.blockers.some((item) => item.issue.includes("schema snapshot has not been reviewed")));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("rejects corrupted export before claiming preflight readiness", async () => {
+  const f = await fixture();
+  try {
+    await writeFile(path.join(f.exportDirectory, "users.jsonl"), '{"id":"tampered"}\n');
+    await assert.rejects(() => validateMigrationPreflight(f.exportDirectory, f.contractPath), /SHA-256 mismatch/);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("detects source table inventory that is not covered by the mapping contract", async () => {
+  const f = await fixture();
+  try {
+    const manifestPath = path.join(f.exportDirectory, "manifest.json");
+    const manifest = JSON.parse(await (await import("node:fs/promises")).readFile(manifestPath, "utf8"));
+    manifest.tables.push({ name: "connections", file: "users.jsonl", rowCount: 1, sha256: manifest.tables[0].sha256 });
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await assert.rejects(() => validateMigrationPreflight(f.exportDirectory, f.contractPath), /Multiple tables reference the same export file/);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("CLI prints JSON and uses exit code 2 when mapping is unreviewed", async () => {
+  const f = await fixture({ reviewed: false });
+  try {
+    const scriptPath = fileURLToPath(new URL("../src/migrations/validateMigrationPreflight.js", import.meta.url));
+    const result = spawnSync(process.execPath, [scriptPath, f.exportDirectory, f.contractPath], { encoding: "utf8" });
+    assert.equal(result.status, 2, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(JSON.parse(result.stdout).valid, false);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
