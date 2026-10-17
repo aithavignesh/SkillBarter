@@ -19,7 +19,7 @@ test("source inventory SQL is explicitly read-only", async () => {
 
 test("foreign-key inventory resolves referenced columns by constraint ordinal", async () => {
   const sql = await readFile(inventoryPath, "utf8");
-  assert.match(sql, /JOIN\s+pg_constraint\s+con/i);
+  assert.match(sql, /FROM\s+pg_constraint\s+con/i);
   assert.match(sql, /unnest\(con\.conkey\)\s+WITH\s+ORDINALITY/i);
   assert.match(sql, /unnest\(con\.confkey\)\s+WITH\s+ORDINALITY/i);
   assert.match(sql, /target_key\.ord\s*=\s*source_key\.ord/i);
