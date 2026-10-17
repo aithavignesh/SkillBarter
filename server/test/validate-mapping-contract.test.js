@@ -1,5 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { validateMappingContract } from "../src/migrations/validateMappingContract.js";
 
 const contract = {
@@ -48,4 +53,36 @@ test("validates field-level mapping decisions and duplicate source fields", () =
   assert.equal(validateMappingContract(candidate).valid, true);
   candidate.tables[0].fields.push({ sourceField: "email", status: "mapped", targetField: "otherEmail" });
   assert.throws(() => validateMappingContract(candidate), /Duplicate source field mapping/);
+});
+
+test("CLI prints parseable JSON and returns blocked status as exit code 2", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "skillbarter-mapping-"));
+  try {
+    const contractPath = path.join(directory, "contract.json");
+    await writeFile(contractPath, JSON.stringify(contract));
+    const scriptPath = fileURLToPath(new URL("../src/migrations/validateMappingContract.js", import.meta.url));
+    const result = spawnSync(process.execPath, [scriptPath, contractPath], { encoding: "utf8" });
+    assert.equal(result.status, 2, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout.endsWith("\n"), true);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.valid, true);
+    assert.equal(output.blockedTableCount, 2);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI returns exit code 1 for malformed JSON", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "skillbarter-mapping-"));
+  try {
+    const contractPath = path.join(directory, "contract.json");
+    await writeFile(contractPath, "{not-json");
+    const scriptPath = fileURLToPath(new URL("../src/migrations/validateMappingContract.js", import.meta.url));
+    const result = spawnSync(process.execPath, [scriptPath, contractPath], { encoding: "utf8" });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Mapping contract validation failed/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
