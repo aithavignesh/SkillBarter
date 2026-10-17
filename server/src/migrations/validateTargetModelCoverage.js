@@ -30,7 +30,7 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
     const targetPaths = table.proposedTarget.split("/").map((part) => part.trim());
     const parsedPaths = targetPaths.map((targetPath) => ({
       targetPath,
-      match: targetPath.match(/^([A-Z][A-Za-z0-9]*)(?:\\.[a-z][A-Za-z0-9]*)*$/)
+      match: targetPath.match(/^([A-Z][A-Za-z0-9]*)(?:[.][a-z][A-Za-z0-9]*)*$/)
     }));
     const malformed = parsedPaths.filter(({ match }) => !match);
     for (const { targetPath } of malformed) {
