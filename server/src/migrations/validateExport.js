@@ -44,7 +44,7 @@ export async function validateExportDirectory(exportDirectory) {
 
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) fail("Manifest must be a JSON object.");
   if (typeof manifest.sourceSchema !== "string" || !manifest.sourceSchema.trim()) fail("Manifest sourceSchema is required.");
-  if (typeof manifest.exportedAt !== "string" || !Number.isFinite(Date.parse(manifest.exportedAt))) fail("Manifest exportedAt must be a valid timestamp.");
+  if (typeof manifest.exportedAt !== "string" || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:Z|[+-]\\d{2}:\\d{2})$/.test(manifest.exportedAt) || !Number.isFinite(Date.parse(manifest.exportedAt))) fail("Manifest exportedAt must be an ISO 8601 timestamp with an explicit timezone.");
   if (!Array.isArray(manifest.tables) || manifest.tables.length === 0) fail("Manifest tables must be a non-empty array.");
 
   const seenNames = new Set();

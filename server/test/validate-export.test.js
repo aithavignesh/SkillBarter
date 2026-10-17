@@ -115,3 +115,10 @@ test("rejects a manifest containing invalid UTF-8", async t => {
   await writeFile(manifestPath, invalid);
   await assert.rejects(validateExportDirectory(directory), /manifest\.json is not valid UTF-8/);
 });
+
+test("rejects ambiguous or non-ISO export timestamps", async t => {
+  const { directory, manifest } = await fixture(t);
+  manifest.exportedAt = "October 17, 2026";
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(validateExportDirectory(directory), /ISO 8601 timestamp with an explicit timezone/);
+});
