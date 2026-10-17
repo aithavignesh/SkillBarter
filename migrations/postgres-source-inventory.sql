@@ -28,28 +28,42 @@ WHERE table_schema = 'public'
 ORDER BY table_name, ordinal_position;
 
 -- 3) Primary keys, unique constraints, foreign keys, and check constraints.
+-- Use pg_constraint so foreign-key target columns are joined by column ordinal,
+-- not by assuming the referenced table is the same as the source table.
 SELECT
-  tc.table_name, tc.constraint_name, tc.constraint_type,
-  kcu.column_name, ccu.table_name AS referenced_table,
-  ccu.column_name AS referenced_column,
-  rc.update_rule, rc.delete_rule,
-  chk.check_clause
-FROM information_schema.table_constraints tc
-LEFT JOIN information_schema.key_column_usage kcu
-  ON tc.constraint_schema = kcu.constraint_schema
- AND tc.constraint_name = kcu.constraint_name
- AND tc.table_name = kcu.table_name
-LEFT JOIN information_schema.constraint_column_usage ccu
-  ON tc.constraint_schema = ccu.constraint_schema
- AND tc.constraint_name = ccu.constraint_name
-LEFT JOIN information_schema.referential_constraints rc
-  ON tc.constraint_schema = rc.constraint_schema
- AND tc.constraint_name = rc.constraint_name
-LEFT JOIN information_schema.check_constraints chk
-  ON tc.constraint_schema = chk.constraint_schema
- AND tc.constraint_name = chk.constraint_name
-WHERE tc.table_schema = 'public'
-ORDER BY tc.table_name, tc.constraint_name, kcu.ordinal_position;
+  source_ns.nspname AS schema_name,
+  source_table.relname AS table_name,
+  con.conname AS constraint_name,
+  CASE con.contype
+    WHEN 'p' THEN 'PRIMARY KEY'
+    WHEN 'u' THEN 'UNIQUE'
+    WHEN 'f' THEN 'FOREIGN KEY'
+    WHEN 'c' THEN 'CHECK'
+    WHEN 'x' THEN 'EXCLUSION'
+    ELSE con.contype::text
+  END AS constraint_type,
+  source_column.attname AS column_name,
+  target_ns.nspname AS referenced_schema,
+  target_table.relname AS referenced_table,
+  target_column.attname AS referenced_column,
+  pg_get_constraintdef(con.oid, true) AS constraint_definition
+FROM pg_constraint con
+JOIN pg_class source_table ON source_table.oid = con.conrelid
+JOIN pg_namespace source_ns ON source_ns.oid = source_table.relnamespace
+LEFT JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS source_key(attnum, ord) ON true
+LEFT JOIN pg_attribute source_column
+  ON source_column.attrelid = source_table.oid
+ AND source_column.attnum = source_key.attnum
+LEFT JOIN pg_class target_table ON target_table.oid = con.confrelid
+LEFT JOIN pg_namespace target_ns ON target_ns.oid = target_table.relnamespace
+LEFT JOIN LATERAL unnest(con.confkey) WITH ORDINALITY AS target_key(attnum, ord)
+  ON target_key.ord = source_key.ord
+LEFT JOIN pg_attribute target_column
+  ON target_column.attrelid = target_table.oid
+ AND target_column.attnum = target_key.attnum
+WHERE source_ns.nspname = 'public'
+  AND con.contype IN ('p', 'u', 'f', 'c', 'x')
+ORDER BY source_table.relname, con.conname, source_key.ord;
 
 -- 4) Index definitions.
 SELECT schemaname, tablename, indexname, indexdef
