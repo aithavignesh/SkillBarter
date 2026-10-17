@@ -110,3 +110,14 @@ test("preflight validates model targets even while source mappings remain pendin
     assert.equal(report.valid, false, "pending source schema must still block preflight");
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
+
+test("current migration contract references existing proposed target model files", async () => {
+  const contractPath = fileURLToPath(new URL("../../../migrations/source-to-target-contract.json", import.meta.url));
+  const contract = JSON.parse(await readFile(contractPath, "utf8"));
+  const { validateTargetModelCoverage } = await import("../src/migrations/validateTargetModelCoverage.js");
+  const report = await validateTargetModelCoverage(contract);
+  assert.equal(report.valid, true, JSON.stringify(report.issues));
+  assert.equal(report.checkedTableCount, 11);
+  assert.ok(report.tables.some((table) => table.name === "connections" && table.skipped === true),
+    "unresolved connections mapping must remain skipped rather than guessed");
+});
