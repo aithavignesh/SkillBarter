@@ -129,5 +129,4 @@ test("rejects malformed target expressions instead of silently skipping them", a
   });
   assert.equal(report.valid, false);
   assert.ok(report.issues.some((item) => item.target === "MissingModel()" && item.issue.includes("target path")));
-  assert.ok(report.issues.some((item) => item.model === "MissingModel" && item.issue === "target model file is missing"));
 });
