@@ -14,3 +14,14 @@ test("flags rejected rows and unresolved references", () => { const report = str
 test("flags source tables omitted from the import report", () => { const result = reconcileImportReport(manifest, { tables: [goodReport.tables[0]] }); assert.ok(result.issues.some(item => item.table === "skills" && item.issue === "missing from import report")); });
 test("rejects unknown or duplicate table entries", () => { assert.throws(() => reconcileImportReport(manifest, { tables: [{ ...goodReport.tables[0], name: "unknown" }] }), /unknown source table/); assert.throws(() => reconcileImportReport(manifest, { tables: [goodReport.tables[0], goodReport.tables[0]] }), /Duplicate import table/); });
 test("rejects invalid row counts", () => { const report = structuredClone(goodReport); report.tables[0].rejectedRows = -1; assert.throws(() => reconcileImportReport(manifest, report), /non-negative safe integer/); });
+
+test("rejects aggregate source row counts beyond safe integer precision", () => {
+  const hugeManifest = { tables: [
+    { name: "users", rowCount: Number.MAX_SAFE_INTEGER },
+    { name: "skills", rowCount: 1 }
+  ] };
+  assert.throws(
+    () => reconcileImportReport(hugeManifest, { tables: [] }),
+    /total source row count must be a non-negative safe integer/
+  );
+});

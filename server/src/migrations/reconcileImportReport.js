@@ -44,7 +44,12 @@ export function reconcileImportReport(sourceManifest, importReport) {
     tables.push({ name: table.name, sourceRows: table.sourceRows, migratedRows: table.migratedRows, excludedRows: table.excludedRows, rejectedRows: table.rejectedRows, unresolvedReferences: table.unresolvedReferences, valid: tableIssues.length === 0, issues: tableIssues });
   }
   for (const name of sourceByName.keys()) if (!seen.has(name)) issues.push({ table: name, issue: "missing from import report" });
-  return { valid: issues.length === 0, sourceTableCount: sourceByName.size, reportTableCount: seen.size, totalSourceRows: [...sourceByName.values()].reduce((sum, n) => sum + n, 0), tables, issues };
+  const totalSourceRows = [...sourceByName.values()].reduce((sum, count) => {
+    const total = sum + count;
+    requireCount(total, "total source row count");
+    return total;
+  }, 0);
+  return { valid: issues.length === 0, sourceTableCount: sourceByName.size, reportTableCount: seen.size, totalSourceRows, tables, issues };
 }
 async function readJson(filename) { return JSON.parse(await readFile(filename, "utf8")); }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
