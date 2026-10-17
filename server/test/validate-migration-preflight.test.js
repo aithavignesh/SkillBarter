@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -64,10 +64,15 @@ test("detects source table inventory that is not covered by the mapping contract
   const f = await fixture();
   try {
     const manifestPath = path.join(f.exportDirectory, "manifest.json");
-    const manifest = JSON.parse(await (await import("node:fs/promises")).readFile(manifestPath, "utf8"));
-    manifest.tables.push({ name: "connections", file: "users.jsonl", rowCount: 1, sha256: manifest.tables[0].sha256 });
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    const data = '{"id":"connection-1"}\\n';
+    await writeFile(path.join(f.exportDirectory, "connections.jsonl"), data);
+    manifest.tables.push({ name: "connections", file: "connections.jsonl", rowCount: 1, sha256: createHash("sha256").update(data).digest("hex") });
     await writeFile(manifestPath, JSON.stringify(manifest));
-    await assert.rejects(() => validateMigrationPreflight(f.exportDirectory, f.contractPath), /Multiple tables reference the same export file/);
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.valid, false);
+    assert.ok(report.blockers.some((item) => item.table === "connections" && item.issue.includes("missing from mapping contract")));
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
