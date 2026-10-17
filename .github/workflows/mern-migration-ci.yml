@@ -2,7 +2,7 @@ name: MERN Migration CI
 
 concurrency:
   group: mern-migration-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   push:
