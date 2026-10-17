@@ -26,6 +26,7 @@ const sampleUser = {
 const originalUserFindById = User.findById;
 const originalUserFindOne = User.findOne;
 const originalBlockCreate = Block.create;
+const originalBlockFind = Block.find;
 const originalBlockFindOneAndDelete = Block.findOneAndDelete;
 let server;
 let baseUrl;
@@ -47,6 +48,7 @@ after(async () => {
   User.findById = originalUserFindById;
   User.findOne = originalUserFindOne;
   Block.create = originalBlockCreate;
+  Block.find = originalBlockFind;
   Block.findOneAndDelete = originalBlockFindOneAndDelete;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
@@ -61,6 +63,27 @@ async function request(method, path) {
     headers: { authorization: `Bearer ${token}` }
   });
 }
+
+test("block listing is scoped to the current user", async () => {
+  mockAuthenticatedUser();
+  let query;
+  Block.find = (filter) => {
+    query = filter;
+    return {
+      populate() {
+        return {
+          sort: async () => [{ blocker: userId, blocked: otherUserId }]
+        };
+      }
+    };
+  };
+
+  const response = await request("GET", "/api/blocks");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(query, { blocker: userId });
+  assert.equal((await response.json()).blocks.length, 1);
+});
 
 test("a user cannot block their own account", async () => {
   mockAuthenticatedUser();
