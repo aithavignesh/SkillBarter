@@ -130,3 +130,16 @@ test("rejects malformed target expressions instead of silently skipping them", a
   assert.equal(report.valid, false);
   assert.ok(report.issues.some((item) => item.target === "MissingModel()" && item.issue.includes("target path")));
 });
+
+test("preflight rejects malformed mapping decisions before declaring readiness", async () => {
+  const f = await fixture();
+  try {
+    const contract = JSON.parse(await readFile(f.contractPath, "utf8"));
+    contract.tables[0].status = "approved-ish";
+    await writeFile(f.contractPath, JSON.stringify(contract));
+    await assert.rejects(
+      () => validateMigrationPreflight(f.exportDirectory, f.contractPath),
+      /Invalid status for users/
+    );
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});

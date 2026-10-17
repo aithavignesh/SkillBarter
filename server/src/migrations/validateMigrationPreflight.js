@@ -3,6 +3,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { validateExportDirectory } from "./validateExport.js";
 import { validateMappingCoverage } from "./validateMappingCoverage.js";
+import { validateMappingContract } from "./validateMappingContract.js";
 import { validateTargetModelCoverage } from "./validateTargetModelCoverage.js";
 
 /** Run export-integrity and source-to-target coverage checks together; never writes to either database. */
@@ -18,14 +19,16 @@ export async function validateMigrationPreflight(exportDirectory, mappingContrac
     tables: exportReport.tables.map(({ name }) => ({ name }))
   };
   const mappingContract = JSON.parse(await readFile(mappingContractPath, "utf8"));
+  const contractReport = validateMappingContract(mappingContract);
   const coverageReport = validateMappingCoverage(validatedInventory, mappingContract);
   const targetModelReport = await validateTargetModelCoverage(mappingContract);
   return {
-    valid: exportReport.valid && coverageReport.valid && targetModelReport.valid,
+    valid: exportReport.valid && contractReport.valid && coverageReport.valid && targetModelReport.valid,
     export: exportReport,
+    mappingContract: contractReport,
     mappingCoverage: coverageReport,
     targetModelCoverage: targetModelReport,
-    blockers: [...coverageReport.issues, ...targetModelReport.issues]
+    blockers: [...contractReport.issues, ...coverageReport.issues, ...targetModelReport.issues]
   };
 }
 
