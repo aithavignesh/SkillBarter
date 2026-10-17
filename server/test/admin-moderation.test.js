@@ -99,6 +99,22 @@ test("non-admin users cannot access any admin read or write endpoint", async () 
   }
 });
 
+test("admin endpoints reject requests without a valid bearer token", async () => {
+  const requests = [
+    ["/api/admin/stats", undefined],
+    ["/api/admin/users", "Bearer invalid-token"],
+    ["/api/admin/reports", "Basic not-a-bearer-token"]
+  ];
+
+  for (const [path, authorization] of requests) {
+    const response = await fetch(`${baseUrl}${path}`, {
+      headers: authorization ? { authorization } : {}
+    });
+    assert.equal(response.status, 401, `${path} should require a valid bearer token`);
+    assert.equal(typeof (await response.json()).error, "string");
+  }
+});
+
 test("admin stats returns the expected dashboard counts", async () => {
   setAuthenticatedUser(adminUser);
   User.countDocuments = async (filter) => filter?.isActive === true ? 7 : 12;
