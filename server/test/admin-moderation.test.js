@@ -213,6 +213,26 @@ test("admin analytics aggregates the last 30 days and top pages", async () => {
   assert.deepEqual(topPagesPipeline.at(-1), { $limit: 10 });
 });
 
+test("admin analytics returns empty collections when there are no events", async () => {
+  setAuthenticatedUser(adminUser);
+  AnalyticsEvent.countDocuments = async () => 0;
+  AnalyticsEvent.distinct = async () => [];
+  AnalyticsEvent.aggregate = async () => [];
+
+  const response = await fetch(`${baseUrl}/api/admin/analytics`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    periodDays: 30,
+    summary: { totalEvents: 0, activeUsers: 0 },
+    eventsByType: [],
+    dailyEvents: [],
+    topPages: []
+  });
+});
+
 test("admin user listing caps the requested page size at 100", async () => {
   setAuthenticatedUser(adminUser);
   let selectedFields;
