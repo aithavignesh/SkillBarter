@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, symlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -81,4 +81,17 @@ test("rejects non-object JSON records", async t => {
   manifest.tables[0].sha256 = createHash("sha256").update(invalid).digest("hex");
   await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
   await assert.rejects(validateExportDirectory(directory), /must be an object/);
+});
+
+test("rejects symbolic links that resolve outside the export directory", async t => {
+  const { directory, manifest } = await fixture(t);
+  const outsidePath = path.join(os.tmpdir(), `skillbarter-outside-${process.pid}-${Date.now()}.jsonl`);
+  await writeFile(outsidePath, '{"id":"outside"}\n');
+  t.after(() => rm(outsidePath, { force: true }));
+  await rm(path.join(directory, "users.jsonl"));
+  await symlink(outsidePath, path.join(directory, "users.jsonl"));
+  manifest.tables[0].rowCount = 1;
+  manifest.tables[0].sha256 = createHash("sha256").update('{"id":"outside"}\n').digest("hex");
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(validateExportDirectory(directory), /resolves outside the export directory/);
 });

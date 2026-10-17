@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -24,9 +24,15 @@ function safeExportPath(root, filename) {
 /** Validate checksums, row counts, and JSONL syntax without connecting to a database. */
 export async function validateExportDirectory(exportDirectory) {
   const root = path.resolve(exportDirectory);
+  let realRoot;
+  try { realRoot = await realpath(root); }
+  catch (error) { fail(`Unable to resolve export directory: ${error.message}`); }
   let manifest;
   try {
-    manifest = JSON.parse(await readFile(path.join(root, "manifest.json"), "utf8"));
+    const manifestPath = path.join(root, "manifest.json");
+    const realManifestPath = await realpath(manifestPath);
+    if (!realManifestPath.startsWith(realRoot + path.sep)) fail("manifest.json must remain inside the export directory.");
+    manifest = JSON.parse(await readFile(realManifestPath, "utf8"));
   } catch (error) {
     fail(`Unable to read valid manifest.json: ${error.message}`);
   }
@@ -54,7 +60,11 @@ export async function validateExportDirectory(exportDirectory) {
     seenFiles.add(relativeFile);
 
     let bytes;
-    try { bytes = await readFile(filePath); }
+    try {
+      const realFilePath = await realpath(filePath);
+      if (!realFilePath.startsWith(realRoot + path.sep)) fail(`Export file resolves outside the export directory: ${entry.file}`);
+      bytes = await readFile(realFilePath);
+    }
     catch (error) { fail(`Unable to read export for ${entry.name}: ${error.message}`); }
     const actualSha256 = createHash("sha256").update(bytes).digest("hex");
     if (actualSha256 !== entry.sha256.toLowerCase()) fail(`SHA-256 mismatch for table ${entry.name}.`);
