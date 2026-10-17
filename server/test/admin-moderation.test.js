@@ -16,6 +16,7 @@ const adminUser = {
   skillsToTeach: [], skillsToLearn: [], tokenVersion: 0
 };
 const normalUser = { ...adminUser, isAdmin: false };
+const originalUserFind = User.find;
 const originalUserFindById = User.findById;
 const originalUserFindByIdAndUpdate = User.findByIdAndUpdate;
 const originalReportFindByIdAndUpdate = Report.findByIdAndUpdate;
@@ -30,6 +31,7 @@ await new Promise((resolve, reject) => {
 baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
+  User.find = originalUserFind;
   User.findById = originalUserFindById;
   User.findByIdAndUpdate = originalUserFindByIdAndUpdate;
   Report.findByIdAndUpdate = originalReportFindByIdAndUpdate;
@@ -77,6 +79,38 @@ test("non-admin users cannot access any admin read or write endpoint", async () 
     });
     assert.equal(response.status, 403, `${method} ${path} should reject non-admin users`);
   }
+});
+
+test("admin user listing caps the requested page size at 100", async () => {
+  setAuthenticatedUser(adminUser);
+  let selectedFields;
+  let sortFields;
+  let limitValue;
+  User.find = () => ({
+    select(fields) {
+      selectedFields = fields;
+      return this;
+    },
+    sort(fields) {
+      sortFields = fields;
+      return this;
+    },
+    limit(value) {
+      limitValue = value;
+      return Promise.resolve([]);
+    }
+  });
+
+  const response = await fetch(`${baseUrl}/api/admin/users?limit=1000`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { users: [] });
+  assert.equal(limitValue, 100);
+  assert.deepEqual(sortFields, { createdAt: -1 });
+  assert.match(selectedFields, /email/);
+  assert.doesNotMatch(selectedFields, /password|tokenVersion/);
 });
 
 test("admin cannot deactivate their own account", async () => {
