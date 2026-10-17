@@ -22,6 +22,25 @@ Status: **planning and validation contract only**. This document does not import
 7. **Rollback rehearsal:** restore the pre-import backup into a clean staging database and verify health checks and core flows. Document exact recovery owner, decision point, and rollback duration.
 8. **Cutover approval:** only after sign-off on reconciliation, security, feature parity, provider tests, and rollback. The current runbook does not authorize cutover.
 
+## Capturing the source inventory safely
+
+Use a PostgreSQL service definition such as `service=skillbarter_source_readonly` whose credentials come from a protected local PostgreSQL service/passfile configuration. Do not paste database passwords into commands, commit connection files, or place credentials in shell history. The database role itself should be read-only; the SQL also starts a read-only transaction as a second guard.
+
+From the repository root, create a private working directory outside Git tracking and capture the query output:
+
+```sh
+mkdir -p ./private-migration-evidence
+chmod 700 ./private-migration-evidence
+psql "service=skillbarter_source_readonly" \
+  --set ON_ERROR_STOP=1 \
+  --file migrations/postgres-source-inventory.sql \
+  --output ./private-migration-evidence/source-inventory.txt
+```
+
+If the configured service is unavailable, stop and ask the database owner to provision an authorized read-only connection; do not substitute production/admin credentials. Confirm the output contains all result sets and the exact row-count result. The query's exact-count section references the 12 currently known tables, so review the discovered table inventory first and adjust that section if any table is absent or newly present. Do not treat planner row estimates as exact counts.
+
+Store a reviewed, schema-only snapshot and the inventory timestamp/environment label with migration evidence. Keep credentials and exported user data out of Git; the inventory can still reveal internal schema details, so share it only with authorized reviewers. Review the snapshot against `migrations/source-to-target-contract.json`, record table/field dispositions and unresolved questions, and only then consider setting `schemaSnapshotReviewed` to true. Capturing the output alone does not approve mappings or authorize an import.
+
 ## Initial source inventory and target mapping
 
 The source table names below reflect the project's previously inspected InsForge table inventory; verify every name and schema against a fresh read-only source snapshot before implementing the importer.
