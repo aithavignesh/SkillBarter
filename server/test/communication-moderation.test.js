@@ -224,6 +224,26 @@ test("successful reviews update the reviewee trust score and review count", asyn
   assert.equal(update.options.runValidators, true);
 });
 
+test("review creation returns conflict for a duplicate review", async () => {
+  authenticate();
+  Exchange.findById = async () => ({
+    _id: exchangeId, status: "completed", completedByRequester: true, completedByRecipient: true,
+    requester: userId, recipient: otherUserId
+  });
+  Review.create = async () => {
+    const error = new Error("Duplicate review for this exchange and reviewer.");
+    error.code = 11000;
+    throw error;
+  };
+
+  const response = await request("POST", "/api/reviews", {
+    exchangeId, rating: 5, comment: "Great exchange"
+  });
+
+  assert.equal(response.status, 409);
+  assert.match((await response.json()).error, /already reviewed/i);
+});
+
 test("review creation rejects users who did not participate in the exchange", async () => {
   authenticate();
   Exchange.findById = async () => ({
