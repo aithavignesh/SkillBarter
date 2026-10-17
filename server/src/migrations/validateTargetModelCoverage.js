@@ -27,10 +27,19 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
       tables.push({ name: table.name, targets: [], valid: false });
       continue;
     }
-    const targets = [...new Set(table.proposedTarget.split("/").map((part) => part.trim().match(/^([A-Z][A-Za-z0-9]*)/)?.[1]).filter(Boolean))];
+    const targetPaths = table.proposedTarget.split("/").map((part) => part.trim());
+    const parsedPaths = targetPaths.map((targetPath) => ({
+      targetPath,
+      match: targetPath.match(/^([A-Z][A-Za-z0-9]*)(?:\\.[a-z][A-Za-z0-9]*)*$/)
+    }));
+    const malformed = parsedPaths.filter(({ match }) => !match);
+    for (const { targetPath } of malformed) {
+      issues.push({ table: table.name ?? null, target: targetPath, issue: "target path must use ModelName or ModelName.fieldPath syntax" });
+    }
+    const targets = [...new Set(parsedPaths.map(({ match }) => match?.[1]).filter(Boolean))];
     const missing = targets.filter((name) => !modelFiles.has(name));
     for (const modelName of missing) issues.push({ table: table.name ?? null, model: modelName, issue: "target model file is missing" });
-    tables.push({ name: table.name, targets, valid: missing.length === 0, missing });
+    tables.push({ name: table.name, targets, valid: missing.length === 0 && malformed.length === 0, missing, malformed: malformed.map(({ targetPath }) => targetPath) });
   }
   return { valid: issues.length === 0, checkedTableCount: tables.filter((table) => !table.skipped).length, tables, issues };
 }

@@ -121,3 +121,13 @@ test("current migration contract references existing proposed target model files
   assert.ok(report.tables.some((table) => table.name === "connections" && table.skipped === true),
     "unresolved connections mapping must remain skipped rather than guessed");
 });
+
+test("rejects malformed target expressions instead of silently skipping them", async () => {
+  const { validateTargetModelCoverage } = await import("../src/migrations/validateTargetModelCoverage.js");
+  const report = await validateTargetModelCoverage({
+    tables: [{ name: "users", proposedTarget: "User / MissingModel()" }]
+  });
+  assert.equal(report.valid, false);
+  assert.ok(report.issues.some((item) => item.target === "MissingModel()" && item.issue.includes("target path")));
+  assert.ok(report.issues.some((item) => item.model === "MissingModel" && item.issue === "target model file is missing"));
+});
