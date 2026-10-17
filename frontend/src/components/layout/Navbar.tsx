@@ -400,21 +400,21 @@ if (!currentUser) {
               aria-current={active ? 'page' : undefined}
               aria-expanded={expanded}
               aria-controls={submenuId}
-              className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left text-[13px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 active:bg-[#fff0f0] ${sectionActive ? 'font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+              className={`workspace-sidebar__nav-link group flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left text-[13px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 active:bg-[#fff0f0] ${sectionActive ? 'workspace-sidebar__nav-link--active font-semibold text-[var(--ui-accent-text)] hover:bg-[#fff0f0]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[var(--ui-accent-text)]'}`}
             >
-              <Icon className={`h-[17px] w-[17px] shrink-0 ${sectionActive ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
+              <Icon className={`h-[17px] w-[17px] shrink-0 transition-colors ${sectionActive ? 'text-[var(--ui-accent-text)]' : 'text-[#8a93a1] group-hover:text-[var(--ui-accent-text)]'}`} />
               <span className="min-w-0 break-words">{item.label}</span>
               <span className="pointer-events-none ml-auto mr-1 flex h-10 w-10 shrink-0 items-center justify-center">
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? 'rotate-180 text-[#d31d24]' : 'text-[#a0a6af]'}`} />
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--ui-accent-text)]' : 'text-[#a0a6af] group-hover:text-[var(--ui-accent-text)]'}`} />
               </span>
             </button>
           ) : (
             <Link
               to={item.path}
               aria-current={active ? 'page' : undefined}
-              className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${active ? 'bg-[#fff7f7] font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+              className={`workspace-sidebar__nav-link group flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[13px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${active ? 'workspace-sidebar__nav-link--active bg-[#fff7f7] font-semibold text-[var(--ui-accent-text)] hover:bg-[#fff0f0]' : 'text-[#596579] hover:bg-[#fafbfc] hover:text-[var(--ui-accent-text)]'}`}
             >
-              <Icon className={`h-[17px] w-[17px] shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
+              <Icon className={`h-[17px] w-[17px] shrink-0 transition-colors ${active ? 'text-[var(--ui-accent-text)]' : 'text-[#8a93a1] group-hover:text-[var(--ui-accent-text)]'}`} />
               <span className="min-w-0 break-words">{item.label}</span>
             </Link>
           )}
@@ -427,7 +427,7 @@ if (!currentUser) {
                   const featureActive = isActive(feature.path);
                   return (
                     <div key={feature.path} className="sidebar-tree__item">
-                      <Link to={feature.path} aria-current={featureActive ? 'page' : undefined} className={`flex min-h-10 items-center break-words border-l-2 px-3 py-1.5 text-[10px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${featureActive ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}>
+                      <Link to={feature.path} aria-current={featureActive ? 'page' : undefined} className={`workspace-sidebar__nav-link flex min-h-10 items-center break-words border-l-2 px-3 py-1.5 text-[10px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${featureActive ? 'workspace-sidebar__nav-link--active border-[#d31d24] bg-[#fff7f7] font-semibold text-[var(--ui-accent-text)]' : 'border-transparent text-[#66738a] hover:bg-[#fafbfc] hover:text-[var(--ui-accent-text)]'}`}>
                         {feature.label}
                       </Link>
                     </div>
@@ -443,7 +443,7 @@ if (!currentUser) {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[312px] flex-col border-r border-[#e4e6e9] bg-white lg:flex">
+      <aside className="workspace-sidebar fixed inset-y-0 left-0 z-40 hidden w-[312px] flex-col border-r border-[#e4e6e9] bg-white lg:flex">
         <div className="flex h-[82px] shrink-0 items-center border-b border-[#edf0f2] px-7">
           <Link to="/feed" className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center bg-[#d31d24] text-white"><Repeat className="h-[18px] w-[18px]" /></span>
@@ -581,12 +581,12 @@ if (!currentUser) {
                         aria-current={active ? 'page' : undefined}
                         aria-expanded={expanded}
                         aria-controls={submenuId}
-                        className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left text-[13px] transition-colors active:bg-[#fff0f0] ${sectionActive ? 'font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+                        className={`group flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left text-[13px] transition-colors active:bg-[#fff0f0] ${sectionActive ? 'font-semibold text-[var(--ui-accent-text)] hover:bg-[#fff0f0]' : 'text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[var(--ui-accent-text)]'}`}
                       >
-                        <Icon className={`h-4 w-4 shrink-0 ${sectionActive ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
+                        <Icon className={`h-4 w-4 shrink-0 transition-colors ${sectionActive ? 'text-[var(--ui-accent-text)]' : 'text-[#8a93a1] group-hover:text-[var(--ui-accent-text)]'}`} />
                         <span className="min-w-0 flex-1 break-words">{item.label}</span>
                         <span className="pointer-events-none -mr-2 ml-auto flex h-10 w-10 shrink-0 items-center justify-center">
-                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-180 text-[#d31d24]' : 'text-[#8a92a0]'}`} />
+                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--ui-accent-text)]' : 'text-[#8a92a0] group-hover:text-[var(--ui-accent-text)]'}`} />
                         </span>
                       </button>
                     ) : (
@@ -594,9 +594,9 @@ if (!currentUser) {
                         to={item.path}
                         onClick={() => setShowMobileMenu(false)}
                         aria-current={active ? 'page' : undefined}
-                        className={`flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-2 py-3 text-[13px] transition-colors ${active ? 'bg-[#fff7f7] font-semibold text-[#d31d24] hover:bg-[#fff0f0]' : 'text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+                        className={`group flex min-h-11 w-full min-w-0 flex-1 items-center gap-3 px-2 py-3 text-[13px] transition-colors ${active ? 'bg-[#fff7f7] font-semibold text-[var(--ui-accent-text)] hover:bg-[#fff0f0]' : 'text-[#4d5b72] hover:bg-[#fafbfc] hover:text-[var(--ui-accent-text)]'}`}
                       >
-                        <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-[#d31d24]' : 'text-[#8a93a1]'}`} />
+                        <Icon className={`h-4 w-4 shrink-0 transition-colors ${active ? 'text-[var(--ui-accent-text)]' : 'text-[#8a93a1] group-hover:text-[var(--ui-accent-text)]'}`} />
                         <span className="min-w-0 flex-1 break-words">{item.label}</span>
                       </Link>
                     )}
@@ -611,7 +611,7 @@ if (!currentUser) {
                                 to={feature.path}
                                 onClick={() => setShowMobileMenu(false)}
                                 aria-current={isActive(feature.path) ? 'page' : undefined}
-                                className={`flex min-h-10 items-center break-words border-l-2 px-3 py-2.5 text-[10px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${isActive(feature.path) ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[#d31d24]' : 'border-transparent text-[#66738a] hover:border-[#d9dde2] hover:bg-[#fafbfc] hover:text-[#17233b]'}`}
+                                className={`flex min-h-10 items-center break-words border-l-2 px-3 py-2.5 text-[10px] transition-colors duration-200 focus-visible:relative focus-visible:z-10 ${isActive(feature.path) ? 'border-[#d31d24] bg-[#fff7f7] font-semibold text-[var(--ui-accent-text)]' : 'border-transparent text-[#66738a] hover:border-[#d9dde2] hover:bg-[#fafbfc] hover:text-[var(--ui-accent-text)]'}`}
                               >
                                 {feature.label}
                               </Link>

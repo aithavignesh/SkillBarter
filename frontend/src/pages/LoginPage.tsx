@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { trackEvent } from '../services/analytics';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+import { Toast, ToastKind } from '../components/ui/Toast';
 import { Repeat, Lock, Mail, ArrowRight, Phone, ShieldCheck, RotateCcw, KeyRound, CheckCircle2, ChevronDown } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -34,6 +35,13 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ id: number; kind: ToastKind; title: string; message: string } | null>(null);
+  const toastSequence = useRef(0);
+  const submitting = useRef(false);
+  const notify = useCallback((kind: ToastKind, title: string, message: string) => {
+    setToast({ id: ++toastSequence.current, kind, title, message });
+  }, []);
+  const dismissToast = useCallback(() => setToast(null), []);
   const [cooldown, setCooldown] = useState<number>(0);
   const [emailFallback, setEmailFallback] = useState(false);
   const [resetSending, setResetSending] = useState(false);
@@ -51,12 +59,14 @@ export const LoginPage: React.FC = () => {
 
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (submitting.current || loading) return;
     if (!phone.trim()) {
       setError('Please enter your mobile phone number.');
       return;
     }
 
     try {
+      submitting.current = true;
       setError(null);
       setSuccessMessage(null);
       const digits = phone.replace(/\D/g, '');
@@ -74,30 +84,37 @@ export const LoginPage: React.FC = () => {
       if (err.waitSeconds) {
         setCooldown(err.waitSeconds);
       }
+    } finally {
+      submitting.current = false;
     }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting.current || loading) return;
     if (!otp.trim() || otp.trim().length !== 6) {
       setError('Please enter the complete 6-digit OTP received via SMS.');
       return;
     }
 
     try {
+      submitting.current = true;
       setError(null);
       await verifyPhoneOtp(phone.trim(), otp.trim());
       trackEvent('login_completed', { method: 'phone_otp' });
       navigate('/feed');
     } catch (err: any) {
       setError(err.message || 'Invalid or expired OTP. Please check the code and try again.');
+    } finally {
+      submitting.current = false;
     }
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting.current || loading || resetSending) return;
     try {
-      setError(null);
+      submitting.current = true;
       await login(email.trim(), password);
       trackEvent('login_completed', { method: 'email_password' });
       navigate('/feed');
@@ -105,26 +122,30 @@ export const LoginPage: React.FC = () => {
       const message = String(err.message || 'Invalid credentials');
       if (/compromised|breach|found in.*records|change.*password|password.*(leak|leaked|compromised)/i.test(message)) {
         setEmailFallback(true);
-        setError('For your security, this password cannot be used. Enter your email below and use “Forgot password?” to create a new password.');
+        notify('error', 'Password update required', 'For your security, this password cannot be used. Use “Forgot password?” to create a new one.');
       } else {
-        setError(message);
+        notify('error', 'Sign-in failed', 'The email or password is incorrect. Please try again.');
       }
+    } finally {
+      submitting.current = false;
     }
   };
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      setError('Enter your email address first, then choose Forgot password.');
+      notify('info', 'Email required', 'Enter your email address to request password reset instructions.');
       return;
     }
+    if (submitting.current || loading || resetSending) return;
     try {
+      submitting.current = true;
       setResetSending(true);
-      setError(null);
       await api.sendResetPasswordEmail(email);
-      setSuccessMessage('Password reset instructions were sent to your email. Check your inbox and follow the link.');
-    } catch (err: any) {
-      setError(err.message || 'Unable to send password reset email.');
+      notify('success', 'Request received', 'If an account exists for this email, password reset instructions will be sent.');
+    } catch {
+      notify('error', 'Reset request failed', 'We couldn’t process your request right now. Please try again later.');
     } finally {
+      submitting.current = false;
       setResetSending(false);
     }
   };
@@ -132,6 +153,7 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="login-page min-h-[85vh] px-5 pb-12 sm:px-8 sm:pb-16">
+      {toast && <div key={toast.id} className="app-toast-layer"><Toast kind={toast.kind} title={toast.title} message={toast.message} onClose={dismissToast} /></div>}
       <div className="mx-auto grid w-full max-w-5xl gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-start lg:gap-16">
         <div className="login-intro lg:sticky lg:top-10">
           <Link to="/" className="login-brand inline-flex items-center gap-3" aria-label="SkillBarter home">
