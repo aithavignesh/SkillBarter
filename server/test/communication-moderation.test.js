@@ -144,6 +144,26 @@ test("reporting an exchange is limited to its participants", async () => {
   assert.equal(response.status, 403);
 });
 
+test("review creation rejects non-integer ratings before database access", async () => {
+  authenticate();
+  let exchangeLookupCalled = false;
+  Exchange.findById = async () => {
+    exchangeLookupCalled = true;
+    throw new Error("Exchange lookup must not run for fractional ratings.");
+  };
+
+  const fractional = await request("POST", "/api/reviews", {
+    exchangeId, rating: 4.5, comment: "Useful exchange"
+  });
+  assert.equal(fractional.status, 400);
+
+  const numericString = await request("POST", "/api/reviews", {
+    exchangeId, rating: "5", comment: "Useful exchange"
+  });
+  assert.equal(numericString.status, 400);
+  assert.equal(exchangeLookupCalled, false);
+});
+
 test("review creation rejects missing or out-of-range ratings before database access", async () => {
   authenticate();
   let exchangeLookupCalled = false;
