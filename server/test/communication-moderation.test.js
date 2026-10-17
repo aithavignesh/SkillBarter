@@ -29,6 +29,7 @@ const originals = {
   messageCreate: Message.create,
   messageFindOneAndUpdate: Message.findOneAndUpdate,
   reportCreate: Report.create,
+  reviewFind: Review.find,
   reviewCreate: Review.create,
   reviewAggregate: Review.aggregate,
   notificationCreate: (await import("../src/models/Notification.js")).default.create
@@ -53,6 +54,7 @@ after(async () => {
   Message.create = originals.messageCreate;
   Message.findOneAndUpdate = originals.messageFindOneAndUpdate;
   Report.create = originals.reportCreate;
+  Review.find = originals.reviewFind;
   Review.create = originals.reviewCreate;
   Review.aggregate = originals.reviewAggregate;
   User.findByIdAndUpdate = originals.userFindByIdAndUpdate;
@@ -140,6 +142,50 @@ test("reporting an exchange is limited to its participants", async () => {
   Exchange.findById = () => ({ select: async () => ({ _id: exchangeId, requester: otherUserId, recipient: "68f000000000000000000005" }) });
   const response = await request("POST", "/api/reports", { targetType: "exchange", targetId: exchangeId, reason: "Harassment" });
   assert.equal(response.status, 403);
+});
+
+test("review listing scopes by reviewee and caps results at 100", async () => {
+  authenticate();
+  let query;
+  let requestedLimit;
+  Review.find = (filter) => {
+    query = filter;
+    return {
+      populate() {
+        return {
+          sort() {
+            return {
+              limit: async (limit) => {
+                requestedLimit = limit;
+                return [{ reviewee: otherUserId, rating: 5 }];
+              }
+            };
+          }
+        };
+      }
+    };
+  };
+
+  const response = await request("GET", `/api/reviews/user/${otherUserId}`);
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(query, { reviewee: otherUserId });
+  assert.equal(requestedLimit, 100);
+  assert.equal((await response.json()).reviews.length, 1);
+});
+
+test("review listing rejects malformed user IDs before querying storage", async () => {
+  authenticate();
+  let findCalled = false;
+  Review.find = () => {
+    findCalled = true;
+    throw new Error("Review query must not run for a malformed user ID.");
+  };
+
+  const response = await request("GET", "/api/reviews/user/not-an-id");
+
+  assert.equal(response.status, 400);
+  assert.equal(findCalled, false);
 });
 
 test("review creation rejects invalid ratings and incomplete exchanges", async () => {
