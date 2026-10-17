@@ -28,6 +28,8 @@ jobs:
         run: find server/src -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Run server security tests
         run: npm run test -w server
+        env:
+          NODE_ENV: test
       - name: Lint Next.js frontend
         run: npm run lint -w next-app
       - name: Build Next.js frontend

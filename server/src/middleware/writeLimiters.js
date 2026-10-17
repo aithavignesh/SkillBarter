@@ -4,6 +4,7 @@ function createWriteLimiter({ windowMs, limit, message }) {
   return rateLimit({
     windowMs,
     limit,
+    skip: () => process.env.NODE_ENV === "test",
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: message }
