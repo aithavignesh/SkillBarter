@@ -472,7 +472,7 @@ test("admin status changes revoke sessions and return only safe user fields", as
     assert.equal(updateArgs[2].runValidators, true);
     assert.equal(selectedFields, "fullName username email isActive isAdmin");
     const body = await response.json();
-    assert.deepEqual(Object.keys(body.user).sort(), ["email", "fullName", "isActive", "isAdmin", "username"].sort());
+    assert.deepEqual(Object.keys(body.user).sort(), ["_id", "email", "fullName", "isActive", "isAdmin", "username"].sort());
     assert.doesNotMatch(JSON.stringify(body), /passwordHash|tokenVersion/);
   }
 });
