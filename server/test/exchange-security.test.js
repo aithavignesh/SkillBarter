@@ -81,6 +81,29 @@ async function updateStatus(body) {
   });
 }
 
+test("the requester cannot accept or decline their own pending exchange", async () => {
+  mockAuthenticatedUser();
+  Exchange.findById = async () => fakeExchange("pending");
+  Block.exists = async () => false;
+
+  for (const status of ["accepted", "declined"]) {
+    const response = await updateStatus({ status });
+    assert.equal(response.status, 403, `requester must not set status to ${status}`);
+    assert.match((await response.json()).error, /only the recipient/i);
+  }
+});
+
+test("an exchange cannot jump directly from pending to active", async () => {
+  mockAuthenticatedUser();
+  Exchange.findById = async () => fakeExchange("pending");
+  Block.exists = async () => false;
+
+  const response = await updateStatus({ status: "active" });
+
+  assert.equal(response.status, 409);
+  assert.match((await response.json()).error, /only accepted or scheduled/i);
+});
+
 test("an accepted exchange cannot be activated after either participant blocks the other", async () => {
   mockAuthenticatedUser();
   Exchange.findById = async () => fakeExchange("accepted");
