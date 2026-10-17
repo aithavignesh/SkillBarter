@@ -159,6 +159,22 @@ test("admin stats returns the expected dashboard counts", async () => {
   });
 });
 
+test("admin stats returns zero counts for an empty platform", async () => {
+  setAuthenticatedUser(adminUser);
+  User.countDocuments = async () => 0;
+  Exchange.countDocuments = async () => 0;
+  Report.countDocuments = async () => 0;
+
+  const response = await fetch(`${baseUrl}/api/admin/stats`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    stats: { users: 0, activeUsers: 0, exchanges: 0, pendingExchanges: 0, openReports: 0 }
+  });
+});
+
 test("admin analytics aggregates the last 30 days and top pages", async () => {
   setAuthenticatedUser(adminUser);
   let eventCountFilter;
