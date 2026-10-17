@@ -92,6 +92,16 @@ test("admin user status update requires a boolean", async () => {
   assert.equal(response.status, 400);
 });
 
+test("admin user status update rejects invalid IDs and missing users", async () => {
+  setAuthenticatedUser(adminUser);
+  const invalidId = await patch("/api/admin/users/not-an-id/status", { isActive: false });
+  assert.equal(invalidId.status, 400);
+
+  User.findByIdAndUpdate = () => ({ select: async () => null });
+  const missingUser = await patch(`/api/admin/users/${otherUserId}/status`, { isActive: false });
+  assert.equal(missingUser.status, 404);
+});
+
 test("admin status changes revoke sessions on deactivation and reactivation", async () => {
   setAuthenticatedUser(adminUser);
 
@@ -144,6 +154,17 @@ test("admin report moderation updates status and records the moderator", async (
     status: "resolved", resolutionNote: "Reviewed and resolved.", resolvedBy: adminId
   });
   assert.equal(updateArgs[2].runValidators, true);
+});
+
+test("admin report moderation returns 404 when the report does not exist", async () => {
+  setAuthenticatedUser(adminUser);
+  Report.findByIdAndUpdate = async () => null;
+
+  const response = await patch(`/api/admin/reports/${reportId}`, {
+    status: "resolved", resolutionNote: "Review completed."
+  });
+
+  assert.equal(response.status, 404);
 });
 
 test("reopening a report clears the current moderator assignment", async () => {
