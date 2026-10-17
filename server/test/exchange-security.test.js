@@ -12,6 +12,7 @@ process.env.JWT_SECRET = jwtSecret;
 const userId = "68f000000000000000000001";
 const otherUserId = "68f000000000000000000002";
 const exchangeId = "68f000000000000000000003";
+const outsiderId = "68f000000000000000000004";
 const sampleUser = {
   _id: userId,
   id: userId,
@@ -52,8 +53,16 @@ after(async () => {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
-function mockAuthenticatedUser() {
-  User.findById = () => ({ select: async () => sampleUser });
+function mockAuthenticatedUser(currentUser = sampleUser) {
+  User.findById = () => ({ select: async () => currentUser });
+}
+
+function tokenFor(id) {
+  return jwt.sign({ sub: id, tokenVersion: 0 }, jwtSecret, {
+    expiresIn: "1h",
+    issuer: "skillbarter-api",
+    audience: "skillbarter-web"
+  });
 }
 
 function fakeExchange(status = "accepted") {
@@ -70,16 +79,27 @@ function fakeExchange(status = "accepted") {
   };
 }
 
-async function updateStatus(body) {
+async function updateStatus(body, authToken = token) {
   return fetch(`${baseUrl}/api/exchanges/${exchangeId}/status`, {
     method: "PATCH",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${token}`
+      authorization: `Bearer ${authToken}`
     },
     body: JSON.stringify(body)
   });
 }
+
+test("a non-participant cannot change an exchange status", async () => {
+  const outsider = { ...sampleUser, _id: outsiderId, id: outsiderId };
+  mockAuthenticatedUser(outsider);
+  Exchange.findById = async () => fakeExchange("accepted");
+
+  const response = await updateStatus({ status: "active" }, tokenFor(outsiderId));
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /not a participant/i);
+});
 
 test("the requester cannot accept or decline their own pending exchange", async () => {
   mockAuthenticatedUser();
