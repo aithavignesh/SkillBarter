@@ -18,8 +18,7 @@ test("every proposed migration target refers to an existing Mongoose model", asy
   for (const table of contract.tables) {
     if (table.proposedTarget == null) continue;
     // A target can describe fields on a model, e.g. "User.skillsToTeach / User.skillsToLearn".
-    const targetModels = [...table.proposedTarget.matchAll(/(?:^|\\s|\\/) ([A-Z][A-Za-z0-9]*)/g)]
-      .map((match) => match[1]);
+    const targetModels = table.proposedTarget.match(/\\b[A-Z][A-Za-z0-9]*\\b/g) ?? [];
     const normalized = targetModels.length ? targetModels : [table.proposedTarget.split(/[./\\s]/)[0]];
     for (const modelName of new Set(normalized)) {
       if (!modelFiles.has(modelName)) issues.push(`${table.name} -> ${modelName}: model file is missing`);
