@@ -14,7 +14,7 @@ const eventLimiter = rateLimit({
 const eventNames = new Set(["page_view"]);
 const allowedPaths = new Set([
   "/", "/dashboard", "/onboarding", "/matches", "/exchanges", "/notifications",
-  "/community", "/profile", "/reviews", "/settings", "/admin"
+  "/community", "/reviews", "/admin"
 ]);
 
 router.post("/event", requireAuth, eventLimiter, async (req, res, next) => {
