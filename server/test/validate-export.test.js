@@ -95,3 +95,14 @@ test("rejects symbolic links that resolve outside the export directory", async t
   await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
   await assert.rejects(validateExportDirectory(directory), /resolves outside the export directory/);
 });
+
+
+test("rejects invalid UTF-8 even when the manifest checksum matches", async t => {
+  const { directory, manifest } = await fixture(t);
+  const invalidUtf8 = Buffer.from([0x7b, 0x22, 0x69, 0x64, 0x22, 0x3a, 0x22, 0xff, 0x22, 0x7d, 0x0a]);
+  await writeFile(path.join(directory, "users.jsonl"), invalidUtf8);
+  manifest.tables[0].rowCount = 1;
+  manifest.tables[0].sha256 = createHash("sha256").update(invalidUtf8).digest("hex");
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(validateExportDirectory(directory), /not valid UTF-8/);
+});

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
+import { TextDecoder } from "node:util";
 import { pathToFileURL } from "node:url";
 
 function fail(message) {
@@ -69,7 +70,9 @@ export async function validateExportDirectory(exportDirectory) {
     const actualSha256 = createHash("sha256").update(bytes).digest("hex");
     if (actualSha256 !== entry.sha256.toLowerCase()) fail(`SHA-256 mismatch for table ${entry.name}.`);
 
-    const content = bytes.toString("utf8");
+    let content;
+    try { content = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+    catch { fail(`Export for ${entry.name} is not valid UTF-8.`); }
     const lines = content.split("\n");
     if (lines.at(-1) === "") lines.pop();
     let actualRows = 0;
