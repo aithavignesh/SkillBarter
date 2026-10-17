@@ -146,6 +146,30 @@ test("reporting an exchange is limited to its participants", async () => {
   assert.equal(response.status, 403);
 });
 
+test("review creation rejects exchanges without both completion confirmations", async () => {
+  authenticate();
+  let reviewCreateCalled = false;
+  Exchange.findById = async () => ({
+    _id: exchangeId,
+    requester: userId,
+    recipient: otherUserId,
+    status: "completed",
+    completedByRequester: true,
+    completedByRecipient: false
+  });
+  Review.create = async () => {
+    reviewCreateCalled = true;
+    throw new Error("Review creation must not run before both participants confirm.");
+  };
+
+  const response = await request("POST", "/api/reviews", {
+    exchangeId, rating: 5, comment: "Good exchange"
+  });
+
+  assert.equal(response.status, 409);
+  assert.equal(reviewCreateCalled, false);
+});
+
 test("review creation rejects non-integer ratings before database access", async () => {
   authenticate();
   let exchangeLookupCalled = false;
