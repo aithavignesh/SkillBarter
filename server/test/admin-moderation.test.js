@@ -19,6 +19,8 @@ const adminUser = {
 };
 const normalUser = { ...adminUser, isAdmin: false };
 const originalUserFind = User.find;
+const originalExchangeFind = Exchange.find;
+const originalReportFind = Report.find;
 const originalUserCountDocuments = User.countDocuments;
 const originalExchangeCountDocuments = Exchange.countDocuments;
 const originalReportCountDocuments = Report.countDocuments;
@@ -40,6 +42,8 @@ baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
   User.find = originalUserFind;
+  Exchange.find = originalExchangeFind;
+  Report.find = originalReportFind;
   User.countDocuments = originalUserCountDocuments;
   Exchange.countDocuments = originalExchangeCountDocuments;
   Report.countDocuments = originalReportCountDocuments;
@@ -195,6 +199,77 @@ test("admin user listing caps the requested page size at 100", async () => {
   assert.deepEqual(sortFields, { createdAt: -1 });
   assert.match(selectedFields, /email/);
   assert.doesNotMatch(selectedFields, /password|tokenVersion/);
+});
+
+test("admin exchange listing populates participants and caps result count", async () => {
+  setAuthenticatedUser(adminUser);
+  const populated = [];
+  let sortFields;
+  let limitValue;
+  Exchange.find = () => ({
+    populate(...args) {
+      populated.push(args);
+      return this;
+    },
+    sort(fields) {
+      sortFields = fields;
+      return this;
+    },
+    limit(value) {
+      limitValue = value;
+      return Promise.resolve([]);
+    }
+  });
+
+  const response = await fetch(`${baseUrl}/api/admin/exchanges?limit=500`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { exchanges: [] });
+  assert.deepEqual(populated, [
+    ["requester", "fullName username email"],
+    ["recipient", "fullName username email"],
+    ["skillOffered", "name"],
+    ["skillRequested", "name"]
+  ]);
+  assert.deepEqual(sortFields, { createdAt: -1 });
+  assert.equal(limitValue, 100);
+});
+
+test("admin report listing populates reporter, target, and moderator details", async () => {
+  setAuthenticatedUser(adminUser);
+  const populated = [];
+  let sortFields;
+  let limitValue;
+  Report.find = () => ({
+    populate(...args) {
+      populated.push(args);
+      return this;
+    },
+    sort(fields) {
+      sortFields = fields;
+      return this;
+    },
+    limit(value) {
+      limitValue = value;
+      return Promise.resolve([]);
+    }
+  });
+
+  const response = await fetch(`${baseUrl}/api/admin/reports?limit=0`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { reports: [] });
+  assert.deepEqual(populated, [
+    ["reporter", "fullName username email"],
+    ["targetUser", "fullName username email"],
+    ["resolvedBy", "fullName username"]
+  ]);
+  assert.deepEqual(sortFields, { createdAt: -1 });
+  assert.equal(limitValue, 25);
 });
 
 test("admin cannot deactivate their own account", async () => {
