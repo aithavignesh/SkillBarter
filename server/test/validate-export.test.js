@@ -106,3 +106,12 @@ test("rejects invalid UTF-8 even when the manifest checksum matches", async t =>
   await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
   await assert.rejects(validateExportDirectory(directory), /not valid UTF-8/);
 });
+
+test("rejects a manifest containing invalid UTF-8", async t => {
+  const { directory } = await fixture(t);
+  const manifestPath = path.join(directory, "manifest.json");
+  const bytes = await import("node:fs/promises").then(fs => fs.readFile(manifestPath));
+  const invalid = Buffer.concat([bytes.subarray(0, 25), Buffer.from([0xff]), bytes.subarray(26)]);
+  await writeFile(manifestPath, invalid);
+  await assert.rejects(validateExportDirectory(directory), /manifest\.json is not valid UTF-8/);
+});

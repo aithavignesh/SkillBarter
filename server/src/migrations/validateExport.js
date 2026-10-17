@@ -33,7 +33,11 @@ export async function validateExportDirectory(exportDirectory) {
     const manifestPath = path.join(root, "manifest.json");
     const realManifestPath = await realpath(manifestPath);
     if (!realManifestPath.startsWith(realRoot + path.sep)) fail("manifest.json must remain inside the export directory.");
-    manifest = JSON.parse(await readFile(realManifestPath, "utf8"));
+    const manifestBytes = await readFile(realManifestPath);
+    let manifestText;
+    try { manifestText = new TextDecoder("utf-8", { fatal: true }).decode(manifestBytes); }
+    catch { fail("manifest.json is not valid UTF-8."); }
+    manifest = JSON.parse(manifestText);
   } catch (error) {
     fail(`Unable to read valid manifest.json: ${error.message}`);
   }
@@ -88,7 +92,12 @@ export async function validateExportDirectory(exportDirectory) {
     tables.push({ name: entry.name, file: relativeFile, rowCount: actualRows, sha256: actualSha256, valid: true });
   }
 
-  return { valid: true, sourceSchema: manifest.sourceSchema, exportedAt: manifest.exportedAt, tableCount: tables.length, totalRows: tables.reduce((sum, table) => sum + table.rowCount, 0), tables };
+  const totalRows = tables.reduce((sum, table) => {
+    const total = sum + table.rowCount;
+    if (!Number.isSafeInteger(total)) fail("Total export row count exceeds safe integer precision.");
+    return total;
+  }, 0);
+  return { valid: true, sourceSchema: manifest.sourceSchema, exportedAt: manifest.exportedAt, tableCount: tables.length, totalRows, tables };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
