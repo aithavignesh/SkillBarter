@@ -83,9 +83,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     const directory = process.argv[2];
     if (!directory) fail("Usage: node server/src/migrations/validateExport.js <export-directory>");
     const report = await validateExportDirectory(directory);
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } catch (error) {
-    process.stderr.write(`Export validation failed: ${error.message}\\n`);
+    process.stderr.write(`Export validation failed: ${error.message}\n`);
     process.exitCode = 1;
   }
 }
