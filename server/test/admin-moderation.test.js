@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../src/models/User.js";
 import Exchange from "../src/models/Exchange.js";
 import Report from "../src/models/Report.js";
+import AnalyticsEvent from "../src/models/AnalyticsEvent.js";
 import app from "../src/app.js";
 
 const jwtSecret = "admin-moderation-tests-secret-at-least-thirty-two-characters";
@@ -21,6 +22,9 @@ const originalUserFind = User.find;
 const originalUserCountDocuments = User.countDocuments;
 const originalExchangeCountDocuments = Exchange.countDocuments;
 const originalReportCountDocuments = Report.countDocuments;
+const originalAnalyticsCountDocuments = AnalyticsEvent.countDocuments;
+const originalAnalyticsDistinct = AnalyticsEvent.distinct;
+const originalAnalyticsAggregate = AnalyticsEvent.aggregate;
 const originalUserFindById = User.findById;
 const originalUserFindByIdAndUpdate = User.findByIdAndUpdate;
 const originalReportFindByIdAndUpdate = Report.findByIdAndUpdate;
@@ -39,6 +43,9 @@ after(async () => {
   User.countDocuments = originalUserCountDocuments;
   Exchange.countDocuments = originalExchangeCountDocuments;
   Report.countDocuments = originalReportCountDocuments;
+  AnalyticsEvent.countDocuments = originalAnalyticsCountDocuments;
+  AnalyticsEvent.distinct = originalAnalyticsDistinct;
+  AnalyticsEvent.aggregate = originalAnalyticsAggregate;
   User.findById = originalUserFindById;
   User.findByIdAndUpdate = originalUserFindByIdAndUpdate;
   Report.findByIdAndUpdate = originalReportFindByIdAndUpdate;
@@ -102,6 +109,60 @@ test("admin stats returns the expected dashboard counts", async () => {
   assert.deepEqual(await response.json(), {
     stats: { users: 12, activeUsers: 7, exchanges: 8, pendingExchanges: 3, openReports: 2 }
   });
+});
+
+test("admin analytics aggregates the last 30 days and top pages", async () => {
+  setAuthenticatedUser(adminUser);
+  let eventCountFilter;
+  let distinctArgs;
+  const aggregatePipelines = [];
+
+  AnalyticsEvent.countDocuments = async (filter) => {
+    eventCountFilter = filter;
+    return 42;
+  };
+  AnalyticsEvent.distinct = async (...args) => {
+    distinctArgs = args;
+    return [otherUserId, adminId];
+  };
+  AnalyticsEvent.aggregate = async (pipeline) => {
+    aggregatePipelines.push(pipeline);
+    const group = pipeline.find((stage) => stage.$group)?.$group;
+    if (group?._id === "$name") return [{ _id: "page_view", count: 30 }, { _id: "message_sent", count: 12 }];
+    if (group?._id?.$dateToString) return [{ _id: "2026-10-16", count: 20 }, { _id: "2026-10-17", count: 22 }];
+    return [{ _id: "/discover", views: 18 }, { _id: "/matches", views: 12 }];
+  };
+
+  const beforeRequest = Date.now();
+  const response = await fetch(`${baseUrl}/api/admin/analytics`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+  const result = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(result.periodDays, 30);
+  assert.deepEqual(result.summary, { totalEvents: 42, activeUsers: 2 });
+  assert.deepEqual(result.eventsByType, [
+    { name: "page_view", count: 30 }, { name: "message_sent", count: 12 }
+  ]);
+  assert.deepEqual(result.dailyEvents, [
+    { date: "2026-10-16", count: 20 }, { date: "2026-10-17", count: 22 }
+  ]);
+  assert.deepEqual(result.topPages, [
+    { path: "/discover", views: 18 }, { path: "/matches", views: 12 }
+  ]);
+
+  const cutoff = eventCountFilter.createdAt.$gte.getTime();
+  assert.ok(cutoff <= beforeRequest - 29 * 24 * 60 * 60 * 1000);
+  assert.ok(cutoff >= beforeRequest - 30 * 24 * 60 * 60 * 1000 - 1000);
+  assert.deepEqual(distinctArgs, ["actor", eventCountFilter]);
+  assert.equal(aggregatePipelines.length, 3);
+  const topPagesPipeline = aggregatePipelines.find((pipeline) =>
+    pipeline.some((stage) => stage.$group?._id === "$path")
+  );
+  assert.deepEqual(topPagesPipeline[0].$match.name, "page_view");
+  assert.equal(topPagesPipeline[0].$match.path.$ne, "");
+  assert.deepEqual(topPagesPipeline.at(-1), { $limit: 10 });
 });
 
 test("admin user listing caps the requested page size at 100", async () => {
