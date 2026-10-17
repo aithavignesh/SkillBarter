@@ -96,7 +96,8 @@ router.patch("/reports/:id", async (req, res) => {
   const { status, resolutionNote = "" } = req.body || {};
   if (!["reviewing", "resolved", "dismissed", "open"].includes(status)) return res.status(400).json({ error: "Invalid report status." });
   if (typeof resolutionNote !== "string" || resolutionNote.length > 2000) return res.status(400).json({ error: "Resolution note is too long." });
-  const report = await Report.findByIdAndUpdate(id, { $set: { status, resolutionNote, resolvedBy: req.user._id } }, { new: true, runValidators: true });
+  const resolvedBy = ["resolved", "dismissed"].includes(status) ? req.user._id : null;
+  const report = await Report.findByIdAndUpdate(id, { $set: { status, resolutionNote, resolvedBy } }, { new: true, runValidators: true });
   if (!report) return res.status(404).json({ error: "Report not found." });
   return res.json({ report });
 });
