@@ -349,6 +349,32 @@ test("admin report listing clamps oversized limits to 100", async () => {
   assert.equal(limitValue, 100);
 });
 
+test("admin report listing normalizes negative and invalid limits", async () => {
+  setAuthenticatedUser(adminUser);
+  const limits = [];
+  Report.find = () => ({
+    populate() {
+      return this;
+    },
+    sort() {
+      return this;
+    },
+    limit(value) {
+      limits.push(value);
+      return Promise.resolve([]);
+    }
+  });
+
+  for (const [query, expected] of [["-5", 1], ["invalid", 25]]) {
+    const response = await fetch(`${baseUrl}/api/admin/reports?limit=${query}`, {
+      headers: { authorization: `Bearer ${authToken()}` }
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { reports: [] });
+    assert.equal(limits.at(-1), expected);
+  }
+});
+
 test("admin cannot deactivate their own account", async () => {
   setAuthenticatedUser(adminUser);
   const response = await patch(`/api/admin/users/${adminId}/status`, { isActive: false });
