@@ -115,6 +115,19 @@ test("admin endpoints reject requests without a valid bearer token", async () =>
   }
 });
 
+test("admin endpoints reject expired bearer tokens", async () => {
+  setAuthenticatedUser(adminUser);
+  const expiredToken = jwt.sign({ sub: adminId, tokenVersion: 0 }, jwtSecret, {
+    expiresIn: -1, issuer: "skillbarter-api", audience: "skillbarter-web"
+  });
+  const response = await fetch(`${baseUrl}/api/admin/stats`, {
+    headers: { authorization: `Bearer ${expiredToken}` }
+  });
+
+  assert.equal(response.status, 401);
+  assert.match((await response.json()).error, /invalid or expired/i);
+});
+
 test("admin endpoints reject inactive accounts and revoked sessions", async () => {
   setAuthenticatedUser({ ...adminUser, isActive: false });
   const inactiveResponse = await fetch(`${baseUrl}/api/admin/stats`, {
