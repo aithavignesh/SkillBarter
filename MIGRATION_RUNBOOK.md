@@ -44,6 +44,10 @@ The source table names below reflect the project's previously inspected InsForge
 
 The table above is a starting inventory, not a claim that all source columns or semantics are known. The actual source schema must be queried and reviewed before the importer is written.
 
+## Deterministic identifier helper
+
+The migration branch includes `server/src/migrations/deterministicObjectId.js` with focused unit tests. For PostgreSQL source IDs that cannot safely be preserved as MongoDB ObjectIds, it derives a stable 24-hex identifier from a versioned namespace, source collection, and exact source ID. Use the same helper for both a row and every reference to that row. This helper is a building block only; it does not connect to either database, write records, or replace a persisted source-to-target mapping and collision checks. Preserve already-valid ObjectId source IDs only after cross-collection and duplicate-ID checks. Never use this helper to conceal unresolved source schema or relationship semantics.
+
 ## Deterministic identifiers and references
 
 - Keep an explicit source-to-target ID map per collection. If source IDs are valid MongoDB ObjectId hex strings, preserve them only after collision and cross-collection checks; otherwise generate stable target IDs from a documented deterministic rule and store the mapping.
