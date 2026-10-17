@@ -3,6 +3,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { validateExportDirectory } from "./validateExport.js";
 import { validateMappingCoverage } from "./validateMappingCoverage.js";
+import { validateTargetModelCoverage } from "./validateTargetModelCoverage.js";
 
 /** Run export-integrity and source-to-target coverage checks together; never writes to either database. */
 export async function validateMigrationPreflight(exportDirectory, mappingContractPath) {
@@ -18,11 +19,13 @@ export async function validateMigrationPreflight(exportDirectory, mappingContrac
   };
   const mappingContract = JSON.parse(await readFile(mappingContractPath, "utf8"));
   const coverageReport = validateMappingCoverage(validatedInventory, mappingContract);
+  const targetModelReport = await validateTargetModelCoverage(mappingContract);
   return {
-    valid: exportReport.valid && coverageReport.valid,
+    valid: exportReport.valid && coverageReport.valid && targetModelReport.valid,
     export: exportReport,
     mappingCoverage: coverageReport,
-    blockers: coverageReport.issues
+    targetModelCoverage: targetModelReport,
+    blockers: [...coverageReport.issues, ...targetModelReport.issues]
   };
 }
 

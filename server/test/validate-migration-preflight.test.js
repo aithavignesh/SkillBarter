@@ -86,3 +86,27 @@ test("CLI prints JSON and uses exit code 2 when mapping is unreviewed", async ()
     assert.equal(JSON.parse(result.stdout).valid, false);
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
+
+test("preflight rejects proposed targets without a matching Mongoose model", async () => {
+  const f = await fixture();
+  try {
+    const contract = JSON.parse(await readFile(f.contractPath, "utf8"));
+    contract.tables[0].proposedTarget = "MissingModel";
+    await writeFile(f.contractPath, JSON.stringify(contract));
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.mappingCoverage.valid, true);
+    assert.equal(report.targetModelCoverage.valid, false);
+    assert.ok(report.blockers.some((item) => item.model === "MissingModel" && item.issue === "target model file is missing"));
+    assert.equal(report.valid, false);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("preflight validates model targets even while source mappings remain pending", async () => {
+  const f = await fixture({ reviewed: false, mappingStatus: "pending" });
+  try {
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.targetModelCoverage.valid, true);
+    assert.equal(report.valid, false, "pending source schema must still block preflight");
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
