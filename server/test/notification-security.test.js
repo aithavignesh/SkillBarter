@@ -146,6 +146,20 @@ test("marking a notification read scopes by both notification and recipient", as
   assert.deepEqual(query[0], { _id: notificationId, recipient: userId });
 });
 
+test("notification delete rejects malformed IDs before querying storage", async () => {
+  authenticate();
+  let deleteCalled = false;
+  Notification.findOneAndDelete = async () => {
+    deleteCalled = true;
+    return null;
+  };
+
+  const response = await request("DELETE", "/api/notifications/not-an-id");
+
+  assert.equal(response.status, 400);
+  assert.equal(deleteCalled, false);
+});
+
 test("notification read rejects malformed IDs", async () => {
   authenticate();
   const response = await request("PATCH", "/api/notifications/not-an-id/read");
