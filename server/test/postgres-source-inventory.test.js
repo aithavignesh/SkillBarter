@@ -12,7 +12,7 @@ test("source inventory SQL is explicitly read-only", async () => {
   assert.match(statements[0], /^BEGIN\s+TRANSACTION\s+READ\s+ONLY$/i);
   assert.match(statements.at(-1), /^COMMIT$/i);
   for (const statement of statements.slice(1, -1)) {
-    assert.match(statement, /^SELECT\b/i, \`Unexpected non-read-only statement: \${statement.slice(0, 100)}\`);
+    assert.match(statement, /^SELECT\b/i);
     assert.doesNotMatch(statement, /\b(?:INSERT|UPDATE|DELETE|MERGE|CREATE|ALTER|DROP|TRUNCATE|GRANT|REVOKE|CALL|DO)\b/i);
   }
 });
