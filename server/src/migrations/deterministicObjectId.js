@@ -22,9 +22,11 @@ export function deterministicObjectId(sourceCollection, sourceId) {
 
   return createHash("sha256")
     .update(MIGRATION_NAMESPACE)
-    .update("\\0")
+    .update("\0")
+    .update(typeof sourceId)
+    .update("\0")
     .update(sourceCollection.toLowerCase())
-    .update("\\0")
+    .update("\0")
     .update(normalizedId)
     .digest("hex")
     .slice(0, 24);
