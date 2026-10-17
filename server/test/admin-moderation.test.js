@@ -237,6 +237,32 @@ test("admin exchange listing populates participants and caps result count", asyn
   assert.equal(limitValue, 100);
 });
 
+test("admin exchange listing defaults invalid limits and clamps oversized limits", async () => {
+  setAuthenticatedUser(adminUser);
+  const limits = [];
+  Exchange.find = () => ({
+    populate() {
+      return this;
+    },
+    sort() {
+      return this;
+    },
+    limit(value) {
+      limits.push(value);
+      return Promise.resolve([]);
+    }
+  });
+
+  for (const [query, expected] of [["invalid", 25], ["9999", 100]]) {
+    const response = await fetch(`${baseUrl}/api/admin/exchanges?limit=${query}`, {
+      headers: { authorization: `Bearer ${authToken()}` }
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { exchanges: [] });
+    assert.equal(limits.at(-1), expected);
+  }
+});
+
 test("admin report listing populates reporter, target, and moderator details", async () => {
   setAuthenticatedUser(adminUser);
   const populated = [];
@@ -296,6 +322,31 @@ test("admin user listing normalizes negative and invalid limits", async () => {
     assert.deepEqual(await response.json(), { users: [] });
     assert.equal(requestedLimits.at(-1), expectedLimit);
   }
+});
+
+test("admin report listing clamps oversized limits to 100", async () => {
+  setAuthenticatedUser(adminUser);
+  let limitValue;
+  Report.find = () => ({
+    populate() {
+      return this;
+    },
+    sort() {
+      return this;
+    },
+    limit(value) {
+      limitValue = value;
+      return Promise.resolve([]);
+    }
+  });
+
+  const response = await fetch(`${baseUrl}/api/admin/reports?limit=1000`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { reports: [] });
+  assert.equal(limitValue, 100);
 });
 
 test("admin cannot deactivate their own account", async () => {
