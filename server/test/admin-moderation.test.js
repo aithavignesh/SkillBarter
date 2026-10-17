@@ -115,6 +115,21 @@ test("admin endpoints reject requests without a valid bearer token", async () =>
   }
 });
 
+test("admin endpoints reject inactive accounts and revoked sessions", async () => {
+  setAuthenticatedUser({ ...adminUser, isActive: false });
+  const inactiveResponse = await fetch(`${baseUrl}/api/admin/stats`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+  assert.equal(inactiveResponse.status, 401);
+
+  setAuthenticatedUser({ ...adminUser, tokenVersion: 1 });
+  const revokedResponse = await fetch(`${baseUrl}/api/admin/stats`, {
+    headers: { authorization: `Bearer ${authToken()}` }
+  });
+  assert.equal(revokedResponse.status, 401);
+  assert.match((await revokedResponse.json()).error, /revoked/i);
+});
+
 test("admin stats returns the expected dashboard counts", async () => {
   setAuthenticatedUser(adminUser);
   User.countDocuments = async (filter) => filter?.isActive === true ? 7 : 12;
