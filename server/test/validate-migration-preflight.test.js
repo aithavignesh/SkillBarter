@@ -112,7 +112,7 @@ test("preflight validates model targets even while source mappings remain pendin
 });
 
 test("current migration contract references existing proposed target model files", async () => {
-  const contractPath = fileURLToPath(new URL("../../../migrations/source-to-target-contract.json", import.meta.url));
+  const contractPath = fileURLToPath(new URL("../../migrations/source-to-target-contract.json", import.meta.url));
   const contract = JSON.parse(await readFile(contractPath, "utf8"));
   const { validateTargetModelCoverage } = await import("../src/migrations/validateTargetModelCoverage.js");
   const report = await validateTargetModelCoverage(contract);
