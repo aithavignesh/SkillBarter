@@ -8,7 +8,6 @@ import Message from "../src/models/Message.js";
 import Report from "../src/models/Report.js";
 import Review from "../src/models/Review.js";
 import app from "../src/app.js";
-import { reviewLimiter } from "../src/middleware/writeLimiters.js";
 
 const jwtSecret = "route-security-tests-secret-at-least-thirty-two-characters";
 process.env.JWT_SECRET = jwtSecret;
@@ -69,7 +68,6 @@ function authenticate() {
 }
 
 async function request(method, path, body) {
-  if (method === "POST" && path === "/api/reviews") reviewLimiter.store.resetAll();
   return fetch(`${baseUrl}${path}`, {
     method,
     headers: {
