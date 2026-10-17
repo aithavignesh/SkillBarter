@@ -27,7 +27,7 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
       tables.push({ name: table.name, targets: [], valid: false });
       continue;
     }
-    const targets = [...new Set(table.proposedTarget.match(/\\b[A-Z][A-Za-z0-9]*\\b/g) ?? [])];
+    const targets = [...new Set(table.proposedTarget.match(/\b[A-Z][A-Za-z0-9]*\b/g) ?? [])];
     const missing = targets.filter((name) => !modelFiles.has(name));
     for (const modelName of missing) issues.push({ table: table.name ?? null, model: modelName, issue: "target model file is missing" });
     tables.push({ name: table.name, targets, valid: missing.length === 0, missing });
