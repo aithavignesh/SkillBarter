@@ -115,6 +115,30 @@ test("the first completion confirmation notifies the other participant", async (
   assert.match(notification.title, /confirmation needed/i);
 });
 
+test("the second participant completes the exchange after confirming", async () => {
+  const recipientUser = { ...sampleUser, _id: otherUserId, id: otherUserId, fullName: "Recipient" };
+  mockAuthenticatedUser(recipientUser);
+  const exchange = fakeExchange("active");
+  exchange.completedByRequester = true;
+  Exchange.findById = async () => exchange;
+  let notification;
+  Notification.create = async (payload) => {
+    notification = payload;
+    return payload;
+  };
+
+  const response = await updateStatus({ status: "completed" }, tokenFor(otherUserId));
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.awaitingOtherParticipant, undefined);
+  assert.equal(exchange.completedByRequester, true);
+  assert.equal(exchange.completedByRecipient, true);
+  assert.equal(exchange.status, "completed");
+  assert.equal(String(notification.recipient), userId);
+  assert.equal(String(notification.actor), otherUserId);
+});
+
 test("a non-participant cannot change an exchange status", async () => {
   const outsider = { ...sampleUser, _id: outsiderId, id: outsiderId };
   mockAuthenticatedUser(outsider);
