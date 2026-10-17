@@ -54,12 +54,29 @@ async function patch(path, body, id = adminId) {
   });
 }
 
-test("non-admin users cannot access admin endpoints", async () => {
+test("non-admin users cannot access any admin read or write endpoint", async () => {
   setAuthenticatedUser(normalUser);
-  const response = await fetch(`${baseUrl}/api/admin/stats`, {
-    headers: { authorization: `Bearer ${authToken()}` }
-  });
-  assert.equal(response.status, 403);
+  const requests = [
+    ["GET", "/api/admin/stats"],
+    ["GET", "/api/admin/analytics"],
+    ["GET", "/api/admin/users"],
+    ["GET", "/api/admin/exchanges"],
+    ["GET", "/api/admin/reports"],
+    ["PATCH", `/api/admin/users/${otherUserId}/status`, { isActive: false }],
+    ["PATCH", `/api/admin/reports/${reportId}`, { status: "resolved", resolutionNote: "No access" }]
+  ];
+
+  for (const [method, path, body] of requests) {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method,
+      headers: {
+        authorization: `Bearer ${authToken()}`,
+        ...(body ? { "content-type": "application/json" } : {})
+      },
+      ...(body ? { body: JSON.stringify(body) } : {})
+    });
+    assert.equal(response.status, 403, `${method} ${path} should reject non-admin users`);
+  }
 });
 
 test("admin cannot deactivate their own account", async () => {
