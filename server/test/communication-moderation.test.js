@@ -144,6 +144,24 @@ test("reporting an exchange is limited to its participants", async () => {
   assert.equal(response.status, 403);
 });
 
+test("review creation rejects malformed exchange IDs before database access", async () => {
+  authenticate();
+  let exchangeLookupCalled = false;
+  Exchange.findById = async () => {
+    exchangeLookupCalled = true;
+    throw new Error("Exchange lookup must not run for malformed IDs.");
+  };
+
+  const response = await request("POST", "/api/reviews", {
+    exchangeId: "not-a-valid-object-id",
+    rating: 5,
+    comment: "Useful exchange"
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal(exchangeLookupCalled, false);
+});
+
 test("review listing scopes by reviewee and caps results at 100", async () => {
   authenticate();
   let query;
