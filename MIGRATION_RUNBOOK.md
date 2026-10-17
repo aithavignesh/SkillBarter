@@ -44,6 +44,12 @@ The source table names below reflect the project's previously inspected InsForge
 
 The table above is a starting inventory, not a claim that all source columns or semantics are known. The actual source schema must be queried and reviewed before the importer is written.
 
+## Export validation utility
+
+The read-only utility `server/src/migrations/validateExport.js` validates a **local JSON Lines export directory** against `manifest.json`. The manifest must contain `sourceSchema`, an ISO timestamp `exportedAt`, and a non-empty `tables` array. Each table entry declares `name`, relative `file`, exact `rowCount`, and lowercase/uppercase SHA-256 `sha256`. Each data file must contain one JSON object per line; an empty file is valid only with rowCount 0 and its matching checksum.
+
+Run after creating the export, for example: `node server/src/migrations/validateExport.js ./path-to-export`. It checks file checksums, JSONL syntax, row counts, duplicate names/files, and path traversal, then prints a JSON report. It does not connect to PostgreSQL or MongoDB, prove the export is transactionally consistent, validate relationships, or import data. Protect export files and reports according to the source data's sensitivity.
+
 ## Deterministic identifier helper
 
 The migration branch includes `server/src/migrations/deterministicObjectId.js` with focused unit tests. For PostgreSQL source IDs that cannot safely be preserved as MongoDB ObjectIds, it derives a stable 24-hex identifier from a versioned namespace, source collection, and exact source ID. Use the same helper for both a row and every reference to that row. This helper is a building block only; it does not connect to either database, write records, or replace a persisted source-to-target mapping and collision checks. Preserve already-valid ObjectId source IDs only after cross-collection and duplicate-ID checks. Never use this helper to conceal unresolved source schema or relationship semantics.
