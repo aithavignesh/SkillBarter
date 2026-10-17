@@ -128,3 +128,22 @@ test("admin report moderation updates status and records the moderator", async (
   });
   assert.equal(updateArgs[2].runValidators, true);
 });
+
+test("reopening a report clears the current moderator assignment", async () => {
+  setAuthenticatedUser(adminUser);
+  let updateArgs;
+  Report.findByIdAndUpdate = async (...args) => {
+    updateArgs = args;
+    return { _id: reportId, status: "open", resolvedBy: null };
+  };
+
+  const response = await patch(`/api/admin/reports/${reportId}`, {
+    status: "open", resolutionNote: "Needs another review."
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(updateArgs[1].$set, {
+    status: "open", resolutionNote: "Needs another review.", resolvedBy: null
+  });
+  assert.equal(updateArgs[2].runValidators, true);
+});
