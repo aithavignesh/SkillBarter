@@ -46,6 +46,17 @@ test("rejects malformed model and field-path syntax", async (t) => {
   assert.ok(result.issues.some((issue) => issue.issue === "target model file is missing" && issue.model === "Missing"));
 });
 
+test("rejects prototype-related segments in model target paths", async (t) => {
+  const directory = await modelFixture(t);
+  const result = await validateTargetModelCoverage({
+    tables: [{ name: "users", proposedTarget: "User.__proto__.polluted / User.constructor.name / User.profile" }]
+  }, directory);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.target === "User.__proto__.polluted" && issue.issue.includes("unsafe prototype-related")));
+  assert.ok(result.issues.some((issue) => issue.target === "User.constructor.name" && issue.issue.includes("unsafe prototype-related")));
+  assert.ok(!result.issues.some((issue) => issue.target === "User.profile"));
+});
+
 test("skips explicitly null targets without claiming a model was checked", async (t) => {
   const directory = await modelFixture(t);
   const result = await validateTargetModelCoverage({
