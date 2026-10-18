@@ -8,8 +8,9 @@ test("generates a stable 24-character hexadecimal identifier", () => {
   assert.match(first, /^[a-f0-9]{24}$/);
 });
 
-test("namespaces identifiers by source collection", () => {
+test("namespaces identifiers by exact source collection name", () => {
   assert.notEqual(deterministicObjectId("users", "42"), deterministicObjectId("skills", "42"));
+  assert.notEqual(deterministicObjectId("users", "42"), deterministicObjectId("Users", "42"));
 });
 
 test("distinguishes source identifiers without coercing strings to numbers", () => {
