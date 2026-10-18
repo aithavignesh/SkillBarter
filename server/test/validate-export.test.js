@@ -76,7 +76,7 @@ test("rejects path traversal in a manifest", async t => {
   const { directory, manifest } = await fixture(t);
   manifest.tables[0].file = "../outside.jsonl";
   await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
-  await assert.rejects(validateExportDirectory(directory), /escapes the export directory/);
+  await assert.rejects(validateExportDirectory(directory), /must not contain empty, current-directory, or parent-directory segments|escapes the export directory/);
 });
 
 test("rejects Windows absolute and backslash-separated manifest paths on every platform", async t => {
