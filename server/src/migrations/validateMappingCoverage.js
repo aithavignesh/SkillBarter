@@ -50,8 +50,36 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
     if (["mapped", "transformed"].includes(mapping.status)) {
       if (!Array.isArray(mapping.fields) || mapping.fields.length === 0) {
         tableIssues.push("mapped/transformed table requires explicit field mapping decisions");
-      } else if (!mapping.fields.some((field) => field && ["mapped", "transformed"].includes(field.status))) {
-        tableIssues.push("mapped/transformed table requires at least one mapped/transformed field");
+      } else {
+        const sourceFields = new Set();
+        let usableFieldCount = 0;
+        for (const field of mapping.fields) {
+          if (!field || typeof field !== "object" || Array.isArray(field)) {
+            tableIssues.push("field mapping entries must be objects");
+            continue;
+          }
+          if (typeof field.sourceField !== "string" || !field.sourceField.trim()) {
+            tableIssues.push("field mapping entries require sourceField");
+          } else if (sourceFields.has(field.sourceField)) {
+            tableIssues.push(`duplicate source field mapping: ${field.sourceField}`);
+          } else {
+            sourceFields.add(field.sourceField);
+          }
+          if (!["pending", "mapped", "transformed", "excluded", "blocked"].includes(field.status)) {
+            tableIssues.push(`field ${field.sourceField ?? "(unknown)"} has an invalid mapping status`);
+            continue;
+          }
+          if (["mapped", "transformed"].includes(field.status)) {
+            usableFieldCount += 1;
+            if (typeof field.targetField !== "string" || !field.targetField.trim()) tableIssues.push(`field ${field.sourceField ?? "(unknown)"} requires targetField`);
+          } else if (["excluded", "blocked"].includes(field.status) && (typeof field.reason !== "string" || !field.reason.trim())) {
+            tableIssues.push(`field ${field.sourceField ?? "(unknown)"} requires a reason when ${field.status}`);
+          } else if (field.status === "pending") {
+            tableIssues.push(`field ${field.sourceField ?? "(unknown)"} still has a pending mapping decision`);
+          }
+          if (field.status === "blocked") tableIssues.push(`field ${field.sourceField ?? "(unknown)"} is blocked`);
+        }
+        if (usableFieldCount === 0) tableIssues.push("mapped/transformed table requires at least one mapped/transformed field");
       }
       if (mappingContract.schemaSnapshotReviewed !== true) tableIssues.push("schema snapshot has not been reviewed");
     }
