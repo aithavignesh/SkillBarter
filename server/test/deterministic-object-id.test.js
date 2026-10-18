@@ -23,6 +23,8 @@ test("rejects invalid collection names and empty or unsupported source IDs", () 
   assert.throws(() => deterministicObjectId("users", "   "), /must not be empty/);
   assert.throws(() => deterministicObjectId("users", null), /sourceId must be a string or finite number/);
   assert.throws(() => deterministicObjectId("users", Number.NaN), /sourceId must be a string or finite number/);
+  assert.throws(() => deterministicObjectId("users", Number.POSITIVE_INFINITY), /sourceId must be a string or finite number/);
+  assert.throws(() => deterministicObjectId("users", Number.NEGATIVE_INFINITY), /sourceId must be a string or finite number/);
 });
 
 test("rejects numeric identifiers that JavaScript cannot represent exactly", () => {
