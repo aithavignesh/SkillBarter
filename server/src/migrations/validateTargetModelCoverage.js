@@ -39,6 +39,29 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
       unsafe: targetPath.split(".").some((segment) => ["__proto__", "prototype", "constructor"].includes(segment))
     }));
     const malformed = parsedPaths.filter(({ match, unsafe }) => !match || unsafe);
+    const validPaths = parsedPaths
+      .filter(({ match, unsafe }) => match && !unsafe)
+      .map(({ targetPath, match }) => ({
+        targetPath,
+        model: match[1],
+        fields: targetPath.split(".").slice(1)
+      }));
+    for (let i = 0; i < validPaths.length; i += 1) {
+      for (let j = i + 1; j < validPaths.length; j += 1) {
+        const left = validPaths[i];
+        const right = validPaths[j];
+        if (left.model !== right.model) continue;
+        const shorter = left.fields.length <= right.fields.length ? left : right;
+        const longer = shorter === left ? right : left;
+        if (shorter.fields.every((segment, index) => segment === longer.fields[index])) {
+          issues.push({
+            table: table.name ?? null,
+            target: `${left.targetPath} / ${right.targetPath}`,
+            issue: "target paths overlap and may overwrite one another"
+          });
+        }
+      }
+    }
     for (const { targetPath, unsafe } of malformed) {
       issues.push({
         table: table.name ?? null,
