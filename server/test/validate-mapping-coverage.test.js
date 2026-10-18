@@ -50,6 +50,24 @@ test("does not approve mapped tables without any usable field mappings", () => {
   assert.ok(empty.issues.some((issue) => issue.table === "users" && issue.issue.includes("explicit field mapping decisions")));
 });
 
+test("does not approve tables with pending, blocked, or duplicate field decisions", () => {
+  const candidate = structuredClone(contract);
+  candidate.tables[0].fields.push({ sourceField: "legacy_id", status: "pending" });
+  let result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("pending mapping decision")));
+
+  candidate.tables[0].fields[1] = { sourceField: "legacy_id", status: "blocked", reason: "Await schema review." };
+  result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("is blocked")));
+
+  candidate.tables[0].fields[1] = { sourceField: "email", status: "mapped", targetField: "alternateEmail" };
+  result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("duplicate source field mapping")));
+});
+
 test("counts only approved mapped or transformed tables in the summary", () => {
   const candidate = structuredClone(contract);
   candidate.tables[1] = { name: "skills", status: "pending", proposedTarget: "Skill" };
