@@ -15,6 +15,8 @@ test("rejects exclusion reasons when no rows were excluded", () => {
   report.tables[0].exclusionReason = "No rows excluded";
   const result = reconcileImportReport(manifest, report);
   assert.equal(result.valid, false);
+  assert.equal(result.tables[0].valid, false, "table-level validity must reflect the invalid exclusion metadata");
+  assert.equal(Object.hasOwn(result.tables[0], "exclusionReason"), false, "unused exclusion metadata must not be emitted in the reconciled table");
   assert.ok(result.issues.some(item => item.table === "users" && item.issue.includes("exclusionReason must only be supplied")));
 });
 test("flags rejected rows and unresolved references", () => { const report = structuredClone(goodReport); report.tables[0].rejectedRows = 1; report.tables[0].migratedRows = 2; report.tables[0].unresolvedReferences = 1; const result = reconcileImportReport(manifest, report); assert.ok(result.issues.some(item => item.issue.includes("rejected rows"))); assert.ok(result.issues.some(item => item.issue.includes("unresolved references"))); });
