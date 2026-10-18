@@ -19,7 +19,12 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
   for (const table of mappingContract.tables) {
     if (!table || typeof table !== "object" || Array.isArray(table)) throw new Error("Mapping table entries must be objects.");
     if (table.proposedTarget == null) {
-      tables.push({ name: table.name, targets: [], valid: true, skipped: true });
+      if (["mapped", "transformed"].includes(table.status)) {
+        issues.push({ table: table.name ?? null, issue: "mapped/transformed table requires a proposedTarget" });
+        tables.push({ name: table.name, targets: [], valid: false, skipped: false });
+      } else {
+        tables.push({ name: table.name, targets: [], valid: true, skipped: true });
+      }
       continue;
     }
     if (typeof table.proposedTarget !== "string" || !table.proposedTarget.trim()) {
