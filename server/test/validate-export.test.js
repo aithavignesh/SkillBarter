@@ -75,6 +75,16 @@ test("rejects Windows absolute and backslash-separated manifest paths on every p
   }
 });
 
+test("rejects case-colliding table names in export manifests", async t => {
+  const { directory, manifest } = await fixture(t);
+  manifest.tables.push({ ...manifest.tables[0], name: "Users" });
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /Duplicate table name in manifest.*case-insensitive aliases/
+  );
+});
+
 test("rejects case-colliding export paths for cross-platform portability", async t => {
   const { directory, manifest, data } = await fixture(t);
   await writeFile(path.join(directory, "USERS.JSONL"), data);
