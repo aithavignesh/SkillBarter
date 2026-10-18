@@ -54,6 +54,8 @@ export function validateMappingContract(contract) {
           if (!contract.schemaSnapshotReviewed) tableIssues.push(`field ${field.sourceField} cannot be approved before schemaSnapshotReviewed is true`);
         }
         if (["excluded", "blocked"].includes(field.status)) requireText(field.reason, `reason for ${table.name}.`);
+        if (field.status === "pending") tableIssues.push(`field ${field.sourceField} still has a pending mapping decision`);
+        if (field.status === "blocked") tableIssues.push(`field ${field.sourceField} is blocked and prevents table readiness`);
       }
     }
     for (const issue of tableIssues) issues.push({ table: table.name, issue });
