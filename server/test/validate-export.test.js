@@ -98,6 +98,16 @@ test("rejects case-colliding table names in export manifests", async t => {
   );
 });
 
+test("rejects case-insensitive aliases of manifest.json as table data", async t => {
+  const { directory, manifest } = await fixture(t);
+  manifest.tables[0].file = "MANIFEST.JSON";
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /cannot use manifest\.json as its data file, including case-insensitive aliases/
+  );
+});
+
 test("rejects case-colliding export paths for cross-platform portability", async t => {
   const { directory, manifest, data } = await fixture(t);
   await writeFile(path.join(directory, "USERS.JSONL"), data);
