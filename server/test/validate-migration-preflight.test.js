@@ -26,7 +26,7 @@ async function fixture({ reviewed = true, mappingStatus = "mapped" } = {}) {
     sourceSystem: "test",
     targetSystem: "test",
     schemaSnapshotReviewed: reviewed,
-    tables: [{ name: "users", status: mappingStatus, proposedTarget: "User", reason: "Test decision" }]
+    tables: [{ name: "users", status: mappingStatus, proposedTarget: "User", reason: "Test decision", ...(mappingStatus === "mapped" || mappingStatus === "transformed" ? { fields: [{ sourceField: "email", status: "mapped", targetField: "email" }] } : {}) }]
   }));
   return { root, exportDirectory, contractPath };
 }
