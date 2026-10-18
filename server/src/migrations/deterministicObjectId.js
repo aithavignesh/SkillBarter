@@ -31,7 +31,7 @@ export function deterministicObjectId(sourceCollection, sourceId) {
     .update("\0")
     .update(typeof sourceId)
     .update("\0")
-    .update(sourceCollection.toLowerCase())
+    .update(sourceCollection)
     .update("\0")
     .update(normalizedId)
     .digest("hex")
