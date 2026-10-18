@@ -18,11 +18,12 @@ test("accepts existing models and nested field paths", async (t) => {
     tables: [
       { name: "users", proposedTarget: "User" },
       { name: "user_skills", proposedTarget: "User.skillsToTeach / User.skillsToLearn" },
+      { name: "legacy_user_skills", proposedTarget: "User.skills_to_teach" },
       { name: "exchanges", proposedTarget: "Exchange" }
     ]
   }, directory);
   assert.equal(result.valid, true);
-  assert.equal(result.checkedTableCount, 3);
+  assert.equal(result.checkedTableCount, 4);
   assert.deepEqual(result.issues, []);
 });
 
