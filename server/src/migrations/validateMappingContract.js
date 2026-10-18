@@ -19,11 +19,14 @@ export function validateMappingContract(contract) {
   if (typeof contract.schemaSnapshotReviewed !== "boolean") throw new Error("schemaSnapshotReviewed must be a boolean.");
   if (!Array.isArray(contract.tables) || contract.tables.length === 0) throw new Error("Mapping contract must contain tables.");
   const seen = new Set();
+  const seenNameKeys = new Set();
   const issues = [];
   const tables = contract.tables.map((table) => {
     requireObject(table, "Mapping table entry");
     if (typeof table.name !== "string" || !/^[a-z][a-z0-9_]*$/i.test(table.name)) throw new Error("Table names must be valid identifiers.");
-    if (seen.has(table.name)) throw new Error(`Duplicate mapping table: ${table.name}`);
+    const nameKey = table.name.toLowerCase();
+    if (seenNameKeys.has(nameKey)) throw new Error(`Duplicate mapping table (including case-insensitive aliases): ${table.name}`);
+    seenNameKeys.add(nameKey);
     seen.add(table.name);
     if (!STATUSES.has(table.status)) throw new Error(`Invalid status for ${table.name}: expected pending, mapped, transformed, excluded, or blocked.`);
     const tableIssues = [];
