@@ -54,6 +54,25 @@ test("does not allow approved mapping before source schema review", () => {
 
 
 
+
+test("allows distinct sibling nested target paths", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaSnapshotReviewed = true;
+  candidate.tables = [{
+    name: "users",
+    status: "mapped",
+    proposedTarget: "User",
+    fields: [
+      { sourceField: "profile_name", status: "mapped", targetField: "profile.name" },
+      { sourceField: "profile_bio", status: "mapped", targetField: "profile.bio" }
+    ]
+  }];
+  const result = validateMappingContract(candidate);
+  assert.equal(result.valid, true);
+  assert.equal(result.readyTableCount, 1);
+  assert.equal(result.blockedTableCount, 0);
+});
+
 test("rejects overlapping target paths that would overwrite scalar and nested values", () => {
   const candidate = structuredClone(contract);
   candidate.schemaSnapshotReviewed = true;
