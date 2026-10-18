@@ -33,47 +33,23 @@ test("flags rejected rows and unresolved references", () => { const report = str
 test("flags source tables omitted from the import report", () => { const result = reconcileImportReport(manifest, { tables: [goodReport.tables[0]] }); assert.ok(result.issues.some(item => item.table === "skills" && item.issue === "missing from import report")); });
 test("rejects unknown or duplicate table entries", () => { assert.throws(() => reconcileImportReport(manifest, { tables: [{ ...goodReport.tables[0], name: "unknown" }] }), /unknown source table/); assert.throws(() => reconcileImportReport(manifest, { tables: [goodReport.tables[0], goodReport.tables[0]] }), /Duplicate import table/); });
 test("rejects case-colliding source and import table names", () => {
-  assert.throws(
-    () => reconcileImportReport({ tables: [{ name: "users", rowCount: 1 }, { name: "Users", rowCount: 1 }] }, { tables: [] }),
-    /Duplicate source table.*case-insensitive aliases/
-  );
-  assert.throws(
-    () => reconcileImportReport(manifest, { tables: [goodReport.tables[0], { ...goodReport.tables[1], name: "Users" }] }),
-    /unknown source table/
-  );
-  assert.throws(
-    () => reconcileImportReport({ tables: [{ name: "users", rowCount: 1 }] }, { tables: [
-      { name: "users", sourceRows: 1, migratedRows: 1, excludedRows: 0, rejectedRows: 0, unresolvedReferences: 0 },
-      { name: "users", sourceRows: 1, migratedRows: 1, excludedRows: 0, rejectedRows: 0, unresolvedReferences: 0 }
-    ] }),
-    /Duplicate import table.*case-insensitive aliases/
-  );
+  assert.throws(() => reconcileImportReport({ tables: [{ name: "users", rowCount: 1 }, { name: "Users", rowCount: 1 }] }, { tables: [] }), /Duplicate source table.*case-insensitive aliases/);
+  assert.throws(() => reconcileImportReport(manifest, { tables: [goodReport.tables[0], { ...goodReport.tables[1], name: "Users" }] }), /unknown source table/);
+  assert.throws(() => reconcileImportReport({ tables: [{ name: "users", rowCount: 1 }] }, { tables: [
+    { name: "users", sourceRows: 1, migratedRows: 1, excludedRows: 0, rejectedRows: 0, unresolvedReferences: 0 },
+    { name: "users", sourceRows: 1, migratedRows: 1, excludedRows: 0, rejectedRows: 0, unresolvedReferences: 0 }
+  ] }), /Duplicate import table.*case-insensitive aliases/);
 });
-
 test("rejects invalid row counts", () => { const report = structuredClone(goodReport); report.tables[0].rejectedRows = -1; assert.throws(() => reconcileImportReport(manifest, report), /non-negative safe integer/); });
-
 test("rejects aggregate source row counts beyond safe integer precision", () => {
-  const hugeManifest = { tables: [
-    { name: "users", rowCount: Number.MAX_SAFE_INTEGER },
-    { name: "skills", rowCount: 1 }
-  ] };
-  assert.throws(
-    () => reconcileImportReport(hugeManifest, { tables: [] }),
-    /total source row count must be a non-negative safe integer/
-  );
+  const hugeManifest = { tables: [{ name: "users", rowCount: Number.MAX_SAFE_INTEGER }, { name: "skills", rowCount: 1 }] };
+  assert.throws(() => reconcileImportReport(hugeManifest, { tables: [] }), /total source row count must be a non-negative safe integer/);
 });
-
 test("flags row accounting totals that exceed safe integer precision", () => {
   const hugeManifest = { tables: [{ name: "users", rowCount: Number.MAX_SAFE_INTEGER }] };
-  const report = { tables: [{
-    name: "users",
-    sourceRows: Number.MAX_SAFE_INTEGER,
-    migratedRows: Number.MAX_SAFE_INTEGER,
-    excludedRows: 1,
-    rejectedRows: 0,
-    unresolvedReferences: 0
-  }] };
+  const report = { tables: [{ name: "users", sourceRows: Number.MAX_SAFE_INTEGER, migratedRows: Number.MAX_SAFE_INTEGER, excludedRows: 1, rejectedRows: 0, unresolvedReferences: 0 }] };
   const result = reconcileImportReport(hugeManifest, report);
   assert.equal(result.valid, false);
+  assert.equal(result.tables[0].valid, false, "table-level validity must reflect unsafe row-accounting totals");
   assert.ok(result.issues.some(item => item.table === "users" && item.issue.includes("do not equal sourceRows")));
 });
