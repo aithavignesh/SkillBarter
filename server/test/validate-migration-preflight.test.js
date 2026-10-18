@@ -50,6 +50,8 @@ test("reports mapping blockers after validating the export", async () => {
     assert.equal(report.valid, false);
     assert.ok(report.blockers.some((item) => item.issue.includes("schema snapshot has not been reviewed")));
     assert.ok(report.blockers.some((item) => item.stage === "mappingContract" && item.issue.includes("cannot approve a mapped/transformed table")));
+    assert.ok(report.blockers.every((item) => ["mappingContract", "mappingCoverage", "targetModelCoverage"].includes(item.stage)),
+      "every preflight blocker must have an authoritative validation stage");
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
