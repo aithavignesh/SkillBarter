@@ -66,6 +66,15 @@ test("rejects path traversal in a manifest", async t => {
   await assert.rejects(validateExportDirectory(directory), /escapes the export directory/);
 });
 
+test("rejects Windows absolute and backslash-separated manifest paths on every platform", async t => {
+  const { directory, manifest } = await fixture(t);
+  for (const file of ["C:\\\\outside.jsonl", "\\\\\\\\server\\\\share\\\\users.jsonl", "nested\\\\..\\\\outside.jsonl"]) {
+    manifest.tables[0].file = file;
+    await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+    await assert.rejects(validateExportDirectory(directory), /non-empty relative path using forward slashes/);
+  }
+});
+
 test("rejects duplicate table names and invalid metadata", async t => {
   const { directory, manifest } = await fixture(t);
   manifest.tables.push({ ...manifest.tables[0] });
