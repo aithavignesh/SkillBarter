@@ -84,6 +84,7 @@ export async function validateExportDirectory(exportDirectory) {
 
   const seenNames = new Set();
   const seenFiles = new Set();
+  const seenRealFiles = new Set();
   const tables = [];
   for (const entry of manifest.tables) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) fail("Every table manifest entry must be an object.");
@@ -107,6 +108,8 @@ export async function validateExportDirectory(exportDirectory) {
     try {
       const realFilePath = await realpath(filePath);
       if (!isWithinDirectory(realRoot, realFilePath)) fail(`Export file resolves outside the export directory: ${entry.file}`);
+      if (seenRealFiles.has(realFilePath)) fail(`Multiple tables resolve to the same export file through aliases: ${entry.file}`);
+      seenRealFiles.add(realFilePath);
       bytes = await readFile(realFilePath);
     }
     catch (error) { fail(`Unable to read export for ${entry.name}: ${error.message}`); }
