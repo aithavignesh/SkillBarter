@@ -41,6 +41,7 @@ export function validateMappingContract(contract) {
     if (table.fields !== undefined) {
       if (!Array.isArray(table.fields)) throw new Error(`fields for ${table.name} must be an array.`);
       const fieldNames = new Set();
+      const targetPaths = [];
       for (const field of table.fields) {
         requireObject(field, `Field mapping for ${table.name}`);
         requireText(field.sourceField, `sourceField for ${table.name}`);
@@ -50,6 +51,7 @@ export function validateMappingContract(contract) {
         if (["mapped", "transformed"].includes(field.status)) {
           requireText(field.targetField, `targetField for ${table.name}.`);
           const targetSegments = field.targetField.split(".");
+          targetPaths.push({ sourceField: field.sourceField, path: field.targetField, segments: targetSegments });
           if (!/^[a-z][A-Za-z0-9_]*(?:\.[a-z][A-Za-z0-9_]*)*$/.test(field.targetField)
             || targetSegments.some((segment) => ["__proto__", "prototype", "constructor"].includes(segment))) {
             tableIssues.push(`field ${field.sourceField} has an invalid or unsafe targetField path`);
@@ -59,6 +61,18 @@ export function validateMappingContract(contract) {
         if (["excluded", "blocked"].includes(field.status)) requireText(field.reason, `reason for ${table.name}.`);
         if (field.status === "pending") tableIssues.push(`field ${field.sourceField} still has a pending mapping decision`);
         if (field.status === "blocked") tableIssues.push(`field ${field.sourceField} is blocked and prevents table readiness`);
+      }
+      for (let i = 0; i < targetPaths.length; i += 1) {
+        for (let j = i + 1; j < targetPaths.length; j += 1) {
+          const left = targetPaths[i];
+          const right = targetPaths[j];
+          const shorter = left.segments.length <= right.segments.length ? left : right;
+          const longer = shorter === left ? right : left;
+          const overlaps = shorter.segments.every((segment, index) => segment === longer.segments[index]);
+          if (overlaps) {
+            tableIssues.push(`fields ${left.sourceField} and ${right.sourceField} have overlapping targetField paths (${left.path}, ${right.path})`);
+          }
+        }
       }
     }
     for (const issue of tableIssues) issues.push({ table: table.name, issue });
