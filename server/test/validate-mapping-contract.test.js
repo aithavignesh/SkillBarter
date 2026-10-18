@@ -125,6 +125,21 @@ test("mapped tables require explicit field decisions", () => {
   assert.equal(result.readyTableCount, 0);
 });
 
+test("mapped tables cannot be ready when every field is excluded", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaSnapshotReviewed = true;
+  candidate.tables = [{
+    name: "users",
+    status: "mapped",
+    proposedTarget: "User",
+    fields: [{ sourceField: "legacy_secret", status: "excluded", reason: "Not migrated by policy." }]
+  }];
+  const result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.equal(result.readyTableCount, 0);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("require at least one mapped/transformed field")));
+});
+
 test("pending and blocked field decisions prevent table readiness", () => {
   const candidate = structuredClone(contract);
   candidate.schemaSnapshotReviewed = true;
