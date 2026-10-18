@@ -45,8 +45,10 @@ export function validateMappingContract(contract) {
         if (!STATUSES.has(field.status)) throw new Error(`Invalid field mapping status for ${table.name}.`);
         if (["mapped", "transformed"].includes(field.status)) {
           requireText(field.targetField, `targetField for ${table.name}.`);
-          if (!/^[a-z][A-Za-z0-9_]*(?:\.[a-z][A-Za-z0-9_]*)*$/.test(field.targetField)) {
-            tableIssues.push(`field ${field.sourceField} has an invalid targetField path`);
+          const targetSegments = field.targetField.split(".");
+          if (!/^[a-z][A-Za-z0-9_]*(?:\.[a-z][A-Za-z0-9_]*)*$/.test(field.targetField)
+            || targetSegments.some((segment) => ["__proto__", "prototype", "constructor"].includes(segment))) {
+            tableIssues.push(`field ${field.sourceField} has an invalid or unsafe targetField path`);
           }
           if (!contract.schemaSnapshotReviewed) tableIssues.push(`field ${field.sourceField} cannot be approved before schemaSnapshotReviewed is true`);
         }
