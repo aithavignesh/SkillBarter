@@ -16,20 +16,26 @@ export function reconcileImportReport(sourceManifest, importReport) {
   if (!Array.isArray(sourceManifest.tables) || sourceManifest.tables.length === 0) throw new Error("Source manifest must contain tables.");
   if (!Array.isArray(importReport.tables)) throw new Error("Import report must contain tables.");
   const sourceByName = new Map();
+  const sourceNameKeys = new Set();
   for (const table of sourceManifest.tables) {
     requireObject(table, "Source table entry");
     if (typeof table.name !== "string" || !/^[a-z][a-z0-9_]*$/i.test(table.name)) throw new Error("Source table names must be valid identifiers.");
     requireCount(table.rowCount, `Source rowCount for ${table.name}`);
-    if (sourceByName.has(table.name)) throw new Error(`Duplicate source table: ${table.name}`);
+    const sourceKey = table.name.toLowerCase();
+    if (sourceNameKeys.has(sourceKey)) throw new Error(`Duplicate source table (including case-insensitive aliases): ${table.name}`);
+    sourceNameKeys.add(sourceKey);
     sourceByName.set(table.name, table.rowCount);
   }
   const seen = new Set();
+  const seenNameKeys = new Set();
   const issues = [];
   const tables = [];
   for (const table of importReport.tables) {
     requireObject(table, "Import table entry");
     if (typeof table.name !== "string" || !sourceByName.has(table.name)) throw new Error(`Import report contains unknown source table: ${table.name}`);
-    if (seen.has(table.name)) throw new Error(`Duplicate import table: ${table.name}`);
+    const nameKey = table.name.toLowerCase();
+    if (seenNameKeys.has(nameKey)) throw new Error(`Duplicate import table (including case-insensitive aliases): ${table.name}`);
+    seenNameKeys.add(nameKey);
     seen.add(table.name);
     for (const field of ["sourceRows", "migratedRows", "excludedRows", "rejectedRows", "unresolvedReferences"]) requireCount(table[field], `${field} for ${table.name}`);
     const expectedRows = sourceByName.get(table.name);
