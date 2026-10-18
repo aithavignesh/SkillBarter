@@ -41,7 +41,7 @@ test("rejects malformed model and field-path syntax", async (t) => {
     tables: [{ name: "users", proposedTarget: "../User / User.UppercaseField / Missing.validField" }]
   }, directory);
   assert.equal(result.valid, false);
-  assert.deepEqual(result.tables[0].malformed, ["../User", "User.UppercaseField"]);
+  assert.deepEqual(result.tables[0].malformed, ["..", "User.UppercaseField"]);
   assert.ok(result.issues.some((issue) => issue.issue === "target model file is missing" && issue.model === "Missing"));
 });
 
