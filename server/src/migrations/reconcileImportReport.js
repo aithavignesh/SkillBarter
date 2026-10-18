@@ -46,6 +46,7 @@ export function reconcileImportReport(sourceManifest, importReport) {
     if (table.unresolvedReferences !== 0) tableIssues.push(`${table.unresolvedReferences} unresolved references`);
     if (table.rejectedRows !== 0) tableIssues.push(`${table.rejectedRows} rejected rows need review`);
     if (table.excludedRows !== 0 && (typeof table.exclusionReason !== "string" || !table.exclusionReason.trim())) tableIssues.push("excluded rows require a documented exclusionReason");
+    if (table.excludedRows === 0 && table.exclusionReason !== undefined) tableIssues.push("exclusionReason must only be supplied when excludedRows is greater than zero");
     for (const issue of tableIssues) issues.push({ table: table.name, issue });
     tables.push({
       name: table.name,
