@@ -59,6 +59,19 @@ test("rejects malformed JSONL rows", async t => {
   await assert.rejects(validateExportDirectory(directory), /Invalid JSON in users at line 1/);
 });
 
+
+test("rejects ambiguous dot-segment paths in export manifests", async t => {
+  const { directory, manifest } = await fixture(t);
+  for (const file of ["./users.jsonl", "nested/../users.jsonl", "nested//users.jsonl", "users.jsonl/"]) {
+    manifest.tables[0].file = file;
+    await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+    await assert.rejects(
+      validateExportDirectory(directory),
+      /must not contain empty, current-directory, or parent-directory segments/
+    );
+  }
+});
+
 test("rejects path traversal in a manifest", async t => {
   const { directory, manifest } = await fixture(t);
   manifest.tables[0].file = "../outside.jsonl";
