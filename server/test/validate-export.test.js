@@ -270,6 +270,17 @@ test("rejects timestamps whose -00:00 offset means the instant is unknown", asyn
   );
 });
 
+test("rejects an internal symlink that resolves to manifest.json as table data", async t => {
+  const { directory, manifest } = await fixture(t);
+  await symlink(path.join(directory, "manifest.json"), path.join(directory, "manifest-alias.json"));
+  manifest.tables[0].file = "manifest-alias.json";
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /cannot resolve to manifest\.json through an alias/
+  );
+});
+
 test("rejects a manifest symlink that resolves outside the export directory", async t => {
   const { directory } = await fixture(t);
   const outsidePath = path.join(os.tmpdir(), `skillbarter-outside-manifest-${process.pid}-${Date.now()}.json`);
