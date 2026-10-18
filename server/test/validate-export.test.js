@@ -141,3 +141,27 @@ test("rejects ambiguous or non-ISO export timestamps", async t => {
   await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
   await assert.rejects(validateExportDirectory(directory), /ISO 8601 timestamp with an explicit timezone/);
 });
+
+test("rejects ISO timestamps with timezone offsets beyond the supported range", async t => {
+  const { directory, manifest } = await fixture(t);
+  for (const exportedAt of [
+    "2026-10-17T10:00:00+14:01",
+    "2026-10-17T10:00:00+15:00",
+    "2026-10-17T10:00:00-23:00"
+  ]) {
+    manifest.exportedAt = exportedAt;
+    await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+    await assert.rejects(
+      validateExportDirectory(directory),
+      /valid ISO 8601 timestamp/
+    );
+  }
+});
+
+test("accepts the maximum supported ISO timezone offset", async t => {
+  const { directory, manifest } = await fixture(t);
+  manifest.exportedAt = "2026-10-17T10:00:00+14:00";
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  const report = await validateExportDirectory(directory);
+  assert.equal(report.valid, true);
+});
