@@ -55,6 +55,25 @@ test("does not allow approved mapping before source schema review", () => {
 
 
 
+
+test("rejects two source fields mapped to the same target path", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaSnapshotReviewed = true;
+  candidate.tables = [{
+    name: "users",
+    status: "mapped",
+    proposedTarget: "User",
+    fields: [
+      { sourceField: "email", status: "mapped", targetField: "email" },
+      { sourceField: "contact_email", status: "transformed", targetField: "email" }
+    ]
+  }];
+  const result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.equal(result.readyTableCount, 0);
+  assert.ok(result.issues.some(issue => issue.issue.includes("overlapping targetField paths")));
+});
+
 test("allows distinct sibling nested target paths", () => {
   const candidate = structuredClone(contract);
   candidate.schemaSnapshotReviewed = true;
