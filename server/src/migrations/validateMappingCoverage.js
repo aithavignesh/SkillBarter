@@ -13,17 +13,23 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
   if (!Array.isArray(sourceManifest.tables) || sourceManifest.tables.length === 0) throw new Error("Source manifest must contain tables.");
   if (!Array.isArray(mappingContract.tables) || mappingContract.tables.length === 0) throw new Error("Mapping contract must contain tables.");
   const sourceNames = new Set();
+  const sourceNameKeys = new Set();
   for (const table of sourceManifest.tables) {
     requireObject(table, "Source table entry");
     if (typeof table.name !== "string" || !/^[a-z][a-z0-9_]*$/i.test(table.name)) throw new Error("Source table names must be valid identifiers.");
-    if (sourceNames.has(table.name)) throw new Error(`Duplicate source table: ${table.name}`);
+    const sourceKey = table.name.toLowerCase();
+    if (sourceNameKeys.has(sourceKey)) throw new Error(`Duplicate source table (including case-insensitive aliases): ${table.name}`);
+    sourceNameKeys.add(sourceKey);
     sourceNames.add(table.name);
   }
   const contractByName = new Map();
+  const contractNameKeys = new Set();
   for (const table of mappingContract.tables) {
     requireObject(table, "Mapping table entry");
     if (typeof table.name !== "string" || !/^[a-z][a-z0-9_]*$/i.test(table.name)) throw new Error("Mapping table names must be valid identifiers.");
-    if (contractByName.has(table.name)) throw new Error(`Duplicate mapping table: ${table.name}`);
+    const contractKey = table.name.toLowerCase();
+    if (contractNameKeys.has(contractKey)) throw new Error(`Duplicate mapping table (including case-insensitive aliases): ${table.name}`);
+    contractNameKeys.add(contractKey);
     contractByName.set(table.name, table);
   }
   const issues = [];
