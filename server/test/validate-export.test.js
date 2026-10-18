@@ -161,6 +161,22 @@ test("rejects non-object JSON records", async t => {
   await assert.rejects(validateExportDirectory(directory), /must be an object/);
 });
 
+test("rejects two manifest entries that resolve through an internal symlink to the same file", async t => {
+  const { directory, manifest, data } = await fixture(t);
+  await symlink(path.join(directory, "users.jsonl"), path.join(directory, "users-alias.jsonl"));
+  manifest.tables.push({
+    name: "skills",
+    file: "users-alias.jsonl",
+    rowCount: 2,
+    sha256: createHash("sha256").update(data).digest("hex")
+  });
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /Multiple tables resolve to the same export file through aliases/
+  );
+});
+
 test("rejects symbolic links that resolve outside the export directory", async t => {
   const { directory, manifest } = await fixture(t);
   const outsidePath = path.join(os.tmpdir(), `skillbarter-outside-${process.pid}-${Date.now()}.jsonl`);
