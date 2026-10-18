@@ -57,6 +57,15 @@ test("rejects prototype-related segments in model target paths", async (t) => {
   assert.ok(!result.issues.some((issue) => issue.target === "User.profile"));
 });
 
+test("rejects overlapping target paths for the same model", async (t) => {
+  const directory = await modelFixture(t);
+  const result = await validateTargetModelCoverage({
+    tables: [{ name: "users", proposedTarget: "User.profile / User.profile.name" }]
+  }, directory);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue === "target paths overlap and may overwrite one another"));
+});
+
 test("skips explicitly null targets without claiming a model was checked", async (t) => {
   const directory = await modelFixture(t);
   const result = await validateTargetModelCoverage({
