@@ -74,6 +74,7 @@ test("detects source table inventory that is not covered by the mapping contract
     assert.equal(report.export.valid, true);
     assert.equal(report.valid, false);
     assert.ok(report.blockers.some((item) => item.table === "connections" && item.issue.includes("missing from mapping contract")));
+    assert.ok(report.blockers.some((item) => item.stage === "mappingCoverage" && item.table === "connections" && item.issue.includes("missing from mapping contract")));
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
@@ -99,6 +100,7 @@ test("preflight rejects proposed targets without a matching Mongoose model", asy
     assert.equal(report.mappingCoverage.valid, true);
     assert.equal(report.targetModelCoverage.valid, false);
     assert.ok(report.blockers.some((item) => item.model === "MissingModel" && item.issue === "target model file is missing"));
+    assert.ok(report.blockers.some((item) => item.stage === "targetModelCoverage" && item.table === "users" && item.model === "MissingModel"));
     assert.equal(report.valid, false);
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
