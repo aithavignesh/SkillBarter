@@ -25,3 +25,18 @@ test("rejects aggregate source row counts beyond safe integer precision", () => 
     /total source row count must be a non-negative safe integer/
   );
 });
+
+test("flags row accounting totals that exceed safe integer precision", () => {
+  const hugeManifest = { tables: [{ name: "users", rowCount: Number.MAX_SAFE_INTEGER }] };
+  const report = { tables: [{
+    name: "users",
+    sourceRows: Number.MAX_SAFE_INTEGER,
+    migratedRows: Number.MAX_SAFE_INTEGER,
+    excludedRows: 1,
+    rejectedRows: 0,
+    unresolvedReferences: 0
+  }] };
+  const result = reconcileImportReport(hugeManifest, report);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some(item => item.table === "users" && item.issue.includes("do not equal sourceRows")));
+});
