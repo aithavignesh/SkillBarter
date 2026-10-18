@@ -47,7 +47,17 @@ export function reconcileImportReport(sourceManifest, importReport) {
     if (table.rejectedRows !== 0) tableIssues.push(`${table.rejectedRows} rejected rows need review`);
     if (table.excludedRows !== 0 && (typeof table.exclusionReason !== "string" || !table.exclusionReason.trim())) tableIssues.push("excluded rows require a documented exclusionReason");
     for (const issue of tableIssues) issues.push({ table: table.name, issue });
-    tables.push({ name: table.name, sourceRows: table.sourceRows, migratedRows: table.migratedRows, excludedRows: table.excludedRows, rejectedRows: table.rejectedRows, unresolvedReferences: table.unresolvedReferences, valid: tableIssues.length === 0, issues: tableIssues });
+    tables.push({
+      name: table.name,
+      sourceRows: table.sourceRows,
+      migratedRows: table.migratedRows,
+      excludedRows: table.excludedRows,
+      ...(table.excludedRows > 0 ? { exclusionReason: table.exclusionReason } : {}),
+      rejectedRows: table.rejectedRows,
+      unresolvedReferences: table.unresolvedReferences,
+      valid: tableIssues.length === 0,
+      issues: tableIssues
+    });
   }
   for (const name of sourceByName.keys()) if (!seen.has(name)) issues.push({ table: name, issue: "missing from import report" });
   const totalSourceRows = [...sourceByName.values()].reduce((sum, count) => {
