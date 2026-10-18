@@ -99,7 +99,7 @@ export async function validateExportDirectory(exportDirectory) {
     if (relativeFile.toLowerCase() === "manifest.json") fail("A table export cannot use manifest.json as its data file, including case-insensitive aliases.");
     // Treat case-only path variants as collisions so an export cannot alias files on
     // case-insensitive filesystems (for example, Windows or default macOS volumes).
-    const fileKey = relativeFile.toLowerCase();
+    const fileKey = relativeFile.normalize("NFC").toLowerCase();
     if (seenFiles.has(fileKey)) fail(`Multiple tables reference the same export file (including case-insensitive aliases): ${relativeFile}`);
     seenFiles.add(fileKey);
 
