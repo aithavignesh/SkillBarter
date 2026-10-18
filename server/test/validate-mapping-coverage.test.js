@@ -14,8 +14,8 @@ const contract = {
   targetSystem: "SkillBarter MERN/MongoDB",
   schemaSnapshotReviewed: true,
   tables: [
-    { name: "users", status: "mapped", proposedTarget: "User" },
-    { name: "skills", status: "mapped", proposedTarget: "Skill" }
+    { name: "users", status: "mapped", proposedTarget: "User", fields: [{ sourceField: "email", status: "mapped", targetField: "email" }] },
+    { name: "skills", status: "mapped", proposedTarget: "Skill", fields: [{ sourceField: "name", status: "mapped", targetField: "name" }] }
   ]
 };
 
@@ -38,6 +38,18 @@ test("detects contract tables absent from the source manifest", () => {
   assert.deepEqual(result.extraContractTables, ["connections"]);
   assert.ok(result.issues.some((issue) => issue.table === "connections" && issue.issue.includes("absent from source manifest")));
 });
+test("does not approve mapped tables without any usable field mappings", () => {
+  const candidate = structuredClone(contract);
+  candidate.tables[0].fields = [{ sourceField: "legacy", status: "excluded", reason: "Not in target model." }];
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.equal(result.mappedSourceTableCount, 1);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("at least one mapped/transformed field")));
+  candidate.tables[0].fields = [];
+  const empty = validateMappingCoverage(manifest, candidate);
+  assert.ok(empty.issues.some((issue) => issue.table === "users" && issue.issue.includes("explicit field mapping decisions")));
+});
+
 test("counts only approved mapped or transformed tables in the summary", () => {
   const candidate = structuredClone(contract);
   candidate.tables[1] = { name: "skills", status: "pending", proposedTarget: "Skill" };
