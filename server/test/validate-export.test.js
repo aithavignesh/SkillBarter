@@ -98,6 +98,26 @@ test("rejects case-colliding table names in export manifests", async t => {
   );
 });
 
+test("rejects Unicode-normalization aliases of export paths", async t => {
+  const { directory, manifest, data } = await fixture(t);
+  const composed = "caf\u00e9.jsonl";
+  const decomposed = "cafe\u0301.jsonl";
+  await writeFile(path.join(directory, composed), data);
+  await writeFile(path.join(directory, decomposed), data);
+  manifest.tables[0].file = composed;
+  manifest.tables.push({
+    name: "skills",
+    file: decomposed,
+    rowCount: 2,
+    sha256: createHash("sha256").update(data).digest("hex")
+  });
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /Multiple tables reference the same export file.*case-insensitive aliases/
+  );
+});
+
 test("rejects case-insensitive aliases of manifest.json as table data", async t => {
   const { directory, manifest } = await fixture(t);
   manifest.tables[0].file = "MANIFEST.JSON";
