@@ -68,6 +68,14 @@ test("does not approve tables with pending, blocked, or duplicate field decision
   assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("duplicate source field mapping")));
 });
 
+test("accepts safe nested target field paths", () => {
+  const candidate = structuredClone(contract);
+  candidate.tables[0].fields = [{ sourceField: "display_name", status: "mapped", targetField: "profile.displayName" }];
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.issues, []);
+});
+
 test("rejects unsafe and overlapping target field paths in coverage checks", () => {
   const candidate = structuredClone(contract);
   candidate.tables[0].fields = [
