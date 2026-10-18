@@ -68,6 +68,19 @@ test("does not approve tables with pending, blocked, or duplicate field decision
   assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("duplicate source field mapping")));
 });
 
+test("rejects unsafe and overlapping target field paths in coverage checks", () => {
+  const candidate = structuredClone(contract);
+  candidate.tables[0].fields = [
+    { sourceField: "email", status: "mapped", targetField: "__proto__.polluted" },
+    { sourceField: "display_name", status: "mapped", targetField: "profile" },
+    { sourceField: "profile_name", status: "transformed", targetField: "profile.name" }
+  ];
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("invalid or unsafe targetField path")));
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("overlapping targetField paths")));
+});
+
 test("counts only approved mapped or transformed tables in the summary", () => {
   const candidate = structuredClone(contract);
   candidate.tables[1] = { name: "skills", status: "pending", proposedTarget: "Skill" };
