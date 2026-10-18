@@ -28,7 +28,11 @@ export async function validateMigrationPreflight(exportDirectory, mappingContrac
     mappingContract: contractReport,
     mappingCoverage: coverageReport,
     targetModelCoverage: targetModelReport,
-    blockers: [...contractReport.issues, ...coverageReport.issues, ...targetModelReport.issues]
+    blockers: [
+      ...contractReport.issues.map((issue) => ({ stage: "mappingContract", ...issue })),
+      ...coverageReport.issues.map((issue) => ({ stage: "mappingCoverage", ...issue })),
+      ...targetModelReport.issues.map((issue) => ({ stage: "targetModelCoverage", ...issue }))
+    ]
   };
 }
 
