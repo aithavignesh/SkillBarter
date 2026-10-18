@@ -64,9 +64,10 @@ export async function validateExportDirectory(exportDirectory) {
   try { realRoot = await realpath(root); }
   catch (error) { fail(`Unable to resolve export directory: ${error.message}`); }
   let manifest;
+  let realManifestPath;
   try {
     const manifestPath = path.join(root, "manifest.json");
-    const realManifestPath = await realpath(manifestPath);
+    realManifestPath = await realpath(manifestPath);
     if (!isWithinDirectory(realRoot, realManifestPath)) fail("manifest.json must remain inside the export directory.");
     const manifestBytes = await readFile(realManifestPath);
     let manifestText;
@@ -108,6 +109,7 @@ export async function validateExportDirectory(exportDirectory) {
     try {
       const realFilePath = await realpath(filePath);
       if (!isWithinDirectory(realRoot, realFilePath)) fail(`Export file resolves outside the export directory: ${entry.file}`);
+      if (realFilePath === realManifestPath) fail(`A table export cannot resolve to manifest.json through an alias: ${entry.file}`);
       if (seenRealFiles.has(realFilePath)) fail(`Multiple tables resolve to the same export file through aliases: ${entry.file}`);
       seenRealFiles.add(realFilePath);
       bytes = await readFile(realFilePath);
