@@ -52,6 +52,22 @@ test("does not allow approved mapping before source schema review", () => {
   assert.ok(result.issues.some((issue) => issue.issue.includes("before schemaSnapshotReviewed")));
 });
 
+
+test("mapped tables require explicit field decisions", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaSnapshotReviewed = true;
+  candidate.tables = [{ name: "users", status: "mapped", proposedTarget: "User" }];
+  let result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.equal(result.readyTableCount, 0);
+  assert.ok(result.issues.some(issue => issue.issue.includes("require explicit field mapping decisions")));
+
+  candidate.tables[0].fields = [];
+  result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.equal(result.readyTableCount, 0);
+});
+
 test("pending and blocked field decisions prevent table readiness", () => {
   const candidate = structuredClone(contract);
   candidate.schemaSnapshotReviewed = true;
