@@ -13,6 +13,24 @@ test("requires a reason for intentionally excluded rows", () => { const report =
 test("flags rejected rows and unresolved references", () => { const report = structuredClone(goodReport); report.tables[0].rejectedRows = 1; report.tables[0].migratedRows = 2; report.tables[0].unresolvedReferences = 1; const result = reconcileImportReport(manifest, report); assert.ok(result.issues.some(item => item.issue.includes("rejected rows"))); assert.ok(result.issues.some(item => item.issue.includes("unresolved references"))); });
 test("flags source tables omitted from the import report", () => { const result = reconcileImportReport(manifest, { tables: [goodReport.tables[0]] }); assert.ok(result.issues.some(item => item.table === "skills" && item.issue === "missing from import report")); });
 test("rejects unknown or duplicate table entries", () => { assert.throws(() => reconcileImportReport(manifest, { tables: [{ ...goodReport.tables[0], name: "unknown" }] }), /unknown source table/); assert.throws(() => reconcileImportReport(manifest, { tables: [goodReport.tables[0], goodReport.tables[0]] }), /Duplicate import table/); });
+test("rejects case-colliding source and import table names", () => {
+  assert.throws(
+    () => reconcileImportReport({ tables: [{ name: "users", rowCount: 1 }, { name: "Users", rowCount: 1 }] }, { tables: [] }),
+    /Duplicate source table.*case-insensitive aliases/
+  );
+  assert.throws(
+    () => reconcileImportReport(manifest, { tables: [goodReport.tables[0], { ...goodReport.tables[1], name: "Users" }] }),
+    /unknown source table/
+  );
+  assert.throws(
+    () => reconcileImportReport({ tables: [{ name: "users", rowCount: 1 }] }, { tables: [
+      { name: "users", sourceRows: 1, migratedRows: 1, excludedRows: 0, rejectedRows: 0, unresolvedReferences: 0 },
+      { name: "users", sourceRows: 1, migratedRows: 1, excludedRows: 0, rejectedRows: 0, unresolvedReferences: 0 }
+    ] }),
+    /Duplicate import table.*case-insensitive aliases/
+  );
+});
+
 test("rejects invalid row counts", () => { const report = structuredClone(goodReport); report.tables[0].rejectedRows = -1; assert.throws(() => reconcileImportReport(manifest, report), /non-negative safe integer/); });
 
 test("rejects aggregate source row counts beyond safe integer precision", () => {
