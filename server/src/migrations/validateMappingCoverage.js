@@ -77,7 +77,7 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
             } else {
               const segments = field.targetField.split(".");
               targetPaths.push({ sourceField: field.sourceField, path: field.targetField, segments });
-              if (!/^[a-z][A-Za-z0-9_]*(?:\\.[a-z][A-Za-z0-9_]*)*$/.test(field.targetField) || segments.some((segment) => ["__proto__", "prototype", "constructor"].includes(segment))) {
+              if (!/^[a-z][A-Za-z0-9_]*(?:\.[a-z][A-Za-z0-9_]*)*$/.test(field.targetField) || segments.some((segment) => ["__proto__", "prototype", "constructor"].includes(segment))) {
                 tableIssues.push(`field ${field.sourceField ?? "(unknown)"} has an invalid or unsafe targetField path`);
               }
             }
