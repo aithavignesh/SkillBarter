@@ -38,6 +38,15 @@ test("detects contract tables absent from the source manifest", () => {
   assert.deepEqual(result.extraContractTables, ["connections"]);
   assert.ok(result.issues.some((issue) => issue.table === "connections" && issue.issue.includes("absent from source manifest")));
 });
+test("counts only approved mapped or transformed tables in the summary", () => {
+  const candidate = structuredClone(contract);
+  candidate.tables[1] = { name: "skills", status: "pending", proposedTarget: "Skill" };
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.mappedSourceTableCount, 1);
+  assert.equal(result.sourceTableCount, 2);
+  assert.equal(result.valid, false);
+});
+
 test("keeps pending or blocked mappings from being approved", () => {
   const candidate = structuredClone(contract);
   candidate.tables[1] = { name: "skills", status: "pending", proposedTarget: "Skill" };
