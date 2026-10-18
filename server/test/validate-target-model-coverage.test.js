@@ -69,3 +69,17 @@ test("rejects empty target strings instead of silently skipping them", async (t)
   assert.equal(result.valid, false);
   assert.ok(result.issues.some((issue) => issue.issue === "proposedTarget must be a non-empty string or null"));
 });
+
+test("rejects null targets for mappings marked mapped or transformed", async (t) => {
+  const directory = await modelFixture(t);
+  for (const status of ["mapped", "transformed"]) {
+    const result = await validateTargetModelCoverage({
+      tables: [{ name: "users", status, proposedTarget: null }]
+    }, directory);
+    assert.equal(result.valid, false);
+    assert.equal(result.tables[0].skipped, false);
+    assert.ok(result.issues.some((issue) =>
+      issue.table === "users" && issue.issue.includes("requires a proposedTarget")
+    ));
+  }
+});
