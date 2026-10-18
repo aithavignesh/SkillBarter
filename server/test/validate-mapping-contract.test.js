@@ -56,7 +56,13 @@ test("validates field-level mapping decisions and duplicate source fields", () =
   candidate.tables[0].fields[0].targetField = "profile..skills";
   const malformed = validateMappingContract(candidate);
   assert.equal(malformed.valid, false);
-  assert.ok(malformed.issues.some((issue) => issue.issue.includes("invalid targetField path")));
+  assert.ok(malformed.issues.some((issue) => issue.issue.includes("invalid or unsafe targetField path")));
+  for (const unsafePath of ["profile.__proto__", "constructor.prototype", "profile.constructor"]) {
+    candidate.tables[0].fields[0].targetField = unsafePath;
+    const unsafe = validateMappingContract(candidate);
+    assert.equal(unsafe.valid, false, `${unsafePath} must be rejected`);
+    assert.ok(unsafe.issues.some((issue) => issue.issue.includes("invalid or unsafe targetField path")));
+  }
   candidate.tables[0].fields[0].targetField = "email";
   candidate.tables[0].fields.push({ sourceField: "email", status: "mapped", targetField: "otherEmail" });
   assert.throws(() => validateMappingContract(candidate), /Duplicate source field mapping/);
