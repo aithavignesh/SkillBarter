@@ -51,6 +51,13 @@ test("validates field-level mapping decisions and duplicate source fields", () =
     { sourceField: "old_secret", status: "excluded", reason: "Approved security policy" }
   ] }];
   assert.equal(validateMappingContract(candidate).valid, true);
+  candidate.tables[0].fields[0].targetField = "profile.skills_to_teach";
+  assert.equal(validateMappingContract(candidate).valid, true, "nested target paths may contain underscores");
+  candidate.tables[0].fields[0].targetField = "profile..skills";
+  const malformed = validateMappingContract(candidate);
+  assert.equal(malformed.valid, false);
+  assert.ok(malformed.issues.some((issue) => issue.issue.includes("invalid targetField path")));
+  candidate.tables[0].fields[0].targetField = "email";
   candidate.tables[0].fields.push({ sourceField: "email", status: "mapped", targetField: "otherEmail" });
   assert.throws(() => validateMappingContract(candidate), /Duplicate source field mapping/);
 });
