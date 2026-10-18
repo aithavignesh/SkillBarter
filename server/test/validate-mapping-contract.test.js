@@ -32,6 +32,18 @@ test("rejects duplicate table names and invalid statuses", () => {
   assert.throws(() => validateMappingContract({ ...contract, tables: [contract.tables[0], contract.tables[0]] }), /Duplicate mapping table/);
   assert.throws(() => validateMappingContract({ ...contract, tables: [{ name: "users", status: "guess" }] }), /Invalid status/);
 });
+test("rejects case-colliding mapping table names", () => {
+  assert.throws(
+    () => validateMappingContract({
+      ...contract,
+      tables: [
+        { name: "users", status: "pending" },
+        { name: "Users", status: "pending" }
+      ]
+    }),
+    /Duplicate mapping table.*case-insensitive aliases/
+  );
+});
 test("does not allow approved mapping before source schema review", () => {
   const candidate = structuredClone(contract);
   candidate.tables[0].status = "mapped";
