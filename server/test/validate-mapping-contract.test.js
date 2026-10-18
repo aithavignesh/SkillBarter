@@ -53,6 +53,25 @@ test("does not allow approved mapping before source schema review", () => {
 });
 
 
+
+test("rejects overlapping target paths that would overwrite scalar and nested values", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaSnapshotReviewed = true;
+  candidate.tables = [{
+    name: "users",
+    status: "mapped",
+    proposedTarget: "User",
+    fields: [
+      { sourceField: "profile_value", status: "mapped", targetField: "profile" },
+      { sourceField: "profile_name", status: "transformed", targetField: "profile.name" }
+    ]
+  }];
+  const result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.equal(result.readyTableCount, 0);
+  assert.ok(result.issues.some(issue => issue.issue.includes("overlapping targetField paths")));
+});
+
 test("mapped tables require explicit field decisions", () => {
   const candidate = structuredClone(contract);
   candidate.schemaSnapshotReviewed = true;
