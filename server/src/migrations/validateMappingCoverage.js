@@ -47,7 +47,12 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
     if (!approved) tableIssues.push(`mapping status is ${mapping.status ?? "missing"}`);
     if (["blocked", "excluded"].includes(mapping.status) && (typeof mapping.reason !== "string" || !mapping.reason.trim())) tableIssues.push("blocked/excluded table requires a reason");
     if (["mapped", "transformed"].includes(mapping.status) && (typeof mapping.proposedTarget !== "string" || !mapping.proposedTarget.trim())) tableIssues.push("mapped/transformed table requires proposedTarget");
-    if (mapping.status === "mapped" || mapping.status === "transformed") {
+    if (["mapped", "transformed"].includes(mapping.status)) {
+      if (!Array.isArray(mapping.fields) || mapping.fields.length === 0) {
+        tableIssues.push("mapped/transformed table requires explicit field mapping decisions");
+      } else if (!mapping.fields.some((field) => field && ["mapped", "transformed"].includes(field.status))) {
+        tableIssues.push("mapped/transformed table requires at least one mapped/transformed field");
+      }
       if (mappingContract.schemaSnapshotReviewed !== true) tableIssues.push("schema snapshot has not been reviewed");
     }
     for (const issue of tableIssues) issues.push({ table: name, issue });
