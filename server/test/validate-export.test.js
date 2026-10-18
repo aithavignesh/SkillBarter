@@ -116,6 +116,25 @@ test("rejects a manifest containing invalid UTF-8", async t => {
   await assert.rejects(validateExportDirectory(directory), /manifest\.json is not valid UTF-8/);
 });
 
+test("rejects impossible calendar dates and out-of-range timestamp components", async t => {
+  const { directory, manifest } = await fixture(t);
+  manifest.exportedAt = "2026-02-31T10:00:00.000Z";
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(validateExportDirectory(directory), /valid ISO 8601 timestamp/);
+
+  manifest.exportedAt = "2026-10-17T25:00:00Z";
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(validateExportDirectory(directory), /valid ISO 8601 timestamp/);
+});
+
+test("accepts a valid leap-day timestamp", async t => {
+  const { directory, manifest } = await fixture(t);
+  manifest.exportedAt = "2024-02-29T23:59:59+05:30";
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  const report = await validateExportDirectory(directory);
+  assert.equal(report.valid, true);
+});
+
 test("rejects ambiguous or non-ISO export timestamps", async t => {
   const { directory, manifest } = await fixture(t);
   manifest.exportedAt = "October 17, 2026";
