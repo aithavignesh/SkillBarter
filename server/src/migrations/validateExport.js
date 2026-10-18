@@ -35,6 +35,11 @@ function isValidIsoTimestamp(value) {
   return true;
 }
 
+function isWithinDirectory(root, candidate) {
+  const relative = path.relative(root, candidate);
+  return relative !== "" && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+}
+
 function safeExportPath(root, filename) {
   if (typeof filename !== "string" || !filename.trim() || path.isAbsolute(filename)
     || path.win32.isAbsolute(filename) || filename.includes("\\")) {
@@ -42,7 +47,7 @@ function safeExportPath(root, filename) {
   }
   const resolvedRoot = path.resolve(root);
   const resolvedFile = path.resolve(resolvedRoot, filename);
-  if (!resolvedFile.startsWith(resolvedRoot + path.sep)) {
+  if (!isWithinDirectory(resolvedRoot, resolvedFile)) {
     fail(`Export file path escapes the export directory: ${filename}`);
   }
   return resolvedFile;
@@ -58,7 +63,7 @@ export async function validateExportDirectory(exportDirectory) {
   try {
     const manifestPath = path.join(root, "manifest.json");
     const realManifestPath = await realpath(manifestPath);
-    if (!realManifestPath.startsWith(realRoot + path.sep)) fail("manifest.json must remain inside the export directory.");
+    if (!isWithinDirectory(realRoot, realManifestPath)) fail("manifest.json must remain inside the export directory.");
     const manifestBytes = await readFile(realManifestPath);
     let manifestText;
     try { manifestText = new TextDecoder("utf-8", { fatal: true }).decode(manifestBytes); }
@@ -97,7 +102,7 @@ export async function validateExportDirectory(exportDirectory) {
     let bytes;
     try {
       const realFilePath = await realpath(filePath);
-      if (!realFilePath.startsWith(realRoot + path.sep)) fail(`Export file resolves outside the export directory: ${entry.file}`);
+      if (!isWithinDirectory(realRoot, realFilePath)) fail(`Export file resolves outside the export directory: ${entry.file}`);
       bytes = await readFile(realFilePath);
     }
     catch (error) { fail(`Unable to read export for ${entry.name}: ${error.message}`); }
