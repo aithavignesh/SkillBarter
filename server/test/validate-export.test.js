@@ -165,3 +165,13 @@ test("accepts the maximum supported ISO timezone offset", async t => {
   const report = await validateExportDirectory(directory);
   assert.equal(report.valid, true);
 });
+
+test("rejects timestamps whose -00:00 offset means the instant is unknown", async t => {
+  const { directory, manifest } = await fixture(t);
+  manifest.exportedAt = "2026-10-17T10:00:00-00:00";
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /valid ISO 8601 timestamp with an explicit timezone/
+  );
+});
