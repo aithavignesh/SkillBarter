@@ -35,11 +35,16 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
     const targetPaths = table.proposedTarget.split("/").map((part) => part.trim());
     const parsedPaths = targetPaths.map((targetPath) => ({
       targetPath,
-      match: targetPath.match(/^([A-Z][A-Za-z0-9]*)(?:[.][a-z][A-Za-z0-9_]*)*$/)
+      match: targetPath.match(/^([A-Z][A-Za-z0-9]*)(?:[.][a-z][A-Za-z0-9_]*)*$/),
+      unsafe: targetPath.split(".").some((segment) => ["__proto__", "prototype", "constructor"].includes(segment))
     }));
-    const malformed = parsedPaths.filter(({ match }) => !match);
-    for (const { targetPath } of malformed) {
-      issues.push({ table: table.name ?? null, target: targetPath, issue: "target path must use ModelName or ModelName.fieldPath syntax" });
+    const malformed = parsedPaths.filter(({ match, unsafe }) => !match || unsafe);
+    for (const { targetPath, unsafe } of malformed) {
+      issues.push({
+        table: table.name ?? null,
+        target: targetPath,
+        issue: unsafe ? "target path contains an unsafe prototype-related segment" : "target path must use ModelName or ModelName.fieldPath syntax"
+      });
     }
     const targets = [...new Set(parsedPaths.map(({ match }) => match?.[1]).filter(Boolean))];
     const missing = targets.filter((name) => !modelFiles.has(name));
