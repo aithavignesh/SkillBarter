@@ -39,6 +39,7 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
       unsafe: targetPath.split(".").some((segment) => ["__proto__", "prototype", "constructor"].includes(segment))
     }));
     const malformed = parsedPaths.filter(({ match, unsafe }) => !match || unsafe);
+    const overlapIssues = [];
     const validPaths = parsedPaths
       .filter(({ match, unsafe }) => match && !unsafe)
       .map(({ targetPath, match }) => ({
@@ -54,11 +55,13 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
         const shorter = left.fields.length <= right.fields.length ? left : right;
         const longer = shorter === left ? right : left;
         if (shorter.fields.every((segment, index) => segment === longer.fields[index])) {
-          issues.push({
+          const overlapIssue = {
             table: table.name ?? null,
             target: `${left.targetPath} / ${right.targetPath}`,
             issue: "target paths overlap and may overwrite one another"
-          });
+          };
+          issues.push(overlapIssue);
+          overlapIssues.push(overlapIssue);
         }
       }
     }
@@ -72,7 +75,7 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
     const targets = [...new Set(parsedPaths.map(({ match }) => match?.[1]).filter(Boolean))];
     const missing = targets.filter((name) => !modelFiles.has(name));
     for (const modelName of missing) issues.push({ table: table.name ?? null, model: modelName, issue: "target model file is missing" });
-    tables.push({ name: table.name, targets, valid: missing.length === 0 && malformed.length === 0, missing, malformed: malformed.map(({ targetPath }) => targetPath) });
+    tables.push({ name: table.name, targets, valid: missing.length === 0 && malformed.length === 0 && overlapIssues.length === 0, missing, malformed: malformed.map(({ targetPath }) => targetPath) });
   }
   return { valid: issues.length === 0, checkedTableCount: tables.filter((table) => !table.skipped).length, tables, issues };
 }
