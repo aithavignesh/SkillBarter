@@ -122,6 +122,21 @@ test("current migration contract references existing proposed target model files
     "unresolved connections mapping must remain skipped rather than guessed");
 });
 
+test("preflight blocks overlapping model target paths", async () => {
+  const f = await fixture();
+  try {
+    const contract = JSON.parse(await readFile(f.contractPath, "utf8"));
+    contract.tables[0].proposedTarget = "User.profile / User.profile.name";
+    await writeFile(f.contractPath, JSON.stringify(contract));
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.targetModelCoverage.valid, false);
+    assert.equal(report.targetModelCoverage.tables[0].valid, false);
+    assert.ok(report.blockers.some((item) => item.issue === "target paths overlap and may overwrite one another"));
+    assert.equal(report.valid, false, "overlapping target paths must block migration readiness");
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("rejects malformed target expressions instead of silently skipping them", async () => {
   const { validateTargetModelCoverage } = await import("../src/migrations/validateTargetModelCoverage.js");
   const report = await validateTargetModelCoverage({
