@@ -45,6 +45,10 @@ function safeExportPath(root, filename) {
     || path.win32.isAbsolute(filename) || filename.includes("\\")) {
     fail("Each table file must be a non-empty relative path using forward slashes.");
   }
+  const segments = filename.split("/");
+  if (segments.some(segment => !segment || segment === "." || segment === "..")) {
+    fail("Each table file path must not contain empty, current-directory, or parent-directory segments.");
+  }
   const resolvedRoot = path.resolve(root);
   const resolvedFile = path.resolve(resolvedRoot, filename);
   if (!isWithinDirectory(resolvedRoot, resolvedFile)) {
