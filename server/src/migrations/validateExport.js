@@ -36,8 +36,9 @@ function isValidIsoTimestamp(value) {
 }
 
 function safeExportPath(root, filename) {
-  if (typeof filename !== "string" || !filename.trim() || path.isAbsolute(filename)) {
-    fail("Each table file must be a non-empty relative path.");
+  if (typeof filename !== "string" || !filename.trim() || path.isAbsolute(filename)
+    || path.win32.isAbsolute(filename) || filename.includes("\\")) {
+    fail("Each table file must be a non-empty relative path using forward slashes.");
   }
   const resolvedRoot = path.resolve(root);
   const resolvedFile = path.resolve(resolvedRoot, filename);
