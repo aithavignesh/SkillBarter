@@ -16,6 +16,9 @@ export function deterministicObjectId(sourceCollection, sourceId) {
   if (typeof sourceId !== "string" && typeof sourceId !== "number") {
     throw new TypeError("sourceId must be a string or finite number.");
   }
+  if (typeof sourceId === "number" && !Number.isFinite(sourceId)) {
+    throw new TypeError("sourceId must be a string or finite number.");
+  }
   if (typeof sourceId === "number" && !Number.isSafeInteger(sourceId)) {
     throw new TypeError("numeric sourceId must be a safe integer to preserve its exact value.");
   }
