@@ -51,7 +51,7 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
     if (!sourceNames.has(name)) issues.push({ table: name, issue: "mapping contract contains table absent from source manifest; verify source snapshot and contract" });
   }
   const sourceTableCount = sourceNames.size;
-  const mappedSourceTableCount = tables.filter((table) => table.covered).length;
+  const mappedSourceTableCount = tables.filter((table) => table.covered && ["mapped", "transformed"].includes(table.status) && table.approved).length;
   const ready = issues.length === 0 && mappingContract.schemaSnapshotReviewed === true;
   if (mappingContract.schemaSnapshotReviewed !== true) issues.push({ table: null, issue: "schemaSnapshotReviewed must be true before mapping coverage can be approved" });
   return {
