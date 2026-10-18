@@ -10,6 +10,16 @@ test("accepts complete row accounting with no unresolved references", () => { co
 test("flags source count mismatches", () => { const report = structuredClone(goodReport); report.tables[0].sourceRows = 4; report.tables[0].migratedRows = 4; const result = reconcileImportReport(manifest, report); assert.equal(result.valid, false); assert.ok(result.issues.some(item => item.issue.includes("does not match manifest count"))); });
 test("flags unaccounted rows", () => { const report = structuredClone(goodReport); report.tables[0].migratedRows = 2; const result = reconcileImportReport(manifest, report); assert.ok(result.issues.some(item => item.issue.includes("do not equal sourceRows"))); });
 test("requires a reason for intentionally excluded rows", () => { const report = structuredClone(goodReport); report.tables[0].migratedRows = 2; report.tables[0].excludedRows = 1; const result = reconcileImportReport(manifest, report); assert.ok(result.issues.some(item => item.issue.includes("exclusionReason"))); report.tables[0].exclusionReason = "Approved retention policy"; const reconciled = reconcileImportReport(manifest, report); assert.equal(reconciled.valid, true); assert.equal(reconciled.tables[0].exclusionReason, "Approved retention policy"); });
+test("rejects whitespace-only exclusion reasons", () => {
+  const report = structuredClone(goodReport);
+  report.tables[0].migratedRows = 2;
+  report.tables[0].excludedRows = 1;
+  report.tables[0].exclusionReason = "   ";
+  const result = reconcileImportReport(manifest, report);
+  assert.equal(result.valid, false);
+  assert.equal(result.tables[0].valid, false);
+  assert.ok(result.issues.some(item => item.table === "users" && item.issue.includes("excluded rows require a documented exclusionReason")));
+});
 test("rejects exclusion reasons when no rows were excluded", () => {
   const report = structuredClone(goodReport);
   report.tables[0].exclusionReason = "No rows excluded";
