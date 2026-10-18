@@ -52,6 +52,7 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
         tableIssues.push("mapped/transformed table requires explicit field mapping decisions");
       } else {
         const sourceFields = new Set();
+        const targetPaths = [];
         let usableFieldCount = 0;
         for (const field of mapping.fields) {
           if (!field || typeof field !== "object" || Array.isArray(field)) {
@@ -71,13 +72,32 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
           }
           if (["mapped", "transformed"].includes(field.status)) {
             usableFieldCount += 1;
-            if (typeof field.targetField !== "string" || !field.targetField.trim()) tableIssues.push(`field ${field.sourceField ?? "(unknown)"} requires targetField`);
+            if (typeof field.targetField !== "string" || !field.targetField.trim()) {
+              tableIssues.push(`field ${field.sourceField ?? "(unknown)"} requires targetField`);
+            } else {
+              const segments = field.targetField.split(".");
+              targetPaths.push({ sourceField: field.sourceField, path: field.targetField, segments });
+              if (!/^[a-z][A-Za-z0-9_]*(?:\\.[a-z][A-Za-z0-9_]*)*$/.test(field.targetField) || segments.some((segment) => ["__proto__", "prototype", "constructor"].includes(segment))) {
+                tableIssues.push(`field ${field.sourceField ?? "(unknown)"} has an invalid or unsafe targetField path`);
+              }
+            }
           } else if (["excluded", "blocked"].includes(field.status) && (typeof field.reason !== "string" || !field.reason.trim())) {
             tableIssues.push(`field ${field.sourceField ?? "(unknown)"} requires a reason when ${field.status}`);
           } else if (field.status === "pending") {
             tableIssues.push(`field ${field.sourceField ?? "(unknown)"} still has a pending mapping decision`);
           }
           if (field.status === "blocked") tableIssues.push(`field ${field.sourceField ?? "(unknown)"} is blocked`);
+        }
+        for (let i = 0; i < targetPaths.length; i += 1) {
+          for (let j = i + 1; j < targetPaths.length; j += 1) {
+            const left = targetPaths[i];
+            const right = targetPaths[j];
+            const shorter = left.segments.length <= right.segments.length ? left : right;
+            const longer = shorter === left ? right : left;
+            if (shorter.segments.every((segment, index) => segment === longer.segments[index])) {
+              tableIssues.push(`fields ${left.sourceField} and ${right.sourceField} have overlapping targetField paths (${left.path}, ${right.path})`);
+            }
+          }
         }
         if (usableFieldCount === 0) tableIssues.push("mapped/transformed table requires at least one mapped/transformed field");
       }
