@@ -175,3 +175,20 @@ test("rejects timestamps whose -00:00 offset means the instant is unknown", asyn
     /valid ISO 8601 timestamp with an explicit timezone/
   );
 });
+
+test("rejects a manifest symlink that resolves outside the export directory", async t => {
+  const { directory } = await fixture(t);
+  const outsidePath = path.join(os.tmpdir(), `skillbarter-outside-manifest-${process.pid}-${Date.now()}.json`);
+  await writeFile(outsidePath, JSON.stringify({
+    sourceSchema: "public",
+    exportedAt: "2026-10-17T10:00:00.000Z",
+    tables: [{ name: "users", file: "users.jsonl", rowCount: 0, sha256: createHash("sha256").update("").digest("hex") }]
+  }));
+  t.after(() => rm(outsidePath, { force: true }));
+  await rm(path.join(directory, "manifest.json"));
+  await symlink(outsidePath, path.join(directory, "manifest.json"));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /manifest\.json must remain inside the export directory/
+  );
+});
