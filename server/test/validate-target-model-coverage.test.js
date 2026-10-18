@@ -63,6 +63,7 @@ test("rejects overlapping target paths for the same model", async (t) => {
     tables: [{ name: "users", proposedTarget: "User.profile / User.profile.name" }]
   }, directory);
   assert.equal(result.valid, false);
+  assert.equal(result.tables[0].valid, false);
   assert.ok(result.issues.some((issue) => issue.issue === "target paths overlap and may overwrite one another"));
 });
 
