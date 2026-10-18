@@ -79,8 +79,9 @@ export async function validateExportDirectory(exportDirectory) {
   for (const entry of manifest.tables) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) fail("Every table manifest entry must be an object.");
     if (typeof entry.name !== "string" || !/^[a-z][a-z0-9_]*$/i.test(entry.name)) fail("Every table must have a valid name.");
-    if (seenNames.has(entry.name)) fail(`Duplicate table name in manifest: ${entry.name}`);
-    seenNames.add(entry.name);
+    const tableKey = entry.name.toLowerCase();
+    if (seenNames.has(tableKey)) fail(`Duplicate table name in manifest (including case-insensitive aliases): ${entry.name}`);
+    seenNames.add(tableKey);
     if (!Number.isSafeInteger(entry.rowCount) || entry.rowCount < 0) fail(`Invalid rowCount for table ${entry.name}.`);
     if (typeof entry.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(entry.sha256)) fail(`Invalid SHA-256 checksum for table ${entry.name}.`);
 
