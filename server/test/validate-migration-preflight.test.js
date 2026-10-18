@@ -49,6 +49,7 @@ test("reports mapping blockers after validating the export", async () => {
     assert.equal(report.export.valid, true);
     assert.equal(report.valid, false);
     assert.ok(report.blockers.some((item) => item.issue.includes("schema snapshot has not been reviewed")));
+    assert.ok(report.blockers.some((item) => item.stage === "mappingContract" && item.issue.includes("schema snapshot has not been reviewed")));
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
