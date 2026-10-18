@@ -10,6 +10,25 @@ function fail(message) {
   throw error;
 }
 
+function isValidIsoTimestamp(value) {
+  if (typeof value !== "string") return false;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(Z|([+-])(\d{2}):(\d{2}))$/);
+  if (!match || !Number.isFinite(Date.parse(value))) return false;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, zone, , offsetHourText, offsetMinuteText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  if (month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59) return false;
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (day < 1 || day > daysInMonth[month - 1]) return false;
+  if (zone !== "Z" && (Number(offsetHourText) > 23 || Number(offsetMinuteText) > 59)) return false;
+  return true;
+}
+
 function safeExportPath(root, filename) {
   if (typeof filename !== "string" || !filename.trim() || path.isAbsolute(filename)) {
     fail("Each table file must be a non-empty relative path.");
@@ -44,7 +63,7 @@ export async function validateExportDirectory(exportDirectory) {
 
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) fail("Manifest must be a JSON object.");
   if (typeof manifest.sourceSchema !== "string" || !manifest.sourceSchema.trim()) fail("Manifest sourceSchema is required.");
-  if (typeof manifest.exportedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(manifest.exportedAt) || !Number.isFinite(Date.parse(manifest.exportedAt))) fail("Manifest exportedAt must be an ISO 8601 timestamp with an explicit timezone.");
+  if (!isValidIsoTimestamp(manifest.exportedAt)) fail("Manifest exportedAt must be a valid ISO 8601 timestamp with an explicit timezone.");
   if (!Array.isArray(manifest.tables) || manifest.tables.length === 0) fail("Manifest tables must be a non-empty array.");
 
   const seenNames = new Set();
