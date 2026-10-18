@@ -31,6 +31,9 @@ export function validateMappingContract(contract) {
     if (["mapped", "transformed"].includes(table.status)) {
       if (typeof table.proposedTarget !== "string" || !table.proposedTarget.trim()) tableIssues.push("mapped/transformed tables require proposedTarget");
       if (!contract.schemaSnapshotReviewed) tableIssues.push("cannot approve a mapped/transformed table before schemaSnapshotReviewed is true");
+      if (!Array.isArray(table.fields) || table.fields.length === 0) {
+        tableIssues.push("mapped/transformed tables require explicit field mapping decisions");
+      }
     }
     if (["excluded", "blocked"].includes(table.status) && (typeof table.reason !== "string" || !table.reason.trim())) {
       tableIssues.push("excluded/blocked tables require a non-empty reason");
