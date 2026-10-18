@@ -32,17 +32,17 @@ test("rejects target model names that do not exist", async (t) => {
     tables: [{ name: "messages", proposedTarget: "Message" }]
   }, directory);
   assert.equal(result.valid, false);
-  assert.ok(result.issues.some((issue) => issue.model === "Message" && issue.issue === "target model file is missing");
+  assert.ok(result.issues.some((issue) => issue.model === "Message" && issue.issue === "target model file is missing"));
 });
 
 test("rejects malformed model and field-path syntax", async (t) => {
   const directory = await modelFixture(t);
   const result = await validateTargetModelCoverage({
-    tables: [{ name: "users", proposedTarget: "../User / User.UppercaseField / User.validField" }]
+    tables: [{ name: "users", proposedTarget: "../User / User.UppercaseField / Missing.validField" }]
   }, directory);
   assert.equal(result.valid, false);
   assert.deepEqual(result.tables[0].malformed, ["../User", "User.UppercaseField"]);
-  assert.ok(result.issues.some((issue) => issue.issue === "target model file is missing" && issue.model === "User"));
+  assert.ok(result.issues.some((issue) => issue.issue === "target model file is missing" && issue.model === "Missing"));
 });
 
 test("skips explicitly null targets without claiming a model was checked", async (t) => {
@@ -57,14 +57,8 @@ test("skips explicitly null targets without claiming a model was checked", async
 
 test("rejects malformed contract shapes", async (t) => {
   const directory = await modelFixture(t);
-  await assert.rejects(
-    validateTargetModelCoverage({ tables: {} }, directory),
-    /tables array/
-  );
-  await assert.rejects(
-    validateTargetModelCoverage({ tables: [null] }, directory),
-    /entries must be objects/
-  );
+  await assert.rejects(validateTargetModelCoverage({ tables: {} }, directory), /tables array/);
+  await assert.rejects(validateTargetModelCoverage({ tables: [null] }, directory), /entries must be objects/);
 });
 
 test("rejects empty target strings instead of silently skipping them", async (t) => {
