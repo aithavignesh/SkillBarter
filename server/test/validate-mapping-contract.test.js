@@ -51,6 +51,35 @@ test("does not allow approved mapping before source schema review", () => {
   assert.equal(result.valid, false);
   assert.ok(result.issues.some((issue) => issue.issue.includes("before schemaSnapshotReviewed")));
 });
+
+test("pending and blocked field decisions prevent table readiness", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaSnapshotReviewed = true;
+  candidate.tables = [{
+    name: "users",
+    status: "mapped",
+    proposedTarget: "User",
+    fields: [
+      { sourceField: "email", status: "mapped", targetField: "email" },
+      { sourceField: "legacy_id", status: "pending" }
+    ]
+  }];
+  let result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.equal(result.readyTableCount, 0);
+  assert.ok(result.issues.some(issue => issue.issue.includes("pending mapping decision")));
+
+  candidate.tables[0].fields[1] = {
+    sourceField: "legacy_id",
+    status: "blocked",
+    reason: "Need source semantics review."
+  };
+  result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.equal(result.readyTableCount, 0);
+  assert.ok(result.issues.some(issue => issue.issue.includes("prevents table readiness")));
+});
+
 test("requires explicit reasons for blocked and excluded tables", () => {
   assert.equal(validateMappingContract({ ...contract, tables: [{ name: "connections", status: "blocked" }] }).valid, false);
   assert.equal(validateMappingContract({ ...contract, tables: [{ name: "legacy_events", status: "excluded" }] }).valid, false);
