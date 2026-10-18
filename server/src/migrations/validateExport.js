@@ -26,6 +26,8 @@ function isValidIsoTimestamp(value) {
   const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   if (day < 1 || day > daysInMonth[month - 1]) return false;
   if (zone !== "Z") {
+    // RFC 3339 uses -00:00 to mean the local offset is unknown, not a known instant offset.
+    if (zone === "-00:00") return false;
     const offsetHour = Number(offsetHourText);
     const offsetMinute = Number(offsetMinuteText);
     if (offsetHour > 14 || offsetMinute > 59 || (offsetHour === 14 && offsetMinute !== 0)) return false;
