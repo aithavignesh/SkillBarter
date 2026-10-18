@@ -66,6 +66,20 @@ test("rejects duplicate source or contract table names", () => {
   assert.throws(() => validateMappingCoverage({ tables: [{ name: "users" }, { name: "users" }] }, contract), /Duplicate source table/);
   assert.throws(() => validateMappingCoverage(manifest, { ...contract, tables: [contract.tables[0], contract.tables[0]] }), /Duplicate mapping table/);
 });
+test("rejects case-colliding source and mapping table names", () => {
+  assert.throws(
+    () => validateMappingCoverage({ tables: [{ name: "users" }, { name: "Users" }] }, contract),
+    /Duplicate source table.*case-insensitive aliases/
+  );
+  assert.throws(
+    () => validateMappingCoverage(manifest, {
+      ...contract,
+      tables: [...contract.tables, { name: "Users", status: "blocked", reason: "duplicate alias" }]
+    }),
+    /Duplicate mapping table.*case-insensitive aliases/
+  );
+});
+
 test("CLI emits parseable JSON and exits 2 while the checked-in contract is blocked", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "skillbarter-mapping-coverage-"));
   try {
