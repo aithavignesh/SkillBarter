@@ -1,5 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { reconcileImportReport } from "../src/migrations/reconcileImportReport.js";
 const manifest = { tables: [{ name: "users", rowCount: 3 }, { name: "skills", rowCount: 2 }] };
 const goodReport = { tables: [
@@ -63,4 +68,22 @@ test("flags row accounting totals that exceed safe integer precision", () => {
   assert.equal(result.valid, false);
   assert.equal(result.tables[0].valid, false, "table-level validity must reflect unsafe row-accounting totals");
   assert.ok(result.issues.some(item => item.table === "users" && item.issue.includes("do not equal sourceRows")));
+});
+test("CLI emits the reconciliation report and exits 2 when the report is invalid", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "skillbarter-reconcile-"));
+  try {
+    const manifestPath = path.join(root, "manifest.json");
+    const reportPath = path.join(root, "report.json");
+    const invalidReport = structuredClone(goodReport);
+    invalidReport.tables[0].migratedRows = 2;
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await writeFile(reportPath, JSON.stringify(invalidReport));
+    const scriptPath = fileURLToPath(new URL("../src/migrations/reconcileImportReport.js", import.meta.url));
+    const result = spawnSync(process.execPath, [scriptPath, manifestPath, reportPath], { encoding: "utf8" });
+    assert.equal(result.status, 2, result.stderr);
+    assert.equal(result.stderr, "");
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.valid, false);
+    assert.ok(output.issues.some(item => item.table === "users" && item.issue.includes("do not equal sourceRows")));
+  } finally { await rm(root, { recursive: true, force: true }); }
 });
