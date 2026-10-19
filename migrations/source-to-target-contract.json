@@ -63,7 +63,7 @@
       "name": "reports",
       "status": "pending",
       "proposedTarget": "Report",
-      "reason": "Verify target types, reporter/resolver fields, statuses, and resolution fields."
+      "reason": "Source ORM model defines reporter_id (required, users FK ON DELETE CASCADE), reported_user_id (nullable, users FK ON DELETE CASCADE), reported_exchange_id (nullable, exchanges FK ON DELETE SET NULL), required category String(50), required details Text, status default PENDING (source comment lists PENDING/RESOLVED/DISMISSED), nullable admin_note Text, and created_at. Target Report currently uses targetType/targetId, reason, details, lowercase statuses, resolutionNote/resolvedBy, and automatic createdAt/updatedAt; this is not a field-for-field match. Keep mapping pending until source constraints and actual status values are reviewed and a deliberate transformation is specified, including user-only and exchange-only reports."
     },
     {
       "name": "analytics_events",
