@@ -63,6 +63,21 @@ test("user_skills mapping preserves unresolved association semantics and metadat
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
 
+test("exchanges mapping documents status, optional skill, and scheduling conversion gaps", async () => {
+  const contract = JSON.parse(await readFile(contractPath, "utf8"));
+  const exchanges = contract.tables.find((table) => table.name === "exchanges");
+  assert.ok(exchanges);
+  assert.equal(exchanges.status, "pending");
+  assert.equal(exchanges.proposedTarget, "Exchange");
+  assert.match(exchanges.reason, /requester_skill_id/i);
+  assert.match(exchanges.reason, /ON DELETE SET NULL/i);
+  assert.match(exchanges.reason, /COUNTERED\/REJECTED/i);
+  assert.match(exchanges.reason, /counter_message/i);
+  assert.match(exchanges.reason, /requester_completed/i);
+  assert.match(exchanges.reason, /lowercase enum/i);
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
+
 test("notifications mapping remains pending until source type and field conversions are reviewed", async () => {
   const contract = JSON.parse(await readFile(contractPath, "utf8"));
   const notifications = contract.tables.find((table) => table.name === "notifications");
