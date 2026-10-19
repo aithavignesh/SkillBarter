@@ -81,7 +81,7 @@ test("CLI exits 1 with a concise error for malformed JSON input", async () => {
     assert.equal(result.status, 1);
     assert.equal(result.stdout, "");
     assert.match(result.stderr, /^Reconciliation failed: /);
-    assert.doesNotMatch(result.stderr, /\\n\\s+at /, "CLI should not print a stack trace for input errors");
+    assert.doesNotMatch(result.stderr, /\n\s+at /, "CLI should not print a stack trace for input errors");
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 test("CLI emits valid reconciliation JSON and exits 0 for a clean report", async () => {
