@@ -122,7 +122,7 @@ test("current migration contract references existing proposed target model files
   const { validateTargetModelCoverage } = await import("../src/migrations/validateTargetModelCoverage.js");
   const report = await validateTargetModelCoverage(contract);
   assert.equal(report.valid, true, JSON.stringify(report.issues));
-  assert.equal(report.checkedTableCount, 11);
+  assert.equal(report.checkedTableCount, 12);
   assert.ok(report.tables.some((table) => table.name === "connections" && table.skipped === true),
     "unresolved connections mapping must remain skipped rather than guessed");
 });
