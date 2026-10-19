@@ -57,7 +57,7 @@
       "name": "blocks",
       "status": "pending",
       "proposedTarget": "Block",
-      "reason": "Verify blocker/blocked fields, uniqueness, and self-block constraints."
+      "reason": "Source ORM model defines id, blocker_id, blocked_id, and created_at; blocker_id and blocked_id reference users.id with ON DELETE CASCADE, both are indexed, and uq_blocker_blocked enforces pair uniqueness. Target Block model mirrors the relationship shape, but keep mapping pending until the captured PostgreSQL constraints, indexes, nullability/defaults, row counts, and any RLS policies are verified against the live source snapshot."
     },
     {
       "name": "reports",
