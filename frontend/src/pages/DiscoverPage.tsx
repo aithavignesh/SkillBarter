@@ -14,8 +14,14 @@ import { trackEvent } from '../services/analytics';
 export const DiscoverPage: React.FC = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
+  const setSearchQuery = (query: string) => setSearchParams(previous => {
+    const next = new URLSearchParams(previous);
+    if (query) next.set('q', query);
+    else next.delete('q');
+    return next;
+  }, { replace: true });
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [viewMode, setViewMode] = useState<'GRID' | 'MAP'>('GRID');
   const [nearbyUsers, setNearbyUsers] = useState<any[]>([]);
@@ -37,10 +43,6 @@ export const DiscoverPage: React.FC = () => {
   const categories = ['All','AI / ML','Web Development','Programming','Design','Data Science','Interview Prep','Photography','Video Editing','Communication'];
   const monetization = useMemo(() => currentUser?.id ? getMonetizationState(Number(currentUser.id)) : null, [currentUser?.id]);
   const premium = Boolean(monetization?.premium);
-
-  useEffect(() => {
-    setSearchQuery(searchParams.get('q') || '');
-  }, [searchParams]);
 
   const fetchNeighbors = async () => {
     try { setLoading(true); setLoadError(''); setNearbyUsers(await api.getNearbyUsers()); }
