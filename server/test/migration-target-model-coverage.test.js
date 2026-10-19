@@ -37,3 +37,13 @@ test("unresolved source tables remain explicitly blocked until their mapping is 
   assert.match(connections.reason, /inventory status values/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("blocks mapping remains pending until source constraints and fields are reviewed", async () => {
+  const contract = JSON.parse(await readFile(contractPath, "utf8"));
+  const blocks = contract.tables.find((table) => table.name === "blocks");
+  assert.ok(blocks, "blocks source table must remain visible in the contract");
+  assert.equal(blocks.status, "pending");
+  assert.equal(blocks.proposedTarget, "Block");
+  assert.match(blocks.reason, /constraints/i);
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
