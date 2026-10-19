@@ -123,8 +123,10 @@ test("current migration contract references existing proposed target model files
   const report = await validateTargetModelCoverage(contract);
   assert.equal(report.valid, true, JSON.stringify(report.issues));
   assert.equal(report.checkedTableCount, 12);
-  assert.ok(report.tables.some((table) => table.name === "connections" && table.skipped === true),
-    "unresolved connections mapping must remain skipped rather than guessed");
+  assert.ok(contract.tables.some((table) => table.name === "connections" && table.status === "blocked"),
+    "connections mapping must remain blocked until source semantics are reviewed");
+  assert.ok(report.tables.some((table) => table.name === "connections" && table.skipped !== true),
+    "proposed Connection model should be checked without approving the mapping");
 });
 
 test("preflight blocks overlapping model target paths", async () => {
