@@ -15,13 +15,13 @@
       "name": "skills",
       "status": "pending",
       "proposedTarget": "Skill",
-      "reason": "Verify actual columns, ownership fields, category semantics, and constraints from a captured schema snapshot."
+      "reason": "Source ORM defines unique required name String(100), required indexed category String(100), icon default Wrench, nullable description String(255), and popularity default 0. Target Skill requires a unique normalizedName, limits name/category to 80 characters, defaults category to Other, permits description up to 500 characters, omits icon/popularity, and adds createdBy. Define normalization, collision handling, truncation/rejection policy, and treatment of icon/popularity before approval; verify live constraints and values from a captured PostgreSQL snapshot."
     },
     {
       "name": "user_skills",
       "status": "pending",
       "proposedTarget": "User.skillsToTeach / User.skillsToLearn",
-      "reason": "Inspect actual role/type columns before assigning teach-versus-learn semantics."
+      "reason": "Source ORM defines user_id and skill_id as required indexed foreign keys with ON DELETE CASCADE, skill_type String(20) required (source comment: OFFERED or NEEDED), experience_level default Intermediate, nullable description Text, and created_at. Target stores skill ObjectId arrays directly on User and has no per-association experience_level, description, or created_at. Verify actual type values and constraints, map OFFERED/NEEDED deliberately to teach/learn, resolve numeric source IDs to target ObjectIds, and decide how association metadata is preserved before approval."
     },
     {
       "name": "exchanges",
