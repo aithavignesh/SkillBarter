@@ -28,11 +28,12 @@ test("every proposed migration target refers to an existing Mongoose model", asy
   assert.deepEqual(issues, [], issues.join("\n"));
 });
 
-test("unresolved source tables remain explicitly unmapped", async () => {
+test("unresolved source tables remain explicitly blocked until their mapping is approved", async () => {
   const contract = JSON.parse(await readFile(contractPath, "utf8"));
   const connections = contract.tables.find((table) => table.name === "connections");
   assert.ok(connections, "connections source table must remain visible in the contract");
   assert.equal(connections.status, "blocked");
-  assert.equal(connections.proposedTarget, null);
-  assert.match(connections.reason, /do not convert to exchanges by assumption/i);
+  assert.equal(connections.proposedTarget, "Connection");
+  assert.match(connections.reason, /inventory status values/i);
+  assert.equal(contract.schemaSnapshotReviewed, false);
 });

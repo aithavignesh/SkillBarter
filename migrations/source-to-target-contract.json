@@ -74,8 +74,8 @@
     {
       "name": "connections",
       "status": "blocked",
-      "proposedTarget": null,
-      "reason": "No target model is approved. Inspect source semantics and explicitly decide whether to map, derive, archive, or exclude; do not convert to exchanges by assumption."
+      "proposedTarget": "Connection",
+      "reason": "Source columns, foreign keys, uniqueness, indexes, and source application code support a dedicated user-to-user community Connection model, separate from exchanges. Target model is provisional only; inventory status values and source row semantics, then review the complete schema snapshot before approving field mappings or import."
     }
   ]
 }
