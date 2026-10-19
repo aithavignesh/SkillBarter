@@ -20,6 +20,17 @@ test("rejects whitespace-only exclusion reasons", () => {
   assert.equal(result.tables[0].valid, false);
   assert.ok(result.issues.some(item => item.table === "users" && item.issue.includes("excluded rows require a documented exclusionReason")));
 });
+test("does not emit invalid exclusion-reason values in reconciled output", () => {
+  const report = structuredClone(goodReport);
+  report.tables[0].migratedRows = 2;
+  report.tables[0].excludedRows = 1;
+  report.tables[0].exclusionReason = ["not", "a", "string"];
+  const result = reconcileImportReport(manifest, report);
+  assert.equal(result.valid, false);
+  assert.equal(result.tables[0].valid, false);
+  assert.equal(Object.hasOwn(result.tables[0], "exclusionReason"), false, "invalid audit metadata must not be emitted as a documented reason");
+  assert.ok(result.issues.some(item => item.table === "users" && item.issue.includes("excluded rows require a documented exclusionReason")));
+});
 test("rejects exclusion reasons when no rows were excluded", () => {
   const report = structuredClone(goodReport);
   report.tables[0].exclusionReason = "No rows excluded";

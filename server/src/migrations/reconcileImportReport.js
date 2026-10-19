@@ -53,7 +53,7 @@ export function reconcileImportReport(sourceManifest, importReport) {
       sourceRows: table.sourceRows,
       migratedRows: table.migratedRows,
       excludedRows: table.excludedRows,
-      ...(table.excludedRows > 0 ? { exclusionReason: table.exclusionReason } : {}),
+      ...(table.excludedRows > 0 && typeof table.exclusionReason === "string" && table.exclusionReason.trim() ? { exclusionReason: table.exclusionReason } : {}),
       rejectedRows: table.rejectedRows,
       unresolvedReferences: table.unresolvedReferences,
       valid: tableIssues.length === 0,
