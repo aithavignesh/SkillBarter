@@ -27,7 +27,7 @@
       "name": "exchanges",
       "status": "pending",
       "proposedTarget": "Exchange",
-      "reason": "Verify participant fields, status values, schedule/completion columns, and skill references."
+      "reason": "Source ORM defines required requester_id and receiver_id user FKs (ON DELETE CASCADE); nullable requester_skill_id and receiver_skill_id skill FKs (ON DELETE SET NULL); status String(30), default PENDING, with source comment listing PENDING/COUNTERED/REJECTED/ACTIVE/COMPLETED/CANCELLED; required proposal_message; nullable counter_message, preferred_date String(100), location_area String(200), cancellation_reason String(255), and cancelled_by_id (users FK ON DELETE SET NULL); estimated_hours default 2.0; requester_completed and receiver_completed default false; created_at and updated_at. Target requires both skillOffered and skillRequested, uses message and scheduledAt instead of proposal/counter/preferred-date/location fields, and restricts status to a different lowercase enum. Decide how to represent missing skills, map every observed status explicitly, preserve scheduling/cancellation data and mutual completion flags, and verify actual constraints/status values from the captured PostgreSQL schema before approval."
     },
     {
       "name": "messages",
