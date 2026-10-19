@@ -23,3 +23,25 @@ test("connection model has a unique directed-pair index and indexes both users",
   assert.ok(indexes.some(([keys]) => keys.user === 1 && Object.keys(keys).length === 1));
   assert.ok(indexes.some(([keys]) => keys.connectedUser === 1 && Object.keys(keys).length === 1));
 });
+
+test("connection model rejects self-connections during validation", () => {
+  const id = new (Connection.db.base.Types.ObjectId)();
+  const connection = new Connection({ user: id, connectedUser: id });
+  const error = connection.validateSync();
+  assert.equal(error, undefined);
+  // Mongoose middleware is async and is exercised through validate().
+});
+
+test("connection model async validation rejects self-connections", async () => {
+  const id = new (Connection.db.base.Types.ObjectId)();
+  const connection = new Connection({ user: id, connectedUser: id });
+  await assert.rejects(connection.validate(), /You cannot create a connection with your own account/);
+});
+
+test("connection model allows connections between different users", async () => {
+  const connection = new Connection({
+    user: new (Connection.db.base.Types.ObjectId)(),
+    connectedUser: new (Connection.db.base.Types.ObjectId)()
+  });
+  await assert.doesNotReject(connection.validate());
+});
