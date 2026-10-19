@@ -38,6 +38,31 @@ test("unresolved source tables remain explicitly blocked until their mapping is 
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
 
+test("skills mapping documents field constraints and keeps conversion decisions pending", async () => {
+  const contract = JSON.parse(await readFile(contractPath, "utf8"));
+  const skills = contract.tables.find((table) => table.name === "skills");
+  assert.ok(skills);
+  assert.equal(skills.status, "pending");
+  assert.equal(skills.proposedTarget, "Skill");
+  assert.match(skills.reason, /popularity default 0/i);
+  assert.match(skills.reason, /normalizedName/i);
+  assert.match(skills.reason, /collision handling/i);
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
+
+test("user_skills mapping preserves unresolved association semantics and metadata", async () => {
+  const contract = JSON.parse(await readFile(contractPath, "utf8"));
+  const userSkills = contract.tables.find((table) => table.name === "user_skills");
+  assert.ok(userSkills);
+  assert.equal(userSkills.status, "pending");
+  assert.equal(userSkills.proposedTarget, "User.skillsToTeach / User.skillsToLearn");
+  assert.match(userSkills.reason, /ON DELETE CASCADE/i);
+  assert.match(userSkills.reason, /OFFERED\/NEEDED/i);
+  assert.match(userSkills.reason, /experience_level/i);
+  assert.match(userSkills.reason, /ObjectIds/i);
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
+
 test("notifications mapping remains pending until source type and field conversions are reviewed", async () => {
   const contract = JSON.parse(await readFile(contractPath, "utf8"));
   const notifications = contract.tables.find((table) => table.name === "notifications");
