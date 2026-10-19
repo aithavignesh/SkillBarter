@@ -51,7 +51,7 @@
       "name": "notifications",
       "status": "pending",
       "proposedTarget": "Notification",
-      "reason": "Verify recipient/actor/resource fields and supported notification types."
+      "reason": "Source ORM model defines user_id (required, users FK ON DELETE CASCADE), type String(50) required, title String(150) required, message Text required, nullable link String(255), is_read Boolean default false, and created_at. Target Notification instead requires a recipient and restricts type to a fixed lowercase enum, stores body instead of message, derives read state from readAt, adds actor/resource fields, and uses automatic timestamps. Keep mapping pending until actual source type values, source constraints, and an explicit conversion for type/message/link/read state are reviewed."
     },
     {
       "name": "blocks",

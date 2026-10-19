@@ -38,6 +38,19 @@ test("unresolved source tables remain explicitly blocked until their mapping is 
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
 
+test("notifications mapping remains pending until source type and field conversions are reviewed", async () => {
+  const contract = JSON.parse(await readFile(contractPath, "utf8"));
+  const notifications = contract.tables.find((table) => table.name === "notifications");
+  assert.ok(notifications);
+  assert.equal(notifications.status, "pending");
+  assert.equal(notifications.proposedTarget, "Notification");
+  assert.match(notifications.reason, /user_id/i);
+  assert.match(notifications.reason, /is_read/i);
+  assert.match(notifications.reason, /fixed lowercase enum/i);
+  assert.match(notifications.reason, /type\/message\/link\/read state/i);
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
+
 test("blocks mapping remains pending until source constraints and fields are reviewed", async () => {
   const contract = JSON.parse(await readFile(contractPath, "utf8"));
   const blocks = contract.tables.find((table) => table.name === "blocks");
