@@ -2135,7 +2135,7 @@ html.dark,
 }
 
 .dark .ricoz-theme .workspace-sidebar nav .workspace-sidebar__nav-link:not(.workspace-sidebar__nav-link--active):hover {
-  background-color: transparent !important;
+  background-color: var(--ui-surface-interactive) !important;
 }
 
 .dark .ricoz-theme .workspace-sidebar nav .workspace-sidebar__nav-link--active:hover {

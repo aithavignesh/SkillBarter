@@ -115,6 +115,9 @@ export const LoginPage: React.FC = () => {
     if (submitting.current || loading || resetSending) return;
     try {
       submitting.current = true;
+      setError(null);
+      setSuccessMessage(null);
+      setToast(null);
       await login(email.trim(), password);
       trackEvent('login_completed', { method: 'email_password' });
       navigate('/feed');
@@ -193,14 +196,14 @@ export const LoginPage: React.FC = () => {
                 <label className="login-label" htmlFor="login-phone">Mobile Number</label>
                 <div className="mt-1.5 flex min-w-0 flex-col gap-2 sm:flex-row">
                   <div className="relative w-full shrink-0 sm:w-[150px]">
-                    <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} disabled={otpSent} aria-label="Country code" className="login-input h-[42px] w-full appearance-none pl-3 pr-8 font-semibold disabled:opacity-60">
+                    <select value={countryCode} onChange={(e) => { setCountryCode(e.target.value); setError(null); setSuccessMessage(null); }} disabled={otpSent} aria-label="Country code" className="login-input h-[42px] w-full appearance-none pl-3 pr-8 font-semibold disabled:opacity-60">
                       {countries.map(([iso, name, code]) => <option key={iso + code} value={code}>{name} ({code})</option>)}
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
                   </div>
                   <div className="relative min-w-0 flex-1">
                     <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))} placeholder="98765 43210" disabled={otpSent} className="login-input h-[42px] w-full pl-9 pr-3 font-mono disabled:opacity-60" required />
+                    <input id="login-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => { setPhone(e.target.value.replace(/[^\d\s-]/g, '')); setError(null); setSuccessMessage(null); }} placeholder="98765 43210" disabled={otpSent} className="login-input h-[42px] w-full pl-9 pr-3 font-mono disabled:opacity-60" required />
                   </div>
                 </div>
                 {!otpSent && <p className="login-help">Select your country, then enter your mobile number. The country code is added automatically.</p>}
@@ -214,7 +217,7 @@ export const LoginPage: React.FC = () => {
                   </div>
                   <div className="relative">
                     <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} placeholder="••••••" disabled={loading} className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
+                    <input id="login-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '')); setError(null); }} placeholder="••••••" disabled={loading} className="login-input w-full pl-9 pr-3 text-center font-mono text-lg tracking-[0.5em]" required />
                   </div>
                   <p className="login-help">Sent via 2Factor SMS to <span className="font-semibold text-[#17233b]">{phone}</span>. Valid for 10 minutes.</p>
                 </div>
@@ -249,14 +252,14 @@ export const LoginPage: React.FC = () => {
                   <label className="login-label" htmlFor="login-email">Email Address</label>
                   <div className="relative mt-1.5">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="arjun@skillbarter.com" disabled={loading || resetSending} className="login-input w-full pl-9 pr-3" required />
+                    <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} placeholder="arjun@skillbarter.com" disabled={loading || resetSending} className="login-input w-full pl-9 pr-3" required />
                   </div>
                 </div>
                 <div>
                   <label className="login-label" htmlFor="login-password">Password</label>
                   <div className="relative mt-1.5">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa1ac]" />
-                    <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" disabled={loading} className="login-input w-full pl-9 pr-3" required />
+                    <input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => { setPassword(e.target.value); setError(null); }} placeholder="••••••••" disabled={loading} className="login-input w-full pl-9 pr-3" required />
                   </div>
                 </div>
                 <Button type="submit" loading={loading} className="login-primary-button w-full">Sign In with Email</Button>
