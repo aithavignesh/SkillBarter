@@ -69,6 +69,23 @@ test("flags row accounting totals that exceed safe integer precision", () => {
   assert.equal(result.tables[0].valid, false, "table-level validity must reflect unsafe row-accounting totals");
   assert.ok(result.issues.some(item => item.table === "users" && item.issue.includes("do not equal sourceRows")));
 });
+test("CLI emits valid reconciliation JSON and exits 0 for a clean report", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "skillbarter-reconcile-valid-"));
+  try {
+    const manifestPath = path.join(root, "manifest.json");
+    const reportPath = path.join(root, "report.json");
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await writeFile(reportPath, JSON.stringify(goodReport));
+    const scriptPath = fileURLToPath(new URL("../src/migrations/reconcileImportReport.js", import.meta.url));
+    const result = spawnSync(process.execPath, [scriptPath, manifestPath, reportPath], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.valid, true);
+    assert.equal(output.totalSourceRows, 5);
+    assert.deepEqual(output.issues, []);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
 test("CLI emits the reconciliation report and exits 2 when the report is invalid", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillbarter-reconcile-"));
   try {
