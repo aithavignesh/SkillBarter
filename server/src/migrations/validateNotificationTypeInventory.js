@@ -68,10 +68,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     const explicitMap = await readJson(mapPath);
     const rows = Array.isArray(inventory) ? inventory : inventory.rows;
     const result = validateNotificationTypeInventory(rows, explicitMap);
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\\n`);
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     if (!result.valid) process.exitCode = 2;
   } catch (error) {
-    process.stderr.write(`Notification type inventory validation failed: ${error.message}\\n`);
+    process.stderr.write(`Notification type inventory validation failed: ${error.message}\n`);
     process.exitCode = 1;
   }
 }
