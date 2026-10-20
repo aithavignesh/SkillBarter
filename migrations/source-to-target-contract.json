@@ -39,7 +39,7 @@
       "name": "reviews",
       "status": "pending",
       "proposedTarget": "Review",
-      "reason": "Verify reviewer/reviewee/exchange references, rating constraints, and uniqueness rules."
+      "reason": "Source ORM defines required indexed exchange_id, reviewer_id, and reviewee_id foreign keys with ON DELETE CASCADE; required integer rating with a source comment indicating 1–5 stars; reliability_score and skill_quality_score default 5; would_exchange_again Boolean default true; nullable comment Text; created_at timestamp; and unique constraint uq_exchange_reviewer on (exchange_id, reviewer_id). Target Review enforces rating min 1/max 5 and a unique (exchange, reviewer) index, but has no reliability_score, skill_quality_score, or would_exchange_again fields, trims comment and caps it at 2000 characters, and uses automatic createdAt/updatedAt. Verify actual source rating/sub-score constraints and observed values, decide how to preserve or intentionally transform sub-scores and would_exchange_again, define a policy for comments longer than 2000 characters, convert numeric IDs to ObjectIds, and confirm target uniqueness matches source semantics before approval."
     },
     {
       "name": "posts",
