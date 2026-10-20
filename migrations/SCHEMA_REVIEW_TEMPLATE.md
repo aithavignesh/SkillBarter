@@ -63,6 +63,24 @@ Use this matrix only after the source snapshot confirms the actual columns, type
 
 Before approving the `posts` row in the table-level worksheet, attach private evidence for source/target counts, required and optional reference resolution, timestamp preservation, title/type disposition, content length policy, and likes reconciliation. Record the decision owner and reviewer; the presence of this checklist is not approval.
 
+
+## Block and connection relationship decisions (must remain blocked until reviewed)
+
+The items below describe proposed source/target differences that require confirmation against the actual captured source schema and data. Do not interpret this worksheet as evidence that self-pairs or reciprocal pairs exist.
+
+| Source behavior | Target behavior / risk | Required decision and validation evidence | Status |
+|---|---|---|---|
+| `blocks.blocker_id` and `blocks.blocked_id` | Target uses required User ObjectIds and rejects self-blocks in model validation | Build a deterministic user-ID crosswalk; check all references resolve; inventory self-block rows; have the product owner decide whether to reject, quarantine, or explicitly transform any found rows | blocked |
+| `blocks.created_at` | Target Mongoose timestamps generate `createdAt` and `updatedAt` | Preserve the original instant explicitly and compare source/target timestamp distributions; do not replace historical time with import time | blocked |
+| Unique `(blocker_id, blocked_id)` | Target unique index on ordered pair | Verify source unique constraint and duplicates in the actual snapshot; preserve pair direction and do not reverse or deduplicate pairs without policy approval | blocked |
+| `connections.user_id`, `connected_user_id` | Target uses User ObjectIds and rejects self-connections | Validate crosswalk coverage and inventory self-pairs before import; agree on a disposition for any rows that target validation rejects | blocked |
+| Ordered-pair uniqueness | Reciprocal rows `A → B` and `B → A` are distinct under the ordered-pair key | Inventory reciprocal pairs and actual uniqueness rules. Do not collapse reciprocal records unless the product owner explicitly approves that semantic change | blocked |
+| `connections.status` | Target status is open-ended but defaults to `ACCEPTED` | Capture actual values and null/blank distribution; map only observed values by an explicit policy and never apply the default to historical rows without checking source values | blocked |
+| `connections.created_at` | Target `createdAt` defaults to null with timestamps disabled | Explicitly preserve source creation time; identify nulls and timezone assumptions and validate representative UTC boundary records | blocked |
+| Source FK deletion rules | Source ORM describes cascading deletes for both relationship tables | Verify live foreign keys and target deletion policy; document whether deletes should cascade, be retained, or be anonymized before approval | blocked |
+
+Before approving either table, attach private evidence for exact row counts, unique-key violations, self-pairs, reciprocal connections, unresolved user references, observed statuses, timestamp nullness/ranges, and the approved handling policy. Keep source and target row-level evidence outside Git.
+
 ## Required decisions before marking the snapshot reviewed
 
 - [ ] Reconcile every source schema and table against the catalog output; explain missing, additional, or non-application tables.
