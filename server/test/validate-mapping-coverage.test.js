@@ -231,3 +231,15 @@ test("real migration contract stays blocked until source evidence is reviewed", 
   assert.equal(notificationPlan.safety.productionImportAllowed, false);
   assert.equal(notificationPlan.safety.productionCutoverApproved, false);
 });
+
+
+test("rejects a ready top-level contract status before source schema review", () => {
+  const candidate = {
+    ...structuredClone(contract),
+    schemaSnapshotReviewed: false,
+    status: "ready"
+  };
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("schemaSnapshotReviewed must be true before mapping coverage can be approved")));
+});
