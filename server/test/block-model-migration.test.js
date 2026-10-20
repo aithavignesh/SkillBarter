@@ -43,3 +43,17 @@ test("target Block rejects self-blocks while migration keeps source policy unres
   assert.equal(blocks.status, "pending");
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("Block timestamp automation differs from the source created_at-only field", async () => {
+  assert.equal(Block.schema.options.timestamps, true);
+  assert.ok(Block.schema.path("createdAt"));
+  assert.ok(Block.schema.path("updatedAt"));
+
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const blocks = contract.tables.find((table) => table.name === "blocks");
+  assert.ok(blocks);
+  assert.match(blocks.reason, /preserve source created_at exactly/i);
+  assert.match(blocks.reason, /target uniqueness and deletion behavior/i);
+  assert.equal(blocks.status, "pending");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
