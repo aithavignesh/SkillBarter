@@ -30,7 +30,7 @@ const contract = {
 
 test("rejects malformed schema review capture and review dates", () => {
   const candidate = structuredClone(contract);
-  candidate.schemaReview.capturedAt = "yesterday";
+  candidate.schemaReview.capturedAt = "2026-02-31T10:00:00Z";
   candidate.schemaReview.reviewedAt = "2026-02-31";
   const result = validateMappingCoverage(manifest, candidate);
   assert.equal(result.valid, false);
