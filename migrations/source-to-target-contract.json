@@ -45,7 +45,7 @@
       "name": "posts",
       "status": "pending",
       "proposedTarget": "Post",
-      "reason": "Verify content, author, tags, likes, visibility, and relationship fields."
+      "reason": "Source ORM defines required indexed author_id user FK with ON DELETE CASCADE; required post_type String(50) (comment lists OFFER, REQUEST, COMPLETED_EXCHANGE, COMMUNITY, RECOMMENDATION); required title String(200) and content Text; nullable skill_id FK ON DELETE SET NULL, nullable exchange_id FK ON DELETE SET NULL, nullable partner_id user FK ON DELETE SET NULL; likes_count default 0; and indexed created_at. Target Post requires author and content (trimmed, max 5000 characters), stores tags and likes as arrays, adds visibility and isHidden, and has no title, post_type, skill, exchange, partner, or likes_count fields. Define a deliberate representation for title and post_type, preserve nullable skill/exchange/partner references and deletion semantics, decide whether likes_count can be reconstructed from target likes (and how to handle count-only source data), establish content length policy and ObjectId conversion, and verify actual source values/constraints from a captured PostgreSQL snapshot before approval."
     },
     {
       "name": "notifications",
