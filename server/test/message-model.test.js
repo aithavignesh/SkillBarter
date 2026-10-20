@@ -43,7 +43,7 @@ test("message conversion guards the nullable source exchange and timestamp/read-
   assert.match(messages.reason, /createdAt\/updatedAt/i);
   assert.match(messages.reason, /is_read=true/i);
   assert.equal(Message.schema.path("exchange").isRequired, true);
-  assert.equal(Message.schema.path("createdAt"), undefined);
+  assert.ok(Message.schema.path("createdAt"), "createdAt is added automatically by Mongoose timestamps");
   assert.equal(Message.schema.options.timestamps, true);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
