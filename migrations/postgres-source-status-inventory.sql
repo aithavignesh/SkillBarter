@@ -285,6 +285,24 @@ FROM public.posts
 WHERE content IS NOT NULL
 GROUP BY 2
 
+UNION ALL
+
+SELECT 'posts.title_nullness', (title IS NULL)::text, COUNT(*)::bigint
+FROM public.posts
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'posts.title_blankness', (title IS NOT NULL AND btrim(title) = '')::text, COUNT(*)::bigint
+FROM public.posts
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'posts.likes_count_positive', (likes_count > 0)::text, COUNT(*)::bigint
+FROM public.posts
+GROUP BY 2
+
 ORDER BY field, value NULLS FIRST;
 
 COMMIT;
