@@ -17,13 +17,13 @@ test("source status inventory is read-only and covers migration-sensitive values
     assert.doesNotMatch(statement, /\b(?:INSERT|UPDATE|DELETE|MERGE|CREATE|ALTER|DROP|TRUNCATE|GRANT|REVOKE|CALL|DO)\b/i);
   }
 
-  assert.equal((sql.match(/\bUNION\s+ALL\b/gi) ?? []).length, 11, "all inventory SELECTs must be joined by UNION ALL");
+  assert.equal((sql.match(/\bUNION\s+ALL\b/gi) ?? []).length, 12, "all inventory SELECTs must be joined by UNION ALL");
   assert.doesNotMatch(withoutComments, /UNION\s+ALL\s+UNION\s+ALL/i, "must not contain an empty UNION branch");
   for (const field of [
     "connections.status", "exchanges.status", "user_skills.skill_type",
     "notifications.type", "notifications.is_read", "notifications.link_format",
     "notifications.title_over_160", "notifications.message_over_1000",
-    "notifications.link_over_255", "notifications.created_at_nullness", "reports.status", "posts.post_type"
+    "notifications.link_over_255", "notifications.created_at_nullness", "notifications.created_at_utc_month", "reports.status", "posts.post_type"
   ]) {
     assert.ok(sql.includes("'" + field + "'"), "missing inventory for " + field);
   }
