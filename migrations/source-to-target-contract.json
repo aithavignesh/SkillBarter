@@ -69,7 +69,7 @@
       "name": "analytics_events",
       "status": "pending",
       "proposedTarget": "AnalyticsEvent",
-      "reason": "Approve retention/privacy rules and verify event/property schema before deciding which data may migrate."
+      "reason": "Source ORM defines required indexed event String(80), required indexed session_id String(120), required path String(255), required indexed timestamp DateTime, required properties Text defaulting to \"{}\", and non-null created_at defaulting to UTC now. Target AnalyticsEvent instead requires an actor User ObjectId, renames event to name and restricts it to a fixed lowercase enum, limits path to 160 characters and defaults it to an empty string, stores properties as a Mixed object rather than serialized Text, and uses automatic createdAt/updatedAt with no session_id or separate event timestamp. Before approval, inventory actual source event names and property payloads, define event-name conversion and handling for unsupported events, determine whether session_id may be retained under the approved privacy/retention policy, map source timestamp versus created_at deliberately, parse/validate properties JSON, define overlength path handling, and resolve how source rows without an attributable user can satisfy required target actor."
     },
     {
       "name": "connections",
