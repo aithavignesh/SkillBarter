@@ -144,6 +144,42 @@ SELECT 'users.phone_nullness', (phone IS NULL)::text, COUNT(*)::bigint
 FROM public.users
 GROUP BY 2
 
+UNION ALL
+
+SELECT 'users.email_nullness', (email IS NULL)::text, COUNT(*)::bigint
+FROM public.users
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'users.email_blankness', (email IS NOT NULL AND btrim(email) = '')::text, COUNT(*)::bigint
+FROM public.users
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'users.username_nullness', (username IS NULL)::text, COUNT(*)::bigint
+FROM public.users
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'users.username_blankness', (username IS NOT NULL AND btrim(username) = '')::text, COUNT(*)::bigint
+FROM public.users
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'users.password_hash_nullness', (password_hash IS NULL)::text, COUNT(*)::bigint
+FROM public.users
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'users.full_name_nullness', (full_name IS NULL)::text, COUNT(*)::bigint
+FROM public.users
+GROUP BY 2
+
 ORDER BY field, value NULLS FIRST;
 
 COMMIT;
