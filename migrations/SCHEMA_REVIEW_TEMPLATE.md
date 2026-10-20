@@ -45,6 +45,24 @@ Create one row per actual source column. Do not fill source types, nullability, 
 |---|---|---|---|---|---|---|---|
 | Pending from verified inventory | Pending | Pending | Pending | blocked | No source column has been reviewed in this template | Pending | Pending |
 
+
+## Post-specific mapping decisions (must remain blocked until reviewed)
+
+Use this matrix only after the source snapshot confirms the actual columns, types, constraints, and observed values. These are known proposed differences between the current source ORM description and target model, not verified live-database facts.
+
+| Source field / behavior | Current target gap | Required decision and validation evidence | Status |
+|---|---|---|---|
+| `author_id` | Target requires `Post.author` as a User ObjectId | Define deterministic source-user-ID to target-ObjectId mapping; validate every reference resolves exactly once and preserve author ownership | blocked |
+| `post_type` (source comment lists OFFER, REQUEST, COMPLETED_EXCHANGE, COMMUNITY, RECOMMENDATION) | Target has no post type field | Capture actual values and decide a lossless target field or explicit approved transformation; do not infer type from content | blocked |
+| `title` (source String(200)) | Target has no title field | Preserve title separately or approve a documented alternative; inventory null/blank and overlength cases before deciding how to represent them | blocked |
+| `content` | Target trims and caps content at 5,000 characters | Compare source type and actual length distribution; choose preserve, reject/quarantine, or approved transformation; never silently truncate | blocked |
+| `skill_id`, `exchange_id`, `partner_id` | Target has no corresponding references | Map each nullable FK to the correct target model, preserve nulls and ON DELETE SET NULL semantics, and validate dangling references before import | blocked |
+| `likes_count` | Target stores individual user IDs in `likes[]`, not an aggregate count | Determine whether individual liker identities exist elsewhere. Do not synthesize users or pretend the count reconstructs the list; document count preservation/reconciliation and negative-count handling | blocked |
+| `created_at` | Mongoose timestamps generate target `createdAt` unless explicitly supplied | Preserve the original instant and timezone semantics, explicitly set target `createdAt` during import, and validate null/malformed timestamps and UTC boundary samples. Do not substitute migration time or target insertion time | blocked |
+| Source primary key / references | Target uses MongoDB ObjectIds | Maintain a durable source-ID-to-ObjectId crosswalk for posts and all referenced entities; verify uniqueness and referential completeness before importing dependent records | blocked |
+
+Before approving the `posts` row in the table-level worksheet, attach private evidence for source/target counts, required and optional reference resolution, timestamp preservation, title/type disposition, content length policy, and likes reconciliation. Record the decision owner and reviewer; the presence of this checklist is not approval.
+
 ## Required decisions before marking the snapshot reviewed
 
 - [ ] Reconcile every source schema and table against the catalog output; explain missing, additional, or non-application tables.
