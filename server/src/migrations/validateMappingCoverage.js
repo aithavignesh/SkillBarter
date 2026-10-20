@@ -44,6 +44,9 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
     }
     const approved = ["mapped", "transformed", "excluded"].includes(mapping.status);
     const tableIssues = [];
+    if (!["pending", "mapped", "transformed", "excluded", "blocked"].includes(mapping.status)) {
+      tableIssues.push(`mapping status is invalid or missing: ${mapping.status ?? "missing"}`);
+    }
     if (!approved) tableIssues.push(`mapping status is ${mapping.status ?? "missing"}`);
     if (["blocked", "excluded"].includes(mapping.status) && (typeof mapping.reason !== "string" || !mapping.reason.trim())) tableIssues.push("blocked/excluded table requires a reason");
     if (["mapped", "transformed"].includes(mapping.status) && (typeof mapping.proposedTarget !== "string" || !mapping.proposedTarget.trim())) tableIssues.push("mapped/transformed table requires proposedTarget");
