@@ -9,7 +9,7 @@ async function modelFixture(t, names = ["User.js", "Skill.js", "Exchange.js"]) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "skillbarter-target-models-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const modelPaths = {
-    User: ["fullName", "username", "skillsToTeach", "skillsToLearn", "profile", "profile.name"],
+    User: ["fullName", "username", "email", "skillsToTeach", "skillsToLearn", "profile", "profile.name"],
     Skill: ["name", "normalizedName"],
     Exchange: ["status", "requesterId"]
   };
@@ -42,6 +42,51 @@ test("accepts existing models and valid top-level and nested field paths", async
   assert.equal(result.valid, true);
   assert.equal(result.checkedTableCount, 5);
   assert.deepEqual(result.issues, []);
+});
+
+test("validates mapped field target paths against the selected model schema", async (t) => {
+  const directory = await modelFixture(t);
+  const valid = await validateTargetModelCoverage({
+    tables: [{
+      name: "users",
+      status: "mapped",
+      proposedTarget: "User",
+      fields: [
+        { sourceField: "email_address", status: "mapped", targetField: "email" },
+        { sourceField: "profile_name", status: "transformed", targetField: "profile.name" }
+      ]
+    }]
+  }, directory);
+  assert.equal(valid.valid, true, JSON.stringify(valid.issues));
+
+  const invalid = await validateTargetModelCoverage({
+    tables: [{
+      name: "users",
+      status: "mapped",
+      proposedTarget: "User",
+      fields: [{ sourceField: "legacy_skills", status: "mapped", targetField: "skills_to_teach" }]
+    }]
+  }, directory);
+  assert.equal(invalid.valid, false);
+  assert.ok(invalid.issues.some((issue) =>
+    issue.target === "skills_to_teach" && issue.issue === "field-level targetField does not exist in the Mongoose schema"
+  ));
+});
+
+test("requires an unambiguous target model for field-level schema validation", async (t) => {
+  const directory = await modelFixture(t);
+  const result = await validateTargetModelCoverage({
+    tables: [{
+      name: "user_skills",
+      status: "mapped",
+      proposedTarget: "User.skillsToTeach / User.skillsToLearn",
+      fields: [{ sourceField: "skill_id", status: "mapped", targetField: "skillsToTeach" }]
+    }]
+  }, directory);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) =>
+    issue.issue === "field-level targetField validation requires exactly one target model in proposedTarget"
+  ));
 });
 
 test("rejects target model names that do not exist", async (t) => {
