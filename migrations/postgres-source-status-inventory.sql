@@ -255,6 +255,31 @@ GROUP BY 2
 
 UNION ALL
 
+SELECT 'reviews.rating_out_of_range', (rating < 1 OR rating > 5)::text, COUNT(*)::bigint
+FROM public.reviews
+WHERE rating IS NOT NULL
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'reviews.reliability_score_nullness', (reliability_score IS NULL)::text, COUNT(*)::bigint
+FROM public.reviews
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'reviews.skill_quality_score_nullness', (skill_quality_score IS NULL)::text, COUNT(*)::bigint
+FROM public.reviews
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'reviews.would_exchange_again', would_exchange_again::text, COUNT(*)::bigint
+FROM public.reviews
+GROUP BY 2
+
+UNION ALL
+
 SELECT 'posts.content_over_5000', (char_length(content) > 5000)::text, COUNT(*)::bigint
 FROM public.posts
 WHERE content IS NOT NULL
