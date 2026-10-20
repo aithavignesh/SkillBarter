@@ -41,6 +41,38 @@ if ($LASTEXITCODE -ne 0) { throw "Schema snapshot failed; do not treat partial o
 
 The script starts a read-only transaction. If the query fails, do not treat partial output as a completed snapshot. Check the error with the database administrator rather than broadening privileges or switching to a write-capable account.
 
+
+## Follow-up inventory: exact counts and observed values
+
+Run these only after the schema snapshot confirms the expected `public` tables and the source owner approves the inventory on the same non-production environment. The exact-count query scans the listed tables and may be expensive on large datasets; obtain DBA approval before running it. These scripts are read-only, but their output is still internal migration evidence and must remain outside Git.
+
+### Exact row counts and schema inventory
+
+The source inventory script includes catalog details and exact `COUNT(*)` results for the 12 currently known application tables. If the schema snapshot shows a different table list, do not run it unchanged: reconcile the table list with the source owner and adjust the query to the verified schema first.
+
+PowerShell:
+
+```powershell
+if (-not $env:DATABASE_URL) { throw "Set DATABASE_URL through your approved secret manager first." }
+$outDir = Join-Path $HOME "skillbarter-private-migration-review"
+New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+psql $env:DATABASE_URL --no-psqlrc --set ON_ERROR_STOP=1 --file migrations/postgres-source-inventory.sql --output (Join-Path $outDir "postgres-source-inventory.txt")
+if ($LASTEXITCODE -ne 0) { throw "Source inventory failed; do not treat partial output as reviewed evidence." }
+```
+
+### Aggregate status and length inventory
+
+After confirming that every referenced table and column exists in the reviewed schema, run the status inventory. It reports aggregate value counts and length/timestamp buckets rather than exporting application rows. Review output privately; do not paste raw records or credentials into Git or chat.
+
+```powershell
+if (-not $env:DATABASE_URL) { throw "Set DATABASE_URL through your approved secret manager first." }
+$outDir = Join-Path $HOME "skillbarter-private-migration-review"
+psql $env:DATABASE_URL --no-psqlrc --set ON_ERROR_STOP=1 --file migrations/postgres-source-status-inventory.sql --output (Join-Path $outDir "postgres-source-status-inventory.txt")
+if ($LASTEXITCODE -ne 0) { throw "Status inventory failed; do not treat partial output as reviewed evidence." }
+```
+
+Keep all three outputs in the access-controlled review directory. Share only a sanitized summary of table names, column definitions, aggregate counts, observed enum-like values, and anomalies needed for mapping decisions. Do not share connection strings, credentials, personal data, message contents, or raw exports.
+
 ## Review checklist
 
 1. Confirm the snapshot came from the intended non-production source and record the capture date and reviewer outside the repository.
