@@ -31,3 +31,16 @@ test("analytics migration stays pending while source session and event semantics
   assert.match(analytics.reason, /privacy\/retention policy/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("analytics mapping explicitly protects source event time and anonymous-session decisions", async () => {
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const analytics = contract.tables.find((table) => table.name === "analytics_events");
+  assert.ok(analytics);
+  assert.match(analytics.reason, /required indexed timestamp DateTime/i);
+  assert.match(analytics.reason, /separate event timestamp/i);
+  assert.match(analytics.reason, /source rows without an attributable user/i);
+  assert.match(analytics.reason, /session_id may be retained under the approved privacy\/retention policy/i);
+  assert.equal(AnalyticsEvent.schema.path("timestamp"), undefined);
+  assert.ok(AnalyticsEvent.schema.path("createdAt"));
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
