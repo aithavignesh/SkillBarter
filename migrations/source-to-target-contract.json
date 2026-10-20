@@ -9,7 +9,7 @@
       "name": "users",
       "status": "pending",
       "proposedTarget": "User",
-      "reason": "Verify actual source columns, constraints, password-hash compatibility, and profile/auth semantics from a captured schema snapshot."
+      "reason": "Source ORM defines required unique indexed email String(255), nullable unique indexed username String(30) and phone String(20), required password_hash String(255) and full_name String(150), nullable profile/location fields, numeric latitude/longitude and trust/reliability/response/skill-quality scores, exchange/review counters, JSON badges, monetization/entitlement flags and dates, is_active/is_admin/onboarding_completed, primary_intent, and created_at/updated_at. Target User uses fullName (max 100), required lowercase username (3–30), lowercase email, passwordHash select:false, tokenVersion, phone with a partial unique non-empty index, avatarUrl/bio/headline with target length limits, skillsToTeach/skillsToLearn ObjectId arrays, onboardingCompleted default false, trustScore default 0, reviewsCount, isActive, and isAdmin. It does not directly represent many source location, score breakdown, badge, monetization, and entitlement fields; source permits nullable username while target requires it; source full_name allows 150 while target caps 100; source onboarding defaults true while target defaults false. Verify password hash algorithm compatibility, uniqueness/case normalization, nullable/empty phone behavior, observed nulls and values, all omitted fields and downstream references, numeric-ID-to-ObjectId conversion, and actual constraints/indexes/RLS from a captured PostgreSQL schema snapshot before approval."
     },
     {
       "name": "skills",
