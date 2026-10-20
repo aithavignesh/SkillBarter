@@ -148,3 +148,16 @@ test("CLI emits parseable JSON and exits 2 while the checked-in contract is bloc
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("rejects missing or unsupported mapping statuses", () => {
+  const candidate = structuredClone(contract);
+  candidate.tables[0] = { name: "users", proposedTarget: "User", fields: [{ sourceField: "email", status: "mapped", targetField: "email" }] };
+  let result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("mapping status is missing")));
+
+  candidate.tables[0].status = "approved";
+  result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("mapping status is approved")));
+});
