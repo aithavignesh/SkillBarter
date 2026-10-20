@@ -1,0 +1,6 @@
+{
+  "exampleOnly": true,
+  "note": "Illustrative fixture only. Replace keys and counts with reviewed source inventory values; these are not approved production mappings.",
+  "EXAMPLE_MESSAGE": "message",
+  "EXAMPLE_EXCHANGE_REQUEST": "exchange_request"
+}
