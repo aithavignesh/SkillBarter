@@ -39,7 +39,7 @@ psql $env:DATABASE_URL --no-psqlrc --set ON_ERROR_STOP=1 --file migrations/postg
 if ($LASTEXITCODE -ne 0) { throw "Schema snapshot failed; do not treat partial output as reviewed evidence." }
 ```
 
-The script starts a read-only transaction. If the query fails, do not treat partial output as a completed snapshot. Check the error with the database administrator rather than broadening privileges or switching to a write-capable account.
+The script starts a read-only transaction and prints a provenance row first: database name, current schema, PostgreSQL version, and transaction start timestamp. Before reviewing the remaining output, confirm that this provenance matches the intended non-production source and expected schema. Treat database and role names as internal metadata; sanitize them before sharing outside the approved review group. If the query fails, do not treat partial output as a completed snapshot. Check the error with the database administrator rather than broadening privileges or switching to a write-capable account.
 
 
 ## Follow-up inventory: exact counts and observed values
