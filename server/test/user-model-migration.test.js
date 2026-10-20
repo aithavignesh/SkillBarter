@@ -33,3 +33,24 @@ test("users mapping records source/target conversion gaps and remains pending", 
   assert.match(users.reason, /captured PostgreSQL schema snapshot/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("user conversion guards source fields and nullability not represented by the target model", async () => {
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const users = contract.tables.find((table) => table.name === "users");
+  assert.ok(users);
+  assert.equal(User.schema.path("latitude"), undefined);
+  assert.equal(User.schema.path("longitude"), undefined);
+  assert.equal(User.schema.path("reliabilityScore"), undefined);
+  assert.equal(User.schema.path("responseRate"), undefined);
+  assert.equal(User.schema.path("skillQualityScore"), undefined);
+  assert.equal(User.schema.path("completedExchangesCount"), undefined);
+  assert.equal(User.schema.path("badges"), undefined);
+  assert.equal(User.schema.path("onboardingCompleted").options.default, false);
+  assert.equal(User.schema.path("fullName").options.maxlength, 100);
+  assert.match(users.reason, /latitude/i);
+  assert.match(users.reason, /reliability/i);
+  assert.match(users.reason, /badges/i);
+  assert.match(users.reason, /onboarding defaults true/i);
+  assert.equal(users.status, "pending");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
