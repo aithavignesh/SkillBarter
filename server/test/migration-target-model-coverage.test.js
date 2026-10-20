@@ -34,7 +34,7 @@ test("unresolved source tables remain explicitly blocked until their mapping is 
   assert.ok(connections, "connections source table must remain visible in the contract");
   assert.equal(connections.status, "blocked");
   assert.equal(connections.proposedTarget, "Connection");
-  assert.match(connections.reason, /inventory status values/i);
+  assert.match(connections.reason, /inventory actual status values/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
 
