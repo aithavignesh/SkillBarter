@@ -26,6 +26,15 @@ async function fixture({ reviewed = true, mappingStatus = "mapped" } = {}) {
     sourceSystem: "test",
     targetSystem: "test",
     schemaSnapshotReviewed: reviewed,
+    ...(reviewed ? { schemaReview: {
+      sourceEnvironment: "test-fixture",
+      capturedAt: "2026-10-20T00:00:00Z",
+      schemasReviewed: "public",
+      inventoryRevision: "fixture-v1",
+      reviewer: "test reviewer",
+      reviewedAt: "2026-10-20",
+      evidenceReference: "private://fixture/schema-snapshot"
+    } } : {}),
     tables: [{ name: "users", status: mappingStatus, proposedTarget: "User", reason: "Test decision", ...(mappingStatus === "mapped" || mappingStatus === "transformed" ? { fields: [{ sourceField: "email", status: "mapped", targetField: "email" }] } : {}) }]
   }));
   return { root, exportDirectory, contractPath };
@@ -185,5 +194,17 @@ test("preflight rejects malformed mapping decisions before declaring readiness",
       () => validateMigrationPreflight(f.exportDirectory, f.contractPath),
       /Invalid status for users/
     );
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+test("preflight blocks a reviewed flag without schema-review provenance", async () => {
+  const f = await fixture();
+  try {
+    const contract = JSON.parse(await readFile(f.contractPath, "utf8"));
+    delete contract.schemaReview;
+    await writeFile(f.contractPath, JSON.stringify(contract));
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.valid, false);
+    assert.ok(report.blockers.some((item) => item.stage === "mappingCoverage" && item.issue.includes("schemaReview provenance metadata")));
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
