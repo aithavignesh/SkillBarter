@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Notification from "../src/models/Notification.js";
+import { mapNotificationType, targetNotificationTypes } from "../src/migrations/mapNotificationType.js";
+
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -67,4 +69,17 @@ test("notification conversion plan blocks lossy mapping until explicit policies 
   assert.match(fields.message.conversion, /Do not silently truncate/);
   assert.match(fields.type.status, /blocked/);
   assert.match(fields.created_at.conversion, /exactly as UTC/);
+});
+
+test("notification type mapper requires explicit source mappings and rejects invalid targets", () => {
+  const explicitMap = {
+    "known-source-message": "message",
+    "known-source-exchange": "exchange_request"
+  };
+  assert.equal(mapNotificationType("known-source-message", explicitMap), "message");
+  assert.equal(mapNotificationType("known-source-exchange", explicitMap), "exchange_request");
+  assert.throws(() => mapNotificationType("unseen-source-value", explicitMap), /Unmapped source notification type/);
+  assert.throws(() => mapNotificationType("known-source-message", { "known-source-message": "unknown" }), /Invalid target notification type/);
+  assert.throws(() => mapNotificationType("", explicitMap), /non-empty string/);
+  assert.deepEqual(targetNotificationTypes.sort(), ["exchange_request", "exchange_update", "message", "post_comment", "post_like", "review", "system"]);
 });
