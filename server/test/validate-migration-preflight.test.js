@@ -64,6 +64,18 @@ test("reports mapping blockers after validating the export", async () => {
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("preflight blocks impossible schema review dates", async () => {
+  const f = await fixture();
+  try {
+    const contract = JSON.parse(await readFile(f.contractPath, "utf8"));
+    contract.schemaReview.capturedAt = "2026-02-31T10:00:00Z";
+    await writeFile(f.contractPath, JSON.stringify(contract));
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.valid, false);
+    assert.ok(report.blockers.some((item) => item.stage === "mappingCoverage" && item.issue.includes("capturedAt must be a valid ISO 8601 timestamp")));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
 test("rejects corrupted export before claiming preflight readiness", async () => {
   const f = await fixture();
   try {
