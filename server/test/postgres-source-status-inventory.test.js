@@ -17,7 +17,7 @@ test("source status inventory is read-only and covers migration-sensitive values
     assert.doesNotMatch(statement, /\b(?:INSERT|UPDATE|DELETE|MERGE|CREATE|ALTER|DROP|TRUNCATE|GRANT|REVOKE|CALL|DO)\b/i);
   }
 
-  assert.equal((sql.match(/\bUNION\s+ALL\b/gi) ?? []).length, 35, "all inventory SELECTs must be joined by UNION ALL");
+  assert.equal((sql.match(/\bUNION\s+ALL\b/gi) ?? []).length, 39, "all inventory SELECTs must be joined by UNION ALL");
   assert.doesNotMatch(withoutComments, /UNION\s+ALL\s+UNION\s+ALL/i, "must not contain an empty UNION branch");
   assert.match(sql, /created_at AT TIME ZONE 'UTC'/i, "timestamp month inventory must use UTC explicitly");
   assert.match(sql, /WHERE created_at IS NOT NULL/i, "timestamp month inventory must exclude null timestamps");
@@ -25,7 +25,7 @@ test("source status inventory is read-only and covers migration-sensitive values
     "connections.status", "exchanges.status", "user_skills.skill_type",
     "notifications.type", "notifications.is_read", "notifications.link_format",
     "notifications.title_over_160", "notifications.message_over_1000",
-    "notifications.link_over_255", "notifications.created_at_nullness", "notifications.created_at_utc_month", "notifications.created_at_utc_range", "reports.status", "posts.post_type", "users.email_normalized_duplicate_groups", "users.username_normalized_duplicate_groups", "users.phone_trimmed_duplicate_groups", "users.phone_nullness", "users.email_nullness", "users.email_blankness", "users.username_nullness", "users.username_blankness", "users.password_hash_nullness", "users.full_name_nullness", "users.full_name_over_100", "skills.name_over_80", "skills.category_over_80", "messages.content_over_5000", "reviews.comment_over_2000", "posts.content_over_5000", "exchanges.proposal_message_over_2000", "exchanges.counter_message_over_2000", "exchanges.requester_skill_nullness", "exchanges.receiver_skill_nullness", "messages.exchange_id_nullness", "messages.is_read"
+    "notifications.link_over_255", "notifications.created_at_nullness", "notifications.created_at_utc_month", "notifications.created_at_utc_range", "reports.status", "posts.post_type", "users.email_normalized_duplicate_groups", "users.username_normalized_duplicate_groups", "users.phone_trimmed_duplicate_groups", "users.phone_nullness", "users.email_nullness", "users.email_blankness", "users.username_nullness", "users.username_blankness", "users.password_hash_nullness", "users.full_name_nullness", "users.full_name_over_100", "skills.name_over_80", "skills.category_over_80", "messages.content_over_5000", "reviews.comment_over_2000", "posts.content_over_5000", "exchanges.proposal_message_over_2000", "exchanges.counter_message_over_2000", "exchanges.requester_skill_nullness", "exchanges.receiver_skill_nullness", "messages.exchange_id_nullness", "messages.is_read", "reviews.rating_out_of_range", "reviews.reliability_score_nullness", "reviews.skill_quality_score_nullness", "reviews.would_exchange_again"
   ]) {
     assert.ok(sql.includes("'" + field + "'"), "missing inventory for " + field);
   }
