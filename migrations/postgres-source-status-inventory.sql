@@ -32,6 +32,21 @@ GROUP BY is_read
 
 UNION ALL
 
+
+UNION ALL
+
+SELECT 'notifications.link_format',
+       CASE
+         WHEN link IS NULL THEN 'NULL'
+         WHEN btrim(link) = '' THEN 'EMPTY'
+         WHEN link ~* '^https?://' THEN 'ABSOLUTE_URL'
+         WHEN left(btrim(link), 1) = '/' THEN 'RELATIVE_PATH'
+         ELSE 'OTHER'
+       END AS value,
+       COUNT(*)::bigint
+FROM public.notifications
+GROUP BY 2
+
 SELECT 'reports.status', status::text, COUNT(*)::bigint
 FROM public.reports
 GROUP BY status
