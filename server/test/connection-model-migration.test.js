@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import mongoose from "mongoose";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,5 +30,25 @@ test("connections migration remains blocked pending schema and row-semantics ver
   assert.match(connections.reason, /self-connection/i);
   assert.match(connections.reason, /reciprocal pairs/i);
   assert.match(connections.reason, /captured PostgreSQL schema snapshot/i);
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
+
+test("reciprocal Connection rows remain distinct because uniqueness is directional", async () => {
+  const firstUser = new mongoose.Types.ObjectId();
+  const secondUser = new mongoose.Types.ObjectId();
+  const forward = new Connection({ user: firstUser, connectedUser: secondUser });
+  const reverse = new Connection({ user: secondUser, connectedUser: firstUser });
+
+  await forward.validate();
+  await reverse.validate();
+  assert.notDeepEqual(
+    forward.toObject().user.toString() + ":" + forward.toObject().connectedUser.toString(),
+    reverse.toObject().user.toString() + ":" + reverse.toObject().connectedUser.toString()
+  );
+
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const mapping = contract.tables.find((table) => table.name === "connections");
+  assert.equal(mapping.status, "blocked");
+  assert.match(mapping.reason, /reciprocal pairs may exist/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
