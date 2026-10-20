@@ -105,6 +105,45 @@ SELECT 'posts.post_type', post_type::text, COUNT(*)::bigint
 FROM public.posts
 GROUP BY post_type
 
+UNION ALL
+
+SELECT 'users.email_normalized_duplicate_groups', 'duplicate_groups', COUNT(*)::bigint
+FROM (
+  SELECT lower(btrim(email)) AS normalized_value
+  FROM public.users
+  WHERE email IS NOT NULL AND btrim(email) <> ''
+  GROUP BY lower(btrim(email))
+  HAVING COUNT(*) > 1
+) AS duplicate_emails
+
+UNION ALL
+
+SELECT 'users.username_normalized_duplicate_groups', 'duplicate_groups', COUNT(*)::bigint
+FROM (
+  SELECT lower(btrim(username)) AS normalized_value
+  FROM public.users
+  WHERE username IS NOT NULL AND btrim(username) <> ''
+  GROUP BY lower(btrim(username))
+  HAVING COUNT(*) > 1
+) AS duplicate_usernames
+
+UNION ALL
+
+SELECT 'users.phone_trimmed_duplicate_groups', 'duplicate_groups', COUNT(*)::bigint
+FROM (
+  SELECT btrim(phone) AS normalized_value
+  FROM public.users
+  WHERE phone IS NOT NULL AND btrim(phone) <> ''
+  GROUP BY btrim(phone)
+  HAVING COUNT(*) > 1
+) AS duplicate_phones
+
+UNION ALL
+
+SELECT 'users.phone_nullness', (phone IS NULL)::text, COUNT(*)::bigint
+FROM public.users
+GROUP BY 2
+
 ORDER BY field, value NULLS FIRST;
 
 COMMIT;
