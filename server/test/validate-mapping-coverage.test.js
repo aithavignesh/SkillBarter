@@ -28,6 +28,15 @@ const contract = {
   ]
 };
 
+test("rejects malformed schema review capture and review dates", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaReview.capturedAt = "yesterday";
+  candidate.schemaReview.reviewedAt = "2026-02-31";
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("capturedAt must be a valid ISO 8601 timestamp")));
+  assert.ok(result.issues.some((issue) => issue.issue.includes("reviewedAt must be a valid YYYY-MM-DD date")));
+});
 test("accepts exact table coverage only after schema review", () => {
   const result = validateMappingCoverage(manifest, contract);
   assert.equal(result.valid, true);
