@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Notification from "../src/models/Notification.js";
 import { mapNotificationType, targetNotificationTypes } from "../src/migrations/mapNotificationType.js";
+import { validateNotificationTypeInventory } from "../src/migrations/validateNotificationTypeInventory.js";
 
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -82,4 +83,30 @@ test("notification type mapper requires explicit source mappings and rejects inv
   assert.throws(() => mapNotificationType("known-source-message", { "known-source-message": "unknown" }), /Invalid target notification type/);
   assert.throws(() => mapNotificationType("", explicitMap), /non-empty string/);
   assert.deepEqual([...targetNotificationTypes].sort(), ["exchange_request", "exchange_update", "message", "post_comment", "post_like", "review", "system"]);
+});
+
+test("notification type inventory validation reports unmapped values without guessing", () => {
+  const result = validateNotificationTypeInventory([
+    { value: "MESSAGE", count: 12 },
+    { value: "EXCHANGE", count: 4 }
+  ], { MESSAGE: "message" });
+  assert.equal(result.valid, false);
+  assert.equal(result.inventoryValueCount, 2);
+  assert.equal(result.mappedValueCount, 1);
+  assert.equal(result.unmappedCount, 1);
+  assert.deepEqual(result.issues, [{ sourceType: "EXCHANGE", count: 4, issue: "unmapped-source-type" }]);
+  assert.deepEqual(result.unusedMapEntries, []);
+});
+
+test("notification type inventory validation rejects invalid targets, stale mappings, and malformed counts", () => {
+  const invalidTarget = validateNotificationTypeInventory([{ value: "MESSAGE", count: 1 }], { MESSAGE: "unknown" });
+  assert.equal(invalidTarget.valid, false);
+  assert.equal(invalidTarget.issues[0].issue, "invalid-target-type");
+
+  const staleMap = validateNotificationTypeInventory([{ value: "MESSAGE", count: 1 }], { MESSAGE: "message", OLD_VALUE: "system" });
+  assert.equal(staleMap.valid, false);
+  assert.deepEqual(staleMap.unusedMapEntries, ["OLD_VALUE"]);
+
+  assert.throws(() => validateNotificationTypeInventory([{ value: "MESSAGE", count: -1 }], {}), /non-negative safe integer/);
+  assert.throws(() => validateNotificationTypeInventory([{ value: "MESSAGE", count: 1 }, { value: "MESSAGE", count: 2 }], {}), /Duplicate inventory value/);
 });
