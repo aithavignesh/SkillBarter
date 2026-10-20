@@ -208,6 +208,18 @@ GROUP BY 2
 
 UNION ALL
 
+SELECT 'messages.exchange_id_nullness', (exchange_id IS NULL)::text, COUNT(*)::bigint
+FROM public.messages
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'messages.is_read', is_read::text, COUNT(*)::bigint
+FROM public.messages
+GROUP BY 2
+
+UNION ALL
+
 SELECT 'users.full_name_over_100', (char_length(full_name) > 100)::text, COUNT(*)::bigint
 FROM public.users
 WHERE full_name IS NOT NULL
