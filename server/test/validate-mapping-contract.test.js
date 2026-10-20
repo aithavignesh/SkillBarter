@@ -249,9 +249,10 @@ test("rejects stale blocked status after the schema has been marked reviewed", (
 });
 
 test("rejects an empty top-level contract status", () => {
-  const result = validateMappingContract({ ...contract, status: " " });
-  assert.equal(result.valid, false);
-  assert.ok(result.issues.some((issue) => issue.issue.includes("status must be a non-empty string")));
+  assert.throws(
+    () => validateMappingContract({ ...contract, status: " " }),
+    /status must be a non-empty string/
+  );
 });
 
 
