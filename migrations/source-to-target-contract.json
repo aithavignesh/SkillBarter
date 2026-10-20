@@ -51,7 +51,7 @@
       "name": "notifications",
       "status": "pending",
       "proposedTarget": "Notification",
-      "reason": "Source ORM model defines user_id (required, users FK ON DELETE CASCADE), type String(50) required, title String(150) required, message Text required, nullable link String(255), is_read Boolean default false, and created_at. Target Notification instead requires a recipient and restricts type to a fixed lowercase enum, stores body instead of message, derives read state from readAt, adds actor/resource fields, and uses automatic timestamps. Keep mapping pending until actual source type values, source constraints, and an explicit conversion for type/message/link/read state are reviewed."
+      "reason": "Source ORM defines required indexed user_id FK to users with ON DELETE CASCADE; required type String(50), title String(150), and message Text; nullable link String(255); is_read Boolean default false and indexed; and created_at defaulting to UTC now. Target Notification instead requires recipient ObjectId, restricts type to a fixed lowercase enum, allows title up to 160 characters, trims/caps body at 1000 characters, stores body instead of message, represents read state with nullable readAt, adds actor/resource fields, and uses automatic timestamps. Inventory actual source type values and link formats, define explicit type conversion/fallback handling, decide whether links can be represented as resourceType/resourceId or must be retained separately, set a policy for long message/title values, convert numeric user IDs to ObjectIds, preserve is_read and created_at semantics, and verify constraints/indexes from a captured source schema snapshot before approval."
     },
     {
       "name": "blocks",
