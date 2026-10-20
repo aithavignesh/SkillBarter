@@ -87,7 +87,7 @@ test("notifications mapping remains pending until source type and field conversi
   assert.match(notifications.reason, /user_id/i);
   assert.match(notifications.reason, /is_read/i);
   assert.match(notifications.reason, /fixed lowercase enum/i);
-  assert.match(notifications.reason, /type\/message\/link\/read state/i);
+  assert.match(notifications.reason, /type conversion\/fallback handling/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
 
