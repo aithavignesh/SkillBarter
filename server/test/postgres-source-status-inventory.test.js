@@ -19,6 +19,8 @@ test("source status inventory is read-only and covers migration-sensitive values
 
   assert.equal((sql.match(/\bUNION\s+ALL\b/gi) ?? []).length, 12, "all inventory SELECTs must be joined by UNION ALL");
   assert.doesNotMatch(withoutComments, /UNION\s+ALL\s+UNION\s+ALL/i, "must not contain an empty UNION branch");
+  assert.match(sql, /created_at AT TIME ZONE 'UTC'/i, "timestamp month inventory must use UTC explicitly");
+  assert.match(sql, /WHERE created_at IS NOT NULL/i, "timestamp month inventory must exclude null timestamps");
   for (const field of [
     "connections.status", "exchanges.status", "user_skills.skill_type",
     "notifications.type", "notifications.is_read", "notifications.link_format",
