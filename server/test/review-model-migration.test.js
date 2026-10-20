@@ -34,3 +34,20 @@ test("reviews migration mapping records dropped source metadata and remains pend
   assert.match(reviews.reason, /before approval/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("review conversion guards source sub-scores, boolean defaults, and nullable comments", async () => {
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const reviews = contract.tables.find((table) => table.name === "reviews");
+  assert.ok(reviews);
+  assert.equal(Review.schema.path("reliability_score"), undefined);
+  assert.equal(Review.schema.path("skill_quality_score"), undefined);
+  assert.equal(Review.schema.path("would_exchange_again"), undefined);
+  assert.equal(Review.schema.path("createdAt") != null, true);
+  assert.equal(Review.schema.path("comment").options.default, "");
+  assert.match(reviews.reason, /reliability_score/i);
+  assert.match(reviews.reason, /skill_quality_score/i);
+  assert.match(reviews.reason, /would_exchange_again/i);
+  assert.match(reviews.reason, /nullable comment/i);
+  assert.equal(reviews.status, "pending");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
