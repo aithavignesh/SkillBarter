@@ -34,3 +34,25 @@ test("posts migration stays pending while source fields and target representatio
   assert.match(posts.reason, /ObjectId/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("post conversion guards legacy fields that the target schema does not preserve directly", async () => {
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const posts = contract.tables.find((table) => table.name === "posts");
+  assert.ok(posts);
+  assert.equal(Post.schema.path("title"), undefined);
+  assert.equal(Post.schema.path("post_type"), undefined);
+  assert.equal(Post.schema.path("skill"), undefined);
+  assert.equal(Post.schema.path("exchange"), undefined);
+  assert.equal(Post.schema.path("partner"), undefined);
+  assert.equal(Post.schema.path("likes_count"), undefined);
+  assert.ok(Post.schema.path("likes"), "target likes array is not equivalent to source likes_count");
+  assert.ok(Post.schema.path("createdAt"), "target timestamp is automatically createdAt");
+  assert.match(posts.reason, /post_type String\(50\)/i);
+  assert.match(posts.reason, /title String\(200\)/i);
+  assert.match(posts.reason, /skill_id/i);
+  assert.match(posts.reason, /exchange_id/i);
+  assert.match(posts.reason, /partner_id/i);
+  assert.match(posts.reason, /likes_count/i);
+  assert.equal(posts.status, "pending");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
