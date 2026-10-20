@@ -16,6 +16,8 @@ This migration branch implements the target stack required for ongoing projects:
 
 The existing `frontend/` (Vite/InsForge) and `backend/` (FastAPI) directories are retained as migration reference and rollback material. They are not evidence that the migration is complete, and they must not be deleted until the replacement is validated and the production cutover is explicitly approved.
 
+For detailed team-wide stack, architecture boundaries, security, testing, and migration rules, see [docs/TECH_STACK_STANDARD.md](docs/TECH_STACK_STANDARD.md).
+
 ## Repository structure
 
 ```
