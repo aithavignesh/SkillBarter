@@ -26,6 +26,12 @@ GROUP BY type
 
 UNION ALL
 
+SELECT 'notifications.is_read', is_read::text, COUNT(*)::bigint
+FROM public.notifications
+GROUP BY is_read
+
+UNION ALL
+
 SELECT 'reports.status', status::text, COUNT(*)::bigint
 FROM public.reports
 GROUP BY status
