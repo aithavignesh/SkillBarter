@@ -55,3 +55,16 @@ test("report conversion guards source target IDs, category, admin note, and time
   assert.equal(reports.status, "pending");
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("Report target status values differ from source statuses and remain unmapped", async () => {
+  assert.equal(Report.schema.path("status").options.default, "open");
+  assert.deepEqual(Report.schema.path("status").options.enum, ["open", "reviewing", "resolved", "dismissed"]);
+
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const reports = contract.tables.find((table) => table.name === "reports");
+  assert.ok(reports);
+  assert.match(reports.reason, /PENDING\/RESOLVED\/DISMISSED/i);
+  assert.match(reports.reason, /status mapping/i);
+  assert.equal(reports.status, "pending");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
