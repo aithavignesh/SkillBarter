@@ -45,6 +45,18 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
           issues.push({ table: null, issue: `schemaReview.${field} is required when schemaSnapshotReviewed is true` });
         }
       }
+      if (typeof review.capturedAt === "string" && review.capturedAt.trim()) {
+        const capturedAt = new Date(review.capturedAt);
+        if (Number.isNaN(capturedAt.getTime()) || !/^\d{4}-\d{2}-\d{2}T/.test(review.capturedAt)) {
+          issues.push({ table: null, issue: "schemaReview.capturedAt must be a valid ISO 8601 timestamp" });
+        }
+      }
+      if (typeof review.reviewedAt === "string" && review.reviewedAt.trim()) {
+        const reviewedDate = new Date(review.reviewedAt + "T00:00:00Z");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(review.reviewedAt) || Number.isNaN(reviewedDate.getTime()) || reviewedDate.toISOString().slice(0, 10) !== review.reviewedAt) {
+          issues.push({ table: null, issue: "schemaReview.reviewedAt must be a valid YYYY-MM-DD date" });
+        }
+      }
     }
   }
   for (const name of sourceNames) {
