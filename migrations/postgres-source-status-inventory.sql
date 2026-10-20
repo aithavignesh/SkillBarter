@@ -187,6 +187,41 @@ FROM public.users
 WHERE full_name IS NOT NULL
 GROUP BY 2
 
+UNION ALL
+
+SELECT 'skills.name_over_80', (char_length(name) > 80)::text, COUNT(*)::bigint
+FROM public.skills
+WHERE name IS NOT NULL
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'skills.category_over_80', (char_length(category) > 80)::text, COUNT(*)::bigint
+FROM public.skills
+WHERE category IS NOT NULL
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'messages.content_over_5000', (char_length(content) > 5000)::text, COUNT(*)::bigint
+FROM public.messages
+WHERE content IS NOT NULL
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'reviews.comment_over_2000', (char_length(comment) > 2000)::text, COUNT(*)::bigint
+FROM public.reviews
+WHERE comment IS NOT NULL
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'posts.content_over_5000', (char_length(content) > 5000)::text, COUNT(*)::bigint
+FROM public.posts
+WHERE content IS NOT NULL
+GROUP BY 2
+
 ORDER BY field, value NULLS FIRST;
 
 COMMIT;
