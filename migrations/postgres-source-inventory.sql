@@ -5,6 +5,14 @@
 
 BEGIN TRANSACTION READ ONLY;
 
+-- 0) Capture source provenance in the private output; sanitize before sharing.
+SELECT current_database() AS database_name,
+       current_schema() AS current_schema,
+       current_setting('server_version') AS server_version,
+       current_user AS effective_role,
+       session_user AS session_role,
+       transaction_timestamp() AS inventory_transaction_started_at;
+
 -- 1) Tables and estimated row counts (planner estimates, not reconciliation counts).
 SELECT
   n.nspname AS schema_name,
