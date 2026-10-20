@@ -65,7 +65,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       throw new Error("Usage: node server/src/migrations/validateNotificationTypeInventory.js <inventory.json> <explicit-map.json>");
     }
     const inventory = await readJson(inventoryPath);
-    const explicitMap = await readJson(mapPath);
+    const mapDocument = await readJson(mapPath);
+    const metadataKeys = new Set(["exampleOnly", "note", "source", "description"]);
+    const explicitMap = Object.fromEntries(Object.entries(mapDocument).filter(([key]) => !metadataKeys.has(key)));
     const rows = Array.isArray(inventory) ? inventory : inventory.rows;
     const result = validateNotificationTypeInventory(rows, explicitMap);
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
