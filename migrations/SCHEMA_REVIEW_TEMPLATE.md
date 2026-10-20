@@ -81,6 +81,28 @@ The items below describe proposed source/target differences that require confirm
 
 Before approving either table, attach private evidence for exact row counts, unique-key violations, self-pairs, reciprocal connections, unresolved user references, observed statuses, timestamp nullness/ranges, and the approved handling policy. Keep source and target row-level evidence outside Git.
 
+
+## Notification and report migration decisions (must remain blocked until reviewed)
+
+These are review prompts based on proposed source/target model differences. Confirm every source column, constraint, and observed value from the actual schema snapshot; do not infer that source values match comments in ORM definitions.
+
+| Source field / behavior | Current target gap / risk | Required decision and validation evidence | Status |
+|---|---|---|---|
+| `notifications.user_id` | Target requires `recipient` User ObjectId | Define deterministic source-user-ID mapping; prove each recipient resolves to exactly one target user and preserve ownership | blocked |
+| `notifications.type` | Target allows only a fixed lowercase enum | Inventory actual type values and counts; define explicit mappings for every observed value and an approved disposition for unknown values; do not silently map unknowns to `system` | blocked |
+| `notifications.link` | Target has `resourceType` / `resourceId` rather than a general link field | Inventory link formats privately; determine whether each format can be parsed into a valid resource reference or needs a dedicated retained field; do not fabricate IDs or discard unparseable links without approval | blocked |
+| `notifications.title` / `message` | Target title cap is 160; body cap is 1,000 characters | Validate actual nullness and length distributions; decide preserve, quarantine, or approved transformation for values beyond target limits; do not silently truncate | blocked |
+| `notifications.is_read` | Target represents read state as nullable `readAt` | Preserve false as unread and define an explicit, documented timestamp policy for true rows when no source read timestamp exists; do not fabricate historical read times | blocked |
+| `notifications.created_at` | Target timestamps are automatic | Preserve the original instant explicitly and validate nulls/timezone assumptions; do not replace it with import time | blocked |
+| `reports.reporter_id` and report target references | Target requires `targetType` and `targetId`, while source may separately identify a user or exchange | Inspect actual source FK relationships and any other target types; create deterministic user/exchange mappings and define how each source report becomes one valid target reference. Keep unresolved or ambiguous targets blocked | blocked |
+| `reports.category` and `details` | Target uses `reason` and `details` | Preserve category separately from the narrative details; define a stable reason mapping and length policy rather than merging fields or silently truncating | blocked |
+| `reports.status` | Target uses lowercase `open`, `reviewing`, `resolved`, `dismissed`; source comments list uppercase values | Inventory actual values and define explicit conversions, including unsupported or null values. Preserve meaning; do not treat every unknown value as open | blocked |
+| `reports.admin_note` and resolution metadata | Target has `resolutionNote` and `resolvedBy`; source may not provide an equivalent resolver ID | Decide how to preserve admin notes and whether a resolver reference is actually available; never infer the resolver from the reporter or invent an ID | blocked |
+| `reports.created_at` | Target timestamps are automatic | Preserve source creation time and validate nulls/timezone assumptions | blocked |
+| Source keys and deletion semantics | Target uses ObjectIds; source relationships use PostgreSQL foreign keys | Maintain source-ID crosswalks, validate all references, and document ON DELETE behavior before approving import or later deletion policy | blocked |
+
+Before approving either table, attach private evidence for exact row counts, actual enum/link distributions, length and nullness buckets, reference-resolution coverage, timestamp preservation, and the approved handling of every transformed or excluded field. Keep raw links and row-level report/notification content out of Git and shared chat.
+
 ## Required decisions before marking the snapshot reviewed
 
 - [ ] Reconcile every source schema and table against the catalog output; explain missing, additional, or non-application tables.
