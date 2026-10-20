@@ -253,3 +253,15 @@ test("rejects an empty top-level contract status", () => {
   assert.equal(result.valid, false);
   assert.ok(result.issues.some((issue) => issue.issue.includes("status must be a non-empty string")));
 });
+
+
+test("rejects ready status while any table mapping remains pending or blocked", () => {
+  const candidate = {
+    ...structuredClone(contract),
+    schemaSnapshotReviewed: true,
+    status: "ready"
+  };
+  const result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("cannot be ready while schema review or any table mapping remains pending, blocked, or invalid")));
+});
