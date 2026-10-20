@@ -49,9 +49,29 @@ app.use("/api/analytics", analyticsRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: "Route not found." }));
 app.use((error, _req, res, _next) => {
-  if (error?.type === "entity.parse.failed") return res.status(400).json({ error: "Invalid JSON request body." });
-  if (error?.message === "Origin is not allowed by CORS.") return res.status(403).json({ error: error.message });
-  console.error("[API error]", error?.message || error);
+  if (res.headersSent) return;
+  if (error?.type === "entity.parse.failed") {
+    return res.status(400).json({ error: "Invalid JSON request body." });
+  }
+  if (error?.type === "entity.too.large") {
+    return res.status(413).json({ error: "Request body exceeds the 1 MB limit." });
+  }
+  if (error?.message === "Origin is not allowed by CORS.") {
+    return res.status(403).json({ error: "Origin is not allowed by CORS." });
+  }
+  if (error?.name === "ValidationError" || error?.name === "CastError") {
+    return res.status(400).json({ error: "Request contains invalid data." });
+  }
+  if (error?.code === 11000) {
+    return res.status(409).json({ error: "A record with the supplied unique value already exists." });
+  }
+
+  // Do not log request bodies, provider payloads, database details, or secrets.
+  // Keep the public error generic and log only a bounded error category.
+  const category = typeof error?.name === "string" && /^[A-Za-z][A-Za-z0-9]{0,39}$/.test(error.name)
+    ? error.name
+    : "UnknownError";
+  console.error("[API error]", category);
   return res.status(500).json({ error: "An unexpected server error occurred." });
 });
 
