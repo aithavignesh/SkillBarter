@@ -79,7 +79,7 @@ test("requires an unambiguous target model for field-level schema validation", a
     tables: [{
       name: "user_skills",
       status: "mapped",
-      proposedTarget: "User.skillsToTeach / User.skillsToLearn",
+      proposedTarget: "User / Skill",
       fields: [{ sourceField: "skill_id", status: "mapped", targetField: "skillsToTeach" }]
     }]
   }, directory);
