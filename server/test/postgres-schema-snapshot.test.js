@@ -14,7 +14,7 @@ test("PostgreSQL schema snapshot is read-only and captures migration-critical ca
   assert.match(statements.at(-1), /^COMMIT$/i);
 
   const queries = statements.slice(1, -1);
-  assert.equal(queries.length, 6, "snapshot must contain six catalog queries");
+  assert.equal(queries.length, 7, "snapshot must contain seven SELECT queries including provenance");
   for (const query of queries) {
     assert.match(query, /^SELECT\b/i, "each statement inside the transaction must be a SELECT");
     assert.doesNotMatch(
