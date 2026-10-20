@@ -101,6 +101,6 @@ test("blocks mapping remains pending until source constraints and fields are rev
   assert.match(blocks.reason, /blocked_id/i);
   assert.match(blocks.reason, /ON DELETE CASCADE/i);
   assert.match(blocks.reason, /uq_blocker_blocked/i);
-  assert.match(blocks.reason, /captured PostgreSQL constraints/i);
+  assert.match(blocks.reason, /captured PostgreSQL snapshot/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
