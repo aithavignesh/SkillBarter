@@ -33,7 +33,7 @@
       "name": "messages",
       "status": "pending",
       "proposedTarget": "Message",
-      "reason": "Verify exchange/sender/recipient fields and participant constraints."
+      "reason": "Source ORM defines required indexed sender_id and receiver_id user foreign keys with ON DELETE CASCADE; nullable indexed exchange_id foreign key with ON DELETE SET NULL; required content Text; is_read Boolean default false; and created_at timestamp defaulting to UTC now and indexed. Target Message instead requires exchange, sender, recipient, and body; body is trimmed and capped at 5000 characters, read state is represented by nullable readAt, and timestamps are automatic createdAt/updatedAt. Define how nullable exchange references are preserved despite the required target exchange, map content to body with an explicit overlength policy, convert numeric source IDs to ObjectIds, and handle is_read=true when the source has no read timestamp. Verify actual source constraints, indexes, and values from a captured PostgreSQL snapshot before approval."
     },
     {
       "name": "reviews",
