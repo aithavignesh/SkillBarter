@@ -1,3 +1,11 @@
+# Repository architecture note for the MERN migration branch
+
+For work on `migration/next-express-mongodb`, follow [`docs/TECH_STACK_STANDARD.md`](docs/TECH_STACK_STANDARD.md): **Next.js frontend, Node.js + Express backend, MongoDB via Mongoose**. Use `next-app/` for new frontend work and `server/` for new API/business-logic work. Do not add new features to the legacy Vite/InsForge or FastAPI directories unless required for maintenance/rollback or an approved exception.
+
+The InsForge instructions below apply only when maintaining the legacy InsForge-backed implementation. They do not override the MERN migration target architecture. Keep `main`, the live InsForge project, and production data untouched while working on the migration branch.
+
+---
+
 # AGENTS.md
 
 <!-- INSFORGE:START -->
