@@ -52,3 +52,17 @@ test("reciprocal Connection rows remain distinct because uniqueness is direction
   assert.match(mapping.reason, /reciprocal pairs may exist/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("Connection preserves source creation time explicitly rather than generating timestamps", async () => {
+  assert.equal(Connection.schema.options.timestamps, false);
+  assert.equal(Connection.schema.path("createdAt").options.default, null);
+  assert.equal(Connection.schema.path("updatedAt"), undefined);
+
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const mapping = contract.tables.find((table) => table.name === "connections");
+  assert.ok(mapping);
+  assert.match(mapping.reason, /created_at timestamp/i);
+  assert.match(mapping.reason, /preserve source created_at/i);
+  assert.equal(mapping.status, "blocked");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
