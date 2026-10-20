@@ -39,6 +39,16 @@ test("PostgreSQL schema snapshot is read-only and captures migration-critical ca
     assert.ok(withoutComments.toLowerCase().includes(expected.toLowerCase()), "missing schema metadata: " + expected);
   }
 
+  const provenanceQuery = queries[0].toLowerCase();
+  for (const expected of [
+    "current_database() as database_name",
+    "current_schema() as current_schema",
+    "current_setting('server_version') as server_version",
+    "transaction_timestamp() as snapshot_transaction_started_at"
+  ]) {
+    assert.ok(provenanceQuery.includes(expected), "missing snapshot provenance field: " + expected);
+  }
+
   assert.match(sql, /WHERE n\.nspname = 'public'/i, "object and constraint inventory must be scoped to public schema");
   assert.match(sql, /WHERE table_schema = 'public'/i, "column inventory must be scoped to public schema");
   assert.match(sql, /WHERE schemaname = 'public'/i, "index and policy inventories must be scoped to public schema");
