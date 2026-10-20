@@ -2,6 +2,14 @@
 -- Run against the source PostgreSQL database; this query does not modify source data.
 BEGIN TRANSACTION READ ONLY;
 
+-- 0) Capture source provenance in the private output; sanitize before sharing.
+SELECT current_database() AS database_name,
+       current_schema() AS current_schema,
+       current_setting('server_version') AS server_version,
+       current_user AS effective_role,
+       session_user AS session_role,
+       transaction_timestamp() AS inventory_transaction_started_at;
+
 SELECT 'connections.status' AS field, status::text AS value, COUNT(*)::bigint AS row_count
 FROM public.connections
 GROUP BY status
