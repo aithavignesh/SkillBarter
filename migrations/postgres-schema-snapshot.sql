@@ -3,6 +3,11 @@
 -- This captures catalog metadata; it does NOT capture row data or prove data-level compatibility.
 BEGIN TRANSACTION READ ONLY;
 
+-- 0. Capture minimal provenance in the private output (sanitize before sharing).
+SELECT current_database() AS database_name,
+       current_schema() AS current_schema,
+       current_setting('server_version') AS server_version,
+       transaction_timestamp() AS snapshot_transaction_started_at;
 -- 1. Tables and views in the application schema.
 SELECT n.nspname AS schema_name,
        c.relname AS object_name,
