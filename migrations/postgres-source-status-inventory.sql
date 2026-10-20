@@ -182,6 +182,32 @@ GROUP BY 2
 
 UNION ALL
 
+SELECT 'exchanges.proposal_message_over_2000', (char_length(proposal_message) > 2000)::text, COUNT(*)::bigint
+FROM public.exchanges
+WHERE proposal_message IS NOT NULL
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'exchanges.counter_message_over_2000', (char_length(counter_message) > 2000)::text, COUNT(*)::bigint
+FROM public.exchanges
+WHERE counter_message IS NOT NULL
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'exchanges.requester_skill_nullness', (requester_skill_id IS NULL)::text, COUNT(*)::bigint
+FROM public.exchanges
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'exchanges.receiver_skill_nullness', (receiver_skill_id IS NULL)::text, COUNT(*)::bigint
+FROM public.exchanges
+GROUP BY 2
+
+UNION ALL
+
 SELECT 'users.full_name_over_100', (char_length(full_name) > 100)::text, COUNT(*)::bigint
 FROM public.users
 WHERE full_name IS NOT NULL
