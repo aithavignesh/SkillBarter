@@ -64,7 +64,7 @@ test("Report target status values differ from source statuses and remain unmappe
   const reports = contract.tables.find((table) => table.name === "reports");
   assert.ok(reports);
   assert.match(reports.reason, /PENDING\/RESOLVED\/DISMISSED/i);
-  assert.match(reports.reason, /status mapping/i);
+  assert.match(reports.reason, /map all observed status values explicitly/i);
   assert.equal(reports.status, "pending");
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
