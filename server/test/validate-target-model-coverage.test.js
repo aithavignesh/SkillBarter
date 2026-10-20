@@ -8,22 +8,39 @@ import { validateTargetModelCoverage } from "../src/migrations/validateTargetMod
 async function modelFixture(t, names = ["User.js", "Skill.js", "Exchange.js"]) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "skillbarter-target-models-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  await Promise.all(names.map((name) => writeFile(path.join(directory, name), "export default {};\n")));
+  const modelPaths = {
+    User: ["fullName", "username", "skillsToTeach", "skillsToLearn", "profile", "profile.name"],
+    Skill: ["name", "normalizedName"],
+    Exchange: ["status", "requesterId"]
+  };
+  await Promise.all(names.map(async (name) => {
+    const modelName = name.slice(0, -3);
+    const paths = modelPaths[modelName] ?? [];
+    const source = `const paths = new Set(${JSON.stringify(paths)});
+const schema = {
+  path: (field) => paths.has(field) ? {} : undefined,
+  pathType: (field) => paths.has(field) ? "real" : "adhocOrUndefined"
+};
+export default { schema };
+`;
+    await writeFile(path.join(directory, name), source);
+  }));
   return directory;
 }
 
-test("accepts existing models and nested field paths", async (t) => {
+test("accepts existing models and valid top-level and nested field paths", async (t) => {
   const directory = await modelFixture(t);
   const result = await validateTargetModelCoverage({
     tables: [
       { name: "users", proposedTarget: "User" },
       { name: "user_skills", proposedTarget: "User.skillsToTeach / User.skillsToLearn" },
-      { name: "legacy_user_skills", proposedTarget: "User.skills_to_teach" },
-      { name: "exchanges", proposedTarget: "Exchange" }
+      { name: "profile", proposedTarget: "User.profile.name" },
+      { name: "skills", proposedTarget: "Skill.name / Skill.normalizedName" },
+      { name: "exchanges", proposedTarget: "Exchange.status" }
     ]
   }, directory);
   assert.equal(result.valid, true);
-  assert.equal(result.checkedTableCount, 4);
+  assert.equal(result.checkedTableCount, 5);
   assert.deepEqual(result.issues, []);
 });
 
@@ -44,6 +61,18 @@ test("rejects malformed model and field-path syntax", async (t) => {
   assert.equal(result.valid, false);
   assert.deepEqual(result.tables[0].malformed, ["..", "User.UppercaseField"]);
   assert.ok(result.issues.some((issue) => issue.issue === "target model file is missing" && issue.model === "Missing"));
+});
+
+test("rejects unknown fields instead of accepting a misspelled field", async (t) => {
+  const directory = await modelFixture(t);
+  const result = await validateTargetModelCoverage({
+    tables: [{ name: "legacy_user_skills", proposedTarget: "User.skills_to_teach" }]
+  }, directory);
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.tables[0].invalidFields, ["User.skills_to_teach"]);
+  assert.ok(result.issues.some((issue) =>
+    issue.target === "User.skills_to_teach" && issue.issue === "target field path does not exist in the Mongoose schema"
+  ));
 });
 
 test("rejects prototype-related segments in model target paths", async (t) => {
