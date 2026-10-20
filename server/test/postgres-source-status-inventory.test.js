@@ -19,7 +19,7 @@ test("source status inventory is read-only and covers migration-sensitive values
 
   for (const field of [
     "connections.status", "exchanges.status", "user_skills.skill_type",
-    "notifications.type", "reports.status", "posts.post_type"
+    "notifications.type", "notifications.is_read", "reports.status", "posts.post_type"
   ]) {
     assert.ok(sql.includes("'" + field + "'"), "missing inventory for " + field);
   }
