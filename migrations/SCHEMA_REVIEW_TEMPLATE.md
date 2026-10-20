@@ -103,6 +103,24 @@ These are review prompts based on proposed source/target model differences. Conf
 
 Before approving either table, attach private evidence for exact row counts, actual enum/link distributions, length and nullness buckets, reference-resolution coverage, timestamp preservation, and the approved handling of every transformed or excluded field. Keep raw links and row-level report/notification content out of Git and shared chat.
 
+
+## Analytics-event migration decisions (must remain blocked until reviewed)
+
+These review prompts are based on proposed source/target model differences. Confirm actual source columns, values, constraints, and data handling requirements from the approved inventory; do not assume source event names match the target enum.
+
+| Source field / behavior | Current target gap / risk | Required decision and validation evidence | Status |
+|---|---|---|---|
+| `event` | Target `name` accepts only a fixed lowercase enum | Inventory distinct source event names and counts; approve an explicit mapping for each observed value and a documented disposition for unsupported events. Do not silently drop or relabel events | blocked |
+| `session_id` | Target has no session identifier field | Decide whether retention is necessary and permitted under the privacy/retention policy; minimize or exclude it if not needed, and document the decision without committing raw identifiers | blocked |
+| `path` | Target path max is 160 characters; source is described as up to 255 | Inventory nullness and length buckets; define preserve, quarantine, or approved transformation for overlength paths; do not silently truncate | blocked |
+| `properties` serialized text | Target stores a Mixed object | Validate JSON parseability and expected shape in a controlled environment; reject/quarantine malformed payloads by policy and screen for tokens, contact details, message bodies, and other sensitive values before any retention | blocked |
+| `timestamp` and `created_at` | Target has automatic `createdAt` / `updatedAt` and no separate event timestamp or `session_id` | Decide which source time represents event occurrence versus ingestion/record creation. Preserve both if required and approved; do not substitute migration time or conflate the two silently | blocked |
+| Source event actor / identity | Target requires an `actor` User ObjectId | Determine whether each event has a valid, attributable source user; define approved handling for anonymous/system events without inventing user IDs or assigning an unrelated user | blocked |
+| `properties` and analytics retention | Event payloads can contain sensitive or high-cardinality attributes | Set a documented allowlist/minimization and retention policy; exclude secrets and unnecessary personal data. Validate aggregate shape and counts without publishing raw payloads | blocked |
+| Source keys and timestamps | Target uses ObjectIds and Mongoose timestamps | Preserve source identifiers if needed for audit/reconciliation, create deterministic crosswalks where references exist, and validate source-to-target counts and timestamp ranges | blocked |
+
+Before approving `analytics_events`, attach private evidence for exact counts, event-name distributions, anonymous/unresolved actor counts, path-length buckets, JSON validity/shape summaries, timestamp nullness/ranges, and the approved privacy/retention decision. Do not place raw properties, session identifiers, or event-level personal data in Git or shared chat.
+
 ## Required decisions before marking the snapshot reviewed
 
 - [ ] Reconcile every source schema and table against the catalog output; explain missing, additional, or non-application tables.
