@@ -11,6 +11,17 @@ test("source inventory SQL is explicitly read-only", async () => {
   const statements = withoutComments.split(";").map((statement) => statement.trim()).filter(Boolean);
   assert.match(statements[0], /^BEGIN\s+TRANSACTION\s+READ\s+ONLY$/i);
   assert.match(statements.at(-1), /^COMMIT$/i);
+  const provenance = statements[1].toLowerCase();
+  for (const field of [
+    "current_database() as database_name",
+    "current_schema() as current_schema",
+    "current_setting('server_version') as server_version",
+    "current_user as effective_role",
+    "session_user as session_role",
+    "transaction_timestamp() as inventory_transaction_started_at"
+  ]) {
+    assert.ok(provenance.includes(field), "missing source inventory provenance field: " + field);
+  }
   for (const statement of statements.slice(1, -1)) {
     assert.match(statement, /^SELECT\b/i);
     assert.doesNotMatch(statement, /\b(?:INSERT|UPDATE|DELETE|MERGE|CREATE|ALTER|DROP|TRUNCATE|GRANT|REVOKE|CALL|DO)\b/i);
@@ -39,5 +50,32 @@ test("source inventory covers schema details needed for mapping review", async (
   ];
   for (const table of knownTables) {
     assert.ok(sql.includes("'" + table + "'"), `missing exact row-count entry for ${table}`);
+  }
+});
+
+test("status inventory is read-only and records source provenance", async () => {
+  const statusPath = fileURLToPath(new URL("../../migrations/postgres-source-status-inventory.sql", import.meta.url));
+  const sql = await readFile(statusPath, "utf8");
+  const withoutComments = sql.replace(/--[^\n]*/g, "");
+  const statements = withoutComments.split(";").map((statement) => statement.trim()).filter(Boolean);
+
+  assert.match(statements[0], /^BEGIN\s+TRANSACTION\s+READ\s+ONLY$/i);
+  assert.match(statements.at(-1), /^COMMIT$/i);
+  assert.match(statements[1], /^SELECT\b/i);
+  const provenance = statements[1].toLowerCase();
+  for (const field of [
+    "current_database() as database_name",
+    "current_schema() as current_schema",
+    "current_setting('server_version') as server_version",
+    "current_user as effective_role",
+    "session_user as session_role",
+    "transaction_timestamp() as inventory_transaction_started_at"
+  ]) {
+    assert.ok(provenance.includes(field), "missing status inventory provenance field: " + field);
+  }
+
+  for (const statement of statements.slice(1, -1)) {
+    assert.match(statement, /^SELECT\b/i);
+    assert.doesNotMatch(statement, /\b(?:INSERT|UPDATE|DELETE|MERGE|CREATE|ALTER|DROP|TRUNCATE|GRANT|REVOKE|CALL|DO)\b/i);
   }
 });
