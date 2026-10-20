@@ -27,8 +27,8 @@ function configuredApiOrigin(): string | null {
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
-  const apiBase = process.env.API_BASE_URL?.replace(/\/+$/, "");
-  if (!apiBase) return NextResponse.json({ error: "API_BASE_URL is not configured on the server." }, { status: 503 });
+  const apiBase = configuredApiOrigin();
+  if (!apiBase) return NextResponse.json({ error: "The SkillBarter API origin is not configured correctly." }, { status: 503 });
 
   const apiPath = path.join("/");
   const isLogout = apiPath === "auth/logout" && request.method === "POST";
