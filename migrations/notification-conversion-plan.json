@@ -1,0 +1,64 @@
+{
+  "planVersion": 1,
+  "entity": "notifications",
+  "source": "InsForge/PostgreSQL public.notifications",
+  "target": "MongoDB Notification",
+  "status": "blocked-pending-source-schema-and-data-inventory",
+  "approvalConditions": [
+    "Capture and review the actual source schema, constraints, indexes, and foreign-key behavior.",
+    "Run the read-only source inventory against an approved non-production source connection and review aggregate results.",
+    "Finalize explicit type conversion for every observed source type value.",
+    "Approve preservation strategy for original links, boolean read state, and source timestamps before implementing import."
+  ],
+  "fields": [
+    {
+      "source": "user_id",
+      "target": "recipient",
+      "conversion": "Resolve source numeric user ID through the deterministic users ID map to a target ObjectId.",
+      "status": "requires-id-map"
+    },
+    {
+      "source": "type",
+      "target": "type",
+      "conversion": "Explicit allowlisted conversion table based on observed source values; no silent fallback to system.",
+      "status": "blocked-pending-observed-values"
+    },
+    {
+      "source": "title",
+      "target": "title",
+      "conversion": "Preserve content; validate target required/trim/max-160 constraints. Inventory source title lengths over 160 before choosing reject or quarantine policy.",
+      "status": "blocked-pending-length-inventory"
+    },
+    {
+      "source": "message",
+      "target": "body",
+      "conversion": "Preserve content; inventory messages over 1000 characters and approve reject/quarantine/truncation policy before import. Do not silently truncate.",
+      "status": "blocked-pending-length-inventory"
+    },
+    {
+      "source": "link",
+      "target": null,
+      "conversion": "Target model has no link field. Preserve the original link in a reviewed target field or migration sidecar; resourceType/resourceId derivation is only allowed for verified, recognized patterns.",
+      "status": "blocked-pending-link-policy"
+    },
+    {
+      "source": "is_read",
+      "target": "readAt",
+      "conversion": "A boolean does not provide the actual read timestamp. Do not fabricate one. Approve a deterministic timestamp policy or preserve the source boolean in an explicit compatibility field/sidecar.",
+      "status": "blocked-pending-read-timestamp-policy"
+    },
+    {
+      "source": "created_at",
+      "target": "createdAt",
+      "conversion": "Preserve source instant exactly as UTC; ensure importer explicitly sets createdAt rather than relying on automatic target timestamps.",
+      "status": "blocked-pending-source-timestamp-verification"
+    }
+  ],
+  "safety": {
+    "schemaSnapshotReviewed": false,
+    "sourceInventoryExecuted": false,
+    "dataImportImplemented": false,
+    "productionImportAllowed": false,
+    "productionCutoverApproved": false
+  }
+}
