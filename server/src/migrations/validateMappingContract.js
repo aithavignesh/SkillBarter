@@ -95,6 +95,13 @@ export function validateMappingContract(contract) {
     for (const issue of tableIssues) issues.push({ table: table.name, issue });
     return { name: table.name, status: table.status, valid: tableIssues.length === 0, issues: tableIssues };
   });
+  if (contract.status === "ready"
+    && (!contract.schemaSnapshotReviewed || tables.some((table) => ["pending", "blocked"].includes(table.status) || !table.valid))) {
+    issues.push({
+      table: null,
+      issue: "contract status cannot be ready while schema review or any table mapping remains pending, blocked, or invalid"
+    });
+  }
   return { valid: issues.length === 0, schemaSnapshotReviewed: contract.schemaSnapshotReviewed, tableCount: tables.length, readyTableCount: tables.filter((table) => ["mapped", "transformed", "excluded"].includes(table.status) && table.valid).length, blockedTableCount: tables.filter((table) => ["pending", "blocked"].includes(table.status) || !table.valid).length, tables, issues };
 }
 async function readJson(filename) { return JSON.parse(await readFile(filename, "utf8")); }
