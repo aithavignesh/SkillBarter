@@ -29,3 +29,16 @@ test("blocks mapping stays pending until source timestamps and self-block semant
   assert.match(blocks.reason, /RLS policies/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("target Block rejects self-blocks while migration keeps source policy unresolved", async () => {
+  const id = new (await import("mongoose")).default.Types.ObjectId();
+  const block = new Block({ blocker: id, blocked: id });
+  await assert.rejects(block.validate(), /cannot block your own account/i);
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const blocks = contract.tables.find((table) => table.name === "blocks");
+  assert.ok(blocks);
+  assert.match(blocks.reason, /source ORM does not declare a self-block check/i);
+  assert.match(blocks.reason, /verify whether self-block rows exist/i);
+  assert.equal(blocks.status, "pending");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
