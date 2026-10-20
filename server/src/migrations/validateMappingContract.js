@@ -20,12 +20,20 @@ export function validateMappingContract(contract) {
   if (!Array.isArray(contract.tables) || contract.tables.length === 0) throw new Error("Mapping contract must contain tables.");
   const seenNameKeys = new Set();
   const issues = [];
-  if (contract.status !== undefined && !contract.schemaSnapshotReviewed
-    && contract.status !== "blocked-pending-source-schema") {
-    issues.push({
-      table: null,
-      issue: "contract status must remain blocked-pending-source-schema until schemaSnapshotReviewed is true"
-    });
+  if (contract.status !== undefined) {
+    requireText(contract.status, "status");
+    if (!contract.schemaSnapshotReviewed && contract.status !== "blocked-pending-source-schema") {
+      issues.push({
+        table: null,
+        issue: "contract status must remain blocked-pending-source-schema until schemaSnapshotReviewed is true"
+      });
+    }
+    if (contract.schemaSnapshotReviewed && contract.status === "blocked-pending-source-schema") {
+      issues.push({
+        table: null,
+        issue: "contract status must be reviewed after schemaSnapshotReviewed becomes true"
+      });
+    }
   }
   const tables = contract.tables.map((table) => {
     requireObject(table, "Mapping table entry");
