@@ -110,3 +110,20 @@ test("notification type inventory validation rejects invalid targets, stale mapp
   assert.throws(() => validateNotificationTypeInventory([{ value: "MESSAGE", count: -1 }], {}), /non-negative safe integer/);
   assert.throws(() => validateNotificationTypeInventory([{ value: "MESSAGE", count: 1 }, { value: "MESSAGE", count: 2 }], {}), /Duplicate inventory value/);
 });
+
+test("notification type inventory CLI returns nonzero for unmapped observed values", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "notification-inventory-"));
+  try {
+    const inventoryPath = path.join(tempDir, "inventory.json");
+    const mapPath = path.join(tempDir, "map.json");
+    await writeFile(inventoryPath, JSON.stringify({ rows: [{ value: "MESSAGE", count: 3 }, { value: "NEW_TYPE", count: 1 }] }));
+    await writeFile(mapPath, JSON.stringify({ MESSAGE: "message" }));
+    const script = path.join(repositoryRoot, "server/src/migrations/validateNotificationTypeInventory.js");
+    const result = spawnSync(process.execPath, [script, inventoryPath, mapPath], { encoding: "utf8" });
+    assert.equal(result.status, 2);
+    assert.match(result.stdout, /unmapped-source-type/);
+    assert.match(result.stdout, /NEW_TYPE/);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
