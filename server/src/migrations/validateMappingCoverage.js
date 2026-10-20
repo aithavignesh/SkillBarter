@@ -34,6 +34,19 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
   }
   const issues = [];
   const tables = [];
+  if (mappingContract.schemaSnapshotReviewed === true) {
+    const review = mappingContract.schemaReview;
+    const requiredReviewFields = ["sourceEnvironment", "capturedAt", "schemasReviewed", "inventoryRevision", "reviewer", "reviewedAt", "evidenceReference"];
+    if (!review || typeof review !== "object" || Array.isArray(review)) {
+      issues.push({ table: null, issue: "schemaSnapshotReviewed cannot be true without schemaReview provenance metadata" });
+    } else {
+      for (const field of requiredReviewFields) {
+        if (typeof review[field] !== "string" || !review[field].trim()) {
+          issues.push({ table: null, issue: `schemaReview.${field} is required when schemaSnapshotReviewed is true` });
+        }
+      }
+    }
+  }
   for (const name of sourceNames) {
     const mapping = contractByName.get(name);
     if (!mapping) {
