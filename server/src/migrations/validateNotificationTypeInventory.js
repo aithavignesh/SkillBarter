@@ -1,4 +1,7 @@
 import { targetNotificationTypes } from "./mapNotificationType.js";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const TARGET_TYPES = new Set(targetNotificationTypes);
 
@@ -49,4 +52,26 @@ export function validateNotificationTypeInventory(rows, explicitMap) {
     unusedMapEntries,
     results
   };
+}
+
+async function readJson(filename) {
+  return JSON.parse(await readFile(filename, "utf8"));
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  try {
+    const [inventoryPath, mapPath] = process.argv.slice(2);
+    if (!inventoryPath || !mapPath) {
+      throw new Error("Usage: node server/src/migrations/validateNotificationTypeInventory.js <inventory.json> <explicit-map.json>");
+    }
+    const inventory = await readJson(inventoryPath);
+    const explicitMap = await readJson(mapPath);
+    const rows = Array.isArray(inventory) ? inventory : inventory.rows;
+    const result = validateNotificationTypeInventory(rows, explicitMap);
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\\n`);
+    if (!result.valid) process.exitCode = 2;
+  } catch (error) {
+    process.stderr.write(`Notification type inventory validation failed: ${error.message}\\n`);
+    process.exitCode = 1;
+  }
 }
