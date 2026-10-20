@@ -20,6 +20,13 @@ export function validateMappingContract(contract) {
   if (!Array.isArray(contract.tables) || contract.tables.length === 0) throw new Error("Mapping contract must contain tables.");
   const seenNameKeys = new Set();
   const issues = [];
+  if (contract.status !== undefined && !contract.schemaSnapshotReviewed
+    && contract.status !== "blocked-pending-source-schema") {
+    issues.push({
+      table: null,
+      issue: "contract status must remain blocked-pending-source-schema until schemaSnapshotReviewed is true"
+    });
+  }
   const tables = contract.tables.map((table) => {
     requireObject(table, "Mapping table entry");
     if (typeof table.name !== "string" || !/^[a-z][a-z0-9_]*$/i.test(table.name)) throw new Error("Table names must be valid identifiers.");
