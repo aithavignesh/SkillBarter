@@ -75,7 +75,7 @@
       "name": "connections",
       "status": "blocked",
       "proposedTarget": "Connection",
-      "reason": "Source columns, foreign keys, uniqueness, indexes, and source application code support a dedicated user-to-user community Connection model, separate from exchanges. Target model is provisional only; inventory status values and source row semantics, then review the complete schema snapshot before approving field mappings or import."
+      "reason": "Source ORM defines required indexed user_id and connected_user_id foreign keys to users with ON DELETE CASCADE, primary-key id, status String(20) default ACCEPTED (source comment lists PENDING and ACCEPTED), created_at timestamp, and unique constraint uq_user_connection on (user_id, connected_user_id). Target Connection stores user/connectedUser as required User ObjectIds, leaves status open-ended with default ACCEPTED, has createdAt default null with timestamps disabled, enforces the same ordered-pair uniqueness, and rejects self-connections in validation although the source ORM declares no self-connection constraint. The source and target uniqueness are directional, so reciprocal pairs may exist; do not deduplicate them without an explicit product rule. Inventory actual status values and reciprocal/self-pair rows, decide self-connection handling, preserve source created_at and numeric-ID-to-ObjectId references, confirm delete behavior and actual source constraints/indexes/RLS from a captured PostgreSQL schema snapshot, and keep this mapping blocked until the evidence and policy are reviewed."
     }
   ]
 }
