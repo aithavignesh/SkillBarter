@@ -127,3 +127,19 @@ test("notification type inventory CLI returns nonzero for unmapped observed valu
     await rm(tempDir, { recursive: true, force: true });
   }
 });
+
+test("example notification inventory and mapping pass the CLI as illustrative fixtures", async () => {
+  const inventoryPath = path.join(repositoryRoot, "migrations/examples/notification-type-inventory.example.json");
+  const mapPath = path.join(repositoryRoot, "migrations/examples/notification-type-map.example.json");
+  const script = path.join(repositoryRoot, "server/src/migrations/validateNotificationTypeInventory.js");
+  const inventory = JSON.parse(await readFile(inventoryPath, "utf8"));
+  const mapping = JSON.parse(await readFile(mapPath, "utf8"));
+  assert.equal(inventory.exampleOnly, true);
+  assert.equal(mapping.exampleOnly, true);
+  const result = spawnSync(process.execPath, [script, inventoryPath, mapPath], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.valid, true);
+  assert.equal(report.inventoryValueCount, 2);
+  assert.equal(report.mappedValueCount, 2);
+});
