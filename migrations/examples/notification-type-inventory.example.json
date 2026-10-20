@@ -1,0 +1,14 @@
+{
+  "exampleOnly": true,
+  "source": "Illustrative fixture only — not queried from PostgreSQL",
+  "rows": [
+    {
+      "value": "EXAMPLE_MESSAGE",
+      "count": 3
+    },
+    {
+      "value": "EXAMPLE_EXCHANGE_REQUEST",
+      "count": 2
+    }
+  ]
+}
