@@ -114,13 +114,64 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
         invalidFields.push(target.targetPath);
       }
     }
+    const invalidFieldMappings = [];
+    const mappedFields = Array.isArray(table.fields)
+      ? table.fields.filter((field) => field && ["mapped", "transformed"].includes(field.status))
+      : [];
+    if (mappedFields.length > 0) {
+      if (targets.length !== 1) {
+        const issue = {
+          table: table.name ?? null,
+          issue: "field-level targetField validation requires exactly one target model in proposedTarget"
+        };
+        issues.push(issue);
+        invalidFieldMappings.push(...mappedFields.map((field) => field.sourceField ?? null));
+      } else if (!missing.includes(targets[0])) {
+        const modelName = targets[0];
+        let schema;
+        try {
+          schema = await getSchema(modelName);
+        } catch {
+          schema = null;
+        }
+        for (const field of mappedFields) {
+          const targetField = field.targetField;
+          const safeSyntax = typeof targetField === "string"
+            && /^[a-z][A-Za-z0-9_]*(?:[.][a-z][A-Za-z0-9_]*)*$/.test(targetField)
+            && !targetField.split(".").some((segment) => ["__proto__", "prototype", "constructor"].includes(segment));
+          if (!safeSyntax) {
+            issues.push({
+              table: table.name ?? null,
+              sourceField: field.sourceField ?? null,
+              target: targetField ?? null,
+              issue: "field-level targetField must be a safe schema field path"
+            });
+            invalidFieldMappings.push(field.sourceField ?? null);
+            continue;
+          }
+          const exists = schema && (schema.path(targetField) || schema.pathType(targetField) === "nested");
+          if (!exists) {
+            issues.push({
+              table: table.name ?? null,
+              sourceField: field.sourceField ?? null,
+              target: targetField,
+              model: modelName,
+              issue: schema ? "field-level targetField does not exist in the Mongoose schema" : "target model does not export a Mongoose schema"
+            });
+            invalidFieldMappings.push(field.sourceField ?? null);
+          }
+        }
+      }
+    }
     tables.push({
       name: table.name,
       targets,
-      valid: missing.length === 0 && malformed.length === 0 && overlapIssues.length === 0 && invalidFields.length === 0,
+      valid: missing.length === 0 && malformed.length === 0 && overlapIssues.length === 0
+        && invalidFields.length === 0 && invalidFieldMappings.length === 0,
       missing,
       malformed: malformed.map(({ targetPath }) => targetPath),
-      invalidFields
+      invalidFields,
+      invalidFieldMappings
     });
   }
   return { valid: issues.length === 0, checkedTableCount: tables.filter((table) => !table.skipped).length, tables, issues };
