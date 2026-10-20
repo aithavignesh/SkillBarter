@@ -232,3 +232,20 @@ test("preflight blocks a reviewed flag without schema-review provenance", async 
     assert.ok(report.blockers.some((item) => item.stage === "mappingCoverage" && item.issue.includes("schemaReview provenance metadata")));
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
+
+
+test("preflight blocks a contract claiming ready before source schema review", async () => {
+  const f = await fixture({ reviewed: false, mappingStatus: "pending" });
+  try {
+    const contract = JSON.parse(await readFile(f.contractPath, "utf8"));
+    contract.status = "ready";
+    await writeFile(f.contractPath, JSON.stringify(contract));
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.valid, false);
+    assert.ok(report.blockers.some((item) =>
+      item.stage === "mappingContract"
+      && item.issue.includes("contract status must remain blocked-pending-source-schema")
+    ));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
