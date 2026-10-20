@@ -52,8 +52,13 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
         const hasValidCalendarDate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
           && !Number.isNaN(calendarDate.getTime())
           && calendarDate.toISOString().slice(0, 10) === datePart;
-        const hasExplicitTimezone = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(review.capturedAt);
-        if (Number.isNaN(capturedAt.getTime()) || !hasExplicitTimezone || !hasValidCalendarDate) {
+        const timestampMatch = review.capturedAt.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(Z|([+-])(\d{2}):(\d{2}))$/);
+        const hasExplicitTimezone = Boolean(timestampMatch);
+        const offsetHour = timestampMatch?.[3] ? Number(timestampMatch[3]) : 0;
+        const offsetMinute = timestampMatch?.[4] ? Number(timestampMatch[4]) : 0;
+        const hasKnownSupportedOffset = timestampMatch?.[1] !== "-00:00"
+          && offsetHour <= 14 && offsetMinute <= 59 && (offsetHour < 14 || offsetMinute === 0);
+        if (Number.isNaN(capturedAt.getTime()) || !hasExplicitTimezone || !hasKnownSupportedOffset || !hasValidCalendarDate) {
           issues.push({ table: null, issue: "schemaReview.capturedAt must be a valid ISO 8601 timestamp" });
         }
       }
