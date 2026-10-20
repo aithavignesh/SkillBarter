@@ -32,9 +32,6 @@ GROUP BY is_read
 
 UNION ALL
 
-
-UNION ALL
-
 SELECT 'notifications.link_format',
        CASE
          WHEN link IS NULL THEN 'NULL'
@@ -46,6 +43,8 @@ SELECT 'notifications.link_format',
        COUNT(*)::bigint
 FROM public.notifications
 GROUP BY 2
+
+UNION ALL
 
 SELECT 'notifications.title_over_160', (char_length(title) > 160)::text, COUNT(*)::bigint
 FROM public.notifications
