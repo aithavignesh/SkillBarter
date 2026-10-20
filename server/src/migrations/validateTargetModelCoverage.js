@@ -1,10 +1,10 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
 const modelsDirectory = fileURLToPath(new URL("../models/", import.meta.url));
 
-/** Verify that every named target model in the mapping contract exists; no DB access. */
+/** Verify target model files and field paths against Mongoose schemas; no DB access. */
 export async function validateTargetModelCoverage(mappingContract, modelDirectory = modelsDirectory) {
   if (!mappingContract || typeof mappingContract !== "object" || Array.isArray(mappingContract)) {
     throw new Error("Mapping contract must be a JSON object.");
@@ -13,8 +13,18 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
   const modelFiles = new Set((await readdir(modelDirectory))
     .filter((file) => file.endsWith(".js"))
     .map((file) => file.slice(0, -3)));
+  const schemaCache = new Map();
   const issues = [];
   const tables = [];
+
+  async function getSchema(modelName) {
+    if (!schemaCache.has(modelName)) {
+      const modelUrl = pathToFileURL(path.join(modelDirectory, `${modelName}.js`)).href;
+      const loaded = await import(modelUrl);
+      schemaCache.set(modelName, loaded.default?.schema ?? null);
+    }
+    return schemaCache.get(modelName);
+  }
 
   for (const table of mappingContract.tables) {
     if (!table || typeof table !== "object" || Array.isArray(table)) throw new Error("Mapping table entries must be objects.");
@@ -75,7 +85,43 @@ export async function validateTargetModelCoverage(mappingContract, modelDirector
     const targets = [...new Set(parsedPaths.map(({ match }) => match?.[1]).filter(Boolean))];
     const missing = targets.filter((name) => !modelFiles.has(name));
     for (const modelName of missing) issues.push({ table: table.name ?? null, model: modelName, issue: "target model file is missing" });
-    tables.push({ name: table.name, targets, valid: missing.length === 0 && malformed.length === 0 && overlapIssues.length === 0, missing, malformed: malformed.map(({ targetPath }) => targetPath) });
+
+    const invalidFields = [];
+    for (const target of validPaths) {
+      if (missing.includes(target.model) || target.fields.length === 0) continue;
+      try {
+        const schema = await getSchema(target.model);
+        const fieldPath = target.fields.join(".");
+        const exists = schema && (schema.path(fieldPath) || schema.pathType(fieldPath) === "nested");
+        if (!exists) {
+          const issue = {
+            table: table.name ?? null,
+            target: target.targetPath,
+            model: target.model,
+            issue: schema ? "target field path does not exist in the Mongoose schema" : "target model does not export a Mongoose schema"
+          };
+          issues.push(issue);
+          invalidFields.push(target.targetPath);
+        }
+      } catch {
+        const issue = {
+          table: table.name ?? null,
+          target: target.targetPath,
+          model: target.model,
+          issue: "target model schema could not be loaded"
+        };
+        issues.push(issue);
+        invalidFields.push(target.targetPath);
+      }
+    }
+    tables.push({
+      name: table.name,
+      targets,
+      valid: missing.length === 0 && malformed.length === 0 && overlapIssues.length === 0 && invalidFields.length === 0,
+      missing,
+      malformed: malformed.map(({ targetPath }) => targetPath),
+      invalidFields
+    });
   }
   return { valid: issues.length === 0, checkedTableCount: tables.filter((table) => !table.skipped).length, tables, issues };
 }
