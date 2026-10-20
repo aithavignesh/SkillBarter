@@ -81,7 +81,7 @@ UNION ALL
 
 SELECT 'notifications.created_at_utc_range',
        'min=' || COALESCE(to_char(MIN(created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD"T"HH24:MI:SS.US'), 'NONE')
-         || ';max=' || COALESCE(to_char(MAX(created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD"T"HH24:MI:SS.US'), 'NONE') AS value,
+         || ',max=' || COALESCE(to_char(MAX(created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD"T"HH24:MI:SS.US'), 'NONE') AS value,
        COUNT(created_at)::bigint
 FROM public.notifications
 
