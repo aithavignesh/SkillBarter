@@ -50,3 +50,21 @@ test("notification conversion guards source link and read-state semantics", asyn
   assert.equal(notifications.status, "pending");
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("notification conversion plan blocks lossy mapping until explicit policies are approved", async () => {
+  const plan = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/notification-conversion-plan.json"), "utf8"));
+  assert.equal(plan.entity, "notifications");
+  assert.equal(plan.status, "blocked-pending-source-schema-and-data-inventory");
+  assert.equal(plan.safety.schemaSnapshotReviewed, false);
+  assert.equal(plan.safety.sourceInventoryExecuted, false);
+  assert.equal(plan.safety.dataImportImplemented, false);
+  assert.equal(plan.safety.productionImportAllowed, false);
+  assert.equal(plan.safety.productionCutoverApproved, false);
+  const fields = Object.fromEntries(plan.fields.map((field) => [field.source, field]));
+  assert.equal(fields.link.target, null, "source links must not be silently discarded");
+  assert.match(fields.link.status, /blocked/);
+  assert.match(fields.is_read.conversion, /Do not fabricate/);
+  assert.match(fields.message.conversion, /Do not silently truncate/);
+  assert.match(fields.type.status, /blocked/);
+  assert.match(fields.created_at.conversion, /exactly as UTC/);
+});
