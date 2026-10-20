@@ -47,6 +47,24 @@ SELECT 'notifications.link_format',
 FROM public.notifications
 GROUP BY 2
 
+SELECT 'notifications.title_over_160', (char_length(title) > 160)::text, COUNT(*)::bigint
+FROM public.notifications
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'notifications.message_over_1000', (char_length(message) > 1000)::text, COUNT(*)::bigint
+FROM public.notifications
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'notifications.link_over_255', (char_length(link) > 255)::text, COUNT(*)::bigint
+FROM public.notifications
+GROUP BY 2
+
+UNION ALL
+
 SELECT 'reports.status', status::text, COUNT(*)::bigint
 FROM public.reports
 GROUP BY status
