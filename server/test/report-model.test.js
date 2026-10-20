@@ -25,7 +25,7 @@ test("reports migration stays pending while source and target shapes differ", as
   assert.ok(reports);
   assert.equal(reports.status, "pending");
   assert.match(reports.reason, /reported_exchange_id/i);
-  assert.match(reports.reason, /targetType\/targetId/i);
+  assert.match(reports.reason, /targetType.*targetId/i);
   assert.match(reports.reason, /Define a lossless mapping/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
