@@ -129,6 +129,28 @@ test("current migration contract references existing proposed target model files
     "proposed Connection model should be checked without approving the mapping");
 });
 
+test("preflight blocks mapped fields that do not exist in the target schema", async () => {
+  const f = await fixture();
+  try {
+    const contract = JSON.parse(await readFile(f.contractPath, "utf8"));
+    contract.schemaSnapshotReviewed = true;
+    contract.tables[0].status = "mapped";
+    contract.tables[0].fields = [
+      { sourceField: "legacy_skills", status: "mapped", targetField: "skills_to_teach" }
+    ];
+    await writeFile(f.contractPath, JSON.stringify(contract));
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.targetModelCoverage.valid, false);
+    assert.ok(report.blockers.some((item) =>
+      item.stage === "targetModelCoverage"
+      && item.target === "skills_to_teach"
+      && item.issue === "field-level targetField does not exist in the Mongoose schema"
+    ));
+    assert.equal(report.valid, false);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("preflight blocks overlapping model target paths", async () => {
   const f = await fixture();
   try {
