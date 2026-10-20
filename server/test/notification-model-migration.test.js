@@ -81,5 +81,5 @@ test("notification type mapper requires explicit source mappings and rejects inv
   assert.throws(() => mapNotificationType("unseen-source-value", explicitMap), /Unmapped source notification type/);
   assert.throws(() => mapNotificationType("known-source-message", { "known-source-message": "unknown" }), /Invalid target notification type/);
   assert.throws(() => mapNotificationType("", explicitMap), /non-empty string/);
-  assert.deepEqual(targetNotificationTypes.sort(), ["exchange_request", "exchange_update", "message", "post_comment", "post_like", "review", "system"]);
+  assert.deepEqual([...targetNotificationTypes].sort(), ["exchange_request", "exchange_update", "message", "post_comment", "post_like", "review", "system"]);
 });
