@@ -180,6 +180,13 @@ SELECT 'users.full_name_nullness', (full_name IS NULL)::text, COUNT(*)::bigint
 FROM public.users
 GROUP BY 2
 
+UNION ALL
+
+SELECT 'users.full_name_over_100', (char_length(full_name) > 100)::text, COUNT(*)::bigint
+FROM public.users
+WHERE full_name IS NOT NULL
+GROUP BY 2
+
 ORDER BY field, value NULLS FIRST;
 
 COMMIT;
