@@ -52,7 +52,8 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
         const hasValidCalendarDate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
           && !Number.isNaN(calendarDate.getTime())
           && calendarDate.toISOString().slice(0, 10) === datePart;
-        if (Number.isNaN(capturedAt.getTime()) || !/^\d{4}-\d{2}-\d{2}T/.test(review.capturedAt) || !hasValidCalendarDate) {
+        const hasExplicitTimezone = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(review.capturedAt);
+        if (Number.isNaN(capturedAt.getTime()) || !hasExplicitTimezone || !hasValidCalendarDate) {
           issues.push({ table: null, issue: "schemaReview.capturedAt must be a valid ISO 8601 timestamp" });
         }
       }
