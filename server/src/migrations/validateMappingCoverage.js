@@ -47,7 +47,12 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
       }
       if (typeof review.capturedAt === "string" && review.capturedAt.trim()) {
         const capturedAt = new Date(review.capturedAt);
-        if (Number.isNaN(capturedAt.getTime()) || !/^\d{4}-\d{2}-\d{2}T/.test(review.capturedAt)) {
+        const datePart = review.capturedAt.slice(0, 10);
+        const calendarDate = new Date(datePart + "T00:00:00Z");
+        const hasValidCalendarDate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
+          && !Number.isNaN(calendarDate.getTime())
+          && calendarDate.toISOString().slice(0, 10) === datePart;
+        if (Number.isNaN(capturedAt.getTime()) || !/^\d{4}-\d{2}-\d{2}T/.test(review.capturedAt) || !hasValidCalendarDate) {
           issues.push({ table: null, issue: "schemaReview.capturedAt must be a valid ISO 8601 timestamp" });
         }
       }
