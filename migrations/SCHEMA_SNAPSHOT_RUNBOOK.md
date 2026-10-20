@@ -64,6 +64,8 @@ if ($LASTEXITCODE -ne 0) { throw "Source inventory failed; do not treat partial 
 
 After confirming that every referenced table and column exists in the reviewed schema, run the status inventory. It reports aggregate value counts and length/timestamp buckets rather than exporting application rows. Review output privately; do not paste raw records or credentials into Git or chat.
 
+The status inventory also reports aggregate duplicate-group counts for trimmed, case-insensitive email and username values, duplicate groups for trimmed phone values, and phone nullness. These are screening checks, not a complete identity-resolution policy: confirm the actual source constraints and application normalization rules, and separately assess phone-number canonicalization (for example, country codes) before choosing any collision remediation. Do not merge accounts or rewrite identifiers based on these aggregates alone.
+
 ```powershell
 if (-not $env:DATABASE_URL) { throw "Set DATABASE_URL through your approved secret manager first." }
 $outDir = Join-Path $HOME "skillbarter-private-migration-review"
