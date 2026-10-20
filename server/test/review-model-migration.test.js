@@ -31,6 +31,6 @@ test("reviews migration mapping records dropped source metadata and remains pend
   assert.match(reviews.reason, /would_exchange_again/i);
   assert.match(reviews.reason, /uq_exchange_reviewer/i);
   assert.match(reviews.reason, /2000 characters/i);
-  assert.match(reviews.reason, /captured PostgreSQL schema snapshot/i);
+  assert.match(reviews.reason, /before approval/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
