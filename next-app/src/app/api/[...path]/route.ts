@@ -5,6 +5,25 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const COOKIE_NAME = "skillbarter_token";
+const API_TIMEOUT_MS = 10_000;
+
+function configuredApiOrigin(): string | null {
+  const configured = process.env.API_BASE_URL?.trim();
+  if (!configured) return null;
+
+  try {
+    const parsed = new URL(configured);
+    if (!["http:", "https:"].includes(parsed.protocol) ||
+        parsed.username || parsed.password || parsed.pathname !== "/" ||
+        parsed.search || parsed.hash ||
+        (process.env.NODE_ENV === "production" && parsed.protocol !== "https:")) {
+      return null;
+    }
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
@@ -29,10 +48,15 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       method: request.method,
       headers,
       body: ["GET", "HEAD"].includes(request.method) ? undefined : await request.text(),
-      cache: "no-store"
+      cache: "no-store",
+      signal: AbortSignal.timeout(API_TIMEOUT_MS)
     });
-  } catch {
-    const response = NextResponse.json({ error: "The SkillBarter API is unavailable." }, { status: 502 });
+  } catch (error) {
+    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    const response = NextResponse.json(
+      { error: timedOut ? "The SkillBarter API took too long to respond." : "The SkillBarter API is unavailable." },
+      { status: timedOut ? 504 : 502 }
+    );
     // Clear the browser session even if the API is temporarily unreachable.
     if (isLogout) response.cookies.set(COOKIE_NAME, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
     return response;
