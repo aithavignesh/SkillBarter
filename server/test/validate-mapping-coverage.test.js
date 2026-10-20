@@ -44,6 +44,13 @@ test("requires an explicit timezone in the schema capture timestamp", () => {
   assert.equal(result.valid, false);
   assert.ok(result.issues.some((issue) => issue.issue.includes("capturedAt must be a valid ISO 8601 timestamp")));
 });
+test("accepts a valid schema capture timestamp with an explicit offset", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaReview.capturedAt = "2026-10-20T15:30:00+05:30";
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.issues, []);
+});
 test("accepts exact table coverage only after schema review", () => {
   const result = validateMappingCoverage(manifest, contract);
   assert.equal(result.valid, true);
