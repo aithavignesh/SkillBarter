@@ -13,6 +13,15 @@ const contract = {
   sourceSystem: "InsForge/PostgreSQL",
   targetSystem: "SkillBarter MERN/MongoDB",
   schemaSnapshotReviewed: true,
+  schemaReview: {
+    sourceEnvironment: "test-fixture",
+    capturedAt: "2026-10-20T00:00:00Z",
+    schemasReviewed: "public",
+    inventoryRevision: "fixture-v1",
+    reviewer: "test reviewer",
+    reviewedAt: "2026-10-20",
+    evidenceReference: "private://fixture/schema-snapshot"
+  },
   tables: [
     { name: "users", status: "mapped", proposedTarget: "User", fields: [{ sourceField: "email", status: "mapped", targetField: "email" }] },
     { name: "skills", status: "mapped", proposedTarget: "Skill", fields: [{ sourceField: "name", status: "mapped", targetField: "name" }] }
@@ -160,4 +169,16 @@ test("rejects missing or unsupported mapping statuses", () => {
   result = validateMappingCoverage(manifest, candidate);
   assert.equal(result.valid, false);
   assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("mapping status is approved")));
+});
+
+test("requires provenance before a schema snapshot can be marked reviewed", () => {
+  const candidate = { ...contract, schemaReview: undefined };
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("schemaReview provenance metadata")));
+
+  candidate.schemaReview = { ...contract.schemaReview, reviewer: " " };
+  const incomplete = validateMappingCoverage(manifest, candidate);
+  assert.equal(incomplete.valid, false);
+  assert.ok(incomplete.issues.some((issue) => issue.issue.includes("schemaReview.reviewer is required")));
 });
