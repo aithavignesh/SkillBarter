@@ -64,6 +64,12 @@ GROUP BY 2
 
 UNION ALL
 
+SELECT 'notifications.created_at_nullness', (created_at IS NULL)::text, COUNT(*)::bigint
+FROM public.notifications
+GROUP BY 2
+
+UNION ALL
+
 SELECT 'reports.status', status::text, COUNT(*)::bigint
 FROM public.reports
 GROUP BY status
