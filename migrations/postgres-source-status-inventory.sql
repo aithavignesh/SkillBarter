@@ -303,6 +303,30 @@ SELECT 'posts.likes_count_positive', (likes_count > 0)::text, COUNT(*)::bigint
 FROM public.posts
 GROUP BY 2
 
+UNION ALL
+
+SELECT 'posts.skill_id_nullness', (skill_id IS NULL)::text, COUNT(*)::bigint
+FROM public.posts
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'posts.exchange_id_nullness', (exchange_id IS NULL)::text, COUNT(*)::bigint
+FROM public.posts
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'posts.partner_id_nullness', (partner_id IS NULL)::text, COUNT(*)::bigint
+FROM public.posts
+GROUP BY 2
+
+UNION ALL
+
+SELECT 'posts.likes_count_negative', (likes_count < 0)::text, COUNT(*)::bigint
+FROM public.posts
+GROUP BY 2
+
 ORDER BY field, value NULLS FIRST;
 
 COMMIT;
