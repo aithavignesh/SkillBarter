@@ -235,3 +235,21 @@ test("CLI returns exit code 1 for malformed JSON", async () => {
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+
+test("rejects stale blocked status after the schema has been marked reviewed", () => {
+  const candidate = {
+    ...structuredClone(contract),
+    schemaSnapshotReviewed: true,
+    status: "blocked-pending-source-schema"
+  };
+  const result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("contract status must be reviewed after schemaSnapshotReviewed becomes true")));
+});
+
+test("rejects an empty top-level contract status", () => {
+  const result = validateMappingContract({ ...contract, status: " " });
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("status must be a non-empty string")));
+});
