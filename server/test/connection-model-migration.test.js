@@ -1,0 +1,33 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import Connection from "../src/models/Connection.js";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+test("target Connection schema preserves user references, ordered-pair uniqueness, and provisional status", () => {
+  assert.equal(Connection.modelName, "Connection");
+  assert.equal(Connection.schema.path("user").options.ref, "User");
+  assert.equal(Connection.schema.path("connectedUser").options.ref, "User");
+  assert.equal(Connection.schema.path("status").options.default, "ACCEPTED");
+  assert.ok(Connection.schema.indexes().some(([keys, options]) =>
+    keys.user === 1 && keys.connectedUser === 1 && options.unique === true
+  ));
+  assert.equal(Connection.schema.options.timestamps, false);
+});
+
+test("connections migration remains blocked pending schema and row-semantics verification", async () => {
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const connections = contract.tables.find((table) => table.name === "connections");
+  assert.ok(connections);
+  assert.equal(connections.status, "blocked");
+  assert.equal(connections.proposedTarget, "Connection");
+  assert.match(connections.reason, /uq_user_connection/i);
+  assert.match(connections.reason, /PENDING and ACCEPTED/i);
+  assert.match(connections.reason, /self-connection/i);
+  assert.match(connections.reason, /reciprocal pairs/i);
+  assert.match(connections.reason, /captured PostgreSQL schema snapshot/i);
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
