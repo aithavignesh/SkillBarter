@@ -34,3 +34,24 @@ test("reports mapping remains pending until source categories, targets, statuses
   assert.match(reports.reason, /RLS/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("report conversion guards source target IDs, category, admin note, and timestamp semantics", async () => {
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const reports = contract.tables.find((table) => table.name === "reports");
+  assert.ok(reports);
+  assert.equal(Report.schema.path("reported_user_id"), undefined);
+  assert.equal(Report.schema.path("reported_exchange_id"), undefined);
+  assert.equal(Report.schema.path("category"), undefined);
+  assert.equal(Report.schema.path("admin_note"), undefined);
+  assert.ok(Report.schema.path("targetType"));
+  assert.ok(Report.schema.path("targetId"));
+  assert.ok(Report.schema.path("resolutionNote"));
+  assert.ok(Report.schema.path("createdAt"));
+  assert.match(reports.reason, /reported_user_id/i);
+  assert.match(reports.reason, /reported_exchange_id/i);
+  assert.match(reports.reason, /preserve category separately/i);
+  assert.match(reports.reason, /admin_note semantics/i);
+  assert.match(reports.reason, /created_at/i);
+  assert.equal(reports.status, "pending");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
