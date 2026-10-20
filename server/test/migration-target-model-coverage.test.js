@@ -104,3 +104,17 @@ test("blocks mapping remains pending until source constraints and fields are rev
   assert.match(blocks.reason, /captured PostgreSQL snapshot/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("no source mapping can be approved before the PostgreSQL schema snapshot is reviewed", async () => {
+  const contract = JSON.parse(await readFile(contractPath, "utf8"));
+  assert.equal(contract.schemaSnapshotReviewed, false);
+  assert.equal(contract.status, "blocked-pending-source-schema");
+  assert.ok(Array.isArray(contract.tables) && contract.tables.length > 0);
+  const approved = contract.tables.filter((table) => table.status === "approved");
+  assert.deepEqual(approved, [], "mapping approvals must wait for reviewed source schema evidence");
+  for (const table of contract.tables) {
+    assert.ok(["pending", "blocked"].includes(table.status), `${table.name} must remain pending or blocked`);
+    assert.equal(typeof table.reason, "string");
+    assert.ok(table.reason.trim().length > 0, `${table.name} must explain its unresolved conversion risks`);
+  }
+});
