@@ -32,3 +32,18 @@ test("messages migration stays pending while source and target constraints diffe
   assert.match(messages.reason, /ObjectIds/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("message conversion guards the nullable source exchange and timestamp/read-state mismatches", async () => {
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const messages = contract.tables.find((table) => table.name === "messages");
+  assert.ok(messages);
+  assert.match(messages.reason, /nullable indexed exchange_id/i);
+  assert.match(messages.reason, /required target exchange/i);
+  assert.match(messages.reason, /created_at timestamp/i);
+  assert.match(messages.reason, /createdAt\/updatedAt/i);
+  assert.match(messages.reason, /is_read=true/i);
+  assert.equal(Message.schema.path("exchange").isRequired, true);
+  assert.equal(Message.schema.path("createdAt"), undefined);
+  assert.equal(Message.schema.options.timestamps, true);
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
