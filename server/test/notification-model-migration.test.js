@@ -32,3 +32,21 @@ test("notifications migration remains pending until source types and link/read s
   assert.match(notifications.reason, /numeric user IDs to ObjectIds/i);
   assert.equal(contract.schemaSnapshotReviewed, false);
 });
+
+test("notification conversion guards source link and read-state semantics", async () => {
+  const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
+  const notifications = contract.tables.find((table) => table.name === "notifications");
+  assert.ok(notifications);
+  assert.equal(Notification.schema.path("link"), undefined);
+  assert.equal(Notification.schema.path("is_read"), undefined);
+  assert.ok(Notification.schema.path("readAt"), "target uses a timestamp rather than a source boolean");
+  assert.ok(Notification.schema.path("createdAt"), "target timestamps create createdAt automatically");
+  assert.equal(Notification.schema.path("title").options.maxlength, 160);
+  assert.equal(Notification.schema.path("body").options.maxlength, 1000);
+  assert.match(notifications.reason, /link String\(255\)/i);
+  assert.match(notifications.reason, /is_read/i);
+  assert.match(notifications.reason, /created_at/i);
+  assert.match(notifications.reason, /fixed lowercase enum/i);
+  assert.equal(notifications.status, "pending");
+  assert.equal(contract.schemaSnapshotReviewed, false);
+});
