@@ -70,6 +70,15 @@ GROUP BY 2
 
 UNION ALL
 
+SELECT 'notifications.created_at_utc_month',
+       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM') AS value,
+       COUNT(*)::bigint
+FROM public.notifications
+WHERE created_at IS NOT NULL
+GROUP BY 2
+
+UNION ALL
+
 SELECT 'reports.status', status::text, COUNT(*)::bigint
 FROM public.reports
 GROUP BY status
