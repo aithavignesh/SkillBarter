@@ -214,3 +214,20 @@ test("requires provenance before a schema snapshot can be marked reviewed", () =
   assert.equal(incomplete.valid, false);
   assert.ok(incomplete.issues.some((issue) => issue.issue.includes("schemaReview.reviewer is required")));
 });
+
+
+test("real migration contract stays blocked until source evidence is reviewed", async () => {
+  const root = new URL("../../", import.meta.url);
+  const sourceContract = JSON.parse(await readFile(new URL("migrations/source-to-target-contract.json", root), "utf8"));
+  const notificationPlan = JSON.parse(await readFile(new URL("migrations/notification-conversion-plan.json", root), "utf8"));
+
+  assert.equal(sourceContract.schemaSnapshotReviewed, false);
+  assert.equal(sourceContract.status, "blocked-pending-source-schema");
+  assert.ok(sourceContract.tables.some((table) => table.status === "blocked" || table.status === "pending"));
+  assert.equal(notificationPlan.status, "blocked-pending-source-schema-and-data-inventory");
+  assert.equal(notificationPlan.safety.schemaSnapshotReviewed, false);
+  assert.equal(notificationPlan.safety.sourceInventoryExecuted, false);
+  assert.equal(notificationPlan.safety.dataImportImplemented, false);
+  assert.equal(notificationPlan.safety.productionImportAllowed, false);
+  assert.equal(notificationPlan.safety.productionCutoverApproved, false);
+});
