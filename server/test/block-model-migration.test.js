@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import mongoose from "mongoose";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,7 +32,7 @@ test("blocks mapping stays pending until source timestamps and self-block semant
 });
 
 test("target Block rejects self-blocks while migration keeps source policy unresolved", async () => {
-  const id = new (await import("mongoose")).default.Types.ObjectId();
+  const id = new mongoose.Types.ObjectId();
   const block = new Block({ blocker: id, blocked: id });
   await assert.rejects(block.validate(), /cannot block your own account/i);
   const contract = JSON.parse(await readFile(path.join(repositoryRoot, "migrations/source-to-target-contract.json"), "utf8"));
