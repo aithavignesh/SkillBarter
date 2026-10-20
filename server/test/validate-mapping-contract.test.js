@@ -44,6 +44,13 @@ test("rejects case-colliding mapping table names", () => {
     /Duplicate mapping table.*case-insensitive aliases/
   );
 });
+test("rejects an unreviewed contract whose top-level status claims it is unblocked", () => {
+  const candidate = { ...contract, status: "ready" };
+  const result = validateMappingContract(candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("contract status must remain blocked-pending-source-schema")));
+});
+
 test("does not allow approved mapping before source schema review", () => {
   const candidate = structuredClone(contract);
   candidate.tables[0].status = "mapped";
