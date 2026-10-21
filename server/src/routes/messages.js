@@ -19,6 +19,8 @@ router.get("/exchange/:exchangeId", async (req, res) => {
   if (![String(exchange.requester), String(exchange.recipient)].includes(String(req.user._id))) {
     return res.status(403).json({ error: "Only exchange participants can view messages." });
   }
+  const blocked = await Block.exists({ $or: [{ blocker: exchange.requester, blocked: exchange.recipient }, { blocker: exchange.recipient, blocked: exchange.requester }] });
+  if (blocked) return res.status(403).json({ error: "Messaging is unavailable because one participant has blocked the other." });
   const messages = await Message.find({ exchange: exchangeId }).populate("sender", "fullName username avatarUrl")
     .sort({ createdAt: 1 }).limit(500);
   return res.json({ messages });
