@@ -70,6 +70,16 @@ test("profile update rejects non-string text fields", async () => {
   }
 });
 
+test("profile update cannot change a phone number without a verification flow", async () => {
+  authenticate();
+  let updated = false;
+  User.findByIdAndUpdate = async () => { updated = true; return sampleUser; };
+  const response = await patchProfile({ phone: "+919876543210" });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /require a dedicated verification flow/);
+  assert.equal(updated, false);
+});
+
 test("profile update rejects oversized biography and headline", async () => {
   authenticate();
   const bio = await patchProfile({ bio: "x".repeat(1001) });
