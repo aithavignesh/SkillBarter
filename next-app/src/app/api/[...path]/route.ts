@@ -71,9 +71,15 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
 
   if (apiPath === "auth/phone-otp/verify") {
     const data = await upstream.json().catch(() => ({}));
-    if (!upstream.ok || typeof data?.token !== "string" || !data.token) {
+    if (!upstream.ok) return NextResponse.json(data, { status: upstream.status });
+
+    // Registration verifies the phone before account creation and returns a short-lived
+    // phoneVerificationToken, while phone-OTP login returns a session token. Do not
+    // mistake a successful registration verification for a malformed login response.
+    if (typeof data?.token !== "string" || !data.token) {
       return NextResponse.json(data, { status: upstream.status });
     }
+
     const response = NextResponse.json({ user: data.user }, { status: upstream.status });
     response.cookies.set(COOKIE_NAME, data.token, {
       httpOnly: true,
