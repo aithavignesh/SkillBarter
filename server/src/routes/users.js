@@ -31,7 +31,10 @@ router.get("/me", async (req, res) => {
 
 router.patch("/me", async (req, res, next) => {
   try {
-    const allowed = ["fullName", "bio", "headline", "avatarUrl", "phone", "onboardingCompleted", "skillsToTeach", "skillsToLearn"];
+    if (Object.hasOwn(req.body || {}, "phone")) {
+      return res.status(400).json({ error: "Phone number changes require a dedicated verification flow and cannot be updated here." });
+    }
+    const allowed = ["fullName", "bio", "headline", "avatarUrl", "onboardingCompleted", "skillsToTeach", "skillsToLearn"];
     const update = {};
     for (const key of allowed) {
       if (Object.hasOwn(req.body || {}, key)) update[key] = req.body[key];
@@ -47,7 +50,6 @@ router.patch("/me", async (req, res, next) => {
     if (Object.hasOwn(update, "headline") && typeof update.headline !== "string") return res.status(400).json({ error: "Headline must be a string." });
     if (typeof update.headline === "string" && update.headline.length > 160) return res.status(400).json({ error: "Headline is too long." });
     if (typeof update.fullName === "string") update.fullName = update.fullName.trim();
-    if (typeof update.phone === "string" && update.phone.length > 30) return res.status(400).json({ error: "Phone number is too long." });
     if (Object.hasOwn(update, "avatarUrl")) {
       if (typeof update.avatarUrl !== "string") return res.status(400).json({ error: "Avatar URL must be a string." });
       update.avatarUrl = update.avatarUrl.trim();
