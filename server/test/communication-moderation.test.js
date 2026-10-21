@@ -27,6 +27,7 @@ const originals = {
   exchangeFindById: Exchange.findById,
   blockExists: Block.exists,
   messageCreate: Message.create,
+  messageFind: Message.find,
   messageFindOneAndUpdate: Message.findOneAndUpdate,
   reportCreate: Report.create,
   reviewFind: Review.find,
@@ -52,6 +53,7 @@ after(async () => {
   Exchange.findById = originals.exchangeFindById;
   Block.exists = originals.blockExists;
   Message.create = originals.messageCreate;
+  Message.find = originals.messageFind;
   Message.findOneAndUpdate = originals.messageFindOneAndUpdate;
   Report.create = originals.reportCreate;
   Review.find = originals.reviewFind;
@@ -108,6 +110,21 @@ test("message creation is blocked when the exchange participants have blocked ea
   const response = await request("POST", "/api/messages", { exchangeId, body: "hello" });
   assert.equal(response.status, 403);
   assert.match((await response.json()).error, /blocked/);
+});
+
+test("message history is unavailable after either participant blocks the other", async () => {
+  authenticate();
+  Exchange.findById = () => ({ select: async () => ({ requester: userId, recipient: otherUserId }) });
+  Block.exists = async () => true;
+  let messageQueryCalled = false;
+  Message.find = () => {
+    messageQueryCalled = true;
+    throw new Error("Message history must not be queried after a block.");
+  };
+  const response = await request("GET", `/api/messages/exchange/${exchangeId}`);
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /blocked/);
+  assert.equal(messageQueryCalled, false);
 });
 
 test("message read receipts are limited to the intended recipient", async () => {
