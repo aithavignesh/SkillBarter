@@ -16,7 +16,8 @@ const sampleUser = {
 const originals = {
   userFindById: User.findById,
   exchangeFindById: Exchange.findById,
-  reviewCreate: Review.create
+  reviewCreate: Review.create,
+  reviewFind: Review.find
 };
 let server;
 let baseUrl;
@@ -39,6 +40,7 @@ after(async () => {
   User.findById = originals.userFindById;
   Exchange.findById = originals.exchangeFindById;
   Review.create = originals.reviewCreate;
+  Review.find = originals.reviewFind;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -107,6 +109,24 @@ test("reviews are rejected until both exchange participants complete", async () 
   assert.equal(response.status, 409);
   assert.match((await response.json()).error, /only after both participants complete/i);
   assert.equal(reviewCreateCalled, false);
+});
+
+
+test("review listing rejects malformed user IDs before querying reviews", async () => {
+  authenticate();
+  let reviewLookupCalled = false;
+  Review.find = () => {
+    reviewLookupCalled = true;
+    throw new Error("Review lookup must not run for malformed user IDs");
+  };
+
+  const response = await fetch(`${baseUrl}/api/reviews/user/not-an-id`, {
+    headers: { authorization: `Bearer ${token()}` }
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /invalid user ID/i);
+  assert.equal(reviewLookupCalled, false);
 });
 
 test("review creation rejects malformed exchange IDs before database lookup", async () => {
