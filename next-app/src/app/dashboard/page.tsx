@@ -23,7 +23,12 @@ export default function DashboardPage() {
         if (active && data.user && !data.user.onboardingCompleted) { router.replace("/onboarding"); return; }
         if (active) setUser(data.user);
       })
-      .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Unable to load your account."); })
+      .catch((e) => {
+        if (!active) return;
+        const message = e instanceof Error ? e.message : "Unable to load your account.";
+        if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+        else setError(message);
+      })
       .finally(() => { if (active) setBusy(false); });
     return () => { active = false; };
   }, [router]);
