@@ -85,6 +85,29 @@ test("block listing is scoped to the current user", async () => {
   assert.equal((await response.json()).blocks.length, 1);
 });
 
+
+test("block and unblock reject malformed user IDs before storage access", async () => {
+  mockAuthenticatedUser();
+  let userLookupCalled = false;
+  let deleteLookupCalled = false;
+  User.findOne = () => {
+    userLookupCalled = true;
+    throw new Error("User lookup must not run for malformed IDs");
+  };
+  Block.findOneAndDelete = async () => {
+    deleteLookupCalled = true;
+    throw new Error("Block deletion must not run for malformed IDs");
+  };
+
+  const blocked = await request("POST", "/api/blocks/not-an-id");
+  const unblocked = await request("DELETE", "/api/blocks/not-an-id");
+
+  assert.equal(blocked.status, 400);
+  assert.equal(unblocked.status, 400);
+  assert.equal(userLookupCalled, false);
+  assert.equal(deleteLookupCalled, false);
+});
+
 test("a user cannot block their own account", async () => {
   mockAuthenticatedUser();
   const response = await request("POST", `/api/blocks/${userId}`);
