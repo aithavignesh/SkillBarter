@@ -29,6 +29,14 @@ export default function SignupPage() {
     setError("");
   }
 
+  function changeVerifiedPhone() {
+    setPhoneCode("");
+    setPhoneCodeSent(false);
+    setPhoneVerified(false);
+    setPhoneVerificationToken("");
+    setError("");
+  }
+
   async function requestPhoneCode() {
     setError("");
     setOtpBusy(true);
@@ -119,7 +127,7 @@ export default function SignupPage() {
           <label>6-digit SMS code<input type="text" disabled={otpBusy} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={phoneCode} onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, ""))} placeholder="123456" /></label>
           <button type="button" className="backHome" disabled={otpBusy || phoneCode.length !== 6} onClick={() => void verifyPhoneCode()}>Verify mobile number</button>
         </>}
-        {phoneVerified && <p role="status">Mobile number verified.</p>}
+        {phoneVerified && <><p role="status">Mobile number verified.</p><button type="button" className="backHome" disabled={busy || otpBusy} onClick={changeVerifiedPhone}>Change mobile number</button></>}
         {error && <p className="formError" role="alert">{error}</p>}
         <button className="button authSubmit" disabled={busy || otpBusy || !phoneVerified}>{busy ? "Creating account…" : "Create account"} <span aria-hidden="true">↗</span></button>
       </form>
