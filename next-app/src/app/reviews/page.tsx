@@ -40,7 +40,7 @@ export default function ReviewsPage() {
       .catch((e) => {
         if (!active) return;
         const message = e instanceof Error ? e.message : "Unable to load reviews.";
-        if (/Authentication required|invalid or expired|unavailable/i.test(message)) router.replace("/login");
+        if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
         else setError(message);
       })
       .finally(() => { if (active) setReviewsLoading(false); });
