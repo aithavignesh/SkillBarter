@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 type Review = { _id: string; rating: number; comment: string; createdAt: string; reviewer?: { fullName: string; username: string } };
 
@@ -14,7 +13,6 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export default function ReviewsPage() {
-  const router = useRouter();
   const [userId, setUserId] = useState("");
   const [exchangeId, setExchangeId] = useState("");
   const [rating, setRating] = useState(5);
