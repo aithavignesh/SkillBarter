@@ -91,7 +91,7 @@ test("a non-participant cannot report an exchange", async () => {
   const response = await fetch(`${baseUrl}/api/reports`, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${token}`,
+      authorization: `Bearer ${createToken()}`,
       "content-type": "application/json"
     },
     body: JSON.stringify({
@@ -123,7 +123,7 @@ test("invalid report reasons are rejected before target lookup", async () => {
   const response = await fetch(`${baseUrl}/api/reports`, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${token}`,
+      authorization: `Bearer ${createToken()}`,
       "content-type": "application/json"
     },
     body: JSON.stringify({
