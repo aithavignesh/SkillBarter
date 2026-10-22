@@ -40,14 +40,22 @@ export default function NotificationsPage() {
   async function markRead(id: string) {
     setBusy(true); setError("");
     try { await api(`/api/notifications/${id}/read`, { method: "PATCH" }); await load(); }
-    catch (e) { setError(e instanceof Error ? e.message : "Unable to update notification."); }
+    catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to update notification.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+      else setError(message);
+    }
     finally { setBusy(false); }
   }
 
   async function markAllRead() {
     setBusy(true); setError("");
     try { await api("/api/notifications/read-all", { method: "PATCH" }); await load(); }
-    catch (e) { setError(e instanceof Error ? e.message : "Unable to update notifications."); }
+    catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to update notifications.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+      else setError(message);
+    }
     finally { setBusy(false); }
   }
 
