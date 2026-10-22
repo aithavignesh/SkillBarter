@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Review = { _id: string; rating: number; comment: string; createdAt: string; reviewer?: { fullName: string; username: string } };
 
@@ -13,6 +14,7 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export default function ReviewsPage() {
+  const router = useRouter();
   const [userId, setUserId] = useState("");
   const [exchangeId, setExchangeId] = useState("");
   const [rating, setRating] = useState(5);
@@ -33,11 +35,17 @@ export default function ReviewsPage() {
     if (!userId) return;
     let active = true;
     setReviewsLoading(true);
+    setError("");
     api<{ reviews: Review[] }>(`/api/reviews/user/${userId}`).then((data) => { if (active) setReviews(data.reviews); })
-      .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Unable to load reviews."); })
+      .catch((e) => {
+        if (!active) return;
+        const message = e instanceof Error ? e.message : "Unable to load reviews.";
+        if (/Authentication required|invalid or expired|unavailable/i.test(message)) router.replace("/login");
+        else setError(message);
+      })
       .finally(() => { if (active) setReviewsLoading(false); });
     return () => { active = false; };
-  }, [userId]);
+  }, [userId, router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
