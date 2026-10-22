@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -28,13 +29,21 @@ export default function DashboardPage() {
   }, [router]);
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST", cache: "no-store" });
+    } catch {
+      // Continue to the login screen even if the network request fails.
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
   }
 
   if (busy) return <main className="dashboardPage"><p>Loading your account…</p></main>;
   if (error) return <main className="dashboardPage"><p className="formError">{error}</p><Link href="/login">Return to login</Link></main>;
   if (!user) return <main className="dashboardPage"><p>Redirecting…</p></main>;
 
-  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><div className="navActions"><Link className="navLink" href="/matches">Discover</Link><Link className="navLink" href="/exchanges">Exchanges</Link><Link className="navLink" href="/community">Community</Link><Link className="navLink" href="/notifications">Notifications</Link><Link className="navLink" href="/profile">Profile</Link><button className="logoutButton" onClick={logout}>Log out</button></div></nav><section className="dashboardWelcome wrap"><p className="eyebrow">Your SkillBarter space</p><h1>Welcome, {user.fullName.split(" ")[0]}.</h1><p>Find people with complementary skills, manage your exchanges, and keep your learning moving.</p><div className="dashboardTiles"><article><span>PROFILE</span><h2>@{user.username}</h2><p>{user.email}</p></article><article><span>ONBOARDING</span><h2>{user.onboardingCompleted ? "Completed" : "Not completed"}</h2><p>Profile and skill preferences.</p></article><article><span>ACCOUNT ROLE</span><h2>{user.isAdmin ? "Administrator" : "Member"}</h2><p>Role is checked on the API server.</p></article></div>{user.isAdmin && <Link className="button" href="/admin">Open admin tools ↗</Link>}</section></main>;
+  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><div className="navActions"><Link className="navLink" href="/matches">Discover</Link><Link className="navLink" href="/exchanges">Exchanges</Link><Link className="navLink" href="/community">Community</Link><Link className="navLink" href="/notifications">Notifications</Link><Link className="navLink" href="/profile">Profile</Link><button className="logoutButton" onClick={logout} disabled={loggingOut}>{loggingOut ? "Logging out…" : "Log out"}</button></div></nav><section className="dashboardWelcome wrap"><p className="eyebrow">Your SkillBarter space</p><h1>Welcome, {user.fullName.split(" ")[0]}.</h1><p>Find people with complementary skills, manage your exchanges, and keep your learning moving.</p><div className="dashboardTiles"><article><span>PROFILE</span><h2>@{user.username}</h2><p>{user.email}</p></article><article><span>ONBOARDING</span><h2>{user.onboardingCompleted ? "Completed" : "Not completed"}</h2><p>Profile and skill preferences.</p></article><article><span>ACCOUNT ROLE</span><h2>{user.isAdmin ? "Administrator" : "Member"}</h2><p>Role is checked on the API server.</p></article></div>{user.isAdmin && <Link className="button" href="/admin">Open admin tools ↗</Link>}</section></main>;
 }
