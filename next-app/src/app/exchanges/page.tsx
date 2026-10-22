@@ -49,7 +49,11 @@ export default function ExchangesPage() {
     try {
       await api(`/api/exchanges/${exchange._id}/status`, { method: "PATCH", body: JSON.stringify({ status, ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}) }) });
       await load();
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to update exchange."); }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to update exchange.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+      else setError(message);
+    }
     finally { setBusyId(""); }
   }
 
