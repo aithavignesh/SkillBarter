@@ -37,7 +37,12 @@ export default function ExchangeMessages({ exchangeId, userId }: { exchangeId: s
       await Promise.all(unreadIncoming.map(async (message) => {
         try {
           await api(`/api/messages/${message._id}/read`, { method: "PATCH" });
-        } catch {
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) {
+            router.replace("/login");
+            return;
+          }
           // A second poll may race with a read receipt; the next poll reconciles it.
         }
       }));
