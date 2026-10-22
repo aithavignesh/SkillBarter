@@ -46,7 +46,7 @@ export default function LoginPage() {
       if (mode !== "password" && !otpSent) {
         setOtpSent(true);
         setOtpCode("");
-        setNotice(`A sign-in code has been requested. Check your ${mode === "phoneOtp" ? "phone" : "email"}.`);
+        setNotice(`If an active account matches that ${mode === "phoneOtp" ? "number" : "email"}, a code will be sent. Check your ${mode === "phoneOtp" ? "phone" : "email"}.`);
         return;
       }
       router.replace("/dashboard");
@@ -72,7 +72,7 @@ export default function LoginPage() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to resend your sign-in code.");
       setOtpCode("");
-      setNotice(`A new sign-in code has been requested. Check your ${mode === "phoneOtp" ? "phone" : "email"}.`);
+      setNotice(`If an active account matches that ${mode === "phoneOtp" ? "number" : "email"}, a new code will be sent. Check your ${mode === "phoneOtp" ? "phone" : "email"}.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to resend your sign-in code.");
     } finally {
