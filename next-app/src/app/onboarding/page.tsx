@@ -70,7 +70,11 @@ export default function OnboardingPage() {
       setSkills((current) => current.some((item) => item._id === id) ? current : [...current, { ...skill, _id: id }].sort((a, b) => a.name.localeCompare(b.name)));
       setTeach((current) => current.includes(id) ? current : [...current, id].slice(0, 12));
       setCustomSkill("");
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to add skill."); }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to add skill.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+      else setError(message);
+    }
   }
 
   async function finish() {
@@ -83,7 +87,11 @@ export default function OnboardingPage() {
     try {
       await requestJson("/api/users/me", { method: "PATCH", body: JSON.stringify({ skillsToTeach: teach, skillsToLearn: learn, onboardingCompleted: true }) });
       router.replace("/dashboard");
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to save your profile."); }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to save your profile.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+      else setError(message);
+    }
     finally { setSaving(false); }
   }
 
