@@ -142,6 +142,21 @@ test("phone OTP request rejects malformed phone numbers before provider access",
   assert.match((await response.json()).error, /valid mobile number/);
 });
 
+test("email OTP request rejects malformed and oversized addresses before database access", async () => {
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    throw new Error("User lookup should not run for invalid email addresses.");
+  };
+
+  for (const email of ["not-an-email", `${"a".repeat(245)}@example.com`]) {
+    const response = await post("/api/auth/otp/request", { email });
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /valid email address/i);
+  }
+  assert.equal(databaseQueried, false);
+});
+
 test("email OTP request uses a generic response when no active account matches", async () => {
   const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
   const previousEnv = Object.fromEntries(smtpKeys.map((key) => [key, process.env[key]]));
