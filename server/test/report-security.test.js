@@ -16,6 +16,7 @@ const sampleUser = {
 };
 const originalFindById = User.findById;
 const originalExchangeFindById = Exchange.findById;
+const originalExchangeFindById = Exchange.findById;
 const originalReportCreate = Report.create;
 let server;
 let baseUrl;
@@ -29,6 +30,7 @@ baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
   User.findById = originalFindById;
+  Exchange.findById = originalExchangeFindById;
   Exchange.findById = originalExchangeFindById;
   Report.create = originalReportCreate;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
@@ -103,9 +105,10 @@ test("a non-participant cannot report an exchange", async () => {
 });
 
 test("invalid report reasons are rejected before target lookup", async () => {
-  let lookupCalled = false;
-  User.findById = () => {
-    lookupCalled = true;
+  let targetLookupCalled = false;
+  User.findById = (id) => {
+    if (String(id) === userId) return { select: async () => sampleUser };
+    targetLookupCalled = true;
     throw new Error("Target lookup must not run for an invalid report reason");
   };
   let createCalled = false;
@@ -129,6 +132,6 @@ test("invalid report reasons are rejected before target lookup", async () => {
 
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /reason between 3 and 120 characters/i);
-  assert.equal(lookupCalled, false);
+  assert.equal(targetLookupCalled, false);
   assert.equal(createCalled, false);
 });
