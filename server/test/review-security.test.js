@@ -113,6 +113,46 @@ test("reviews are rejected until both exchange participants complete", async () 
 
 
 
+
+test("review listing is scoped to the requested user and capped at 100", async () => {
+  authenticate();
+  const revieweeId = "68f200000000000000000005";
+  let filter;
+  let populateFields;
+  let sortOrder;
+  let limitValue;
+  Review.find = (query) => {
+    filter = query;
+    return {
+      populate(fields) {
+        populateFields = fields;
+        return {
+          sort(order) {
+            sortOrder = order;
+            return {
+              limit: async (limit) => {
+                limitValue = limit;
+                return [];
+              }
+            };
+          }
+        };
+      }
+    };
+  };
+
+  const response = await fetch(`${baseUrl}/api/reviews/user/${revieweeId}`, {
+    headers: { authorization: `Bearer ${token()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(filter, { reviewee: revieweeId });
+  assert.equal(populateFields, "reviewer fullName username avatarUrl");
+  assert.deepEqual(sortOrder, { createdAt: -1 });
+  assert.equal(limitValue, 100);
+  assert.deepEqual((await response.json()).reviews, []);
+});
+
 test("duplicate review submissions return conflict", async () => {
   authenticate();
   Exchange.findById = async () => ({
