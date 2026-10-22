@@ -38,7 +38,7 @@ export default function OnboardingPage() {
         setLearn((current.skillsToLearn || []).map((s) => s._id || s.id || "").filter(Boolean));
       })
       .catch((e) => {
-        if (e instanceof Error && /Authentication required|invalid or expired|unavailable/i.test(e.message)) router.replace("/login");
+        if (e instanceof Error && /Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(e.message)) router.replace("/login");
         else if (active) setError(e instanceof Error ? e.message : "Unable to load onboarding.");
       })
       .finally(() => { if (active) setLoading(false); });
