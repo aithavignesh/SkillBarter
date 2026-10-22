@@ -107,7 +107,7 @@ export default function LoginPage() {
         {mode === "password" ? (
           <label>Password<input type="password" autoComplete="current-password" disabled={busy} required maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" /></label>
         ) : otpSent ? (
-          <label>6-digit {mode === "phoneOtp" ? "SMS" : "email"} code<input type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))} placeholder="123456" /></label>
+          <label>6-digit {mode === "phoneOtp" ? "SMS" : "email"} code<input type="text" disabled={busy} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))} placeholder="123456" /></label>
         ) : (
           <p className="authIntro">{mode === "phoneOtp" ? "We’ll text a one-time sign-in code if this number belongs to an active account." : "We’ll email a one-time sign-in code if this address belongs to an active account."}</p>
         )}
