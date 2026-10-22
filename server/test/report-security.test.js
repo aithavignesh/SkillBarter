@@ -51,6 +51,7 @@ test("users cannot report their own account", async () => {
     throw new Error("Report creation must not run for a self-report.");
   };
 
+  process.env.JWT_SECRET = jwtSecret;
   const response = await fetch(`${baseUrl}/api/reports`, {
     method: "POST",
     headers: {
