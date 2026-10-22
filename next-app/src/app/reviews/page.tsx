@@ -23,6 +23,7 @@ export default function ReviewsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [busy, setBusy] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -33,8 +34,10 @@ export default function ReviewsPage() {
   useEffect(() => {
     if (!userId) return;
     let active = true;
+    setReviewsLoading(true);
     api<{ reviews: Review[] }>(`/api/reviews/user/${userId}`).then((data) => { if (active) setReviews(data.reviews); })
-      .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Unable to load reviews."); });
+      .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Unable to load reviews."); })
+      .finally(() => { if (active) setReviewsLoading(false); });
     return () => { active = false; };
   }, [userId]);
 
@@ -54,5 +57,5 @@ export default function ReviewsPage() {
     finally { setBusy(false); }
   }
 
-  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><div className="navActions"><Link className="navLink" href="/exchanges">Exchanges</Link><Link className="navLink" href="/dashboard">Dashboard</Link></div></nav><section className="reviewsContent wrap"><p className="eyebrow">Trust grows through feedback</p><h1>Leave a review.</h1><p className="adminIntro">Share a fair, constructive note about your completed skill exchange.</p>{error && <p className="formError" role="alert">{error}</p>}{success && <p className="matchNotice">{success}</p>}<form className="reviewForm" onSubmit={submit}><label>Rating<select value={rating} onChange={(e) => setRating(Number(e.target.value))}><option value={5}>5 — Excellent</option><option value={4}>4 — Very good</option><option value={3}>3 — Good</option><option value={2}>2 — Needs improvement</option><option value={1}>1 — Poor</option></select></label><label>Comment (optional)<textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={2000} rows={4} placeholder="What went well? What could help future exchanges?" /></label><button className="button" disabled={busy || !exchangeId}>{busy ? "Submitting…" : "Submit review"} ↗</button>{!exchangeId && <p className="pickerHint">Select “Leave a review” from a completed exchange to submit one.</p>}</form><section className="reviewHistory"><h2>Recent reviews</h2>{reviews.map((review) => <article className="reviewItem" key={review._id}><div className="reviewItemHeader"><strong>{review.reviewer?.fullName || "Community member"}</strong><span>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span></div><p>{review.comment || "No written comment."}</p><time>{new Date(review.createdAt).toLocaleDateString()}</time></article>)}{userId && reviews.length === 0 && <p className="emptyAdmin">No reviews yet.</p>}</section></section></main>;
+  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><div className="navActions"><Link className="navLink" href="/exchanges">Exchanges</Link><Link className="navLink" href="/dashboard">Dashboard</Link></div></nav><section className="reviewsContent wrap"><p className="eyebrow">Trust grows through feedback</p><h1>Leave a review.</h1><p className="adminIntro">Share a fair, constructive note about your completed skill exchange.</p>{error && <p className="formError" role="alert">{error}</p>}{success && <p className="matchNotice">{success}</p>}<form className="reviewForm" onSubmit={submit}><label>Rating<select value={rating} onChange={(e) => setRating(Number(e.target.value))}><option value={5}>5 — Excellent</option><option value={4}>4 — Very good</option><option value={3}>3 — Good</option><option value={2}>2 — Needs improvement</option><option value={1}>1 — Poor</option></select></label><label>Comment (optional)<textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={2000} rows={4} placeholder="What went well? What could help future exchanges?" /></label><button className="button" disabled={busy || !exchangeId}>{busy ? "Submitting…" : "Submit review"} ↗</button>{!exchangeId && <p className="pickerHint">Select “Leave a review” from a completed exchange to submit one.</p>}</form><section className="reviewHistory"><h2>Recent reviews</h2>{reviewsLoading && <p className="emptyAdmin" role="status">Loading reviews…</p>}{reviews.map((review) => <article className="reviewItem" key={review._id}><div className="reviewItemHeader"><strong>{review.reviewer?.fullName || "Community member"}</strong><span>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span></div><p>{review.comment || "No written comment."}</p><time>{new Date(review.createdAt).toLocaleDateString()}</time></article>)}{userId && !reviewsLoading && reviews.length === 0 && <p className="emptyAdmin">No reviews yet.</p>}</section></section></main>;
 }
