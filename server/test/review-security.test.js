@@ -112,6 +112,36 @@ test("reviews are rejected until both exchange participants complete", async () 
 });
 
 
+
+test("duplicate review submissions return conflict", async () => {
+  authenticate();
+  Exchange.findById = async () => ({
+    _id: "68f200000000000000000002",
+    requester: userId,
+    recipient: "68f200000000000000000004",
+    status: "completed",
+    completedByRequester: true,
+    completedByRecipient: true
+  });
+  let reviewCreateCalled = false;
+  Review.create = async () => {
+    reviewCreateCalled = true;
+    const error = new Error("duplicate review");
+    error.code = 11000;
+    throw error;
+  };
+
+  const response = await submitReview({
+    exchangeId: "68f200000000000000000002",
+    rating: 5,
+    comment: "Great exchange"
+  });
+
+  assert.equal(response.status, 409);
+  assert.match((await response.json()).error, /already reviewed this exchange/i);
+  assert.equal(reviewCreateCalled, true);
+});
+
 test("review listing rejects malformed user IDs before querying reviews", async () => {
   authenticate();
   let reviewLookupCalled = false;
