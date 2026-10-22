@@ -24,7 +24,8 @@ const originals = {
   exchangeFindById: Exchange.findById,
   blockExists: Block.exists,
   messageCreate: Message.create,
-  messageFind: Message.find
+  messageFind: Message.find,
+  messageFindOneAndUpdate: Message.findOneAndUpdate
 };
 let server;
 let baseUrl;
@@ -42,6 +43,7 @@ after(async () => {
   Block.exists = originals.blockExists;
   Message.create = originals.messageCreate;
   Message.find = originals.messageFind;
+  Message.findOneAndUpdate = originals.messageFindOneAndUpdate;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -66,6 +68,34 @@ function mockExchange(status = "active") {
     })
   };
 }
+
+
+test("message endpoints reject malformed IDs before database access", async () => {
+  mockAuthenticatedUser();
+  let exchangeLookupCalled = false;
+  let messageUpdateCalled = false;
+  Exchange.findById = () => {
+    exchangeLookupCalled = true;
+    throw new Error("Exchange lookup must not run for malformed IDs");
+  };
+  Message.findOneAndUpdate = () => {
+    messageUpdateCalled = true;
+    throw new Error("Message update must not run for malformed IDs");
+  };
+
+  const historyResponse = await fetch(`${baseUrl}/api/messages/exchange/not-an-id`, {
+    headers: { authorization: `Bearer ${tokenFor()}` }
+  });
+  const readResponse = await fetch(`${baseUrl}/api/messages/not-an-id/read`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${tokenFor()}` }
+  });
+
+  assert.equal(historyResponse.status, 400);
+  assert.equal(readResponse.status, 400);
+  assert.equal(exchangeLookupCalled, false);
+  assert.equal(messageUpdateCalled, false);
+});
 
 test("a non-participant cannot read exchange messages", async () => {
   mockAuthenticatedUser({ ...sampleUser, _id: outsiderId, id: outsiderId });
