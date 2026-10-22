@@ -23,8 +23,10 @@ export default function MatchesPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await api<{ matches: Match[]; message?: string }>("/api/matches");
       setMatches(data.matches);
@@ -33,6 +35,8 @@ export default function MatchesPage() {
       const text = e instanceof Error ? e.message : "Unable to load matches.";
       if (/Authentication required|invalid or expired|unavailable/i.test(text)) router.replace("/login");
       else setError(text);
+    } finally {
+      setLoading(false);
     }
   }, [router]);
 
@@ -53,5 +57,5 @@ export default function MatchesPage() {
     finally { setBusyId(""); }
   }
 
-  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><div className="navActions"><Link className="navLink" href="/community">Community</Link><Link className="navLink" href="/notifications">Notifications</Link><Link className="navLink" href="/dashboard">Dashboard</Link></div></nav><section className="matchesContent wrap"><p className="eyebrow">Built around reciprocity</p><h1>People to learn with.</h1><p className="adminIntro">These people can teach something you want to learn—and want to learn something you can teach.</p>{error && <p className="formError" role="alert">{error}</p>}{message && <p className="matchNotice">{message}</p>}<div className="matchGrid">{matches.map((match) => <article className="matchCard" key={match.user.id}><div className="matchPerson"><div className="matchAvatar">{match.user.fullName.slice(0, 1).toUpperCase()}</div><div><h2>{match.user.fullName}</h2><p>@{match.user.username}</p></div></div>{match.user.headline && <p className="matchHeadline">{match.user.headline}</p>}{match.user.bio && <p className="matchBio">{match.user.bio}</p>}<div className="exchangePair"><div><span>YOU CAN TEACH</span><strong>{match.suggestedExchange?.skillOfferedName}</strong></div><span className="exchangeArrow">↔</span><div><span>YOU CAN LEARN</span><strong>{match.suggestedExchange?.skillRequestedName}</strong></div></div><button className="button matchRequest" disabled={busyId === match.user.id} onClick={() => void requestExchange(match)}>{busyId === match.user.id ? "Sending…" : "Request exchange"} ↗</button></article>)}</div>{matches.length === 0 && <div className="emptyAdmin">{message || "No reciprocal matches yet. Add more teaching and learning skills to improve your chances."}<p><Link href="/onboarding">Update my skills ↗</Link></p></div>}</section></main>;
+  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><div className="navActions"><Link className="navLink" href="/community">Community</Link><Link className="navLink" href="/notifications">Notifications</Link><Link className="navLink" href="/dashboard">Dashboard</Link></div></nav><section className="matchesContent wrap"><p className="eyebrow">Built around reciprocity</p><h1>People to learn with.</h1><p className="adminIntro">These people can teach something you want to learn—and want to learn something you can teach.</p>{error && <p className="formError" role="alert">{error}</p>}{message && <p className="matchNotice">{message}</p>}{loading ? <p className="emptyAdmin" role="status">Finding people with complementary skills…</p> : <div className="matchGrid">{matches.map((match) => <article className="matchCard" key={match.user.id}><div className="matchPerson"><div className="matchAvatar">{match.user.fullName.slice(0, 1).toUpperCase()}</div><div><h2>{match.user.fullName}</h2><p>@{match.user.username}</p></div></div>{match.user.headline && <p className="matchHeadline">{match.user.headline}</p>}{match.user.bio && <p className="matchBio">{match.user.bio}</p>}<div className="exchangePair"><div><span>YOU CAN TEACH</span><strong>{match.suggestedExchange?.skillOfferedName}</strong></div><span className="exchangeArrow">↔</span><div><span>YOU CAN LEARN</span><strong>{match.suggestedExchange?.skillRequestedName}</strong></div></div><button className="button matchRequest" disabled={busyId === match.user.id} onClick={() => void requestExchange(match)}>{busyId === match.user.id ? "Sending…" : "Request exchange"} ↗</button></article>)}</div>}{!loading && matches.length === 0 && <div className="emptyAdmin">{message || "No reciprocal matches yet. Add more teaching and learning skills to improve your chances."}<p><Link href="/onboarding">Update my skills ↗</Link></p></div>}</section></main>;
 }
