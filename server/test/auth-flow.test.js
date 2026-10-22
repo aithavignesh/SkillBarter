@@ -142,6 +142,32 @@ test("phone OTP request rejects malformed phone numbers before provider access",
   assert.match((await response.json()).error, /valid mobile number/);
 });
 
+test("email OTP request uses a generic response when no active account matches", async () => {
+  const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
+  const previousEnv = Object.fromEntries(smtpKeys.map((key) => [key, process.env[key]]));
+  for (const [key, value] of Object.entries({
+    SMTP_HOST: "smtp.example.test",
+    SMTP_PORT: "587",
+    SMTP_USER: "test-user",
+    SMTP_PASSWORD: "test-password",
+    SMTP_FROM: "noreply@example.test"
+  })) process.env[key] = value;
+
+  User.findOne = () => selectedQuery(null);
+  try {
+    const response = await post("/api/auth/otp/request", { email: "unknown@example.com" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      message: "If an active account exists for that email, a sign-in code will be sent."
+    });
+  } finally {
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test("phone OTP verification rejects malformed codes before provider access", async () => {
   const response = await post("/api/auth/phone-otp/verify", { phone: "+919876543210", code: "123", purpose: "login" });
   assert.equal(response.status, 400);
