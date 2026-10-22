@@ -57,7 +57,7 @@ export default function AdminPage() {
     if (results[4].status === "fulfilled") setAnalytics(results[4].value);
     else failures.push(`Analytics: ${results[4].reason instanceof Error ? results[4].reason.message : "Unable to load analytics."}`);
 
-    const authFailure = failures.some((message) => /Authentication required|invalid or expired|account is unavailable/i.test(message));
+    const authFailure = failures.some((message) => /Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message));
     if (authFailure) {
       router.replace("/login");
       return;
@@ -67,12 +67,18 @@ export default function AdminPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  function handleActionError(error: unknown, fallback: string) {
+    const message = error instanceof Error ? error.message : fallback;
+    if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+    else setError(message);
+  }
+
   async function setUserActive(user: AdminUser) {
     setBusyId(user._id); setError("");
     try {
       await api(`/api/admin/users/${user._id}/status`, { method: "PATCH", body: JSON.stringify({ isActive: !user.isActive }) });
       await load();
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to update user."); }
+    } catch (e) { handleActionError(e, "Unable to update user."); }
     finally { setBusyId(""); }
   }
 
@@ -81,7 +87,7 @@ export default function AdminPage() {
     try {
       await api(`/api/admin/reports/${report._id}`, { method: "PATCH", body: JSON.stringify({ status, resolutionNote: report.resolutionNote || "" }) });
       await load();
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to update report."); }
+    } catch (e) { handleActionError(e, "Unable to update report."); }
     finally { setBusyId(""); }
   }
 
