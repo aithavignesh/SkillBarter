@@ -59,6 +59,7 @@ export default function LoginPage() {
 
   async function resendOtp() {
     setError("");
+    setNotice("");
     setBusy(true);
     try {
       const endpoint = mode === "phoneOtp" ? "/api/auth/phone-otp/request" : "/api/auth/otp/request";
