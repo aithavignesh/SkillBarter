@@ -97,6 +97,27 @@ test("message endpoints reject malformed IDs before database access", async () =
   assert.equal(messageUpdateCalled, false);
 });
 
+
+test("message read updates are scoped to the authenticated recipient", async () => {
+  mockAuthenticatedUser();
+  let query;
+  let update;
+  Message.findOneAndUpdate = async (filter, change) => {
+    query = filter;
+    update = change;
+    return null;
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages/${exchangeId}/read`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${tokenFor()}` }
+  });
+
+  assert.equal(response.status, 404);
+  assert.deepEqual(query, { _id: exchangeId, recipient: userId, readAt: null });
+  assert.ok(update.$set.readAt instanceof Date);
+});
+
 test("a non-participant cannot read exchange messages", async () => {
   mockAuthenticatedUser({ ...sampleUser, _id: outsiderId, id: outsiderId });
   Exchange.findById = () => ({
