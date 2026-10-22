@@ -16,7 +16,6 @@ const sampleUser = {
 };
 const originalFindById = User.findById;
 const originalExchangeFindById = Exchange.findById;
-const originalExchangeFindById = Exchange.findById;
 const originalReportCreate = Report.create;
 let server;
 let baseUrl;
@@ -30,7 +29,6 @@ baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
   User.findById = originalFindById;
-  Exchange.findById = originalExchangeFindById;
   Exchange.findById = originalExchangeFindById;
   Report.create = originalReportCreate;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
