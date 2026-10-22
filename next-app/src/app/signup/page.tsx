@@ -108,15 +108,15 @@ export default function SignupPage() {
       footer={<>Already have an account? <Link href="/login">Log in</Link></>}
     >
       <form onSubmit={submit} className="authForm">
-        <label>Full name<input autoComplete="name" required minLength={2} maxLength={100} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" /></label>
-        <label>Username<input autoComplete="username" required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]+" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Choose a username" /></label>
-        <label>Email address<input type="email" autoComplete="email" required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" /></label>
-        <label>Password<input type="password" autoComplete="new-password" required minLength={10} maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 10 characters" /></label>
-        <label>Mobile number<input type="tel" autoComplete="tel" required pattern="[+][1-9][0-9]{7,14}" value={phone} onChange={(e) => changePhone(e.target.value)} placeholder="+919876543210" aria-describedby="phone-help" /></label>
+        <label>Full name<input autoComplete="name" disabled={busy || otpBusy} required minLength={2} maxLength={100} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" /></label>
+        <label>Username<input autoComplete="username" disabled={busy || otpBusy} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_]+" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Choose a username" /></label>
+        <label>Email address<input type="email" autoComplete="email" disabled={busy || otpBusy} required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" /></label>
+        <label>Password<input type="password" autoComplete="new-password" disabled={busy || otpBusy} required minLength={10} maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 10 characters" /></label>
+        <label>Mobile number<input type="tel" autoComplete="tel" disabled={busy || otpBusy || phoneVerified} required pattern="[+][1-9][0-9]{7,14}" value={phone} onChange={(e) => changePhone(e.target.value)} placeholder="+919876543210" aria-describedby="phone-help" /></label>
         <p className="authIntro" id="phone-help">Use international format, including your country code.</p>
         {!phoneVerified && <button type="button" className="backHome" disabled={otpBusy || phone.trim().length < 8} onClick={() => void requestPhoneCode()}>{otpBusy ? "Please wait…" : phoneCodeSent ? "Resend SMS code" : "Send SMS verification code"}</button>}
         {phoneCodeSent && !phoneVerified && <>
-          <label>6-digit SMS code<input type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={phoneCode} onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, ""))} placeholder="123456" /></label>
+          <label>6-digit SMS code<input type="text" disabled={otpBusy} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={phoneCode} onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, ""))} placeholder="123456" /></label>
           <button type="button" className="backHome" disabled={otpBusy || phoneCode.length !== 6} onClick={() => void verifyPhoneCode()}>Verify mobile number</button>
         </>}
         {phoneVerified && <p role="status">Mobile number verified.</p>}
