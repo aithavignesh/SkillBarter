@@ -35,7 +35,7 @@ export default function ExchangesPage() {
       setExchanges(exchangeData.exchanges); setUserId(userData.user.id);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Unable to load exchanges.";
-      if (/Authentication required|invalid or expired|unavailable/i.test(message)) router.replace("/login");
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
       else setError(message);
     } finally {
       setLoading(false);
