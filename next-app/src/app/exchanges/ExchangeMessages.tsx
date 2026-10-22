@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Person = { _id?: string; id?: string; fullName?: string; username?: string; avatarUrl?: string };
 type Message = { _id: string; body: string; createdAt: string; readAt?: string | null; sender: Person };
@@ -17,6 +18,7 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export default function ExchangeMessages({ exchangeId, userId }: { exchangeId: string; userId: string }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
@@ -40,11 +42,13 @@ export default function ExchangeMessages({ exchangeId, userId }: { exchangeId: s
         }
       }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to load messages.");
+      const message = e instanceof Error ? e.message : "Unable to load messages.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+      else setError(message);
     } finally {
       if (!quiet) setLoading(false);
     }
-  }, [exchangeId, userId]);
+  }, [exchangeId, router, userId]);
 
   useEffect(() => {
     let active = true;
@@ -72,7 +76,9 @@ export default function ExchangeMessages({ exchangeId, userId }: { exchangeId: s
       setDraft("");
       await loadMessages(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to send message.");
+      const message = e instanceof Error ? e.message : "Unable to send message.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+      else setError(message);
     } finally {
       setSending(false);
     }
