@@ -157,11 +157,12 @@ export const Navbar: React.FC = () => {
     .sort((a, b) => b.path.length - a.path.length || Number(a.isParent) - Number(b.isParent))[0]?.path;
   const isActive = (path: string) => path === activeNavigationPath;
   const toggleNavSection = (path: string) => {
+    const isExpanded = expandedNav === path;
     setExpandedNavState({
-      path: expandedNav === path ? null : path,
-      pathname: path,
+      path: isExpanded ? null : path,
+      pathname: location.pathname,
     });
-    if (location.pathname !== path) navigate(path);
+    if (!isExpanded && location.pathname !== path) navigate(path);
   };
   useEffect(() => {
     if (!keepMobileMenuOpenOnNavigationRef.current) setShowMobileMenu(false);
@@ -575,7 +576,7 @@ if (!currentUser) {
                       <button
                         type="button"
                         onClick={() => {
-                          keepMobileMenuOpenOnNavigationRef.current = showMobileMenu && location.pathname !== item.path;
+                          keepMobileMenuOpenOnNavigationRef.current = showMobileMenu && !expanded && location.pathname !== item.path;
                           toggleNavSection(item.path);
                         }}
                         aria-current={active ? 'page' : undefined}
