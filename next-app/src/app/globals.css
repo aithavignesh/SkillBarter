@@ -68,3 +68,85 @@
 .exchangeMessageComposerFooter .button{padding:10px 13px;gap:8px;border:0;cursor:pointer;font-family:inherit}
 .exchangeMessageComposerFooter .button:disabled{opacity:.55;cursor:wait}
 @media(max-width:520px){.exchangeMessages{padding:12px}.exchangeChatMessage{max-width:100%}.exchangeMessagesHeader{align-items:flex-start;flex-direction:column;gap:4px}}
+
+
+/* Migration UI polish: keyboard access, narrow screens, and system color preference. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #8aaa4c;
+  outline-offset: 3px;
+}
+button, input, select, textarea { font: inherit; }
+button:disabled { cursor: not-allowed; }
+img, svg, video { max-width: 100%; }
+p, h1, h2, h3 { overflow-wrap: anywhere; }
+.nav { min-width: 0; }
+.navActions { min-width: 0; flex-wrap: wrap; }
+.button { min-height: 44px; }
+.authForm input, .authForm select, .authForm textarea { min-height: 46px; }
+.authForm input::placeholder { color: #89938b; opacity: 1; }
+.authForm input:disabled { opacity: .7; cursor: not-allowed; }
+.matchNotice { padding: 12px 14px; border: 1px solid #d8e6c7; border-radius: 10px; background: #f1f8e9; color: #365126; font-size: 13px; line-height: 1.6; }
+.emptyAdmin { border: 1px dashed var(--line); border-radius: 14px; padding: 24px; color: var(--muted); line-height: 1.7; }
+.emptyAdmin a { color: #536f2f; font-weight: 700; text-underline-offset: 3px; }
+.skillOption:focus-visible { position: relative; z-index: 1; }
+.onboardingFooter { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.onboardingFooter p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+@media (max-width: 760px) {
+  .wrap { width: calc(100% - 36px); }
+  .nav { height: auto; min-height: 72px; padding-block: 14px; gap: 12px; flex-wrap: wrap; }
+  .navActions { flex: 1 1 100%; justify-content: flex-start; gap: 12px 18px; }
+  .navActions .navLink { min-height: 36px; display: inline-flex; align-items: center; }
+  .dashboardWelcome { padding-top: 44px; }
+  .matchesContent, .exchangesContent, .communityContent { padding-top: 38px; }
+  .onboardingColumns { grid-template-columns: minmax(0, 1fr); }
+  .skillOptions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .onboardingFooter { align-items: stretch; }
+  .onboardingFooter .button { width: 100%; }
+}
+@media (max-width: 420px) {
+  .wrap { width: calc(100% - 28px); }
+  .brand { font-size: 23px; }
+  .navActions { gap: 8px 12px; }
+  .navActions .navLink { font-size: 12px; }
+  .skillOptions { grid-template-columns: minmax(0, 1fr); }
+  .authPage { padding-inline: 12px; }
+  .authCard { padding-inline: 18px; }
+  .heroVisual { overflow: hidden; }
+  .skillCard { max-width: 190px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8eee9;
+    --muted: #aab7ae;
+    --paper: #111713;
+    --line: #303b32;
+    --white: #19221c;
+  }
+  body { background: var(--paper); color: var(--ink); }
+  .nav, .footer, .how { border-color: var(--line); }
+  .brand span, .hero h1 em, .sectionHeading h2 em { color: #c7e98a; }
+  .navLink, .textLink, .backHome { color: var(--ink); }
+  .heroText, .step p, .footer p, .footer > span, .dashboardWelcome > p:not(.eyebrow), .adminIntro, .onboardingIntro { color: var(--muted); }
+  .skillCard, .authCard, .dashboardTiles article, .skillPicker, .matchCard, .exchangeCard, .communityCard, .notificationCard, .adminCard, .adminPanel, .emptyAdmin {
+    background: #19221c;
+    border-color: #303b32;
+    color: var(--ink);
+  }
+  .skillCard small, .matchPerson p, .matchBio, .matchHeadline { color: var(--muted); }
+  .authForm input, .authForm select, .authForm textarea, .addSkillForm input {
+    background: #111713;
+    color: var(--ink);
+    border-color: #3a493d;
+  }
+  .authForm input::placeholder, .addSkillForm input::placeholder { color: #87968b; }
+  .logoutButton { background: #19221c; border-color: var(--line); color: var(--ink); }
+  .orbit { border-color: #354236; }
+  .skillCard { box-shadow: 0 14px 45px #00000030; }
+  .matchNotice { background: #202e1d; color: #d9efc7; border-color: #405936; }
+  .formError { background: #351e1e; color: #ffc9c5; border-color: #693636; }
+  .authPage { background: radial-gradient(ellipse at 50% 0%, #263421 0%, var(--paper) 52%); }
+  .authFoot a, .emptyAdmin a { color: #c7e98a; }
+}
