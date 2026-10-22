@@ -73,7 +73,12 @@ export default function ProfilePage() {
       setBio(data.user.bio || "");
       setSuccess("Your profile has been saved.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to save your profile.");
+      const message = e instanceof Error ? e.message : "Unable to save your profile.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) {
+        router.replace("/login");
+        return;
+      }
+      setError(message);
     } finally {
       setSaving(false);
     }
