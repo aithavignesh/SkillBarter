@@ -53,7 +53,11 @@ export default function MatchesPage() {
         message: "Hi! Our skills look like a good match. Would you like to arrange a skill exchange?"
       }) });
       setMessage(`Exchange request sent to ${match.user.fullName}.`);
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to send exchange request."); }
+    } catch (e) {
+      const text = e instanceof Error ? e.message : "Unable to send exchange request.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(text)) router.replace("/login");
+      else setError(text);
+    }
     finally { setBusyId(""); }
   }
 
