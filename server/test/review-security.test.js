@@ -118,13 +118,15 @@ test("review listing is scoped to the requested user and capped at 100", async (
   authenticate();
   const revieweeId = "68f200000000000000000005";
   let filter;
+  let populatePath;
   let populateFields;
   let sortOrder;
   let limitValue;
   Review.find = (query) => {
     filter = query;
     return {
-      populate(fields) {
+      populate(path, fields) {
+        populatePath = path;
         populateFields = fields;
         return {
           sort(order) {
@@ -147,7 +149,8 @@ test("review listing is scoped to the requested user and capped at 100", async (
 
   assert.equal(response.status, 200);
   assert.deepEqual(filter, { reviewee: revieweeId });
-  assert.equal(populateFields, "reviewer fullName username avatarUrl");
+  assert.equal(populatePath, "reviewer");
+  assert.equal(populateFields, "fullName username avatarUrl");
   assert.deepEqual(sortOrder, { createdAt: -1 });
   assert.equal(limitValue, 100);
   assert.deepEqual((await response.json()).reviews, []);
