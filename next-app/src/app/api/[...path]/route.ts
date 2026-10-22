@@ -27,11 +27,15 @@ function configuredApiOrigin(): string | null {
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
-  const apiBase = configuredApiOrigin();
-  if (!apiBase) return NextResponse.json({ error: "The SkillBarter API origin is not configured correctly." }, { status: 503 });
-
   const apiPath = path.join("/");
   const isLogout = apiPath === "auth/logout" && request.method === "POST";
+  const apiBase = configuredApiOrigin();
+  if (!apiBase) {
+    const response = NextResponse.json({ error: "The SkillBarter API origin is not configured correctly." }, { status: 503 });
+    // Logout must clear the browser session even when API configuration is invalid.
+    if (isLogout) response.cookies.set(COOKIE_NAME, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+    return response;
+  }
 
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
