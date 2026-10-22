@@ -115,6 +115,27 @@ test("the first completion confirmation notifies the other participant", async (
   assert.match(notification.title, /confirmation needed/i);
 });
 
+test("repeated completion confirmation does not send duplicate notifications", async () => {
+  mockAuthenticatedUser();
+  const exchange = fakeExchange("active");
+  exchange.completedByRequester = true;
+  Exchange.findById = async () => exchange;
+  let notificationCount = 0;
+  Notification.create = async (payload) => {
+    notificationCount += 1;
+    return payload;
+  };
+
+  const response = await updateStatus({ status: "completed" });
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.awaitingOtherParticipant, true);
+  assert.equal(exchange.completedByRequester, true);
+  assert.equal(exchange.completedByRecipient, false);
+  assert.equal(notificationCount, 0);
+});
+
 test("the second participant completes the exchange after confirming", async () => {
   const recipientUser = { ...sampleUser, _id: otherUserId, id: otherUserId, fullName: "Recipient" };
   mockAuthenticatedUser(recipientUser);
