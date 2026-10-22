@@ -52,6 +52,12 @@ export default function CommunityPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  function handleActionError(error: unknown, fallback: string) {
+    const message = error instanceof Error ? error.message : fallback;
+    if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+    else setError(message);
+  }
+
   async function createPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!content.trim()) return;
@@ -62,7 +68,7 @@ export default function CommunityPage() {
       setContent("");
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to publish post.");
+      handleActionError(e, "Unable to publish post.");
     } finally {
       setBusy(false);
     }
@@ -74,7 +80,7 @@ export default function CommunityPage() {
       await api(`/api/posts/${post._id}/like`, { method: "POST" });
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to update like.");
+      handleActionError(e, "Unable to update like.");
     }
   }
 
@@ -88,7 +94,7 @@ export default function CommunityPage() {
       const data = await api<{ comments: Comment[] }>(`/api/posts/${post._id}/comments`);
       setCommentsByPost((current) => ({ ...current, [post._id]: data.comments }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to load comments.");
+      handleActionError(e, "Unable to load comments.");
       setExpandedComments((current) => ({ ...current, [post._id]: false }));
     } finally {
       setCommentBusy("");
@@ -113,7 +119,7 @@ export default function CommunityPage() {
       setCommentDrafts((current) => ({ ...current, [post._id]: "" }));
       setExpandedComments((current) => ({ ...current, [post._id]: true }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to publish comment.");
+      handleActionError(e, "Unable to publish comment.");
     } finally {
       setCommentBusy("");
     }
@@ -129,7 +135,7 @@ export default function CommunityPage() {
         [post._id]: (current[post._id] || []).filter((item) => item._id !== comment._id)
       }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to delete comment.");
+      handleActionError(e, "Unable to delete comment.");
     }
   }
 
@@ -139,7 +145,7 @@ export default function CommunityPage() {
       await api(`/api/posts/${post._id}`, { method: "DELETE" });
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to delete post.");
+      handleActionError(e, "Unable to delete post.");
     }
   }
 
