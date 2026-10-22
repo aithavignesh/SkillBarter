@@ -23,7 +23,8 @@ const originals = {
   userFindById: User.findById,
   exchangeFindById: Exchange.findById,
   blockExists: Block.exists,
-  messageCreate: Message.create
+  messageCreate: Message.create,
+  messageFind: Message.find
 };
 let server;
 let baseUrl;
@@ -40,6 +41,7 @@ after(async () => {
   Exchange.findById = originals.exchangeFindById;
   Block.exists = originals.blockExists;
   Message.create = originals.messageCreate;
+  Message.find = originals.messageFind;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -77,6 +79,52 @@ test("a non-participant cannot read exchange messages", async () => {
 
   assert.equal(response.status, 403);
   assert.match((await response.json()).error, /only exchange participants/i);
+});
+
+test("a block prevents participants from reading message history", async () => {
+  mockAuthenticatedUser();
+  Exchange.findById = () => ({
+    select: async () => ({ requester: userId, recipient: recipientId })
+  });
+  Block.exists = async () => true;
+  let messageQueryCalled = false;
+  Message.find = () => {
+    messageQueryCalled = true;
+    throw new Error("Message.find must not be called when participants are blocked");
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages/exchange/${exchangeId}`, {
+    headers: { authorization: `Bearer ${tokenFor()}` }
+  });
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /blocked the other/i);
+  assert.equal(messageQueryCalled, false);
+});
+
+test("messages cannot be sent after an exchange is cancelled or declined", async () => {
+  mockAuthenticatedUser();
+  let createCalled = false;
+  Message.create = async () => {
+    createCalled = true;
+    throw new Error("Message.create must not be called for a closed exchange");
+  };
+  Block.exists = async () => false;
+
+  for (const status of ["cancelled", "declined"]) {
+    Exchange.findById = () => mockExchange(status);
+    const response = await fetch(`${baseUrl}/api/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${tokenFor()}`
+      },
+      body: JSON.stringify({ exchangeId, body: "A follow-up message" })
+    });
+    assert.equal(response.status, 409, `messaging should be disabled for ${status} exchanges`);
+    assert.match((await response.json()).error, /messaging is disabled/i);
+  }
+  assert.equal(createCalled, false);
 });
 
 test("a block prevents a participant from sending a message", async () => {
