@@ -34,9 +34,12 @@ after(async () => {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
-const token = jwt.sign({ sub: userId, tokenVersion: 0 }, jwtSecret, {
-  expiresIn: "1h", issuer: "skillbarter-api", audience: "skillbarter-web"
-});
+function createToken() {
+  process.env.JWT_SECRET = jwtSecret;
+  return jwt.sign({ sub: userId, tokenVersion: 0 }, jwtSecret, {
+    expiresIn: "1h", issuer: "skillbarter-api", audience: "skillbarter-web"
+  });
+}
 
 test("users cannot report their own account", async () => {
   let lookupCount = 0;
@@ -55,7 +58,7 @@ test("users cannot report their own account", async () => {
   const response = await fetch(`${baseUrl}/api/reports`, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${token}`,
+      authorization: `Bearer ${createToken()}`,
       "content-type": "application/json"
     },
     body: JSON.stringify({
