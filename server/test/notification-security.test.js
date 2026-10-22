@@ -146,6 +146,21 @@ test("marking a notification read scopes by both notification and recipient", as
   assert.deepEqual(query[0], { _id: notificationId, recipient: userId });
 });
 
+test("a user cannot mark another user's notification as read", async () => {
+  authenticate();
+  let query;
+  Notification.findOneAndUpdate = async (filter) => {
+    query = filter;
+    return null;
+  };
+
+  const response = await request("PATCH", `/api/notifications/${notificationId}/read`);
+
+  assert.equal(response.status, 404);
+  assert.match((await response.json()).error, /notification not found/i);
+  assert.deepEqual(query, { _id: notificationId, recipient: userId });
+});
+
 test("notification delete rejects malformed IDs before querying storage", async () => {
   authenticate();
   let deleteCalled = false;
