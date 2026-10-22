@@ -25,13 +25,14 @@ router.post("/", reviewLimiter, async (req, res) => {
   if (typeof comment !== "string" || comment.length > 2000) return res.status(400).json({ error: "Review comment is too long." });
   const exchange = await Exchange.findById(exchangeId);
   if (!exchange) return res.status(404).json({ error: "Exchange not found." });
-  if (exchange.status !== "completed" || !exchange.completedByRequester || !exchange.completedByRecipient) {
-    return res.status(409).json({ error: "Reviews are available only after both participants complete the exchange." });
-  }
   const userId = String(req.user._id);
   const isRequester = String(exchange.requester) === userId;
   const isRecipient = String(exchange.recipient) === userId;
+  // Authorize access before exposing the exchange's completion state.
   if (!isRequester && !isRecipient) return res.status(403).json({ error: "Only exchange participants can leave a review." });
+  if (exchange.status !== "completed" || !exchange.completedByRequester || !exchange.completedByRecipient) {
+    return res.status(409).json({ error: "Reviews are available only after both participants complete the exchange." });
+  }
   const reviewee = isRequester ? exchange.recipient : exchange.requester;
   try {
     const review = await Review.create({ exchange: exchange._id, reviewer: req.user._id, reviewee, rating, comment: comment.trim() });
