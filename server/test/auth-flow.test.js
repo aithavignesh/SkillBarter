@@ -157,6 +157,30 @@ test("email OTP request rejects malformed and oversized addresses before databas
   assert.equal(databaseQueried, false);
 });
 
+test("email OTP request fails closed when mail delivery is not configured", async () => {
+  const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
+  const previousEnv = Object.fromEntries(smtpKeys.map((key) => [key, process.env[key]]));
+  for (const key of smtpKeys) delete process.env[key];
+
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    throw new Error("User lookup should not run when email delivery is unavailable.");
+  };
+
+  try {
+    const response = await post("/api/auth/otp/request", { email: "test@example.com" });
+    assert.equal(response.status, 503);
+    assert.match((await response.json()).error, /temporarily unavailable/i);
+    assert.equal(databaseQueried, false);
+  } finally {
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test("email OTP request uses a generic response when no active account matches", async () => {
   const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
   const previousEnv = Object.fromEntries(smtpKeys.map((key) => [key, process.env[key]]));
