@@ -59,7 +59,11 @@ export default function ReviewsPage() {
         const data = await api<{ reviews: Review[] }>(`/api/reviews/user/${userId}`);
         setReviews(data.reviews);
       }
-    } catch (e) { setError(e instanceof Error ? e.message : "Unable to submit review."); }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to submit review.";
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(message)) router.replace("/login");
+      else setError(message);
+    }
     finally { setBusy(false); }
   }
 
