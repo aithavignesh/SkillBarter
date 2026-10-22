@@ -19,8 +19,10 @@ export default function NotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await api<{ notifications: Notification[]; unreadCount: number }>("/api/notifications");
       setNotifications(data.notifications); setUnreadCount(data.unreadCount);
@@ -28,6 +30,8 @@ export default function NotificationsPage() {
       const message = e instanceof Error ? e.message : "Unable to load notifications.";
       if (/Authentication required|invalid or expired|unavailable/i.test(message)) router.replace("/login");
       else setError(message);
+    } finally {
+      setLoading(false);
     }
   }, [router]);
 
@@ -47,5 +51,5 @@ export default function NotificationsPage() {
     finally { setBusy(false); }
   }
 
-  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><div className="navActions"><Link className="navLink" href="/community">Community</Link><Link className="navLink" href="/dashboard">Dashboard</Link></div></nav><section className="notificationsContent wrap"><div className="notificationHeading"><div><p className="eyebrow">Stay in the loop</p><h1>Notifications.</h1><p className="adminIntro">{unreadCount} unread {unreadCount === 1 ? "update" : "updates"}.</p></div><button className="adminRefresh" disabled={busy || unreadCount === 0} onClick={() => void markAllRead()}>Mark all read</button></div>{error && <p className="formError" role="alert">{error}</p>}<div className="notificationList">{notifications.map((item) => <article className={`notificationItem ${item.readAt ? "read" : "unread"}`} key={item._id}><span className="notificationDot" /><div className="notificationBody"><div className="notificationTitleRow"><h2>{item.title}</h2><time>{new Date(item.createdAt).toLocaleString()}</time></div><p>{item.body}</p>{item.actor && <span className="notificationActor">From {item.actor.fullName} (@{item.actor.username})</span>}</div>{!item.readAt && <button className="notificationRead" disabled={busy} onClick={() => void markRead(item._id)}>Mark read</button>}</article>)}{notifications.length === 0 && <div className="emptyAdmin">You’re all caught up. New exchange requests and community activity will appear here.</div>}</div></section></main>;
+  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><div className="navActions"><Link className="navLink" href="/community">Community</Link><Link className="navLink" href="/dashboard">Dashboard</Link></div></nav><section className="notificationsContent wrap"><div className="notificationHeading"><div><p className="eyebrow">Stay in the loop</p><h1>Notifications.</h1><p className="adminIntro">{unreadCount} unread {unreadCount === 1 ? "update" : "updates"}.</p></div><button className="adminRefresh" disabled={busy || unreadCount === 0} onClick={() => void markAllRead()}>Mark all read</button></div>{error && <p className="formError" role="alert">{error}</p>}{loading ? <p className="emptyAdmin" role="status">Loading your notifications…</p> : <div className="notificationList">{notifications.map((item) => <article className={`notificationItem ${item.readAt ? "read" : "unread"}`} key={item._id}><span className="notificationDot" /><div className="notificationBody"><div className="notificationTitleRow"><h2>{item.title}</h2><time>{new Date(item.createdAt).toLocaleString()}</time></div><p>{item.body}</p>{item.actor && <span className="notificationActor">From {item.actor.fullName} (@{item.actor.username})</span>}</div>{!item.readAt && <button className="notificationRead" disabled={busy} onClick={() => void markRead(item._id)}>Mark read</button>}</article>)}{notifications.length === 0 && <div className="emptyAdmin">You’re all caught up. New exchange requests and community activity will appear here.</div>}</div>}</section></main>;
 }
