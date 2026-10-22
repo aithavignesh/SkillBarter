@@ -106,6 +106,39 @@ test("a non-participant cannot report an exchange", async () => {
   assert.equal(createCalled, false);
 });
 
+
+test("malformed report target IDs are rejected before storage lookup", async () => {
+  process.env.JWT_SECRET = jwtSecret;
+  let targetLookupCalled = false;
+  User.findById = (id) => {
+    if (String(id) === userId) return { select: async () => sampleUser };
+    targetLookupCalled = true;
+    throw new Error("Target lookup must not run for malformed IDs");
+  };
+  let createCalled = false;
+  Report.create = async () => {
+    createCalled = true;
+    throw new Error("Report.create must not run for malformed IDs");
+  };
+
+  const response = await fetch(`${baseUrl}/api/reports`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${createToken()}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      targetType: "user",
+      targetId: "not-a-valid-object-id",
+      reason: "Inappropriate behavior"
+    })
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal(targetLookupCalled, false);
+  assert.equal(createCalled, false);
+});
+
 test("invalid report reasons are rejected before target lookup", async () => {
   process.env.JWT_SECRET = jwtSecret;
   let targetLookupCalled = false;
