@@ -16,11 +16,13 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setNotice("");
     setBusy(true);
     try {
       const endpoint = mode === "password"
@@ -44,6 +46,7 @@ export default function LoginPage() {
       if (mode !== "password" && !otpSent) {
         setOtpSent(true);
         setOtpCode("");
+        setNotice(`A sign-in code has been requested. Check your ${mode === "phoneOtp" ? "phone" : "email"}.`);
         return;
       }
       router.replace("/dashboard");
@@ -68,6 +71,7 @@ export default function LoginPage() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Unable to resend your sign-in code.");
       setOtpCode("");
+      setNotice(`A new sign-in code has been requested. Check your ${mode === "phoneOtp" ? "phone" : "email"}.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to resend your sign-in code.");
     } finally {
@@ -80,6 +84,7 @@ export default function LoginPage() {
     setOtpSent(false);
     setOtpCode("");
     setError("");
+    setNotice("");
   }
 
   return (
@@ -107,6 +112,7 @@ export default function LoginPage() {
         )}
         {mode === "password" && <p className="authFoot"><Link href="/reset-password">Forgot your password?</Link></p>}
         {error && <p className="formError" role="alert">{error}</p>}
+        {notice && <p className="matchNotice" role="status">{notice}</p>}
         <button className="button authSubmit" disabled={busy}>{busy ? "Please wait…" : mode === "password" ? "Log in" : otpSent ? "Verify code & sign in" : mode === "phoneOtp" ? "Send SMS code" : "Send email code"} <span aria-hidden="true">↗</span></button>
         {mode !== "password" && otpSent && <button type="button" className="backHome" disabled={busy} onClick={() => void resendOtp()}>{busy ? "Sending…" : "Resend a code"}</button>}
       </form>
