@@ -27,8 +27,10 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState("");
   const [section, setSection] = useState<"users" | "reports" | "exchanges" | "analytics">("reports");
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     setError("");
     const failures: string[] = [];
     const results = await Promise.allSettled([
@@ -38,6 +40,7 @@ export default function AdminPage() {
       api<{ exchanges: Exchange[] }>("/api/admin/exchanges?limit=50"),
       api<Analytics>("/api/admin/analytics")
     ]);
+    setLoading(false);
 
     if (results[0].status === "fulfilled") setStats(results[0].value.stats);
     else failures.push(`Statistics: ${results[0].reason instanceof Error ? results[0].reason.message : "Unable to load statistics."}`);
@@ -82,7 +85,7 @@ export default function AdminPage() {
     finally { setBusyId(""); }
   }
 
-  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><Link className="navLink" href="/dashboard">Back to dashboard</Link></nav><section className="adminContent wrap"><p className="eyebrow">Administration</p><h1>Platform overview.</h1><p className="adminIntro">Review account activity, keep exchanges healthy, and follow up on reports.</p>{error && <p className="formError" role="alert">{error}</p>}
+  return <main className="dashboardPage"><nav className="nav wrap"><Link className="brand" href="/">skill<span>barter</span></Link><Link className="navLink" href="/dashboard">Back to dashboard</Link></nav><section className="adminContent wrap"><p className="eyebrow">Administration</p><h1>Platform overview.</h1><p className="adminIntro">Review account activity, keep exchanges healthy, and follow up on reports.</p>{error && <p className="formError" role="alert">{error}</p>}{loading && <p className="emptyAdmin" role="status">Loading platform data…</p>}
   {stats && <div className="dashboardTiles adminStats">{Object.entries(stats).map(([key, value]) => <article key={key}><span>{key.replace(/[A-Z]/g, (letter) => " " + letter).toUpperCase()}</span><h2>{value}</h2></article>)}</div>}
   <div className="adminTabs" role="tablist" aria-label="Admin sections"><button role="tab" aria-selected={section === "reports"} className={section === "reports" ? "active" : ""} onClick={() => setSection("reports")}>Reports ({reports.filter((r) => ["open", "reviewing"].includes(r.status)).length})</button><button role="tab" aria-selected={section === "users"} className={section === "users" ? "active" : ""} onClick={() => setSection("users")}>Users ({users.length})</button><button role="tab" aria-selected={section === "exchanges"} className={section === "exchanges" ? "active" : ""} onClick={() => setSection("exchanges")}>Exchanges ({exchanges.length})</button><button role="tab" aria-selected={section === "analytics"} className={section === "analytics" ? "active" : ""} onClick={() => setSection("analytics")}>Analytics</button><button className="adminRefresh" onClick={() => void load()}>Refresh ↻</button></div>
   {section === "reports" && <section className="adminPanel"><h2>Reports queue</h2>{reports.length === 0 ? <p className="emptyAdmin">No reports found.</p> : <div className="adminList">{reports.map((report) => <article className="adminItem" key={report._id}><div className="adminItemTop"><span className={`statusPill status-${report.status}`}>{report.status}</span><time>{new Date(report.createdAt).toLocaleDateString()}</time></div><h3>{report.reason}</h3><p>{report.details || "No additional details provided."}</p><div className="adminMeta">Reported by {report.reporter?.fullName || "Unknown"} · Target: {report.targetUser?.fullName || report.targetType}</div>{report.status !== "resolved" && report.status !== "dismissed" && <div className="adminActions"><button disabled={busyId === report._id} onClick={() => void setReportStatus(report, "reviewing")}>Mark reviewing</button><button disabled={busyId === report._id} onClick={() => void setReportStatus(report, "resolved")}>Resolve</button><button disabled={busyId === report._id} onClick={() => void setReportStatus(report, "dismissed")}>Dismiss</button></div>}</article>)}</div>}</section>}
