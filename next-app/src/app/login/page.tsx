@@ -54,6 +54,27 @@ export default function LoginPage() {
     }
   }
 
+  async function resendOtp() {
+    setError("");
+    setBusy(true);
+    try {
+      const endpoint = mode === "phoneOtp" ? "/api/auth/phone-otp/request" : "/api/auth/otp/request";
+      const body = mode === "phoneOtp" ? { phone, purpose: "login" } : { email };
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to resend your sign-in code.");
+      setOtpCode("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to resend your sign-in code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function switchMode() {
     setMode((current) => current === "password" ? "emailOtp" : current === "emailOtp" ? "phoneOtp" : "password");
     setOtpSent(false);
@@ -87,7 +108,7 @@ export default function LoginPage() {
         {mode === "password" && <p className="authFoot"><Link href="/reset-password">Forgot your password?</Link></p>}
         {error && <p className="formError" role="alert">{error}</p>}
         <button className="button authSubmit" disabled={busy}>{busy ? "Please wait…" : mode === "password" ? "Log in" : otpSent ? "Verify code & sign in" : mode === "phoneOtp" ? "Send SMS code" : "Send email code"} <span aria-hidden="true">↗</span></button>
-        {mode !== "password" && otpSent && <button type="button" className="backHome" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); }}>Resend a code</button>}
+        {mode !== "password" && otpSent && <button type="button" className="backHome" disabled={busy} onClick={() => void resendOtp()}>{busy ? "Sending…" : "Resend a code"}</button>}
       </form>
     </AuthShell>
   );
