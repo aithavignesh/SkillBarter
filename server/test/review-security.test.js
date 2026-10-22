@@ -55,6 +55,60 @@ async function submitReview(body) {
   });
 }
 
+
+test("non-participants cannot review a completed exchange", async () => {
+  authenticate();
+  let reviewCreateCalled = false;
+  Exchange.findById = async () => ({
+    _id: "68f200000000000000000002",
+    requester: "68f200000000000000000003",
+    recipient: "68f200000000000000000004",
+    status: "completed",
+    completedByRequester: true,
+    completedByRecipient: true
+  });
+  Review.create = async () => {
+    reviewCreateCalled = true;
+    throw new Error("Non-participants must not create reviews");
+  };
+
+  const response = await submitReview({
+    exchangeId: "68f200000000000000000002",
+    rating: 4,
+    comment: "Good exchange"
+  });
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /only exchange participants/i);
+  assert.equal(reviewCreateCalled, false);
+});
+
+test("reviews are rejected until both exchange participants complete", async () => {
+  authenticate();
+  let reviewCreateCalled = false;
+  Exchange.findById = async () => ({
+    _id: "68f200000000000000000002",
+    requester: userId,
+    recipient: "68f200000000000000000004",
+    status: "active",
+    completedByRequester: true,
+    completedByRecipient: false
+  });
+  Review.create = async () => {
+    reviewCreateCalled = true;
+    throw new Error("Incomplete exchanges must not create reviews");
+  };
+
+  const response = await submitReview({
+    exchangeId: "68f200000000000000000002",
+    rating: 4
+  });
+
+  assert.equal(response.status, 409);
+  assert.match((await response.json()).error, /only after both participants complete/i);
+  assert.equal(reviewCreateCalled, false);
+});
+
 test("review creation rejects malformed exchange IDs before database lookup", async () => {
   authenticate();
   let exchangeLookupCalled = false;
