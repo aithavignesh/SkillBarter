@@ -30,8 +30,10 @@ export default function CommunityPage() {
   const [commentsByPost, setCommentsByPost] = useState<Record<string, Comment[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [commentBusy, setCommentBusy] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const [postData, userData] = await Promise.all([
         api<{ posts: Post[] }>("/api/posts"),
@@ -43,6 +45,8 @@ export default function CommunityPage() {
       const message = e instanceof Error ? e.message : "Unable to load community.";
       if (/Authentication required|invalid or expired|unavailable/i.test(message)) router.replace("/login");
       else setError(message);
+    } finally {
+      setLoading(false);
     }
   }, [router]);
 
@@ -158,7 +162,7 @@ export default function CommunityPage() {
           <textarea id="postContent" value={content} onChange={(e) => setContent(e.target.value)} maxLength={5000} rows={4} placeholder="A skill I am practicing, a question I have, something I learned…" />
           <div className="composerFooter"><span>{content.length}/5000</span><button className="button" disabled={busy || !content.trim()}>{busy ? "Publishing…" : "Publish post"} ↗</button></div>
         </form>
-        <div className="communityFeed">
+        {loading ? <p className="emptyAdmin" role="status">Loading community posts…</p> : <div className="communityFeed">
           {posts.map((post) => {
             const authorId = post.author?._id || post.author?.id || "";
             const liked = post.likes?.some((id) => String(id) === String(userId));
@@ -205,7 +209,7 @@ export default function CommunityPage() {
             );
           })}
           {posts.length === 0 && <div className="emptyAdmin">No community posts yet. Be the first to share something useful.</div>}
-        </div>
+        </div>}
       </section>
     </main>
   );
