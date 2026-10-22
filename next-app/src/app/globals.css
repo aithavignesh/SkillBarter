@@ -150,3 +150,37 @@ p, h1, h2, h3 { overflow-wrap: anywhere; }
   .authPage { background: radial-gradient(ellipse at 50% 0%, #263421 0%, var(--paper) 52%); }
   .authFoot a, .emptyAdmin a { color: #c7e98a; }
 }
+
+
+/* Profile editor and public-facing skill summary. */
+.profileContent { padding-top: 56px; padding-bottom: 84px; }
+.profileLayout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 28px; align-items: start; margin-top: 30px; }
+.profileForm, .profileSummary { min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: var(--white); }
+.profileForm { display: grid; gap: 18px; }
+.profileForm label { display: grid; gap: 8px; font-size: 13px; font-weight: 700; }
+.profileForm input, .profileForm textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 12px 13px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 400; }
+.profileForm input { min-height: 46px; }
+.profileForm textarea { resize: vertical; line-height: 1.65; }
+.profileForm input[readonly] { opacity: .72; cursor: not-allowed; }
+.profileForm label:has(textarea) { position: relative; }
+.profileCharacterCount { color: var(--muted); font-size: 11px; font-weight: 400; text-align: right; }
+.profileSummary { padding: 30px; }
+.profileAvatar { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #e7f1d8; color: #38532a; font-size: 28px; font-weight: 700; }
+.profileSummary h2 { margin: 18px 0 4px; font-size: 25px; letter-spacing: -.04em; }
+.profileUsername { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.profileSummary > p:not(.profileUsername) { color: var(--muted); line-height: 1.6; }
+.profileMetrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 22px 0; }
+.profileMetrics > div { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.profileMetrics strong { font-size: 23px; }
+.profileMetrics span { color: var(--muted); font-size: 11px; }
+.profileSummary h3 { margin: 22px 0 10px; font-size: 13px; }
+.profileSkillList { display: flex; flex-wrap: wrap; gap: 7px; }
+.profileSkillList span { padding: 6px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); font-size: 12px; }
+.profileSummary > .textLink { display: inline-flex; margin-top: 24px; }
+@media (max-width: 760px) { .profileLayout { grid-template-columns: minmax(0, 1fr); } .profileContent { padding-top: 38px; } .profileForm, .profileSummary { padding: 22px; } }
+@media (prefers-color-scheme: dark) {
+  .profileForm, .profileSummary { background: #19221c; border-color: #303b32; }
+  .profileForm input, .profileForm textarea { background: #111713; border-color: #3a493d; color: var(--ink); }
+  .profileAvatar { background: #2b3c23; color: #d4edb6; }
+  .profileSkillList span, .profileMetrics > div { border-color: #3a493d; }
+}
