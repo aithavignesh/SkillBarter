@@ -56,16 +56,16 @@ async function submitReview(body) {
 }
 
 
-test("non-participants cannot review a completed exchange", async () => {
+test("non-participants cannot inspect completion state or submit reviews", async () => {
   authenticate();
   let reviewCreateCalled = false;
   Exchange.findById = async () => ({
     _id: "68f200000000000000000002",
     requester: "68f200000000000000000003",
     recipient: "68f200000000000000000004",
-    status: "completed",
+    status: "active",
     completedByRequester: true,
-    completedByRecipient: true
+    completedByRecipient: false
   });
   Review.create = async () => {
     reviewCreateCalled = true;
