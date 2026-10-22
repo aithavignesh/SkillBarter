@@ -104,6 +104,7 @@ test("a non-participant cannot report an exchange", async () => {
 });
 
 test("invalid report reasons are rejected before target lookup", async () => {
+  process.env.JWT_SECRET = jwtSecret;
   let targetLookupCalled = false;
   User.findById = (id) => {
     if (String(id) === userId) return { select: async () => sampleUser };
