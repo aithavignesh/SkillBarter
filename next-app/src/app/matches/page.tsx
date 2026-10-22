@@ -33,7 +33,7 @@ export default function MatchesPage() {
       setMessage(data.message || "");
     } catch (e) {
       const text = e instanceof Error ? e.message : "Unable to load matches.";
-      if (/Authentication required|invalid or expired|unavailable/i.test(text)) router.replace("/login");
+      if (/Authentication required|invalid or expired|session has been revoked|account is unavailable/i.test(text)) router.replace("/login");
       else setError(text);
     } finally {
       setLoading(false);
