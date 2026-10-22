@@ -106,6 +106,11 @@ router.patch("/:id/status", exchangeLimiter, async (req, res) => {
     if (blocked) return res.status(403).json({ error: "This exchange cannot start because one participant has blocked the other." });
   } else if (nextStatus === "completed") {
     if (!["active", "scheduled"].includes(exchange.status)) return res.status(409).json({ error: "Only active or scheduled exchanges can be completed." });
+    // Repeated completion submissions must not create duplicate confirmation notifications.
+    if ((requester && exchange.completedByRequester && !exchange.completedByRecipient) ||
+        (recipient && exchange.completedByRecipient && !exchange.completedByRequester)) {
+      return res.json({ exchange, awaitingOtherParticipant: true });
+    }
     if (requester) exchange.completedByRequester = true;
     if (recipient) exchange.completedByRecipient = true;
     if (!exchange.completedByRequester || !exchange.completedByRecipient) {
