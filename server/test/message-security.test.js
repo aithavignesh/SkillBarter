@@ -304,3 +304,28 @@ test("a recipient can mark their unread message as read", async () => {
   });
 });
 
+test("message sending rejects invalid bodies before exchange lookup", async () => {
+  mockAuthenticatedUser();
+  let exchangeLookupCalled = false;
+  Exchange.findById = () => {
+    exchangeLookupCalled = true;
+    throw new Error("Invalid message bodies must be rejected before exchange lookup");
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${tokenFor()}`
+    },
+    body: JSON.stringify({
+      exchangeId,
+      body: { unexpected: "object" }
+    })
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /1–5000 characters/i);
+  assert.equal(exchangeLookupCalled, false);
+});
+
