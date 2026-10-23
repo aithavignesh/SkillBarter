@@ -328,7 +328,7 @@ test("an accepted exchange rejects an invalid scheduling date before block looku
   const response = await updateStatus({ status: "scheduled", scheduledAt: "not-a-date" });
 
   assert.equal(response.status, 400);
-  assert.match((await response.json()).error, /valid date/i);
+  assert.match((await response.json()).error, /future date and time/i);
   assert.equal(blockLookupCalled, false);
   assert.equal(saveCalled, false);
   assert.equal(exchange.status, "accepted");
