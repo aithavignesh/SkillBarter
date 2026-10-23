@@ -118,6 +118,31 @@ test("notification listing caps oversized page limits", async () => {
   assert.equal(requestedLimit, 100);
 });
 
+test("notification listing clamps negative page limits to one", async () => {
+  authenticate();
+  let requestedLimit;
+  Notification.find = () => ({
+    populate() {
+      return {
+        sort() {
+          return {
+            limit: async (limit) => {
+              requestedLimit = limit;
+              return [];
+            }
+          };
+        }
+      };
+    }
+  });
+  Notification.countDocuments = async () => 0;
+
+  const response = await request("GET", "/api/notifications?limit=-10");
+
+  assert.equal(response.status, 200);
+  assert.equal(requestedLimit, 1);
+});
+
 test("marking all notifications read scopes the update to the current user", async () => {
   authenticate();
   let query;
