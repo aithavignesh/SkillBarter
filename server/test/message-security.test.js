@@ -278,3 +278,29 @@ test("message history is scoped to the exchange and bounded newest-safe chronolo
   assert.equal(resultLimit, 500);
 });
 
+test("a recipient can mark their unread message as read", async () => {
+  mockAuthenticatedUser();
+  const readAt = new Date();
+  const updatedMessage = { _id: exchangeId, recipient: userId, readAt };
+  let query;
+  let update;
+  Message.findOneAndUpdate = async (filter, change, options) => {
+    query = filter;
+    update = change;
+    assert.deepEqual(options, { new: true });
+    return updatedMessage;
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages/${exchangeId}/read`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${tokenFor()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(query, { _id: exchangeId, recipient: userId, readAt: null });
+  assert.ok(update.$set.readAt instanceof Date);
+  assert.deepEqual((await response.json()).message, {
+    _id: exchangeId, recipient: userId, readAt: readAt.toISOString()
+  });
+});
+
