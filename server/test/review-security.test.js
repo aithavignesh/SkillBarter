@@ -245,3 +245,29 @@ test("review creation rejects invalid ratings before exchange lookup", async () 
   assert.equal(exchangeLookupCalled, false);
   assert.equal(reviewCreateCalled, false);
 });
+
+test("review creation rejects oversized comments before exchange lookup", async () => {
+  authenticate();
+  let exchangeLookupCalled = false;
+  Exchange.findById = async () => {
+    exchangeLookupCalled = true;
+    throw new Error("Exchange lookup must not run for oversized comments");
+  };
+  let reviewCreateCalled = false;
+  Review.create = async () => {
+    reviewCreateCalled = true;
+    throw new Error("Review creation must not run for oversized comments");
+  };
+
+  const response = await submitReview({
+    exchangeId: "68f200000000000000000002",
+    rating: 5,
+    comment: "x".repeat(2001)
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /comment is too long/i);
+  assert.equal(exchangeLookupCalled, false);
+  assert.equal(reviewCreateCalled, false);
+});
+
