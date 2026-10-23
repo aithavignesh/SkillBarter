@@ -425,3 +425,21 @@ test("password reset rejects expired or already-consumed tokens", async () => {
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /invalid or expired/);
 });
+
+test("password login rejects a phone number in the email field before database access", async () => {
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    throw new Error("Database lookup must not run for a phone number supplied as email.");
+  };
+
+  const response = await post("/api/auth/login", {
+    email: "+919876543210",
+    password: "long-enough-password"
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /enter your email and password/i);
+  assert.equal(databaseQueried, false);
+});
+
