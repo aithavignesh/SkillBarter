@@ -238,6 +238,32 @@ test("an accepted exchange cannot be scheduled for a past date", async () => {
   assert.equal(blockLookupCalled, false);
 });
 
+test("an accepted exchange can be scheduled when no block exists", async () => {
+  mockAuthenticatedUser();
+  const exchange = fakeExchange("accepted");
+  let saveCalled = false;
+  exchange.save = async () => { saveCalled = true; };
+  Exchange.findById = async () => exchange;
+  let blockQuery;
+  Block.exists = async (query) => {
+    blockQuery = query;
+    return false;
+  };
+  Notification.create = async (payload) => payload;
+  const scheduledAt = new Date(Date.now() + 60 * 60 * 1000);
+
+  const response = await updateStatus({
+    status: "scheduled",
+    scheduledAt: scheduledAt.toISOString()
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(saveCalled, true);
+  assert.equal(exchange.status, "scheduled");
+  assert.equal(exchange.scheduledAt.toISOString(), scheduledAt.toISOString());
+  assert.equal(blockQuery.$or.length, 2);
+});
+
 test("a block created after acceptance prevents scheduling", async () => {
   mockAuthenticatedUser();
   Exchange.findById = async () => fakeExchange("accepted");
