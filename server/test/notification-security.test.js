@@ -175,10 +175,19 @@ test("notification delete rejects malformed IDs before querying storage", async 
   assert.equal(deleteCalled, false);
 });
 
-test("notification read rejects malformed IDs", async () => {
+test("notification read rejects malformed IDs before querying storage", async () => {
   authenticate();
+  let lookupCalled = false;
+  Notification.findOneAndUpdate = async () => {
+    lookupCalled = true;
+    throw new Error("Malformed notification IDs must be rejected before lookup");
+  };
+
   const response = await request("PATCH", "/api/notifications/not-an-id/read");
+
   assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /invalid notification ID/i);
+  assert.equal(lookupCalled, false);
 });
 
 test("notification delete scopes by recipient and returns not found for another user's notification", async () => {
