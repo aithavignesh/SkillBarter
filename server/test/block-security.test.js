@@ -125,9 +125,16 @@ test("a user cannot block their own account before looking up the target", async
 
 test("blocking a nonexistent or inactive account returns not found", async () => {
   mockAuthenticatedUser();
-  User.findOne = () => ({ select: async () => null });
+  let targetFilter;
+  User.findOne = (filter) => {
+    targetFilter = filter;
+    return { select: async () => null };
+  };
+
   const response = await request("POST", `/api/blocks/${otherUserId}`);
+
   assert.equal(response.status, 404);
+  assert.deepEqual(targetFilter, { _id: otherUserId, isActive: true });
 });
 
 test("blocking a valid account creates a block record", async () => {
