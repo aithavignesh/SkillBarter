@@ -118,6 +118,31 @@ test("notification listing falls back to the default limit for invalid values", 
   assert.equal(requestedLimit, 30);
 });
 
+test("notification listing rejects partially numeric limits", async () => {
+  authenticate();
+  let requestedLimit;
+  Notification.find = () => ({
+    populate() {
+      return {
+        sort() {
+          return {
+            limit: async (limit) => {
+              requestedLimit = limit;
+              return [];
+            }
+          };
+        }
+      };
+    }
+  });
+  Notification.countDocuments = async () => 0;
+
+  const response = await request("GET", "/api/notifications?limit=10abc");
+
+  assert.equal(response.status, 200);
+  assert.equal(requestedLimit, 30);
+});
+
 test("notification listing uses the default limit when zero is requested", async () => {
   authenticate();
   let requestedLimit;
