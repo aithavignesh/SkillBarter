@@ -311,3 +311,24 @@ test("an accepted exchange cannot be scheduled more than 180 days ahead", async 
   assert.equal(exchange.status, "accepted");
 });
 
+test("an accepted exchange rejects an invalid scheduling date before block lookup", async () => {
+  mockAuthenticatedUser();
+  const exchange = fakeExchange("accepted");
+  let saveCalled = false;
+  exchange.save = async () => { saveCalled = true; };
+  Exchange.findById = async () => exchange;
+  let blockLookupCalled = false;
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    return false;
+  };
+
+  const response = await updateStatus({ status: "scheduled", scheduledAt: "not-a-date" });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /valid date/i);
+  assert.equal(blockLookupCalled, false);
+  assert.equal(saveCalled, false);
+  assert.equal(exchange.status, "accepted");
+});
+
