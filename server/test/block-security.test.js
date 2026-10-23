@@ -158,17 +158,28 @@ test("blocking a valid account creates a block record", async () => {
   assert.equal(String(created.blocked), otherUserId);
 });
 
-test("blocking an already blocked account returns conflict", async () => {
+test("blocking an already blocked account returns conflict without leaking duplicate-key details", async () => {
   mockAuthenticatedUser();
-  User.findOne = () => ({ select: async () => ({ _id: otherUserId }) });
-  Block.create = async () => {
-    const error = new Error("duplicate");
+  let targetFilter;
+  let attemptedRecord;
+  User.findOne = (filter) => {
+    targetFilter = filter;
+    return { select: async () => ({ _id: otherUserId }) };
+  };
+  Block.create = async (record) => {
+    attemptedRecord = record;
+    const error = new Error("duplicate key value violates unique index");
     error.code = 11000;
     throw error;
   };
 
   const response = await request("POST", `/api/blocks/${otherUserId}`);
+
   assert.equal(response.status, 409);
+  assert.match((await response.json()).error, /already blocked/i);
+  assert.deepEqual(targetFilter, { _id: otherUserId, isActive: true });
+  assert.equal(String(attemptedRecord.blocker), userId);
+  assert.equal(String(attemptedRecord.blocked), otherUserId);
 });
 
 test("unblocking only removes the current user's block relationship", async () => {
