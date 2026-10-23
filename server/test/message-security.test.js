@@ -432,3 +432,29 @@ test("message history returns not found without block lookup when exchange is mi
   assert.equal(messageHistoryLookupCalled, false);
 });
 
+test("message history is denied to outsiders before block or history lookup", async () => {
+  mockAuthenticatedUser({ ...sampleUser, _id: outsiderId, id: outsiderId });
+  let blockLookupCalled = false;
+  let historyLookupCalled = false;
+  Exchange.findById = () => ({ select: async () => ({
+    _id: exchangeId, requester: userId, recipient: recipientId
+  }) });
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    throw new Error("Outsiders must be rejected before block lookup");
+  };
+  Message.find = () => {
+    historyLookupCalled = true;
+    throw new Error("Outsiders must not query message history");
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages/exchange/${exchangeId}`, {
+    headers: { authorization: `Bearer ${tokenFor(outsiderId)}` }
+  });
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /only exchange participants/i);
+  assert.equal(blockLookupCalled, false);
+  assert.equal(historyLookupCalled, false);
+});
+
