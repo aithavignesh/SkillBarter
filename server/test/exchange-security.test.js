@@ -185,6 +185,22 @@ test("the requester cannot accept or decline their own pending exchange", async 
   }
 });
 
+test("the recipient cannot cancel an accepted exchange", async () => {
+  const recipientUser = { ...sampleUser, _id: otherUserId, id: otherUserId, fullName: "Recipient" };
+  mockAuthenticatedUser(recipientUser);
+  const exchange = fakeExchange("accepted");
+  let saveCalled = false;
+  exchange.save = async () => { saveCalled = true; };
+  Exchange.findById = async () => exchange;
+
+  const response = await updateStatus({ status: "cancelled" }, tokenFor(otherUserId));
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /cannot be cancelled by you/i);
+  assert.equal(saveCalled, false);
+  assert.equal(exchange.status, "accepted");
+});
+
 test("an exchange cannot jump directly from pending to active", async () => {
   mockAuthenticatedUser();
   Exchange.findById = async () => fakeExchange("pending");
