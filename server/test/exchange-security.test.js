@@ -366,3 +366,31 @@ test("exchange requests reject self-targeting before database lookups", async ()
   assert.equal(blockLookupCalled, false);
 });
 
+test("exchange requests reject oversized messages before skill lookups", async () => {
+  mockAuthenticatedUser();
+  let recipientLookupCalled = false;
+  User.findOne = () => {
+    recipientLookupCalled = true;
+    throw new Error("Oversized exchange messages must be rejected before recipient lookup");
+  };
+  Block.exists = async () => false;
+
+  const response = await fetch(`${baseUrl}/api/exchanges`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      recipientId: otherUserId,
+      skillOfferedId: "68f000000000000000000005",
+      skillRequestedId: "68f000000000000000000006",
+      message: "x".repeat(2001)
+    })
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /2000 characters or fewer/i);
+  assert.equal(recipientLookupCalled, false);
+});
+
