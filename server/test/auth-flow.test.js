@@ -443,3 +443,24 @@ test("password login rejects a phone number in the email field before database a
   assert.equal(databaseQueried, false);
 });
 
+test("password reset rejects malformed tokens and weak passwords before database access", async () => {
+  let tokenLookupCalled = false;
+  PasswordResetToken.findOneAndDelete = () => {
+    tokenLookupCalled = true;
+    throw new Error("Reset-token lookup must not run for invalid reset input.");
+  };
+
+  const invalidInputs = [
+    { token: "not-a-token", password: "new-long-password" },
+    { token: "d".repeat(64), password: "short" },
+    { token: "d".repeat(64), password: "x".repeat(129) }
+  ];
+
+  for (const body of invalidInputs) {
+    const response = await post("/api/auth/password-reset/confirm", body);
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /valid reset token and a password/i);
+  }
+  assert.equal(tokenLookupCalled, false);
+});
+
