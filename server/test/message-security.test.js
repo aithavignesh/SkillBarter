@@ -329,3 +329,28 @@ test("message sending rejects invalid bodies before exchange lookup", async () =
   assert.equal(exchangeLookupCalled, false);
 });
 
+test("message sending rejects blank and oversized bodies before exchange lookup", async () => {
+  mockAuthenticatedUser();
+  let exchangeLookupCalled = false;
+  Exchange.findById = () => {
+    exchangeLookupCalled = true;
+    throw new Error("Invalid message lengths must be rejected before exchange lookup");
+  };
+
+  const send = (body) => fetch(`${baseUrl}/api/messages`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${tokenFor()}`
+    },
+    body: JSON.stringify({ exchangeId, body })
+  });
+
+  const blankResponse = await send("   ");
+  const oversizedResponse = await send("x".repeat(5001));
+
+  assert.equal(blankResponse.status, 400);
+  assert.equal(oversizedResponse.status, 400);
+  assert.equal(exchangeLookupCalled, false);
+});
+
