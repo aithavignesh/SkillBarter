@@ -503,3 +503,35 @@ test("password reset request uses the same generic response for unknown accounts
   }
 });
 
+test("email OTP verification refuses to issue a session if another request consumed the code", async () => {
+  const challenge = {
+    _id: "68f000000000000000000097",
+    codeHash: hashEmailOtp("test@example.com", "123456"),
+    attempts: 0
+  };
+  EmailOtpChallenge.findOne = () => ({
+    select() {
+      return { sort: async () => challenge };
+    }
+  });
+  EmailOtpChallenge.findOneAndUpdate = async (query, update, options) => {
+    assert.equal(query._id, challenge._id);
+    assert.equal(query.consumedAt, null);
+    assert.ok(query.expiresAt.$gt instanceof Date);
+    assert.deepEqual(query.attempts, { $lt: 5 });
+    assert.ok(update.$set.consumedAt instanceof Date);
+    assert.equal(options.new, true);
+    return null;
+  };
+  let userLookupCalled = false;
+  User.findOne = () => {
+    userLookupCalled = true;
+    throw new Error("A session must not be issued when OTP consumption loses a race.");
+  };
+
+  const response = await post("/api/auth/otp/verify", { email: "test@example.com", code: "123456" });
+  assert.equal(response.status, 401);
+  assert.match((await response.json()).error, /invalid or expired/i);
+  assert.equal(userLookupCalled, false);
+});
+
