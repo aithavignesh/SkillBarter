@@ -354,3 +354,28 @@ test("message sending rejects blank and oversized bodies before exchange lookup"
   assert.equal(exchangeLookupCalled, false);
 });
 
+test("message sending rejects malformed exchange IDs before database lookup", async () => {
+  mockAuthenticatedUser();
+  let exchangeLookupCalled = false;
+  Exchange.findById = () => {
+    exchangeLookupCalled = true;
+    throw new Error("Malformed message exchange IDs must be rejected before lookup");
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${tokenFor()}`
+    },
+    body: JSON.stringify({
+      exchangeId: "not-an-object-id",
+      body: "Hello"
+    })
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /valid exchange ID/i);
+  assert.equal(exchangeLookupCalled, false);
+});
+
