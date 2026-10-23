@@ -7,7 +7,9 @@ const router = Router();
 router.use(requireAuth);
 
 router.get("/", async (req, res) => {
-  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 30, 1), 100);
+  const rawLimit = req.query.limit;
+  const parsedLimit = typeof rawLimit === "string" && /^-?\\d+$/.test(rawLimit) ? Number(rawLimit) : 0;
+  const limit = Math.min(Math.max(parsedLimit || 30, 1), 100);
   const [notifications, unreadCount] = await Promise.all([
     Notification.find({ recipient: req.user._id }).populate("actor", "fullName username avatarUrl").sort({ createdAt: -1 }).limit(limit),
     Notification.countDocuments({ recipient: req.user._id, readAt: null })
