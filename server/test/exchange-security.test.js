@@ -29,6 +29,7 @@ const sampleUser = {
 };
 
 const originalUserFindById = User.findById;
+const originalUserFindOne = User.findOne;
 const originalExchangeFindById = Exchange.findById;
 const originalBlockExists = Block.exists;
 const originalNotificationCreate = Notification.create;
@@ -50,6 +51,7 @@ baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 after(async () => {
   User.findById = originalUserFindById;
+  User.findOne = originalUserFindOne;
   Exchange.findById = originalExchangeFindById;
   Block.exists = originalBlockExists;
   Notification.create = originalNotificationCreate;
