@@ -469,12 +469,14 @@ test("exchange requests reject blocked relationships before skill lookups", asyn
   mockAuthenticatedUser();
   let recipientLookupCalled = false;
   let blockLookupCalled = false;
+  let blockFilter;
   User.findOne = () => {
     recipientLookupCalled = true;
     throw new Error("Blocked exchange requests must be rejected before recipient lookup");
   };
-  Block.exists = async () => {
+  Block.exists = async (filter) => {
     blockLookupCalled = true;
+    blockFilter = filter;
     return true;
   };
 
@@ -495,6 +497,12 @@ test("exchange requests reject blocked relationships before skill lookups", asyn
   assert.equal(response.status, 403);
   assert.match((await response.json()).error, /blocked relationship/i);
   assert.equal(blockLookupCalled, true);
+  assert.deepEqual(blockFilter, {
+    $or: [
+      { blocker: userId, blocked: otherUserId },
+      { blocker: otherUserId, blocked: userId }
+    ]
+  });
   assert.equal(recipientLookupCalled, false);
 });
 
