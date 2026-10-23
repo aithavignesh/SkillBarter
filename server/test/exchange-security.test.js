@@ -394,3 +394,36 @@ test("exchange requests reject oversized messages before skill lookups", async (
   assert.equal(recipientLookupCalled, false);
 });
 
+test("exchange requests reject malformed IDs before database lookups", async () => {
+  mockAuthenticatedUser();
+  let recipientLookupCalled = false;
+  let blockLookupCalled = false;
+  User.findOne = () => {
+    recipientLookupCalled = true;
+    throw new Error("Malformed exchange IDs must be rejected before recipient lookup");
+  };
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    throw new Error("Malformed exchange IDs must be rejected before block lookup");
+  };
+
+  const response = await fetch(`${baseUrl}/api/exchanges`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      recipientId: "not-an-object-id",
+      skillOfferedId: "68f000000000000000000005",
+      skillRequestedId: "68f000000000000000000006",
+      message: "Please exchange skills with me."
+    })
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /IDs are required/i);
+  assert.equal(recipientLookupCalled, false);
+  assert.equal(blockLookupCalled, false);
+});
+
