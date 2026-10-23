@@ -249,3 +249,26 @@ test("a block created after acceptance prevents scheduling", async () => {
   assert.equal(response.status, 403);
   assert.match((await response.json()).error, /cannot be scheduled/);
 });
+
+test("exchange status rejects malformed IDs before database lookup", async () => {
+  mockAuthenticatedUser();
+  let lookupCalled = false;
+  Exchange.findById = () => {
+    lookupCalled = true;
+    throw new Error("Exchange lookup must not run for malformed IDs");
+  };
+
+  const response = await fetch(`${baseUrl}/api/exchanges/not-an-id/status`, {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ status: "accepted" })
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /invalid exchange id/i);
+  assert.equal(lookupCalled, false);
+});
+
