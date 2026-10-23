@@ -287,3 +287,27 @@ test("exchange status rejects unsupported transitions before database lookup", a
   assert.equal(lookupCalled, false);
 });
 
+test("an accepted exchange cannot be scheduled more than 180 days ahead", async () => {
+  mockAuthenticatedUser();
+  const exchange = fakeExchange("accepted");
+  let saveCalled = false;
+  exchange.save = async () => { saveCalled = true; };
+  Exchange.findById = async () => exchange;
+  let blockLookupCalled = false;
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    return false;
+  };
+
+  const response = await updateStatus({
+    status: "scheduled",
+    scheduledAt: new Date(Date.now() + 181 * 24 * 60 * 60 * 1000).toISOString()
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /180 days/i);
+  assert.equal(blockLookupCalled, false);
+  assert.equal(saveCalled, false);
+  assert.equal(exchange.status, "accepted");
+});
+
