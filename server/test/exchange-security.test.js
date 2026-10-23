@@ -432,3 +432,36 @@ test("exchange requests reject malformed IDs before database lookups", async () 
   assert.equal(blockLookupCalled, false);
 });
 
+test("exchange requests reject non-string messages before database lookups", async () => {
+  mockAuthenticatedUser();
+  let recipientLookupCalled = false;
+  let blockLookupCalled = false;
+  User.findOne = () => {
+    recipientLookupCalled = true;
+    throw new Error("Non-string messages must be rejected before recipient lookup");
+  };
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    throw new Error("Non-string messages must be rejected before block lookup");
+  };
+
+  const response = await fetch(`${baseUrl}/api/exchanges`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      recipientId: otherUserId,
+      skillOfferedId: "68f000000000000000000005",
+      skillRequestedId: "68f000000000000000000006",
+      message: { unexpected: "object" }
+    })
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /2000 characters or fewer/i);
+  assert.equal(recipientLookupCalled, false);
+  assert.equal(blockLookupCalled, false);
+});
+
