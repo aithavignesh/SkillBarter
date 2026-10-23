@@ -314,6 +314,24 @@ test("a recipient can mark their unread message as read", async () => {
   });
 });
 
+test("marking a message as read rejects malformed IDs before database lookup", async () => {
+  mockAuthenticatedUser();
+  let lookupCalled = false;
+  Message.findOneAndUpdate = async () => {
+    lookupCalled = true;
+    throw new Error("Malformed message IDs must be rejected before database lookup");
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages/not-an-object-id/read`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${tokenFor()}` }
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /invalid message ID/i);
+  assert.equal(lookupCalled, false);
+});
+
 test("a non-recipient cannot mark another user's message as read", async () => {
   mockAuthenticatedUser({ ...sampleUser, _id: outsiderId, id: outsiderId });
   let query;
