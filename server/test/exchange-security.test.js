@@ -465,3 +465,36 @@ test("exchange requests reject non-string messages before database lookups", asy
   assert.equal(blockLookupCalled, false);
 });
 
+test("exchange requests reject blocked relationships before skill lookups", async () => {
+  mockAuthenticatedUser();
+  let recipientLookupCalled = false;
+  let blockLookupCalled = false;
+  User.findOne = () => {
+    recipientLookupCalled = true;
+    throw new Error("Blocked exchange requests must be rejected before recipient lookup");
+  };
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    return true;
+  };
+
+  const response = await fetch(`${baseUrl}/api/exchanges`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      recipientId: otherUserId,
+      skillOfferedId: "68f000000000000000000005",
+      skillRequestedId: "68f000000000000000000006",
+      message: "Let's exchange skills."
+    })
+  });
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /blocked relationship/i);
+  assert.equal(blockLookupCalled, true);
+  assert.equal(recipientLookupCalled, false);
+});
+
