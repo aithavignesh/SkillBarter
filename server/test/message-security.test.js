@@ -408,3 +408,27 @@ test("message sending returns not found without block lookup when exchange is mi
   assert.equal(messageCreateCalled, false);
 });
 
+test("message history returns not found without block lookup when exchange is missing", async () => {
+  mockAuthenticatedUser();
+  let blockLookupCalled = false;
+  let messageHistoryLookupCalled = false;
+  Exchange.findById = () => ({ select: async () => null });
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    throw new Error("Missing exchanges must be rejected before history block lookup");
+  };
+  Message.find = () => {
+    messageHistoryLookupCalled = true;
+    throw new Error("Missing exchanges must not query message history");
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages/exchange/${exchangeId}`, {
+    headers: { authorization: `Bearer ${tokenFor()}` }
+  });
+
+  assert.equal(response.status, 404);
+  assert.match((await response.json()).error, /exchange not found/i);
+  assert.equal(blockLookupCalled, false);
+  assert.equal(messageHistoryLookupCalled, false);
+});
+
