@@ -93,6 +93,31 @@ test("notification listing scopes results and unread count to the current user",
   assert.equal(body.notifications.length, 1);
 });
 
+test("notification listing falls back to the default limit for invalid values", async () => {
+  authenticate();
+  let requestedLimit;
+  Notification.find = () => ({
+    populate() {
+      return {
+        sort() {
+          return {
+            limit: async (limit) => {
+              requestedLimit = limit;
+              return [];
+            }
+          };
+        }
+      };
+    }
+  });
+  Notification.countDocuments = async () => 0;
+
+  const response = await request("GET", "/api/notifications?limit=invalid");
+
+  assert.equal(response.status, 200);
+  assert.equal(requestedLimit, 30);
+});
+
 test("notification listing caps oversized page limits", async () => {
   authenticate();
   let requestedLimit;
