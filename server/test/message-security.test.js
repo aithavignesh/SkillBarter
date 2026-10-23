@@ -181,7 +181,11 @@ test("messages cannot be sent after an exchange is cancelled or declined", async
 test("a block prevents a participant from sending a message", async () => {
   mockAuthenticatedUser();
   Exchange.findById = () => mockExchange("active");
-  Block.exists = async () => true;
+  let blockFilter;
+  Block.exists = async (filter) => {
+    blockFilter = filter;
+    return true;
+  };
   let createCalled = false;
   Message.create = async () => {
     createCalled = true;
@@ -199,6 +203,12 @@ test("a block prevents a participant from sending a message", async () => {
 
   assert.equal(response.status, 403);
   assert.match((await response.json()).error, /blocked the other/i);
+  assert.deepEqual(blockFilter, {
+    $or: [
+      { blocker: userId, blocked: recipientId },
+      { blocker: recipientId, blocked: userId }
+    ]
+  });
   assert.equal(createCalled, false);
 });
 
