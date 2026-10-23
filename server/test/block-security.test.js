@@ -108,11 +108,19 @@ test("block and unblock reject malformed user IDs before storage access", async 
   assert.equal(deleteLookupCalled, false);
 });
 
-test("a user cannot block their own account", async () => {
+test("a user cannot block their own account before looking up the target", async () => {
   mockAuthenticatedUser();
+  let targetLookupCalled = false;
+  User.findOne = () => {
+    targetLookupCalled = true;
+    throw new Error("Self-block requests must be rejected before target lookup");
+  };
+
   const response = await request("POST", `/api/blocks/${userId}`);
+
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /own account/);
+  assert.equal(targetLookupCalled, false);
 });
 
 test("blocking a nonexistent or inactive account returns not found", async () => {
