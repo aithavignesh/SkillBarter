@@ -272,3 +272,18 @@ test("exchange status rejects malformed IDs before database lookup", async () =>
   assert.equal(lookupCalled, false);
 });
 
+test("exchange status rejects unsupported transitions before database lookup", async () => {
+  mockAuthenticatedUser();
+  let lookupCalled = false;
+  Exchange.findById = () => {
+    lookupCalled = true;
+    throw new Error("Exchange lookup must not run for unsupported statuses");
+  };
+
+  const response = await updateStatus({ status: "admin_override" });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /unsupported exchange status/i);
+  assert.equal(lookupCalled, false);
+});
+
