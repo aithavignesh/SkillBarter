@@ -496,3 +496,32 @@ test("email OTP verification refuses to issue a session if another request consu
   assert.equal(userLookupCalled, false);
 });
 
+test("email OTP verification refuses codes after the attempt limit", async () => {
+  const challenge = {
+    _id: "68f000000000000000000096",
+    codeHash: hashEmailOtp("test@example.com", "123456"),
+    attempts: 5
+  };
+  EmailOtpChallenge.findOne = () => ({
+    select() {
+      return { sort: async () => challenge };
+    }
+  });
+  let consumeCalled = false;
+  EmailOtpChallenge.findOneAndUpdate = async () => {
+    consumeCalled = true;
+    return challenge;
+  };
+  let userLookupCalled = false;
+  User.findOne = () => {
+    userLookupCalled = true;
+    throw new Error("Locked OTP challenges must not issue a session.");
+  };
+
+  const response = await post("/api/auth/otp/verify", { email: "test@example.com", code: "123456" });
+  assert.equal(response.status, 401);
+  assert.match((await response.json()).error, /invalid or expired/i);
+  assert.equal(consumeCalled, false);
+  assert.equal(userLookupCalled, false);
+});
+
