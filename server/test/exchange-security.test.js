@@ -332,3 +332,35 @@ test("an accepted exchange rejects an invalid scheduling date before block looku
   assert.equal(exchange.status, "accepted");
 });
 
+test("exchange requests reject self-targeting before database lookups", async () => {
+  mockAuthenticatedUser();
+  let recipientLookupCalled = false;
+  User.findOne = () => {
+    recipientLookupCalled = true;
+    throw new Error("Self-exchange requests must be rejected before recipient lookup");
+  };
+  let blockLookupCalled = false;
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    throw new Error("Self-exchange requests must be rejected before block lookup");
+  };
+
+  const response = await fetch(`${baseUrl}/api/exchanges`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      recipientId: userId,
+      skillOfferedId: "68f000000000000000000005",
+      skillRequestedId: "68f000000000000000000006"
+    })
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /cannot request an exchange with yourself/i);
+  assert.equal(recipientLookupCalled, false);
+  assert.equal(blockLookupCalled, false);
+});
+
