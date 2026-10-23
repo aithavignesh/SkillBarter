@@ -373,7 +373,11 @@ test("exchange requests reject oversized messages before skill lookups", async (
     recipientLookupCalled = true;
     throw new Error("Oversized exchange messages must be rejected before recipient lookup");
   };
-  Block.exists = async () => false;
+  let blockLookupCalled = false;
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    throw new Error("Oversized exchange messages must be rejected before block lookup");
+  };
 
   const response = await fetch(`${baseUrl}/api/exchanges`, {
     method: "POST",
@@ -392,6 +396,7 @@ test("exchange requests reject oversized messages before skill lookups", async (
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /2000 characters or fewer/i);
   assert.equal(recipientLookupCalled, false);
+  assert.equal(blockLookupCalled, false);
 });
 
 test("exchange requests reject malformed IDs before database lookups", async () => {
