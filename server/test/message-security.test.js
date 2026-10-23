@@ -230,3 +230,51 @@ test("an outsider cannot send a message to an exchange", async () => {
   assert.equal(blockLookupCalled, false);
   assert.equal(createCalled, false);
 });
+
+test("message history is scoped to the exchange and bounded newest-safe chronological listing", async () => {
+  mockAuthenticatedUser();
+  Exchange.findById = () => ({
+    select: async () => ({ requester: userId, recipient: recipientId })
+  });
+  Block.exists = async () => false;
+
+  const messages = [{ _id: "message-1" }];
+  let messageFilter;
+  let populatePath;
+  let populateFields;
+  let sortOrder;
+  let resultLimit;
+  Message.find = (filter) => {
+    messageFilter = filter;
+    return {
+      populate: (path, fields) => {
+        populatePath = path;
+        populateFields = fields;
+        return {
+          sort: (sort) => {
+            sortOrder = sort;
+            return {
+              limit: async (limit) => {
+                resultLimit = limit;
+                return messages;
+              }
+            };
+          }
+        };
+      }
+    };
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages/exchange/${exchangeId}`, {
+    headers: { authorization: `Bearer ${tokenFor()}` }
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).messages, messages);
+  assert.deepEqual(messageFilter, { exchange: exchangeId });
+  assert.equal(populatePath, "sender");
+  assert.equal(populateFields, "fullName username avatarUrl");
+  assert.deepEqual(sortOrder, { createdAt: 1 });
+  assert.equal(resultLimit, 500);
+});
+
