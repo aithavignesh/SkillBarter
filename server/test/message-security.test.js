@@ -314,6 +314,24 @@ test("a recipient can mark their unread message as read", async () => {
   });
 });
 
+test("a non-recipient cannot mark another user's message as read", async () => {
+  mockAuthenticatedUser({ ...sampleUser, _id: outsiderId, id: outsiderId });
+  let query;
+  Message.findOneAndUpdate = async (filter) => {
+    query = filter;
+    return null;
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages/${exchangeId}/read`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${tokenFor(outsiderId)}` }
+  });
+
+  assert.equal(response.status, 404);
+  assert.match((await response.json()).error, /unread message not found/i);
+  assert.deepEqual(query, { _id: exchangeId, recipient: outsiderId, readAt: null });
+});
+
 test("message sending rejects invalid bodies before exchange lookup", async () => {
   mockAuthenticatedUser();
   let exchangeLookupCalled = false;
