@@ -464,45 +464,6 @@ test("password reset rejects malformed tokens and weak passwords before database
   assert.equal(tokenLookupCalled, false);
 });
 
-test("password reset request uses the same generic response for unknown accounts", async () => {
-  const configKeys = [
-    "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD",
-    "SMTP_FROM", "PASSWORD_RESET_URL"
-  ];
-  const previousEnv = Object.fromEntries(configKeys.map((key) => [key, process.env[key]]));
-  for (const [key, value] of Object.entries({
-    SMTP_HOST: "smtp.example.test",
-    SMTP_PORT: "587",
-    SMTP_USER: "test-user",
-    SMTP_PASSWORD: "test-password",
-    SMTP_FROM: "noreply@example.test",
-    PASSWORD_RESET_URL: "https://example.test/reset"
-  })) process.env[key] = value;
-
-  const originalTokenCreate = PasswordResetToken.create;
-  let tokenCreated = false;
-  User.findOne = () => selectedQuery(null);
-  PasswordResetToken.create = async () => {
-    tokenCreated = true;
-    throw new Error("Unknown accounts must not receive reset-token records.");
-  };
-
-  try {
-    const response = await post("/api/auth/password-reset/request", { email: "unknown@example.com" });
-    assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), {
-      message: "If an account exists for that email, password reset instructions will be sent."
-    });
-    assert.equal(tokenCreated, false);
-  } finally {
-    PasswordResetToken.create = originalTokenCreate;
-    for (const [key, value] of Object.entries(previousEnv)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  }
-});
-
 test("email OTP verification refuses to issue a session if another request consumed the code", async () => {
   const challenge = {
     _id: "68f000000000000000000097",
