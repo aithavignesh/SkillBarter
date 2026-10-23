@@ -143,6 +143,31 @@ test("notification listing rejects partially numeric limits", async () => {
   assert.equal(requestedLimit, 30);
 });
 
+test("notification listing defaults fractional limits instead of truncating them", async () => {
+  authenticate();
+  let requestedLimit;
+  Notification.find = () => ({
+    populate() {
+      return {
+        sort() {
+          return {
+            limit: async (limit) => {
+              requestedLimit = limit;
+              return [];
+            }
+          };
+        }
+      };
+    }
+  });
+  Notification.countDocuments = async () => 0;
+
+  const response = await request("GET", "/api/notifications?limit=2.5");
+
+  assert.equal(response.status, 200);
+  assert.equal(requestedLimit, 30);
+});
+
 test("notification listing uses the default limit when zero is requested", async () => {
   authenticate();
   let requestedLimit;
