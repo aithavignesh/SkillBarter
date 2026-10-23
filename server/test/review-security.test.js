@@ -246,6 +246,30 @@ test("review creation rejects invalid ratings before exchange lookup", async () 
   assert.equal(reviewCreateCalled, false);
 });
 
+test("review creation rejects string ratings before exchange lookup", async () => {
+  authenticate();
+  let exchangeLookupCalled = false;
+  Exchange.findById = async () => {
+    exchangeLookupCalled = true;
+    throw new Error("Exchange lookup must not run for string ratings");
+  };
+  let reviewCreateCalled = false;
+  Review.create = async () => {
+    reviewCreateCalled = true;
+    throw new Error("Review creation must not run for string ratings");
+  };
+
+  const response = await submitReview({
+    exchangeId: "68f200000000000000000002",
+    rating: "5"
+  });
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /rating must be an integer from 1 to 5/i);
+  assert.equal(exchangeLookupCalled, false);
+  assert.equal(reviewCreateCalled, false);
+});
+
 test("review creation rejects oversized comments before exchange lookup", async () => {
   authenticate();
   let exchangeLookupCalled = false;
