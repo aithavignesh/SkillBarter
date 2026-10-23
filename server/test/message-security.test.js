@@ -379,3 +379,32 @@ test("message sending rejects malformed exchange IDs before database lookup", as
   assert.equal(exchangeLookupCalled, false);
 });
 
+test("message sending returns not found without block lookup when exchange is missing", async () => {
+  mockAuthenticatedUser();
+  let blockLookupCalled = false;
+  let messageCreateCalled = false;
+  Exchange.findById = () => ({ select: async () => null });
+  Block.exists = async () => {
+    blockLookupCalled = true;
+    throw new Error("Missing exchanges must be rejected before block lookup");
+  };
+  Message.create = async () => {
+    messageCreateCalled = true;
+    throw new Error("Missing exchanges must not create messages");
+  };
+
+  const response = await fetch(`${baseUrl}/api/messages`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${tokenFor()}`
+    },
+    body: JSON.stringify({ exchangeId, body: "Hello" })
+  });
+
+  assert.equal(response.status, 404);
+  assert.match((await response.json()).error, /exchange not found/i);
+  assert.equal(blockLookupCalled, false);
+  assert.equal(messageCreateCalled, false);
+});
+
