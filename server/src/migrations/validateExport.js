@@ -94,6 +94,25 @@ export async function validateExportDirectory(exportDirectory) {
     if (seenNames.has(tableKey)) fail(`Duplicate table name in manifest (including case-insensitive aliases): ${entry.name}`);
     seenNames.add(tableKey);
     if (!Number.isSafeInteger(entry.rowCount) || entry.rowCount < 0) fail(`Invalid rowCount for table ${entry.name}.`);
+    let columns;
+    if (Object.prototype.hasOwnProperty.call(entry, "columns")) {
+      if (!Array.isArray(entry.columns) || entry.columns.length === 0) {
+        fail(`Columns for ${entry.name} must be a non-empty array when supplied.`);
+      }
+      const seenColumnNames = new Set();
+      columns = [];
+      for (const column of entry.columns) {
+        if (typeof column !== "string" || !/^[a-z][a-z0-9_]*$/i.test(column)) {
+          fail(`Invalid source column name in ${entry.name}.`);
+        }
+        const columnKey = column.toLowerCase();
+        if (seenColumnNames.has(columnKey)) {
+          fail(`Duplicate source column in ${entry.name} (including case-insensitive aliases): ${column}`);
+        }
+        seenColumnNames.add(columnKey);
+        columns.push(column);
+      }
+    }
     if (typeof entry.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(entry.sha256)) fail(`Invalid SHA-256 checksum for table ${entry.name}.`);
 
     const filePath = safeExportPath(root, entry.file);
@@ -133,7 +152,7 @@ export async function validateExportDirectory(exportDirectory) {
       actualRows += 1;
     }
     if (actualRows !== entry.rowCount) fail(`Row count mismatch for ${entry.name}: manifest says ${entry.rowCount}, file contains ${actualRows}.`);
-    tables.push({ name: entry.name, file: relativeFile, rowCount: actualRows, sha256: actualSha256, valid: true });
+    tables.push({ name: entry.name, file: relativeFile, rowCount: actualRows, sha256: actualSha256, ...(columns ? { columns } : {}), valid: true });
   }
 
   const totalRows = tables.reduce((sum, table) => {
