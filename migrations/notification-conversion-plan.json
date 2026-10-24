@@ -8,6 +8,7 @@
     "Capture and review the actual source schema, constraints, indexes, and foreign-key behavior.",
     "Run the read-only source inventory against an approved non-production source connection and review aggregate results.",
     "Finalize explicit type conversion for every observed source type value.",
+    "Reject blank or whitespace-padded source type values; resolve them with the source owner rather than trimming or normalizing them silently.",
     "Approve preservation strategy for original links, boolean read state, and source timestamps before implementing import."
   ],
   "fields": [
