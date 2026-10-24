@@ -80,6 +80,34 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
     }
     const approved = ["mapped", "transformed", "excluded"].includes(mapping.status);
     const tableIssues = [];
+    // If the source manifest includes reviewed column names, require a disposition
+    // for every source column and reject stale mapping entries. Older manifests
+    // without columns remain table-level checks only.
+    let sourceColumns = null;
+    const sourceTable = sourceManifest.tables.find((entry) => entry.name === name);
+    if (Object.prototype.hasOwnProperty.call(sourceTable ?? {}, "columns")) {
+      const columnEntries = sourceTable.columns;
+      if (!Array.isArray(columnEntries) || columnEntries.length === 0) {
+        tableIssues.push("source columns must be a non-empty array when supplied");
+        sourceColumns = [];
+      } else {
+        sourceColumns = new Set();
+        const sourceColumnKeys = new Set();
+        for (const column of columnEntries) {
+          if (typeof column !== "string" || !/^[a-z][a-z0-9_]*$/i.test(column)) {
+            tableIssues.push("source column names must be valid identifiers");
+            continue;
+          }
+          const columnKey = column.toLowerCase();
+          if (sourceColumnKeys.has(columnKey)) {
+            tableIssues.push(`duplicate source column (including case-insensitive aliases): ${column}`);
+            continue;
+          }
+          sourceColumnKeys.add(columnKey);
+          sourceColumns.add(column);
+        }
+      }
+    }
     if (!["pending", "mapped", "transformed", "excluded", "blocked"].includes(mapping.status)) {
       tableIssues.push(`mapping status is invalid or missing: ${mapping.status ?? "missing"}`);
     }
@@ -126,6 +154,14 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
             tableIssues.push(`field ${field.sourceField ?? "(unknown)"} still has a pending mapping decision`);
           }
           if (field.status === "blocked") tableIssues.push(`field ${field.sourceField ?? "(unknown)"} is blocked`);
+        }
+        if (sourceColumns !== null) {
+          for (const column of sourceColumns) {
+            if (!sourceFields.has(column)) tableIssues.push(`source column ${column} has no mapping disposition`);
+          }
+          for (const fieldName of sourceFields) {
+            if (!sourceColumns.has(fieldName)) tableIssues.push(`mapping references source column absent from manifest: ${fieldName}`);
+          }
         }
         for (let i = 0; i < targetPaths.length; i += 1) {
           for (let j = i + 1; j < targetPaths.length; j += 1) {
