@@ -130,6 +130,37 @@ test("rejects unsafe and overlapping target field paths in coverage checks", () 
   assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("overlapping targetField paths")));
 });
 
+test("requires a mapping disposition for every source column when column inventory is present", () => {
+  const sourceWithColumns = {
+    tables: [
+      { name: "users", rowCount: 3, columns: ["id", "email", "full_name"] },
+      { name: "skills", rowCount: 2, columns: ["id", "name"] }
+    ]
+  };
+  const candidate = structuredClone(contract);
+  candidate.tables[0].fields = [
+    { sourceField: "email", status: "mapped", targetField: "email" },
+    { sourceField: "id", status: "transformed", targetField: "legacyId" }
+  ];
+  let result = validateMappingCoverage(sourceWithColumns, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("source column full_name has no mapping disposition")));
+
+  candidate.tables[0].fields.push({ sourceField: "old_column", status: "excluded", reason: "Not in this source schema." });
+  result = validateMappingCoverage(sourceWithColumns, candidate);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("mapping references source column absent from manifest: old_column")));
+});
+
+test("rejects malformed and case-colliding source column inventories", () => {
+  for (const columns of [[], ["id", "Email", "email"], ["id", "bad column"]]) {
+    const sourceWithColumns = structuredClone(manifest);
+    sourceWithColumns.tables[0].columns = columns;
+    const result = validateMappingCoverage(sourceWithColumns, contract);
+    assert.equal(result.valid, false);
+    assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("source column")));
+  }
+});
+
 test("counts only approved mapped or transformed tables in the summary", () => {
   const candidate = structuredClone(contract);
   candidate.tables[1] = { name: "skills", status: "pending", proposedTarget: "Skill" };
