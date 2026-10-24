@@ -51,6 +51,21 @@ test("passes when export integrity and reviewed mapping coverage both pass", asy
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("passes reviewed source columns through preflight instead of dropping the inventory", async () => {
+  const f = await fixture();
+  try {
+    const manifestPath = path.join(f.exportDirectory, "manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.tables[0].columns = ["id", "email", "full_name"];
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.deepEqual(report.export.tables[0].columns, ["id", "email", "full_name"]);
+    assert.equal(report.mappingCoverage.valid, false);
+    assert.ok(report.blockers.some((item) => item.table === "users" && item.issue.includes("source column id has no mapping disposition")));
+    assert.ok(report.blockers.some((item) => item.table === "users" && item.issue.includes("source column full_name has no mapping disposition")));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("reports mapping blockers after validating the export", async () => {
   const f = await fixture({ reviewed: false });
   try {
