@@ -22,8 +22,15 @@ export async function validateMigrationPreflight(exportDirectory, mappingContrac
   const contractReport = validateMappingContract(mappingContract);
   const coverageReport = validateMappingCoverage(validatedInventory, mappingContract);
   const targetModelReport = await validateTargetModelCoverage(mappingContract);
+  // A reviewed schema must be represented by explicit source-column inventories in
+  // every export table; otherwise field-level coverage can be silently bypassed.
+  const columnInventoryIssues = mappingContract.schemaSnapshotReviewed === true
+    ? exportReport.tables
+      .filter((table) => !Array.isArray(table.columns) || table.columns.length === 0)
+      .map((table) => ({ table: table.name, issue: "reviewed schema requires an explicit source column inventory in the export manifest", stage: "sourceColumnInventory" }))
+    : [];
   return {
-    valid: exportReport.valid && contractReport.valid && coverageReport.valid && targetModelReport.valid,
+    valid: exportReport.valid && contractReport.valid && coverageReport.valid && targetModelReport.valid && columnInventoryIssues.length === 0,
     export: exportReport,
     mappingContract: contractReport,
     mappingCoverage: coverageReport,
@@ -31,7 +38,8 @@ export async function validateMigrationPreflight(exportDirectory, mappingContrac
     blockers: [
       ...contractReport.issues.map((issue) => ({ ...issue, stage: "mappingContract" })),
       ...coverageReport.issues.map((issue) => ({ ...issue, stage: "mappingCoverage" })),
-      ...targetModelReport.issues.map((issue) => ({ ...issue, stage: "targetModelCoverage" }))
+      ...targetModelReport.issues.map((issue) => ({ ...issue, stage: "targetModelCoverage" })),
+      ...columnInventoryIssues
     ]
   };
 }
