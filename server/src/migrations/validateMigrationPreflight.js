@@ -16,7 +16,7 @@ export async function validateMigrationPreflight(exportDirectory, mappingContrac
   const validatedInventory = {
     sourceSchema: exportReport.sourceSchema,
     exportedAt: exportReport.exportedAt,
-    tables: exportReport.tables.map(({ name }) => ({ name }))
+    tables: exportReport.tables.map(({ name, columns }) => ({ name, ...(columns ? { columns } : {}) }))
   };
   const mappingContract = JSON.parse(await readFile(mappingContractPath, "utf8"));
   const contractReport = validateMappingContract(mappingContract);
