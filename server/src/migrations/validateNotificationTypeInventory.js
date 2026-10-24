@@ -21,7 +21,7 @@ export function validateNotificationTypeInventory(rows, explicitMap) {
     if (!row || typeof row !== "object" || Array.isArray(row)) {
       throw new TypeError("Each inventory row must be an object");
     }
-    if (typeof row.value !== "string" || row.value.length === 0) {
+    if (typeof row.value !== "string" || row.value.trim().length === 0) {
       throw new Error("Inventory row value must be a non-empty source type string");
     }
     if (!Number.isSafeInteger(row.count) || row.count < 0) {
