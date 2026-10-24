@@ -14,7 +14,7 @@ const TARGET_NOTIFICATION_TYPES = new Set([
  * inventoried first, and unknown values must be reviewed rather than silently changed.
  */
 export function mapNotificationType(sourceType, explicitMap) {
-  if (typeof sourceType !== "string" || sourceType.length === 0) {
+  if (typeof sourceType !== "string" || sourceType.trim().length === 0) {
     throw new TypeError("Source notification type must be a non-empty string");
   }
   if (!explicitMap || typeof explicitMap !== "object" || !Object.hasOwn(explicitMap, sourceType)) {
