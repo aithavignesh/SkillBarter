@@ -89,7 +89,7 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
       const columnEntries = sourceTable.columns;
       if (!Array.isArray(columnEntries) || columnEntries.length === 0) {
         tableIssues.push("source columns must be a non-empty array when supplied");
-        sourceColumns = [];
+        sourceColumns = new Set();
       } else {
         sourceColumns = new Set();
         const sourceColumnKeys = new Set();
