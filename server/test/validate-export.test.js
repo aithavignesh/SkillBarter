@@ -41,6 +41,24 @@ test("preserves and validates optional source column inventories", async t => {
   await assert.rejects(validateExportDirectory(directory), /Duplicate source column/);
 });
 
+test("rejects row keys absent from the declared source column inventory", async t => {
+  const { directory, manifest } = await fixture(t, [{ id: "1", email: "v@example.com" }]);
+  manifest.tables[0].columns = ["id"];
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /contains column\(s\) absent from the manifest inventory: email/
+  );
+});
+
+test("allows omitted nullable source columns in individual JSONL rows", async t => {
+  const { directory, manifest } = await fixture(t, [{ id: "1" }, { id: "2", email: null }]);
+  manifest.tables[0].columns = ["id", "email"];
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  const report = await validateExportDirectory(directory);
+  assert.equal(report.valid, true);
+});
+
 test("accepts an empty table export with a zero row count", async t => {
   const { directory } = await fixture(t, []);
   const report = await validateExportDirectory(directory);
