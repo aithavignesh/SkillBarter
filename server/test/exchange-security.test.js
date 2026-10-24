@@ -201,6 +201,28 @@ test("the recipient cannot cancel an accepted exchange", async () => {
   assert.equal(exchange.status, "accepted");
 });
 
+test("the requester can cancel an accepted exchange and notify the recipient", async () => {
+  mockAuthenticatedUser();
+  const exchange = fakeExchange("accepted");
+  let saveCalled = false;
+  exchange.save = async () => { saveCalled = true; };
+  Exchange.findById = async () => exchange;
+  let notification;
+  Notification.create = async (payload) => {
+    notification = payload;
+    return payload;
+  };
+
+  const response = await updateStatus({ status: "cancelled" });
+
+  assert.equal(response.status, 200);
+  assert.equal(saveCalled, true);
+  assert.equal(exchange.status, "cancelled");
+  assert.equal(String(notification.recipient), otherUserId);
+  assert.equal(String(notification.actor), userId);
+  assert.match(notification.body, /cancelled/i);
+});
+
 test("an exchange cannot jump directly from pending to active", async () => {
   mockAuthenticatedUser();
   Exchange.findById = async () => fakeExchange("pending");
