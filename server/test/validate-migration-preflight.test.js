@@ -12,7 +12,7 @@ async function fixture({ reviewed = true, mappingStatus = "mapped" } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillbarter-preflight-"));
   const exportDirectory = path.join(root, "export");
   await mkdir(exportDirectory);
-  const data = '{"id":"source-user-1"}\n';
+  const data = '{"email":"source@example.com"}\n';
   await writeFile(path.join(exportDirectory, "users.jsonl"), data);
   const manifest = {
     sourceSchema: "test-schema-snapshot",
