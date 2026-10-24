@@ -1,10 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { Repeat, ShieldCheck, MapPin, Heart } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const { currentUser } = useAuth();
+
   return (
-    <footer className="footer-cinematic border-t border-[#26324b] py-12 text-xs">
+    <footer className={`footer-cinematic border-t border-[#26324b] py-12 text-xs ${currentUser ? 'mobile-footer-bottom-padding' : ''}`}>
       <div className="footer-cinematic__content mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
         <div className="mb-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}

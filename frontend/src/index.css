@@ -1288,7 +1288,19 @@
 }
 
 @media (max-width: 1023px) {
+  .ricoz-theme main.pb-16:not(.mobile-content-bottom-padding) {
+    padding-bottom: 0;
+  }
+
+  .ricoz-theme main.mobile-content-bottom-padding:has(+ div .mobile-footer-bottom-padding) {
+    padding-bottom: 0;
+  }
+
   .mobile-content-bottom-padding {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-footer-bottom-padding {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 
