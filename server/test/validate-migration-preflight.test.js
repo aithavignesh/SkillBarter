@@ -17,7 +17,7 @@ async function fixture({ reviewed = true, mappingStatus = "mapped" } = {}) {
   const manifest = {
     sourceSchema: "test-schema-snapshot",
     exportedAt: "2026-10-17T00:00:00.000Z",
-    tables: [{ name: "users", file: "users.jsonl", rowCount: 1, sha256: createHash("sha256").update(data).digest("hex") }]
+    tables: [{ name: "users", file: "users.jsonl", rowCount: 1, columns: ["email"], sha256: createHash("sha256").update(data).digest("hex") }]
   };
   await writeFile(path.join(exportDirectory, "manifest.json"), JSON.stringify(manifest));
   const contractPath = path.join(root, "mapping.json");
@@ -48,6 +48,20 @@ test("passes when export integrity and reviewed mapping coverage both pass", asy
     assert.equal(report.export.totalRows, 1);
     assert.equal(report.mappingCoverage.valid, true);
     assert.deepEqual(report.blockers, []);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("blocks reviewed schema preflight when an export table omits source columns", async () => {
+  const f = await fixture();
+  try {
+    const manifestPath = path.join(f.exportDirectory, "manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    delete manifest.tables[0].columns;
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
+    assert.equal(report.export.valid, true);
+    assert.equal(report.valid, false);
+    assert.ok(report.blockers.some((item) => item.stage === "sourceColumnInventory" && item.table === "users"));
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
