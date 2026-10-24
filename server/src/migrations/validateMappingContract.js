@@ -62,8 +62,14 @@ export function validateMappingContract(contract) {
       for (const field of table.fields) {
         requireObject(field, `Field mapping for ${table.name}`);
         requireText(field.sourceField, `sourceField for ${table.name}`);
-        if (fieldNames.has(field.sourceField)) throw new Error(`Duplicate source field mapping for ${table.name}.`);
-        fieldNames.add(field.sourceField);
+        if (field.sourceField !== field.sourceField.trim()) {
+          throw new Error(`Source field mapping for ${table.name} must not have leading or trailing whitespace.`);
+        }
+        const sourceFieldKey = field.sourceField.toLowerCase();
+        if (fieldNames.has(sourceFieldKey)) {
+          throw new Error(`Duplicate source field mapping for ${table.name} (including case-insensitive aliases).`);
+        }
+        fieldNames.add(sourceFieldKey);
         if (!STATUSES.has(field.status)) throw new Error(`Invalid field mapping status for ${table.name}.`);
         if (["mapped", "transformed"].includes(field.status)) {
           requireText(field.targetField, `targetField for ${table.name}.`);
