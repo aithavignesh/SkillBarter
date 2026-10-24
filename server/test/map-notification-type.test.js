@@ -10,6 +10,10 @@ test("rejects whitespace-only source notification types", () => {
   assert.throws(() => mapNotificationType("   ", {}), /non-empty string/);
 });
 
+test("rejects source notification types padded with whitespace", () => {
+  assert.throws(() => mapNotificationType(" legacy_message ", { " legacy_message ": "message" }), /leading or trailing whitespace/);
+});
+
 test("rejects missing and unsupported notification mappings instead of guessing", () => {
   assert.throws(() => mapNotificationType("unknown", {}), /Unmapped source notification type/);
   assert.throws(
