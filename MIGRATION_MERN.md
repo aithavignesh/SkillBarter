@@ -32,6 +32,10 @@
 5. Start both services with `npm run dev`. Next.js uses port 3000 and Express uses port 4000.
 6. Verify `http://localhost:4000/api/health` and `http://localhost:3000`.
 
+## Deployment preparation
+
+The branch-specific hosting plan, environment variables, staging sequence, health checks, acceptance checklist, and rollback precautions are documented in [`docs/DEPLOYMENT_MERN.md`](docs/DEPLOYMENT_MERN.md). Use that runbook for a separate staging deployment only; it does not authorize production cutover.
+
 ## API foundation
 
 - Auth: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/otp/request`, `POST /api/auth/otp/verify`, `POST /api/auth/logout`, `GET /api/auth/me`
