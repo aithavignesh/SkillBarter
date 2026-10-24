@@ -30,6 +30,13 @@ test("rejects whitespace-only source notification values", () => {
   );
 });
 
+test("rejects source notification values padded with whitespace", () => {
+  assert.throws(
+    () => validateNotificationTypeInventory([{ value: " message ", count: 1 }], { " message ": "message" }),
+    /leading or trailing whitespace/
+  );
+});
+
 test("rejects duplicate source values and invalid counts", () => {
   assert.throws(
     () => validateNotificationTypeInventory([{ value: "message", count: 1 }, { value: "message", count: 2 }], { message: "message" }),
