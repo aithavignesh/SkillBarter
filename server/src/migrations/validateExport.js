@@ -149,6 +149,13 @@ export async function validateExportDirectory(exportDirectory) {
       try { row = JSON.parse(lines[i]); }
       catch { fail(`Invalid JSON in ${entry.name} at line ${i + 1}.`); }
       if (!row || typeof row !== "object" || Array.isArray(row)) fail(`JSONL record in ${entry.name} at line ${i + 1} must be an object.`);
+      if (columns) {
+        const knownColumns = new Set(columns);
+        const unexpectedColumns = Object.keys(row).filter((key) => !knownColumns.has(key));
+        if (unexpectedColumns.length) {
+          fail(`Export row in ${entry.name} at line ${i + 1} contains column(s) absent from the manifest inventory: ${unexpectedColumns.join(", ")}.`);
+        }
+      }
       actualRows += 1;
     }
     if (actualRows !== entry.rowCount) fail(`Row count mismatch for ${entry.name}: manifest says ${entry.rowCount}, file contains ${actualRows}.`);
