@@ -24,6 +24,9 @@ export function validateNotificationTypeInventory(rows, explicitMap) {
     if (typeof row.value !== "string" || row.value.trim().length === 0) {
       throw new Error("Inventory row value must be a non-empty source type string");
     }
+    if (row.value !== row.value.trim()) {
+      throw new Error(`Inventory source type must not have leading or trailing whitespace: ${JSON.stringify(row.value)}`);
+    }
     if (!Number.isSafeInteger(row.count) || row.count < 0) {
       throw new Error(`Inventory count for ${row.value} must be a non-negative safe integer`);
     }
