@@ -142,6 +142,7 @@ export async function validateExportDirectory(exportDirectory) {
     catch { fail(`Export for ${entry.name} is not valid UTF-8.`); }
     const lines = content.split("\n");
     if (lines.at(-1) === "") lines.pop();
+    const declaredColumns = columns ? new Set(columns) : null;
     let actualRows = 0;
     for (let i = 0; i < lines.length; i += 1) {
       if (!lines[i].trim()) fail(`Blank JSONL record in ${entry.name} at line ${i + 1}.`);
@@ -149,9 +150,8 @@ export async function validateExportDirectory(exportDirectory) {
       try { row = JSON.parse(lines[i]); }
       catch { fail(`Invalid JSON in ${entry.name} at line ${i + 1}.`); }
       if (!row || typeof row !== "object" || Array.isArray(row)) fail(`JSONL record in ${entry.name} at line ${i + 1} must be an object.`);
-      if (columns) {
-        const knownColumns = new Set(columns);
-        const unexpectedColumns = Object.keys(row).filter((key) => !knownColumns.has(key));
+      if (declaredColumns) {
+        const unexpectedColumns = Object.keys(row).filter((key) => !declaredColumns.has(key));
         if (unexpectedColumns.length) {
           fail(`Export row in ${entry.name} at line ${i + 1} contains column(s) absent from the manifest inventory: ${unexpectedColumns.join(", ")}.`);
         }
