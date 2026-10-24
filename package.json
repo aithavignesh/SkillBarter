@@ -14,8 +14,9 @@
     "start:web": "npm run start -w next-app",
     "start:api": "npm run start -w server",
     "lint": "npm run lint -w next-app",
-    "check": "npm run check -w server && npm run lint -w next-app && npm run build",
-    "test": "npm run test -w server"
+    "check": "npm run verify:stack && npm run check -w server && npm run lint -w next-app && npm run build",
+    "test": "npm run test -w server",
+    "verify:stack": "node scripts/verify-mern-stack.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
