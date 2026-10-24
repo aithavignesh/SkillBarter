@@ -82,7 +82,8 @@ Keep all three outputs in the access-controlled review directory. Share only a s
 3. Review column types, nullability, defaults, primary/unique/foreign/check constraints, indexes, RLS policies, and triggers.
 4. Compare the observed schema with every proposed target model. Document all data-loss risks, enum conversions, nullable/required mismatches, uniqueness collisions, and foreign-key deletion semantics.
 5. Use a separate approved data-inventory procedure to validate actual value distributions and row-level anomalies; this catalog snapshot does not establish data compatibility.
-6. Update the review template and mapping contract only after evidence is reviewed and decisions are approved.
+6. When preparing a sanitized export manifest for preflight, include a `columns` array on each table entry containing the exact reviewed source column names from the approved inventory. Do not derive column lists from target models or guess missing columns. Keep the raw snapshot and export outside Git; the manifest must not contain credentials or row data. The export validator preserves and validates this optional column inventory, and mapping preflight requires every listed source column to have an explicit mapping disposition (mapped, transformed, excluded, or blocked/pending as appropriate) before approval.
+7. Update the review template and mapping contract only after evidence is reviewed and decisions are approved.
 
 ## What this does not authorize
 
