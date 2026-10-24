@@ -17,6 +17,9 @@ export function mapNotificationType(sourceType, explicitMap) {
   if (typeof sourceType !== "string" || sourceType.trim().length === 0) {
     throw new TypeError("Source notification type must be a non-empty string");
   }
+  if (sourceType !== sourceType.trim()) {
+    throw new TypeError("Source notification type must not have leading or trailing whitespace");
+  }
   if (!explicitMap || typeof explicitMap !== "object" || !Object.hasOwn(explicitMap, sourceType)) {
     throw new Error(`Unmapped source notification type: ${sourceType}`);
   }
