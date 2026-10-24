@@ -29,6 +29,18 @@ test("validates checksum, JSONL records, and row counts without a database", asy
   assert.equal(report.tables[0].valid, true);
 });
 
+test("preserves and validates optional source column inventories", async t => {
+  const { directory, manifest } = await fixture(t);
+  manifest.tables[0].columns = ["id", "email", "full_name"];
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  const report = await validateExportDirectory(directory);
+  assert.deepEqual(report.tables[0].columns, ["id", "email", "full_name"]);
+
+  manifest.tables[0].columns = ["id", "Email", "email"];
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(validateExportDirectory(directory), /Duplicate source column/);
+});
+
 test("accepts an empty table export with a zero row count", async t => {
   const { directory } = await fixture(t, []);
   const report = await validateExportDirectory(directory);
