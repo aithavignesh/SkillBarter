@@ -237,6 +237,26 @@ test("CLI returns exit code 1 for malformed JSON", async () => {
 });
 
 
+test("rejects padded and case-colliding source field mappings", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaSnapshotReviewed = true;
+  candidate.tables = [{
+    name: "users",
+    status: "mapped",
+    proposedTarget: "User",
+    fields: [
+      { sourceField: "email", status: "mapped", targetField: "email" },
+      { sourceField: "old_secret", status: "excluded", reason: "Approved security policy" }
+    ]
+  }];
+
+  candidate.tables[0].fields[0].sourceField = " email ";
+  assert.throws(() => validateMappingContract(candidate), /must not have leading or trailing whitespace/);
+
+  candidate.tables[0].fields[0].sourceField = "email";
+  candidate.tables[0].fields[1].sourceField = "EMAIL";
+  assert.throws(() => validateMappingContract(candidate), /Duplicate source field mapping.*case-insensitive aliases/);
+});
 test("rejects stale blocked status after the schema has been marked reviewed", () => {
   const candidate = {
     ...structuredClone(contract),
