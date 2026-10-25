@@ -32,7 +32,7 @@ if (root) {
   for (const workspace of ["next-app", "server"]) {
     if (!root.workspaces?.includes(workspace)) failures.push(`Root workspace missing: ${workspace}`);
   }
-  for (const script of ["dev", "build", "check", "test", "verify:stack"]) {
+  for (const script of ["dev", "build", "check", "test", "verify:stack", "preflight:migration"]) {
     if (!root.scripts?.[script]) failures.push(`Root npm script missing: ${script}`);
   }
 }
