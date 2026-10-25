@@ -56,7 +56,7 @@ Exit criteria: mapping validation and target-model coverage checks pass against 
 ### Phase 3 — Export validation and dry run
 
 1. Create an authorized non-production export with a manifest containing source environment label, export timestamp, table names, source columns, file names, row counts, and file hashes. Do not include credentials or user data in the manifest.
-2. Run the repository export-integrity and migration preflight validators against the export directory and reviewed mapping contract.
+2. Run the repository export-integrity and migration preflight validators against the export directory and reviewed mapping contract. From the repository root, run `npm run preflight:migration -- <private-export-directory> migrations/source-to-target-contract.json`. Keep the export directory outside Git; this command is validation-only and never writes to either database. It exits non-zero when integrity or mapping gates fail.
 3. Stop if any table/column is unaccounted for, an export hash fails, a mapping remains blocked, or a target field path is invalid.
 4. Import only to the isolated staging database using a separately reviewed importer. Use deterministic ID mapping and idempotent batches; preserve source timestamps and log rejected rows without leaking sensitive data.
 5. Reconcile per-table source/target counts, unique keys, relationship resolution, enum distributions, timestamp ranges, and rejected/quarantined rows. Investigate every difference.
