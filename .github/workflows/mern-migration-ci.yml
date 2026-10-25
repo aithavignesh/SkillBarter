@@ -26,8 +26,8 @@ jobs:
         run: npm install
       - name: Verify MERN workspace structure and server-only configuration
         run: npm run verify:stack
-      - name: Check Express JavaScript syntax
-        run: find server/src -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Check API and migration-tool syntax
+        run: npm run check -w server
       - name: Run server security tests
         run: npm run test -w server
         env:
