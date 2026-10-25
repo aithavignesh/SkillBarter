@@ -105,7 +105,7 @@ test("preflight blocks impossible schema review dates", async () => {
     assert.ok(report.blockers.some((item) => item.stage === "mappingCoverage" && item.issue.includes("capturedAt must be a valid ISO 8601 timestamp")));
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
-test("preflight blocks impossible schema review dates", async () => {
+test("preflight blocks impossible schema review calendar dates", async () => {
   const f = await fixture();
   try {
     const contract = JSON.parse(await readFile(f.contractPath, "utf8"));
