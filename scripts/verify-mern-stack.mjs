@@ -56,6 +56,7 @@ if (api) {
 
 for (const path of [
   "next-app/app",
+  "next-app/app/api",
   "next-app/next.config.ts",
   "next-app/.env.example",
   "server/src/app.js",
@@ -72,6 +73,46 @@ for (const path of [
   "backend"
 ]) {
   await requirePath(path);
+}
+
+// Keep critical target-stack routes, models, tests, and migration gates visible to CI.
+for (const path of [
+  "server/src/routes/auth.js",
+  "server/src/routes/users.js",
+  "server/src/routes/skills.js",
+  "server/src/routes/exchanges.js",
+  "server/src/routes/matches.js",
+  "server/src/routes/messages.js",
+  "server/src/routes/reviews.js",
+  "server/src/routes/reports.js",
+  "server/src/routes/blocks.js",
+  "server/src/routes/posts.js",
+  "server/src/routes/notifications.js",
+  "server/src/routes/analytics.js",
+  "server/src/routes/admin.js",
+  "server/test/app-security.test.js",
+  "server/test/deployment-readiness.test.js",
+  "server/test/health.test.js",
+  "server/src/migrations/validateMigrationPreflight.js"
+]) {
+  await requirePath(path);
+}
+
+try {
+  const contract = await readJson("migrations/source-to-target-contract.json");
+  if (contract) {
+    if (contract.schemaSnapshotReviewed !== true && contract.status !== "blocked-pending-source-schema") {
+      failures.push("Unreviewed source schema must keep the migration contract blocked.");
+    }
+    if (contract.schemaSnapshotReviewed === true && contract.status === "blocked-pending-source-schema") {
+      failures.push("Reviewed schema flag and migration contract status are inconsistent.");
+    }
+    if (!Array.isArray(contract.tables) || contract.tables.length === 0) {
+      failures.push("Migration contract must list source tables and dispositions.");
+    }
+  }
+} catch {
+  // Contract parse failures are reported by readJson.
 }
 
 try {
