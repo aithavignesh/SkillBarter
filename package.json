@@ -16,7 +16,8 @@
     "lint": "npm run lint -w next-app",
     "check": "npm run verify:stack && npm run check -w server && npm run lint -w next-app && npm run build",
     "test": "npm run test -w server",
-    "verify:stack": "node scripts/verify-mern-stack.mjs"
+    "verify:stack": "node scripts/verify-mern-stack.mjs",
+    "preflight:migration": "node server/src/migrations/validateMigrationPreflight.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
