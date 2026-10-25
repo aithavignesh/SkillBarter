@@ -32,7 +32,7 @@ if (root) {
   for (const workspace of ["next-app", "server"]) {
     if (!root.workspaces?.includes(workspace)) failures.push(`Root workspace missing: ${workspace}`);
   }
-  for (const script of ["dev", "build", "check", "test"]) {
+  for (const script of ["dev", "build", "check", "test", "verify:stack"]) {
     if (!root.scripts?.[script]) failures.push(`Root npm script missing: ${script}`);
   }
 }
@@ -40,7 +40,9 @@ if (root) {
 if (web) {
   if (!web.dependencies?.next) failures.push("Next.js dependency is missing.");
   if (!web.dependencies?.react) failures.push("React dependency is missing from next-app.");
+  if (!web.dependencies?.["react-dom"]) failures.push("React DOM dependency is missing from next-app.");
   if (!web.scripts?.build) failures.push("Next.js production build script is missing.");
+  if (!web.scripts?.start) failures.push("Next.js production start script is missing.");
 }
 
 if (api) {
@@ -63,6 +65,8 @@ for (const path of [
   "server/.env.example",
   "migrations/source-to-target-contract.json",
   "migrations/MIGRATION_READINESS_GATE.md",
+  "migrations/MIGRATION_RUNBOOK.md",
+  "docs/DEPLOYMENT_MERN.md",
   "MIGRATION_MERN.md",
   "frontend",
   "backend"
