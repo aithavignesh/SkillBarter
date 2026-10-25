@@ -28,6 +28,52 @@ test("rejects non-HTTPS production origins", () => {
   );
 });
 
+test("rejects malformed and path-bearing client origins", () => {
+  assert.throws(
+    () => validateEnvironment({ ...base, CLIENT_ORIGIN: "not-a-url" }),
+    /valid origin URLs/
+  );
+  assert.throws(
+    () => validateEnvironment({ ...base, CLIENT_ORIGIN: "http://localhost:3000/app" }),
+    /without paths or credentials/
+  );
+});
+
+test("rejects invalid or incomplete Twilio credentials", () => {
+  const twilio = {
+    TWILIO_ACCOUNT_SID: "AC" + "a".repeat(32),
+    TWILIO_AUTH_TOKEN: "t".repeat(32),
+    TWILIO_VERIFY_SERVICE_SID: "VA" + "b".repeat(32)
+  };
+  assert.doesNotThrow(() => validateEnvironment({ ...base, ...twilio }));
+  assert.throws(
+    () => validateEnvironment({ ...base, ...twilio, TWILIO_VERIFY_SERVICE_SID: "invalid" }),
+    /invalid format/
+  );
+});
+
+test("requires complete SMTP configuration when password reset is enabled", () => {
+  assert.throws(
+    () => validateEnvironment({ ...base, PASSWORD_RESET_URL: "http://localhost:3000/reset" }),
+    /requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM/
+  );
+});
+
+test("rejects password-reset URLs outside configured client origins", () => {
+  assert.throws(
+    () => validateEnvironment({
+      ...base,
+      PASSWORD_RESET_URL: "http://evil.example/reset",
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "587",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "password",
+      SMTP_FROM: "noreply@example.com"
+    }),
+    /must use an origin listed in CLIENT_ORIGIN/
+  );
+});
+
 test("accepts valid production origins and secret lengths", () => {
   assert.deepEqual(
     validateEnvironment({
