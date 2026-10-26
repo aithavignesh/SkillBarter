@@ -39,6 +39,7 @@ test("staging verifier rejects missing, malformed, and credential-bearing URLs",
   await assert.rejects(() => verifyStaging({}), /STAGING_API_URL is required/);
   await assert.rejects(() => verifyStaging({ apiUrl: "not a URL" }), /valid absolute URL/);
   await assert.rejects(() => verifyStaging({ apiUrl: "https://user:secret@example.com" }), /must not contain credentials/);
+  await assert.rejects(() => verifyStaging({ apiUrl: "https://api.example.com/prefix" }), /base URL without a path/);
 });
 
 test("staging verifier reports request failures without leaking error details", async () => {
