@@ -109,3 +109,21 @@ test("staging verifier validates optional frontend URL before contacting the API
   );
   assert.equal(calls, 0);
 });
+
+
+test("staging verifier timeout covers a stalled health response body", async () => {
+  const fetchImpl = async (_url, { signal }) => ({
+    status: 200,
+    json: () => new Promise((_resolve, reject) => {
+      signal.addEventListener("abort", () => {
+        const error = new Error("private body timeout details");
+        error.name = "AbortError";
+        reject(error);
+      }, { once: true });
+    })
+  });
+  const result = await verifyStaging({ apiUrl: "https://api.example.com", fetchImpl, timeoutMs: 5 });
+  assert.equal(result.valid, false);
+  assert.equal(result.results.every((item) => item.issue === "request timed out"), true);
+  assert.equal(JSON.stringify(result).includes("private body timeout details"), false);
+});
