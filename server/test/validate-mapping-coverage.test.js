@@ -293,3 +293,27 @@ test("accepts a schema review on the same calendar date as snapshot capture", ()
   assert.equal(result.valid, true);
   assert.deepEqual(result.issues, []);
 });
+
+
+test("rejects invalid source inventory row counts", () => {
+  for (const rowCount of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1, "3", null]) {
+    const candidate = structuredClone(manifest);
+    candidate.tables[0].rowCount = rowCount;
+    assert.throws(
+      () => validateMappingCoverage(candidate, contract),
+      /rowCount for source table users must be a non-negative safe integer/
+    );
+  }
+});
+
+test("accepts zero and non-negative safe integer source inventory row counts", () => {
+  const candidate = {
+    tables: [
+      { name: "users", rowCount: 0 },
+      { name: "skills", rowCount: Number.MAX_SAFE_INTEGER }
+    ]
+  };
+  const result = validateMappingCoverage(candidate, contract);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.issues, []);
+});
