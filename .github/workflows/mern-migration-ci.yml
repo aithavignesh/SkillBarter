@@ -36,6 +36,8 @@ jobs:
         run: npm run test -w server
         env:
           NODE_ENV: test
+      - name: Run read-only staging smoke-check tests
+        run: npm run test:staging
       - name: Lint Next.js frontend
         run: npm run lint -w next-app
       - name: Build Next.js frontend
