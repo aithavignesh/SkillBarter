@@ -51,6 +51,16 @@ test("rejects row keys absent from the declared source column inventory", async 
   );
 });
 
+test("rejects row keys whose casing differs from the reviewed source column inventory", async t => {
+  const { directory, manifest } = await fixture(t, [{ Email: "v@example.com" }]);
+  manifest.tables[0].columns = ["email"];
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
+  await assert.rejects(
+    validateExportDirectory(directory),
+    /contains column\\(s\\) absent from the manifest inventory: Email/
+  );
+});
+
 test("allows omitted nullable source columns in individual JSONL rows", async t => {
   const { directory, manifest } = await fixture(t, [{ id: "1" }, { id: "2", email: null }]);
   manifest.tables[0].columns = ["id", "email"];
