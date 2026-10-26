@@ -185,7 +185,7 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
         }
         if (sourceColumns !== null) {
           for (const column of sourceColumns) {
-            if (!sourceFields.has(column)) tableIssues.push(`source column ${column} has no mapping disposition`);
+            if (!sourceFieldNames.has(column)) tableIssues.push(`source column ${column} has no mapping disposition`);
           }
           for (const fieldName of sourceFieldNames) {
             if (!sourceColumns.has(fieldName)) tableIssues.push(`mapping references source column absent from manifest: ${fieldName}`);
