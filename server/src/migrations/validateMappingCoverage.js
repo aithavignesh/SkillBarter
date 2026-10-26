@@ -21,6 +21,22 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
       && (!Number.isSafeInteger(table.rowCount) || table.rowCount < 0)) {
       throw new Error(`rowCount for source table ${table.name} must be a non-negative safe integer.`);
     }
+    if (Object.prototype.hasOwnProperty.call(table, "columns")) {
+      if (!Array.isArray(table.columns) || table.columns.length === 0) {
+        throw new Error(`columns for source table ${table.name} must be a non-empty array when supplied.`);
+      }
+      const columnKeys = new Set();
+      for (const column of table.columns) {
+        if (typeof column !== "string" || !/^[a-z][a-z0-9_]*$/i.test(column)) {
+          throw new Error(`columns for source table ${table.name} must contain valid column identifiers.`);
+        }
+        const columnKey = column.toLowerCase();
+        if (columnKeys.has(columnKey)) {
+          throw new Error(`columns for source table ${table.name} must not contain duplicate or case-colliding names.`);
+        }
+        columnKeys.add(columnKey);
+      }
+    }
     const sourceKey = table.name.toLowerCase();
     if (sourceNameKeys.has(sourceKey)) throw new Error(`Duplicate source table (including case-insensitive aliases): ${table.name}`);
     sourceNameKeys.add(sourceKey);
