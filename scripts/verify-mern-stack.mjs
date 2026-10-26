@@ -111,6 +111,29 @@ try {
     }
     if (!Array.isArray(contract.tables) || contract.tables.length === 0) {
       failures.push("Migration contract must list source tables and dispositions.");
+    } else {
+      const names = new Set();
+      for (const table of contract.tables) {
+        if (!table || typeof table.name !== "string" || !table.name.trim()) {
+          failures.push("Every migration contract table must have a non-empty name.");
+          continue;
+        }
+        const normalizedName = table.name.toLowerCase();
+        if (names.has(normalizedName)) failures.push(`Duplicate migration contract table: ${table.name}`);
+        names.add(normalizedName);
+        if (!["pending", "mapped", "transformed", "excluded", "blocked"].includes(table.status)) {
+          failures.push(`Migration contract table ${table.name} has an invalid or missing status.`);
+        }
+        if (["blocked", "excluded"].includes(table.status) && (typeof table.reason !== "string" || !table.reason.trim())) {
+          failures.push(`Blocked/excluded migration table ${table.name} must include a reason.`);
+        }
+      }
+    }
+    if (contract.schemaSnapshotReviewed !== true && contract.status !== "blocked-pending-source-schema") {
+      failures.push("Migration must remain blocked until the source schema snapshot is reviewed.");
+    }
+    if (contract.schemaSnapshotReviewed !== true && contract.tables?.some((table) => ["mapped", "transformed"].includes(table.status))) {
+      failures.push("No table may be approved as mapped/transformed before source schema review.");
     }
   }
 } catch {
