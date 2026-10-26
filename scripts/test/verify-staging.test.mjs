@@ -4,8 +4,8 @@ import { verifyStaging } from "../verify-staging.mjs";
 
 function fakeFetch(responses) {
   const calls = [];
-  const fetchImpl = async (url) => {
-    calls.push(url);
+  const fetchImpl = async (url, options) => {
+    calls.push({ url, options });
     const value = responses[url];
     if (!value) throw new Error("unexpected URL");
     return { status: value.status, json: async () => value.body };
@@ -23,6 +23,11 @@ test("staging verifier passes only when API liveness, readiness, and optional fr
   const result = await verifyStaging({ apiUrl: "https://api.example.com/", webUrl: "https://web.example.com", fetchImpl });
   assert.equal(result.valid, true, JSON.stringify(result));
   assert.equal(fetchImpl.calls.length, 3);
+  for (const call of fetchImpl.calls) {
+    assert.equal(call.options.method, "GET");
+    assert.equal(call.options.redirect, "error");
+    assert.ok(call.options.signal instanceof AbortSignal);
+  }
 });
 
 test("staging verifier blocks when database readiness is unhealthy", async () => {
@@ -35,11 +40,31 @@ test("staging verifier blocks when database readiness is unhealthy", async () =>
   assert.equal(result.results[1].ok, false);
 });
 
-test("staging verifier rejects missing, malformed, and credential-bearing URLs", async () => {
+test("staging verifier rejects missing, malformed, credential-bearing, and unsafe URLs", async () => {
   await assert.rejects(() => verifyStaging({}), /STAGING_API_URL is required/);
   await assert.rejects(() => verifyStaging({ apiUrl: "not a URL" }), /valid absolute URL/);
   await assert.rejects(() => verifyStaging({ apiUrl: "https://user:secret@example.com" }), /must not contain credentials/);
   await assert.rejects(() => verifyStaging({ apiUrl: "https://api.example.com/prefix" }), /base URL without a path/);
+  await assert.rejects(() => verifyStaging({ apiUrl: "ftp://api.example.com" }), /must use HTTP or HTTPS/);
+  await assert.rejects(() => verifyStaging({ apiUrl: "https://api.example.com?token=secret" }), /must not contain credentials/);
+});
+
+test("staging verifier reports non-JSON health payloads as unhealthy", async () => {
+  const fetchImpl = async () => ({ status: 200, json: async () => { throw new SyntaxError("not JSON"); } });
+  const result = await verifyStaging({ apiUrl: "https://api.example.com", fetchImpl });
+  assert.equal(result.valid, false);
+  assert.equal(result.results.every((item) => item.ok === false), true);
+});
+
+test("staging verifier reports frontend server errors as failures", async () => {
+  const fetchImpl = fakeFetch({
+    "https://api.example.com/api/health": { status: 200, body: { status: "ok", service: "skillbarter-api" } },
+    "https://api.example.com/api/health/ready": { status: 200, body: { status: "ready", checks: { database: "connected" } } },
+    "https://web.example.com": { status: 500, body: {} }
+  });
+  const result = await verifyStaging({ apiUrl: "https://api.example.com", webUrl: "https://web.example.com", fetchImpl });
+  assert.equal(result.valid, false);
+  assert.equal(result.results[2].issue, "frontend returned a non-success status");
 });
 
 test("staging verifier reports request failures without leaking error details", async () => {
@@ -47,4 +72,18 @@ test("staging verifier reports request failures without leaking error details", 
   assert.equal(result.valid, false);
   assert.equal(result.results[0].issue, "request failed");
   assert.equal(JSON.stringify(result).includes("private detail"), false);
+});
+
+test("staging verifier reports request timeouts without leaking error details", async () => {
+  const fetchImpl = (_url, { signal }) => new Promise((resolve, reject) => {
+    signal.addEventListener("abort", () => {
+      const error = new Error("private timeout details");
+      error.name = "AbortError";
+      reject(error);
+    }, { once: true });
+  });
+  const result = await verifyStaging({ apiUrl: "https://api.example.com", fetchImpl, timeoutMs: 5 });
+  assert.equal(result.valid, false);
+  assert.equal(result.results.every((item) => item.issue === "request timed out"), true);
+  assert.equal(JSON.stringify(result).includes("private timeout details"), false);
 });
