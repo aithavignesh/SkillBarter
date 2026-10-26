@@ -317,3 +317,11 @@ test("accepts zero and non-negative safe integer source inventory row counts", (
   assert.equal(result.valid, true);
   assert.deepEqual(result.issues, []);
 });
+
+
+test("allows source inventory entries without optional row counts", () => {
+  const candidate = { tables: [{ name: "users" }, { name: "skills" }] };
+  const result = validateMappingCoverage(candidate, contract);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.issues, []);
+});
