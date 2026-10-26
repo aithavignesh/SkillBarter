@@ -155,11 +155,15 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
           }
           if (typeof field.sourceField !== "string" || !field.sourceField.trim()) {
             tableIssues.push("field mapping entries require sourceField");
-          } else if (sourceFields.has(field.sourceField.toLowerCase())) {
-            tableIssues.push(`duplicate source field mapping (including case-insensitive aliases): ${field.sourceField}`);
           } else {
-            sourceFields.add(field.sourceField.toLowerCase());
+            // Keep every exact spelling for inventory comparison, even when a
+            // case-insensitive duplicate is also reported below.
             sourceFieldNames.add(field.sourceField);
+            if (sourceFields.has(field.sourceField.toLowerCase())) {
+              tableIssues.push(`duplicate source field mapping (including case-insensitive aliases): ${field.sourceField}`);
+            } else {
+              sourceFields.add(field.sourceField.toLowerCase());
+            }
           }
           if (!["pending", "mapped", "transformed", "excluded", "blocked"].includes(field.status)) {
             tableIssues.push(`field ${field.sourceField ?? "(unknown)"} has an invalid mapping status`);
