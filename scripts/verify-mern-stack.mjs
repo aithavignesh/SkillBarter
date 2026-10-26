@@ -32,7 +32,7 @@ if (root) {
   for (const workspace of ["next-app", "server"]) {
     if (!root.workspaces?.includes(workspace)) failures.push(`Root workspace missing: ${workspace}`);
   }
-  for (const script of ["dev", "build", "check", "test", "verify:stack", "preflight:migration"]) {
+  for (const script of ["dev", "build", "check", "test", "verify:stack", "preflight:migration", "test:staging"]) {
     if (!root.scripts?.[script]) failures.push(`Root npm script missing: ${script}`);
   }
 }
@@ -67,6 +67,8 @@ for (const path of [
   "migrations/source-to-target-contract.json",
   "migrations/MIGRATION_READINESS_GATE.md",
   "migrations/MIGRATION_RUNBOOK.md",
+  "scripts/verify-staging.mjs",
+  "scripts/test/verify-staging.test.mjs",
   "docs/DEPLOYMENT_MERN.md",
   "MIGRATION_MERN.md",
   "frontend",
