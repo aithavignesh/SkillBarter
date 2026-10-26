@@ -363,6 +363,18 @@ test("requires an explicit mapping disposition for every inventoried source colu
   assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("source column created_at has no mapping disposition")));
 });
 
+test("rejects case-colliding source field mapping entries", () => {
+  const candidateContract = structuredClone(contract);
+  candidateContract.tables[0].fields.push({
+    sourceField: "Email",
+    status: "mapped",
+    targetField: "alternateEmail"
+  });
+  const result = validateMappingCoverage(manifest, candidateContract);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("duplicate source field mapping (including case-insensitive aliases): Email")));
+});
+
 test("rejects mapping fields absent from the exact-case source column inventory", () => {
   const candidateManifest = structuredClone(manifest);
   candidateManifest.tables[0].columns = ["email", "created_at"];
