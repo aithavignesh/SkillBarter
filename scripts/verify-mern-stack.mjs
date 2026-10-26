@@ -55,8 +55,8 @@ if (api) {
 }
 
 for (const path of [
-  "next-app/app",
-  "next-app/app/api",
+  "next-app/src/app",
+  "next-app/src/app/api",
   "next-app/next.config.ts",
   "next-app/.env.example",
   "server/src/app.js",
