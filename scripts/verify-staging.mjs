@@ -12,11 +12,13 @@ function normalizeBaseUrl(value, label) {
   return parsed.toString().replace(/\/$/, "");
 }
 
-async function fetchWithTimeout(url, timeoutMs, fetchImpl) {
+async function requestWithTimeout(url, timeoutMs, fetchImpl, inspectResponse) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetchImpl(url, { method: "GET", redirect: "error", signal: controller.signal });
+    const response = await fetchImpl(url, { method: "GET", redirect: "error", signal: controller.signal });
+    // Keep the timeout active while consuming the response body, not just until headers arrive.
+    return await inspectResponse(response, controller.signal);
   } finally {
     clearTimeout(timer);
   }
@@ -33,30 +35,32 @@ export async function verifyStaging({ apiUrl, webUrl, fetchImpl = fetch, timeout
 
   const results = [];
   for (const [path, expectedStatus] of [["/api/health", 200], ["/api/health/ready", 200]]) {
-    let response;
     try {
-      response = await fetchWithTimeout(`${apiBase}${path}`, timeoutMs, fetchImpl);
+      const result = await requestWithTimeout(`${apiBase}${path}`, timeoutMs, fetchImpl, async (response) => {
+        let body = null;
+        try { body = await response.json(); } catch { /* non-JSON response is reported below */ }
+        const healthOk = path === "/api/health"
+          ? body?.status === "ok" && body?.service === "skillbarter-api"
+          : body?.status === "ready" && body?.checks?.database === "connected";
+        return {
+          url: path,
+          ok: response.status === expectedStatus && healthOk,
+          status: response.status,
+          ...(healthOk ? {} : { issue: "unexpected status or health payload" })
+        };
+      });
+      results.push(result);
     } catch (error) {
       results.push({ url: path, ok: false, issue: error.name === "AbortError" ? "request timed out" : "request failed" });
-      continue;
     }
-    let body = null;
-    try { body = await response.json(); } catch { /* non-JSON response is reported below */ }
-    const healthOk = path === "/api/health"
-      ? body?.status === "ok" && body?.service === "skillbarter-api"
-      : body?.status === "ready" && body?.checks?.database === "connected";
-    results.push({
-      url: path,
-      ok: response.status === expectedStatus && healthOk,
-      status: response.status,
-      ...(healthOk ? {} : { issue: "unexpected status or health payload" })
-    });
   }
   if (webBase) {
     try {
-      const response = await fetchWithTimeout(webBase, timeoutMs, fetchImpl);
-      results.push({ url: "/", ok: response.status >= 200 && response.status < 400, status: response.status,
-        ...(response.status >= 200 && response.status < 400 ? {} : { issue: "frontend returned a non-success status" }) });
+      const result = await requestWithTimeout(webBase, timeoutMs, fetchImpl, async (response) => ({
+        url: "/", ok: response.status >= 200 && response.status < 400, status: response.status,
+        ...(response.status >= 200 && response.status < 400 ? {} : { issue: "frontend returned a non-success status" })
+      }));
+      results.push(result);
     } catch (error) {
       results.push({ url: "/", ok: false, issue: error.name === "AbortError" ? "request timed out" : "request failed" });
     }
