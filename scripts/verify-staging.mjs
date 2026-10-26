@@ -8,6 +8,7 @@ function normalizeBaseUrl(value, label) {
   if (parsed.username || parsed.password || parsed.search || parsed.hash) {
     throw new Error(`${label} must not contain credentials, query parameters, or fragments.`);
   }
+  if (parsed.pathname !== "/") throw new Error(`${label} must be a base URL without a path.`);
   return parsed.toString().replace(/\/$/, "");
 }
 
