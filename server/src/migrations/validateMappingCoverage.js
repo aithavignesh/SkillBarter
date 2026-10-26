@@ -17,6 +17,10 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
   for (const table of sourceManifest.tables) {
     requireObject(table, "Source table entry");
     if (typeof table.name !== "string" || !/^[a-z][a-z0-9_]*$/i.test(table.name)) throw new Error("Source table names must be valid identifiers.");
+    if (Object.prototype.hasOwnProperty.call(table, "rowCount")
+      && (!Number.isSafeInteger(table.rowCount) || table.rowCount < 0)) {
+      throw new Error(`rowCount for source table ${table.name} must be a non-negative safe integer.`);
+    }
     const sourceKey = table.name.toLowerCase();
     if (sourceNameKeys.has(sourceKey)) throw new Error(`Duplicate source table (including case-insensitive aliases): ${table.name}`);
     sourceNameKeys.add(sourceKey);
