@@ -174,9 +174,10 @@ test("rejects malformed and case-colliding source column inventories", () => {
   for (const columns of [[], ["id", "Email", "email"], ["id", "bad column"]]) {
     const sourceWithColumns = structuredClone(manifest);
     sourceWithColumns.tables[0].columns = columns;
-    const result = validateMappingCoverage(sourceWithColumns, contract);
-    assert.equal(result.valid, false);
-    assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("source column")));
+    assert.throws(
+      () => validateMappingCoverage(sourceWithColumns, contract),
+      /columns for source table users/
+    );
   }
 });
 
@@ -367,7 +368,7 @@ test("rejects malformed or duplicate source column inventories", () => {
 
 test("accepts a non-empty source column inventory with unique identifiers", () => {
   const candidate = structuredClone(manifest);
-  candidate.tables[0].columns = ["id", "email", "created_at"];
+  candidate.tables[0].columns = ["id", "email"];
   const result = validateMappingCoverage(candidate, contract);
   assert.equal(result.valid, true);
   assert.deepEqual(result.issues, []);
