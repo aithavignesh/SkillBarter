@@ -57,7 +57,7 @@ test("rejects row keys whose casing differs from the reviewed source column inve
   await writeFile(path.join(directory, "manifest.json"), JSON.stringify(manifest));
   await assert.rejects(
     validateExportDirectory(directory),
-    /contains column\\(s\\) absent from the manifest inventory: Email/
+    /contains column\(s\) absent from the manifest inventory: Email/
   );
 });
 
