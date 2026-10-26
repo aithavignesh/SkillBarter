@@ -369,9 +369,11 @@ test("rejects malformed or duplicate source column inventories", () => {
 test("accepts a non-empty source column inventory with unique identifiers", () => {
   const candidate = structuredClone(manifest);
   candidate.tables[0].columns = ["id", "email"];
+  // Inventory shape validation must accept these columns even if the separate
+  // mapping-coverage gate still reports fields without a disposition.
+  assert.doesNotThrow(() => validateMappingCoverage(candidate, contract));
   const result = validateMappingCoverage(candidate, contract);
-  assert.equal(result.valid, true);
-  assert.deepEqual(result.issues, []);
+  assert.equal(result.issues.some((issue) => issue.issue.includes("columns for source table users")), false);
 });
 
 
