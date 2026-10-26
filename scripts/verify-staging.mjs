@@ -24,7 +24,13 @@ async function fetchWithTimeout(url, timeoutMs, fetchImpl) {
 
 /** Smoke-test an already-deployed staging API and optional web URL; never mutates data. */
 export async function verifyStaging({ apiUrl, webUrl, fetchImpl = fetch, timeoutMs = 8000 } = {}) {
+  // Validate all configuration before making any network request.
   const apiBase = normalizeBaseUrl(apiUrl, "STAGING_API_URL");
+  const webBase = webUrl ? normalizeBaseUrl(webUrl, "STAGING_WEB_URL") : null;
+  if (!Number.isFinite(timeoutMs) || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 120000) {
+    throw new Error("timeoutMs must be an integer between 1 and 120000 milliseconds.");
+  }
+
   const results = [];
   for (const [path, expectedStatus] of [["/api/health", 200], ["/api/health/ready", 200]]) {
     let response;
@@ -46,8 +52,7 @@ export async function verifyStaging({ apiUrl, webUrl, fetchImpl = fetch, timeout
       ...(healthOk ? {} : { issue: "unexpected status or health payload" })
     });
   }
-  if (webUrl) {
-    const webBase = normalizeBaseUrl(webUrl, "STAGING_WEB_URL");
+  if (webBase) {
     try {
       const response = await fetchWithTimeout(webBase, timeoutMs, fetchImpl);
       results.push({ url: "/", ok: response.status >= 200 && response.status < 400, status: response.status,
