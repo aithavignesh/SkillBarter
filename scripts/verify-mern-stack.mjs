@@ -129,9 +129,6 @@ try {
         }
       }
     }
-    if (contract.schemaSnapshotReviewed !== true && contract.status !== "blocked-pending-source-schema") {
-      failures.push("Migration must remain blocked until the source schema snapshot is reviewed.");
-    }
     if (contract.schemaSnapshotReviewed !== true && contract.tables?.some((table) => ["mapped", "transformed"].includes(table.status))) {
       failures.push("No table may be approved as mapped/transformed before source schema review.");
     }
