@@ -325,3 +325,31 @@ test("allows source inventory entries without optional row counts", () => {
   assert.equal(result.valid, true);
   assert.deepEqual(result.issues, []);
 });
+
+
+test("rejects malformed or duplicate source column inventories", () => {
+  const invalidInventories = [
+    null,
+    [],
+    "email",
+    ["email", ""],
+    ["email", "user-name"],
+    ["email", "EMAIL"]
+  ];
+  for (const columns of invalidInventories) {
+    const candidate = structuredClone(manifest);
+    candidate.tables[0].columns = columns;
+    assert.throws(
+      () => validateMappingCoverage(candidate, contract),
+      /columns for source table users/
+    );
+  }
+});
+
+test("accepts a non-empty source column inventory with unique identifiers", () => {
+  const candidate = structuredClone(manifest);
+  candidate.tables[0].columns = ["id", "email", "created_at"];
+  const result = validateMappingCoverage(candidate, contract);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.issues, []);
+});
