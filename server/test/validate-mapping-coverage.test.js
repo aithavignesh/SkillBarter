@@ -274,3 +274,22 @@ test("rejects a ready top-level contract status before source schema review", ()
   assert.equal(result.valid, false);
   assert.ok(result.issues.some((issue) => issue.issue.includes("schemaSnapshotReviewed must be true before mapping coverage can be approved")));
 });
+
+
+test("rejects a schema review date that predates the captured snapshot", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaReview.capturedAt = "2026-10-21T00:00:00Z";
+  candidate.schemaReview.reviewedAt = "2026-10-20";
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.issue.includes("reviewedAt cannot be earlier than schemaReview.capturedAt")));
+});
+
+test("accepts a schema review on the same calendar date as snapshot capture", () => {
+  const candidate = structuredClone(contract);
+  candidate.schemaReview.capturedAt = "2026-10-20T23:59:59Z";
+  candidate.schemaReview.reviewedAt = "2026-10-20";
+  const result = validateMappingCoverage(manifest, candidate);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.issues, []);
+});
