@@ -38,7 +38,10 @@ export async function verifyStaging({ apiUrl, webUrl, fetchImpl = fetch, timeout
     try {
       const result = await requestWithTimeout(`${apiBase}${path}`, timeoutMs, fetchImpl, async (response) => {
         let body = null;
-        try { body = await response.json(); } catch { /* non-JSON response is reported below */ }
+        try { body = await response.json(); } catch (error) {
+          if (signal.aborted) throw error;
+          /* non-JSON response is reported below */
+        }
         const healthOk = path === "/api/health"
           ? body?.status === "ok" && body?.service === "skillbarter-api"
           : body?.status === "ready" && body?.checks?.database === "connected";
