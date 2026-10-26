@@ -151,6 +151,25 @@ test("requires a mapping disposition for every source column when column invento
   assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("mapping references source column absent from manifest: old_column")));
 });
 
+test("matches reviewed source column inventory using exact field casing", () => {
+  const sourceWithColumns = { tables: [
+    { name: "users", rowCount: 1, columns: ["ID", "Email"] },
+    { name: "skills", rowCount: 1, columns: ["name"] }
+  ] };
+  const candidate = structuredClone(contract);
+  candidate.tables[0].fields = [
+    { sourceField: "ID", status: "mapped", targetField: "legacyId" },
+    { sourceField: "Email", status: "mapped", targetField: "email" }
+  ];
+  let result = validateMappingCoverage(sourceWithColumns, candidate);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.issues, []);
+  candidate.tables[0].fields[1].sourceField = "email";
+  result = validateMappingCoverage(sourceWithColumns, candidate);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("source column Email has no mapping disposition")));
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("mapping references source column absent from manifest: email")));
+});
 test("rejects malformed and case-colliding source column inventories", () => {
   for (const columns of [[], ["id", "Email", "email"], ["id", "bad column"]]) {
     const sourceWithColumns = structuredClone(manifest);
