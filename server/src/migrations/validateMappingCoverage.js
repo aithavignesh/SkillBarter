@@ -143,7 +143,9 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
       if (!Array.isArray(mapping.fields) || mapping.fields.length === 0) {
         tableIssues.push("mapped/transformed table requires explicit field mapping decisions");
       } else {
+        // Preserve exact spelling for inventory coverage; normalize only for duplicate detection.
         const sourceFields = new Set();
+        const sourceFieldNames = new Set();
         const targetPaths = [];
         let usableFieldCount = 0;
         for (const field of mapping.fields) {
@@ -157,6 +159,7 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
             tableIssues.push(`duplicate source field mapping (including case-insensitive aliases): ${field.sourceField}`);
           } else {
             sourceFields.add(field.sourceField.toLowerCase());
+            sourceFieldNames.add(field.sourceField);
           }
           if (!["pending", "mapped", "transformed", "excluded", "blocked"].includes(field.status)) {
             tableIssues.push(`field ${field.sourceField ?? "(unknown)"} has an invalid mapping status`);
@@ -184,7 +187,7 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
           for (const column of sourceColumns) {
             if (!sourceFields.has(column)) tableIssues.push(`source column ${column} has no mapping disposition`);
           }
-          for (const fieldName of sourceFields) {
+          for (const fieldName of sourceFieldNames) {
             if (!sourceColumns.has(fieldName)) tableIssues.push(`mapping references source column absent from manifest: ${fieldName}`);
           }
         }
