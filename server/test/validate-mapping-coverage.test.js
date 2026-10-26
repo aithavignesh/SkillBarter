@@ -353,3 +353,26 @@ test("accepts a non-empty source column inventory with unique identifiers", () =
   assert.equal(result.valid, true);
   assert.deepEqual(result.issues, []);
 });
+
+
+test("requires an explicit mapping disposition for every inventoried source column", () => {
+  const candidateManifest = structuredClone(manifest);
+  candidateManifest.tables[0].columns = ["email", "created_at"];
+  const result = validateMappingCoverage(candidateManifest, contract);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("source column created_at has no mapping disposition")));
+});
+
+test("rejects mapping fields absent from the exact-case source column inventory", () => {
+  const candidateManifest = structuredClone(manifest);
+  candidateManifest.tables[0].columns = ["email", "created_at"];
+  const candidateContract = structuredClone(contract);
+  candidateContract.tables[0].fields.push({
+    sourceField: "Email",
+    status: "mapped",
+    targetField: "alternateEmail"
+  });
+  const result = validateMappingCoverage(candidateManifest, candidateContract);
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.some((issue) => issue.table === "users" && issue.issue.includes("mapping references source column absent from manifest: Email")));
+});
