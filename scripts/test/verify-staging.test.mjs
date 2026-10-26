@@ -87,3 +87,25 @@ test("staging verifier reports request timeouts without leaking error details", 
   assert.equal(result.results.every((item) => item.issue === "request timed out"), true);
   assert.equal(JSON.stringify(result).includes("private timeout details"), false);
 });
+
+test("staging verifier validates timeout bounds before making requests", async () => {
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; throw new Error("should not be called"); };
+  for (const timeoutMs of [0, -1, 1.5, NaN, Infinity, 120001]) {
+    await assert.rejects(
+      () => verifyStaging({ apiUrl: "https://api.example.com", fetchImpl, timeoutMs }),
+      /timeoutMs must be an integer between 1 and 120000 milliseconds/
+    );
+  }
+  assert.equal(calls, 0);
+});
+
+test("staging verifier validates optional frontend URL before contacting the API", async () => {
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; throw new Error("should not be called"); };
+  await assert.rejects(
+    () => verifyStaging({ apiUrl: "https://api.example.com", webUrl: "https://web.example.com/path", fetchImpl }),
+    /STAGING_WEB_URL must be a base URL without a path/
+  );
+  assert.equal(calls, 0);
+});
