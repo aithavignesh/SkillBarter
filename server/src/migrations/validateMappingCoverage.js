@@ -68,6 +68,11 @@ export function validateMappingCoverage(sourceManifest, mappingContract) {
           issues.push({ table: null, issue: "schemaReview.reviewedAt must be a valid YYYY-MM-DD date" });
         }
       }
+      if (typeof review.reviewedAt === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(review.reviewedAt)
+        && typeof review.capturedAt === "string" && /^\\d{4}-\\d{2}-\\d{2}T/.test(review.capturedAt)
+        && review.capturedAt.slice(0, 10) > review.reviewedAt) {
+        issues.push({ table: null, issue: "schemaReview.reviewedAt cannot be earlier than schemaReview.capturedAt" });
+      }
     }
   }
   for (const name of sourceNames) {
