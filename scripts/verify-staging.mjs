@@ -36,7 +36,7 @@ export async function verifyStaging({ apiUrl, webUrl, fetchImpl = fetch, timeout
   const results = [];
   for (const [path, expectedStatus] of [["/api/health", 200], ["/api/health/ready", 200]]) {
     try {
-      const result = await requestWithTimeout(`${apiBase}${path}`, timeoutMs, fetchImpl, async (response) => {
+      const result = await requestWithTimeout(`${apiBase}${path}`, timeoutMs, fetchImpl, async (response, signal) => {
         let body = null;
         try { body = await response.json(); } catch (error) {
           if (signal.aborted) throw error;
