@@ -579,3 +579,30 @@ test("registration rejects an expired phone verification proof", async () => {
   assert.match((await response.json()).error, /Verify your mobile number/);
   assert.equal(databaseQueried, false);
 });
+
+test("registration rejects a valid JWT issued for the wrong purpose", async () => {
+  const phone = "+919876543210";
+  const wrongPurposeToken = jwt.sign(
+    { purpose: "login", phone },
+    jwtSecret,
+    { expiresIn: "10m", issuer: "skillbarter-api", audience: "skillbarter-web" }
+  );
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    throw new Error("Wrong-purpose JWT must be rejected before database access.");
+  };
+
+  const response = await post("/api/auth/register", {
+    fullName: "Test User",
+    username: "test_user",
+    email: "test@example.com",
+    password: "long-enough-password",
+    phone,
+    phoneVerificationToken: wrongPurposeToken
+  });
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /Verify your mobile number/);
+  assert.equal(databaseQueried, false);
+});
