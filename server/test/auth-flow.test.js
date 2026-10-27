@@ -606,3 +606,39 @@ test("registration rejects a valid JWT issued for the wrong purpose", async () =
   assert.match((await response.json()).error, /Verify your mobile number/);
   assert.equal(databaseQueried, false);
 });
+
+test("registration rejects phone verification proofs with the wrong issuer or audience", async () => {
+  const phone = "+919876543210";
+  const invalidTokens = [
+    jwt.sign(
+      { purpose: "phone_registration", phone },
+      jwtSecret,
+      { expiresIn: "10m", issuer: "untrusted-issuer", audience: "skillbarter-web" }
+    ),
+    jwt.sign(
+      { purpose: "phone_registration", phone },
+      jwtSecret,
+      { expiresIn: "10m", issuer: "skillbarter-api", audience: "untrusted-audience" }
+    )
+  ];
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    throw new Error("Invalid issuer/audience proof must be rejected before database access.");
+  };
+
+  for (const phoneVerificationToken of invalidTokens) {
+    const response = await post("/api/auth/register", {
+      fullName: "Test User",
+      username: "test_user",
+      email: "test@example.com",
+      password: "long-enough-password",
+      phone,
+      phoneVerificationToken
+    });
+    assert.equal(response.status, 403);
+    assert.match((await response.json()).error, /Verify your mobile number/);
+  }
+  assert.equal(databaseQueried, false);
+});
+
