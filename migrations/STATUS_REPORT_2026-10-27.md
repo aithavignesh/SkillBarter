@@ -6,8 +6,10 @@ Status: **Engineering checks pass; data migration remains blocked**
 
 ## Verified in CI
 
-Latest successful workflow: https://github.com/aithavignesh/SkillBarter/actions/runs/40460755323
+Latest successful workflow verified in this report: https://github.com/aithavignesh/SkillBarter/actions/runs/40460755323
 Verified commit: `23f39e16369d8891ec4dc47d1a66ad4e54fc94ce`
+
+The authentication regression tests added in later commits (`350ce871`, `13aa6b16`, and `a32c2e6b`) have been confirmed in the branch source, but a successful CI run for those newer commits has **not** been verified yet. Do not treat those additions as test-passing until the branch workflow confirms it.
 
 The workflow completed successfully for:
 - MERN workspace structure verification
@@ -24,6 +26,7 @@ The staging smoke-check test suite is a test of the checker itself; it is not ev
 - Next.js app-router frontend and Express API workspace are present.
 - API routes and Mongoose models cover core application areas, including authentication, users, skills, matches, exchanges, messages, reviews, reports, blocks, posts, notifications, and analytics.
 - Automated validation tools cover export integrity, mapping-contract rules, source-field coverage, target-model coverage, migration preflight, and import-report reconciliation.
+- Added authentication regression tests for mismatched phone proofs, expired proofs, wrong token purpose, and invalid JWT issuer/audience. These are committed but awaiting verified CI execution.
 - CI regressions in mapping coverage, source field casing, app-router path checks, and staging response timeout handling have been corrected and the latest workflow passed.
 - The source-to-target contract remains deliberately blocked until source schema evidence has been reviewed.
 
