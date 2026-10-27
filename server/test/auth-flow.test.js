@@ -525,3 +525,57 @@ test("email OTP verification refuses codes after the attempt limit", async () =>
   assert.equal(userLookupCalled, false);
 });
 
+
+
+test("registration rejects a phone verification proof bound to a different phone", async () => {
+  const phoneVerificationToken = jwt.sign(
+    { purpose: "phone_registration", phone: "+919876543210" },
+    jwtSecret,
+    { expiresIn: "10m", issuer: "skillbarter-api", audience: "skillbarter-web" }
+  );
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    throw new Error("Registration must reject mismatched phone proof before database access.");
+  };
+
+  const response = await post("/api/auth/register", {
+    fullName: "Test User",
+    username: "test_user",
+    email: "test@example.com",
+    password: "long-enough-password",
+    phone: "+919876543211",
+    phoneVerificationToken
+  });
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /Verify your mobile number/);
+  assert.equal(databaseQueried, false);
+});
+
+test("registration rejects an expired phone verification proof", async () => {
+  const phone = "+919876543210";
+  const phoneVerificationToken = jwt.sign(
+    { purpose: "phone_registration", phone },
+    jwtSecret,
+    { expiresIn: -1, issuer: "skillbarter-api", audience: "skillbarter-web" }
+  );
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    throw new Error("Registration must reject expired phone proof before database access.");
+  };
+
+  const response = await post("/api/auth/register", {
+    fullName: "Test User",
+    username: "test_user",
+    email: "test@example.com",
+    password: "long-enough-password",
+    phone,
+    phoneVerificationToken
+  });
+
+  assert.equal(response.status, 403);
+  assert.match((await response.json()).error, /Verify your mobile number/);
+  assert.equal(databaseQueried, false);
+});
