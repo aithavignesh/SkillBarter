@@ -10,9 +10,11 @@ import { emailOtpMatches, generateEmailOtp, hashEmailOtp } from "../utils/emailO
 import { isPhoneOtpConfigured, requestPhoneVerification, checkPhoneVerification } from "../services/phoneOtp.js";
 
 const router = Router();
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { error: "Too many authentication attempts. Please try again later." } });
-const otpRequestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, message: { error: "Too many code requests. Please try again later." } });
-const otpVerifyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { error: "Too many verification attempts. Please request a new code later." } });
+// Keep integration tests independent; production and development retain real rate limits.
+const authTestMode = process.env.NODE_ENV === "test";
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: authTestMode ? 1000 : 10, standardHeaders: true, legacyHeaders: false, message: { error: "Too many authentication attempts. Please try again later." } });
+const otpRequestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: authTestMode ? 1000 : 5, standardHeaders: true, legacyHeaders: false, message: { error: "Too many code requests. Please try again later." } });
+const otpVerifyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: authTestMode ? 1000 : 10, standardHeaders: true, legacyHeaders: false, message: { error: "Too many verification attempts. Please request a new code later." } });
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const usernamePattern = /^[a-zA-Z0-9_]{3,30}$/;
 
