@@ -6,8 +6,8 @@ Status: **Engineering checks pass; data migration remains blocked**
 
 ## Verified in CI
 
-Latest successful workflow: https://github.com/aithavignesh/SkillBarter/actions/runs/40459349710
-Verified commit: `85f200785bd72003a1cebd8462198e24b28cc340`
+Latest successful workflow: https://github.com/aithavignesh/SkillBarter/actions/runs/40460755323
+Verified commit: `23f39e16369d8891ec4dc47d1a66ad4e54fc94ce`
 
 The workflow completed successfully for:
 - MERN workspace structure verification
