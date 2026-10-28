@@ -40,10 +40,10 @@ The zero counts above are illustrative placeholders only. Replace them with revi
 
 ## Run
 
-From the repository root, set `MIGRATION_STAGING_MONGODB_URI` to the dedicated staging URI in the local shell/secret manager, then run:
+From the repository root, set `MIGRATION_STAGING_MONGODB_URI` to the dedicated staging URI and set `MIGRATION_STAGING_CONFIRM=YES` only after independently verifying that the URI points to the isolated staging host/database. The checker rejects production-like host/database names, but the confirmation is an additional operator safeguard, not proof by itself. Then run:
 
 ```sh
-node server/src/migrations/verifyMongoStaging.js /secure/path/staging-reconciliation.json
+MIGRATION_STAGING_CONFIRM=YES node server/src/migrations/verifyMongoStaging.js /secure/path/staging-reconciliation.json
 ```
 
 Exit status:
