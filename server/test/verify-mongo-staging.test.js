@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getStagingDatabaseName, verifyMongoStaging } from "../src/migrations/verifyMongoStaging.js";
+import { getStagingDatabaseName, validateStagingMongoUri, verifyMongoStaging } from "../src/migrations/verifyMongoStaging.js";
 
 function fakeDb(collections) {
   return {
@@ -121,4 +121,25 @@ test("staging URI parser rejects non-MongoDB protocols and malformed URIs", () =
 test("staging URI parser rejects URIs without an explicit database name", () => {
   assert.equal(getStagingDatabaseName("mongodb://localhost:27017"), "");
   assert.equal(getStagingDatabaseName("mongodb://localhost:27017/"), "");
+});
+
+test("staging URI validation requires explicit confirmation and rejects application URI reuse", () => {
+  const stagingUri = "mongodb://localhost:27017/skillbarter_staging";
+  assert.deepEqual(validateStagingMongoUri(stagingUri, "mongodb://localhost:27017/skillbarter_app", "YES"), {
+    databaseName: "skillbarter_staging",
+    hostname: "localhost"
+  });
+  assert.throws(() => validateStagingMongoUri(stagingUri, stagingUri, "YES"), /must not equal/);
+  assert.throws(() => validateStagingMongoUri(stagingUri, undefined, "NO"), /MIGRATION_STAGING_CONFIRM=YES/);
+  assert.throws(() => validateStagingMongoUri("  ", undefined, "YES"), /is required/);
+});
+
+test("staging URI validation rejects production-like host or database names", () => {
+  assert.throws(() => validateStagingMongoUri("mongodb://prod-db.example:27017/skillbarter_staging", undefined, "YES"), /non-production/);
+  assert.throws(() => validateStagingMongoUri("mongodb://localhost:27017/skillbarter-production", undefined, "YES"), /non-production/);
+});
+
+test("staging URI validation decodes escaped database names before safety checks", () => {
+  assert.equal(getStagingDatabaseName("mongodb://localhost:27017/skillbarter%5Fstaging"), "skillbarter_staging");
+  assert.throws(() => getStagingDatabaseName("mongodb://localhost:27017/bad%ZZname"), /invalid encoded database name/);
 });
