@@ -87,3 +87,23 @@ test("staging reconciliation rejects duplicate collection expectations", async (
     references: []
   }), /Duplicate collection expectation/);
 });
+
+test("staging reconciliation rejects unsafe collection and field names", async () => {
+  const db = { collection() { throw new Error("should not read"); } };
+  await assert.rejects(() => verifyMongoStaging(db, {
+    collections: [{ name: "users.$where", expectedCount: 0 }],
+    references: []
+  }), /simple collection or field name/);
+  await assert.rejects(() => verifyMongoStaging(db, {
+    collections: [{ name: "users", expectedCount: 0 }, { name: "connections", expectedCount: 0 }],
+    references: [{ collection: "connections", field: "nested.user", targetCollection: "users" }]
+  }), /simple collection or field name/);
+});
+
+test("staging reconciliation rejects unsafe integer count expectations", async () => {
+  const db = { collection() { throw new Error("should not read"); } };
+  await assert.rejects(() => verifyMongoStaging(db, {
+    collections: [{ name: "users", expectedCount: Number.MAX_SAFE_INTEGER + 1 }],
+    references: []
+  }), /non-negative safe integer/);
+});
