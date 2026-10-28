@@ -40,6 +40,31 @@ The zero counts above are illustrative placeholders only. Replace them with revi
 
 ## Run
 
+Use the commands for your local shell. Keep the URI in your local environment only; never paste it into a commit, issue, pull request, or shared log.
+
+### Windows PowerShell
+
+```powershell
+$env:MIGRATION_STAGING_MONGODB_URI = "mongodb+srv://<staging-user>:<password>@<staging-cluster>/<staging-database>"
+$env:MIGRATION_STAGING_CONFIRM = "YES"
+node server/src/migrations/verifyMongoStaging.js "C:\secure\path\staging-reconciliation.json"
+Remove-Item Env:MIGRATION_STAGING_MONGODB_URI
+Remove-Item Env:MIGRATION_STAGING_CONFIRM
+```
+
+Replace the placeholders locally. If the password contains URI-reserved characters, percent-encode them before placing it in the URI. Do not commit the private specification file.
+
+### Bash
+
+```sh
+export MIGRATION_STAGING_MONGODB_URI='mongodb+srv://<staging-user>:<password>@<staging-cluster>/<staging-database>'
+export MIGRATION_STAGING_CONFIRM=YES
+node server/src/migrations/verifyMongoStaging.js /secure/path/staging-reconciliation.json
+unset MIGRATION_STAGING_MONGODB_URI MIGRATION_STAGING_CONFIRM
+```
+
+Replace the placeholders locally. If the password contains URI-reserved characters, percent-encode them before placing it in the URI. Do not commit the private specification file.
+
 From the repository root, set `MIGRATION_STAGING_MONGODB_URI` to the dedicated staging URI and set `MIGRATION_STAGING_CONFIRM=YES` only after independently verifying that the URI points to the isolated staging host/database. The checker rejects production-like host/database names, but the confirmation is an additional operator safeguard, not proof by itself. Then run:
 
 ```sh
