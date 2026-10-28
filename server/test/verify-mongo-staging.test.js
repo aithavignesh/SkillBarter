@@ -65,3 +65,25 @@ test("staging reconciliation rejects invalid and incomplete specifications befor
   }), /explicit count expectation/);
   assert.equal(reads, 0);
 });
+
+test("staging reconciliation checks every member of array-valued references", async () => {
+  const db = fakeDb({
+    users: [{ _id: "u1" }, { _id: "u2" }],
+    connections: [{ _id: "c1", user: ["u1", "missing-user"] }]
+  });
+  const result = await verifyMongoStaging(db, spec);
+  assert.equal(result.valid, false);
+  assert.equal(result.referenceResults[0].checkedReferences, 2);
+  assert.equal(result.referenceResults[0].missingReferences, 1);
+});
+
+test("staging reconciliation rejects duplicate collection expectations", async () => {
+  const db = { collection() { throw new Error("should not read"); } };
+  await assert.rejects(() => verifyMongoStaging(db, {
+    collections: [
+      { name: "users", expectedCount: 1 },
+      { name: "users", expectedCount: 1 }
+    ],
+    references: []
+  }), /Duplicate collection expectation/);
+});
