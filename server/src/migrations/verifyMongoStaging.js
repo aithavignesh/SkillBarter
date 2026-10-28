@@ -11,7 +11,30 @@ export function getStagingDatabaseName(uri) {
   if (!["mongodb:", "mongodb+srv:"].includes(parsedUri.protocol)) {
     throw new Error("MIGRATION_STAGING_MONGODB_URI must use mongodb:// or mongodb+srv://.");
   }
-  return parsedUri.pathname.replace(/^\/+/, "").split("/")[0];
+  let databaseName;
+  try { databaseName = decodeURIComponent(parsedUri.pathname.replace(/^\/+/, "").split("/")[0]); } catch {
+    throw new Error("MIGRATION_STAGING_MONGODB_URI contains an invalid encoded database name.");
+  }
+  return databaseName;
+}
+
+export function validateStagingMongoUri(uri, applicationUri, confirmation) {
+  if (typeof uri !== "string" || !uri.trim()) {
+    throw new Error("MIGRATION_STAGING_MONGODB_URI is required; use a dedicated staging account.");
+  }
+  if (applicationUri && uri === applicationUri) {
+    throw new Error("Staging URI must not equal the application's MONGODB_URI.");
+  }
+  const databaseName = getStagingDatabaseName(uri);
+  const parsedUri = new URL(uri);
+  const hostAndDatabase = parsedUri.hostname + " " + databaseName;
+  if (!databaseName || /(^|[-_.])(prod|production|live)([-_.]|$)/i.test(hostAndDatabase)) {
+    throw new Error("Staging URI must identify a non-production host and database.");
+  }
+  if (confirmation !== "YES") {
+    throw new Error("Set MIGRATION_STAGING_CONFIRM=YES only after verifying this URI points to the isolated staging database.");
+  }
+  return { databaseName, hostname: parsedUri.hostname };
 }
 
 function requireObject(value, label) {
@@ -92,18 +115,7 @@ export async function verifyMongoStaging(db, specification) {
 
 async function main() {
   const uri = process.env.MIGRATION_STAGING_MONGODB_URI;
-  if (!uri?.trim()) throw new Error("MIGRATION_STAGING_MONGODB_URI is required; use a dedicated staging account.");
-  if (process.env.MONGODB_URI && uri === process.env.MONGODB_URI) {
-    throw new Error("Staging URI must not equal the application's MONGODB_URI.");
-  }
-  const databaseName = getStagingDatabaseName(uri);
-  const hostAndDatabase = `${parsedUri.hostname} ${databaseName}`;
-  if (!databaseName || /(^|[-_.])(prod|production|live)([-_.]|$)/i.test(hostAndDatabase)) {
-    throw new Error("Staging URI must identify a non-production host and database.");
-  }
-  if (process.env.MIGRATION_STAGING_CONFIRM !== "YES") {
-    throw new Error("Set MIGRATION_STAGING_CONFIRM=YES only after verifying this URI points to the isolated staging database.");
-  }
+  validateStagingMongoUri(uri, process.env.MONGODB_URI, process.env.MIGRATION_STAGING_CONFIRM);
   const specificationPath = process.argv[2];
   if (!specificationPath) throw new Error("Usage: MIGRATION_STAGING_MONGODB_URI=... node server/src/migrations/verifyMongoStaging.js <private-specification.json>");
   let specification;
