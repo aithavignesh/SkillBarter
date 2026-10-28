@@ -89,7 +89,7 @@ async function main() {
   try { parsedUri = new URL(uri); } catch {
     throw new Error("MIGRATION_STAGING_MONGODB_URI must be a valid MongoDB URI.");
   }
-  const databaseName = parsedUri.pathname.replace(/^\\/+/, "").split("/")[0];
+  const databaseName = parsedUri.pathname.replace(/^\/+/, "").split("/")[0];
   const hostAndDatabase = `${parsedUri.hostname} ${databaseName}`;
   if (!databaseName || /(^|[-_.])(prod|production|live)([-_.]|$)/i.test(hostAndDatabase)) {
     throw new Error("Staging URI must identify a non-production host and database.");
