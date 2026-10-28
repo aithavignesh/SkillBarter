@@ -3,6 +3,17 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import mongoose from "mongoose";
 
+export function getStagingDatabaseName(uri) {
+  let parsedUri;
+  try { parsedUri = new URL(uri); } catch {
+    throw new Error("MIGRATION_STAGING_MONGODB_URI must be a valid MongoDB URI.");
+  }
+  if (!["mongodb:", "mongodb+srv:"].includes(parsedUri.protocol)) {
+    throw new Error("MIGRATION_STAGING_MONGODB_URI must use mongodb:// or mongodb+srv://.");
+  }
+  return parsedUri.pathname.replace(/^\/+/, "").split("/")[0];
+}
+
 function requireObject(value, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${label} must be a JSON object.`);
 }
@@ -85,11 +96,7 @@ async function main() {
   if (process.env.MONGODB_URI && uri === process.env.MONGODB_URI) {
     throw new Error("Staging URI must not equal the application's MONGODB_URI.");
   }
-  let parsedUri;
-  try { parsedUri = new URL(uri); } catch {
-    throw new Error("MIGRATION_STAGING_MONGODB_URI must be a valid MongoDB URI.");
-  }
-  const databaseName = parsedUri.pathname.replace(/^\/+/, "").split("/")[0];
+  const databaseName = getStagingDatabaseName(uri);
   const hostAndDatabase = `${parsedUri.hostname} ${databaseName}`;
   if (!databaseName || /(^|[-_.])(prod|production|live)([-_.]|$)/i.test(hostAndDatabase)) {
     throw new Error("Staging URI must identify a non-production host and database.");
