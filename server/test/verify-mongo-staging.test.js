@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { verifyMongoStaging } from "../src/migrations/verifyMongoStaging.js";
+import { getStagingDatabaseName, verifyMongoStaging } from "../src/migrations/verifyMongoStaging.js";
 
 function fakeDb(collections) {
   return {
@@ -106,4 +106,19 @@ test("staging reconciliation rejects unsafe integer count expectations", async (
     collections: [{ name: "users", expectedCount: Number.MAX_SAFE_INTEGER + 1 }],
     references: []
   }), /non-negative safe integer/);
+});
+
+test("staging URI parser extracts database names without leading slashes", () => {
+  assert.equal(getStagingDatabaseName("mongodb://localhost:27017/skillbarter_staging"), "skillbarter_staging");
+  assert.equal(getStagingDatabaseName("mongodb+srv://cluster.example.mongodb.net/team_staging?retryWrites=true"), "team_staging");
+});
+
+test("staging URI parser rejects non-MongoDB protocols and malformed URIs", () => {
+  assert.throws(() => getStagingDatabaseName("https://example.com/staging"), /must use mongodb:\/\/ or mongodb\+srv:\/\//);
+  assert.throws(() => getStagingDatabaseName("not-a-uri"), /valid MongoDB URI/);
+});
+
+test("staging URI parser rejects URIs without an explicit database name", () => {
+  assert.equal(getStagingDatabaseName("mongodb://localhost:27017"), "");
+  assert.equal(getStagingDatabaseName("mongodb://localhost:27017/"), "");
 });
