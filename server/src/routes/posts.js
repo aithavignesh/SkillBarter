@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Post from "../models/Post.js";
 import PostComment from "../models/PostComment.js";
 import Block from "../models/Block.js";
+import Connection from "../models/Connection.js";
 import Notification from "../models/Notification.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { postLimiter } from "../middleware/writeLimiters.js";
@@ -20,7 +21,21 @@ router.get("/", async (req, res) => {
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 20, 1), 50);
   const before = typeof req.query.before === "string" && !Number.isNaN(Date.parse(req.query.before)) ? new Date(req.query.before) : null;
   const excluded = await blockedIds(req.user._id);
-  const filter = { isHidden: false, author: { $nin: excluded } };
+  const connections = await Connection.find({
+    status: "ACCEPTED",
+    $or: [{ user: req.user._id }, { connectedUser: req.user._id }]
+  }).select("user connectedUser");
+  const connectedIds = connections.map((connection) =>
+    String(connection.user) === String(req.user._id) ? connection.connectedUser : connection.user
+  );
+  const filter = {
+    isHidden: false,
+    author: { $nin: excluded },
+    $or: [
+      { visibility: "public" },
+      { visibility: "connections", author: { $in: connectedIds } }
+    ]
+  };
   if (before) filter.createdAt = { $lt: before };
   const posts = await Post.find(filter).populate("author", "fullName username avatarUrl").sort({ createdAt: -1 }).limit(limit);
   return res.json({ posts });
