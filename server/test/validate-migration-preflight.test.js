@@ -47,6 +47,8 @@ test("passes when export integrity and reviewed mapping coverage both pass", asy
     assert.equal(report.valid, true);
     assert.equal(report.export.totalRows, 1);
     assert.equal(report.mappingCoverage.valid, true);
+    assert.equal(report.mappingContractReady, true);
+    assert.equal(report.readyForDryRun, true);
     assert.deepEqual(report.blockers, []);
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
@@ -86,6 +88,8 @@ test("reports mapping blockers after validating the export", async () => {
     const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
     assert.equal(report.export.valid, true);
     assert.equal(report.valid, false);
+    assert.equal(report.mappingContractReady, false);
+    assert.equal(report.readyForDryRun, false);
     assert.ok(report.blockers.some((item) => item.issue.includes("schema snapshot has not been reviewed")));
     assert.ok(report.blockers.some((item) => item.stage === "mappingContract" && item.issue.includes("cannot approve a mapped/transformed table")));
     assert.ok(report.blockers.every((item) => ["mappingContract", "mappingCoverage", "targetModelCoverage"].includes(item.stage)),
@@ -175,6 +179,8 @@ test("preflight validates model targets even while source mappings remain pendin
     const report = await validateMigrationPreflight(f.exportDirectory, f.contractPath);
     assert.equal(report.targetModelCoverage.valid, true);
     assert.equal(report.valid, false, "pending source schema must still block preflight");
+    assert.equal(report.mappingContractReady, false);
+    assert.equal(report.readyForDryRun, false);
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
