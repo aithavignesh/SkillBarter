@@ -355,6 +355,9 @@ test("email OTP verification increments attempts for an incorrect code", async (
   assert.equal(response.status, 401);
   assert.deepEqual(attemptUpdate.update.$inc, { attempts: 1 });
   assert.equal(attemptUpdate.query._id, challenge._id);
+  assert.equal(attemptUpdate.query.consumedAt, null);
+  assert.deepEqual(attemptUpdate.query.attempts, { $lt: 5 });
+  assert.ok(attemptUpdate.query.expiresAt.$gt instanceof Date);
 });
 
 test("email OTP verification rejects malformed codes before database access", async () => {
