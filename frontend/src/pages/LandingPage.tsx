@@ -274,7 +274,7 @@ const FeatureGrid: React.FC = () => {
 };
 
 export const LandingPage: React.FC = () => (
-  <main className="min-h-screen bg-[#f7f7f5] text-[#17233b]">
+  <div className="min-h-screen bg-[#f7f7f5] text-[#17233b]">
 <section className="relative isolate overflow-hidden border-b border-[#dedfdd] bg-[#f7f7f5]">
   <div
     aria-hidden="true"
@@ -285,15 +285,15 @@ export const LandingPage: React.FC = () => (
     }}
   />
 
-  <div className="relative z-10 mx-auto max-w-7xl px-5 pb-16 pt-24 sm:px-8 sm:pt-28 lg:px-10 lg:pb-24 lg:pt-32">
+  <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-16 pt-24 sm:px-8 sm:pt-28 lg:px-10 lg:pb-24 lg:pt-32">
     <div className="grid min-w-0 items-center gap-10 lg:grid-cols-[1.08fr_.92fr] lg:gap-16">
       <div className="min-w-0 self-start">
-        <div className="flex items-center gap-8 text-[11px] font-bold uppercase tracking-[0.18em] text-[#d31d24]"><span className="h-px w-8 bg-[#d31d24]" />Built for students & early-career learners</div>
-            <h1 className="mt-7 max-w-4xl text-[clamp(3rem,6.4vw,6.2rem)] font-semibold leading-[0.92] tracking-[-0.065em] text-[#17233b]">Find someone who can teach you.<br /><span className="text-[#d31d24]">Teach what you know.</span></h1>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#d31d24] sm:gap-8 sm:text-[11px] sm:tracking-[0.18em]"><span className="h-px w-8 shrink-0 bg-[#d31d24]" /><span className="min-w-0">Built for students & early-career learners</span></div>
+            <h1 className="mt-7 max-w-4xl break-words text-[clamp(2.25rem,8vw,3rem)] font-semibold leading-[0.98] tracking-[-0.055em] text-[#17233b] sm:text-[clamp(3rem,6.4vw,6.2rem)] sm:leading-[0.92] sm:tracking-[-0.065em]">Find someone who can teach you.<br /><span className="text-[#d31d24]">Teach what you know.</span></h1>
             <p className="mt-8 max-w-xl text-[16px] leading-7 text-[#5d6675] sm:text-[18px]">SkillBarter helps students and early-career learners find peers who can teach what they want to learn — while giving them a way to share the skills they already know.</p>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'signup' })} to={buildSignupPath()} className="inline-flex items-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d]">Find a learning partner <ArrowRight className="h-4 w-4" /></Link>
-              <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'discover' })} to="/discover" className="inline-flex items-center gap-2 border border-[#cfd2d1] bg-transparent px-5 py-3 text-[13px] font-bold text-[#17233b] hover:border-[#17233b]">Explore learning skills <Compass className="h-4 w-4" /></Link>
+            <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'signup' })} to={buildSignupPath()} className="inline-flex items-center justify-center gap-2 bg-[#d31d24] px-5 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#b8171d] sm:justify-start">Find a learning partner <ArrowRight className="h-4 w-4" /></Link>
+              <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_hero', action: 'discover' })} to="/discover" className="inline-flex items-center justify-center gap-2 border border-[#cfd2d1] bg-transparent px-5 py-3 text-[13px] font-bold text-[#17233b] hover:border-[#17233b] sm:justify-start">Explore learning skills <Compass className="h-4 w-4" /></Link>
             </div>
             <div className="mt-10 flex flex-wrap gap-x-7 gap-y-2 text-[11px] font-medium text-[#7a8290]">
               <span className="inline-flex items-center gap-2"><Users className="h-3.5 w-3.5" /> People first</span>
@@ -342,5 +342,5 @@ export const LandingPage: React.FC = () => (
         <Link onClick={() => trackEvent('activation_cta_clicked', { source: 'landing_beta_cta', action: 'signup' })} to="/signup" className="inline-flex shrink-0 items-center gap-2 bg-white px-5 py-3 text-[13px] font-bold text-[#17233b] hover:bg-[#f2f3f1]">Create your profile <ArrowRight className="h-4 w-4" /></Link>
       </div>
     </section>
-  </main>
+  </div>
 );

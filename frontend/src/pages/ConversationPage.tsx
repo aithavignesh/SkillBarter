@@ -112,12 +112,12 @@ export const ConversationPage: React.FC = () => {
     }
   };
 
-  if (loading) return <main className="flex min-h-[60vh] items-center justify-center px-4 text-sm text-slate-500" role="status">Loading conversation…</main>;
-  if (!partner && error) return <main className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-4 text-center"><p className="text-sm font-semibold text-[#17233b]">Conversation couldn’t be loaded.</p><p className="max-w-md text-xs text-slate-500">{error}</p><Button size="sm" variant="outline" onClick={() => void load()}>Try again</Button></main>;
-  if (!partner) return <main className="flex min-h-[60vh] items-center justify-center px-4 text-sm text-slate-500">Conversation unavailable.</main>;
+  if (loading) return <div className="flex min-h-[60vh] items-center justify-center px-4 text-sm text-slate-500" role="status">Loading conversation…</div>;
+  if (!partner && error) return <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-4 text-center"><p className="text-sm font-semibold text-[#17233b]">Conversation couldn’t be loaded.</p><p className="max-w-md text-xs text-slate-500">{error}</p><Button size="sm" variant="outline" onClick={() => void load()}>Try again</Button></div>;
+  if (!partner) return <div className="flex min-h-[60vh] items-center justify-center px-4 text-sm text-slate-500">Conversation unavailable.</div>;
 
   return (
-    <main className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+    <div className="min-h-[calc(100vh-1px)] bg-[#f7f7f5] px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
       <div className="mx-auto w-full max-w-[1100px]">
         <div className="mb-4 flex items-center justify-between gap-3">
           <button type="button" onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-xs font-semibold text-[#697386] hover:text-[#17233b]">
@@ -201,6 +201,6 @@ export const ConversationPage: React.FC = () => {
           </div>
         </div>
       </Modal>
-    </main>
+    </div>
   );
 };

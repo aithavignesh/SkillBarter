@@ -485,7 +485,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
       </section>}
 
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <main className="space-y-4">
+        <div className="space-y-4">
           {editing && own && (
             <section className="profile-edit-panel border border-[#d9dfe6] bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2"><Edit3 className="h-4 w-4 text-[#d31d24]" /><h2 className="text-base font-bold text-[#17233b]">Edit introduction</h2></div>
@@ -582,7 +582,7 @@ export const LinkedInStyleProfilePage: React.FC = () => {
               </div>
             ) : <p className="mt-5 border-t border-[#edf0f3] pt-4 text-sm text-[#697386]">No reviews yet. Reviews from completed learning exchanges will appear here.</p>}
           </section>
-        </main>
+        </div>
 
         <aside className="min-w-0 space-y-5">
           <section className="profile-section border border-[#e1e4e8] bg-white p-5 sm:p-6">

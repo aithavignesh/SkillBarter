@@ -20,7 +20,7 @@ export const AppPageShell: React.FC<AppPageShellProps> = ({
   search,
   children,
 }) => (
-  <main className="min-w-0 min-h-[calc(100vh-1px)] bg-[var(--ui-page)] px-4 py-5 pb-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-5 xl:px-10">
+  <div className="min-w-0 min-h-[calc(100vh-1px)] bg-[var(--ui-page)] px-4 py-5 pb-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-5 xl:px-10">
     <div className="mx-auto w-full min-w-0 max-w-[1320px]">
       <div className="mb-5 flex items-center gap-1 text-[11px] font-semibold text-[var(--ui-text-muted)]">
         <span>Workspace</span>
@@ -60,5 +60,5 @@ export const AppPageShell: React.FC<AppPageShellProps> = ({
 
       <div className="pt-6">{children}</div>
     </div>
-  </main>
+  </div>
 );

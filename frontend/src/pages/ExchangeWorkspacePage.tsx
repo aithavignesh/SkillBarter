@@ -188,9 +188,9 @@ export const ExchangeWorkspacePage: React.FC = () => {
     finally { setExchangeActionPending(false); }
   };
 
-  if (loading) return <main className="min-h-[60vh] bg-[#f7f7f5] px-6 py-16 text-center text-sm text-slate-500" role="status">Loading exchange workspace…</main>;
-  if (loadError) return <main className="flex min-h-[60vh] flex-col items-center justify-center gap-3 bg-[#f7f7f5] px-6 py-16 text-center"><p className="text-sm font-semibold text-[#17233b]">We couldn’t load this exchange.</p><p className="max-w-md text-xs text-slate-500">{loadError}</p><Button size="sm" variant="outline" onClick={() => void loadExchangeData()}>Try again</Button><Link to="/exchanges" className="text-xs font-semibold text-[#d31d24]">Back to exchanges</Link></main>;
-  if (!exchange || !partner) return <main className="min-h-[60vh] bg-[#f7f7f5] px-6 py-16 text-center"><p className="text-sm font-semibold text-[#17233b]">Exchange not found</p><Link to="/exchanges" className="mt-4 inline-block"><Button size="sm">Back to exchanges</Button></Link></main>;
+  if (loading) return <div className="min-h-[60vh] bg-[#f7f7f5] px-6 py-16 text-center text-sm text-slate-500" role="status">Loading exchange workspace…</div>;
+  if (loadError) return <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 bg-[#f7f7f5] px-6 py-16 text-center"><p className="text-sm font-semibold text-[#17233b]">We couldn’t load this exchange.</p><p className="max-w-md text-xs text-slate-500">{loadError}</p><Button size="sm" variant="outline" onClick={() => void loadExchangeData()}>Try again</Button><Link to="/exchanges" className="text-xs font-semibold text-[#d31d24]">Back to exchanges</Link></div>;
+  if (!exchange || !partner) return <div className="min-h-[60vh] bg-[#f7f7f5] px-6 py-16 text-center"><p className="text-sm font-semibold text-[#17233b]">Exchange not found</p><Link to="/exchanges" className="mt-4 inline-block"><Button size="sm">Back to exchanges</Button></Link></div>;
 
   const statusVariant = exchange.status === 'PENDING' ? 'amber' : exchange.status === 'COUNTERED' ? 'purple' : exchange.status === 'ACCEPTED' || exchange.status === 'ACTIVE' ? 'blue' : exchange.status === 'COMPLETED' ? 'emerald' : exchange.status === 'REJECTED' || exchange.status === 'CANCELLED' ? 'rose' : 'slate';
   const statusLabel = exchange.status === 'PENDING' ? 'Requested' : exchange.status === 'COUNTERED' ? 'Counter-proposed' : exchange.status === 'ACCEPTED' ? 'Accepted' : exchange.status === 'ACTIVE' ? 'In progress' : exchange.status === 'COMPLETED' ? 'Completed' : exchange.status === 'REJECTED' ? 'Declined' : exchange.status === 'CANCELLED' ? 'Cancelled' : exchange.status;
@@ -203,7 +203,7 @@ export const ExchangeWorkspacePage: React.FC = () => {
   ];
 
   return (
-    <main className="exchange-workspace min-h-[calc(100vh-1px)] min-w-0 bg-[#f7f7f5] px-4 py-5 pb-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-5 xl:px-10">
+    <div className="exchange-workspace min-h-[calc(100vh-1px)] min-w-0 bg-[#f7f7f5] px-4 py-5 pb-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-5 xl:px-10">
       <div className="mx-auto w-full max-w-[1320px]">
         <div className="mb-5 flex items-center justify-between gap-4">
           <Link to="/exchanges" className="inline-flex items-center gap-2 text-xs font-bold text-[#697386] hover:text-[#17233b]"><ArrowLeft className="h-4 w-4" /> Back to exchanges</Link>
@@ -418,6 +418,6 @@ export const ExchangeWorkspacePage: React.FC = () => {
       </Modal>
 
       {reviewModalOpen && <ExchangeReviewModal isOpen={reviewModalOpen} onClose={() => setReviewModalOpen(false)} exchange={exchange} onSuccess={() => { setReviewModalOpen(false); setActionSuccess('Review submitted. Thank you for sharing your experience.'); void loadExchangeData(); }} />}
-    </main>
+    </div>
   );
 };
