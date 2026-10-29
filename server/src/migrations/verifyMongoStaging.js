@@ -12,7 +12,7 @@ function parseMongoUri(uri, label) {
     throw new Error(`${label} must use mongodb:// or mongodb+srv://.`);
   }
   let databaseName;
-  try { databaseName = decodeURIComponent(parsedUri.pathname.replace(/^\\/+/, "").split("/")[0]); } catch {
+  try { databaseName = decodeURIComponent(parsedUri.pathname.slice(1).split("/")[0]); } catch {
     throw new Error(`${label} contains an invalid encoded database name.`);
   }
   return { parsedUri, databaseName };
