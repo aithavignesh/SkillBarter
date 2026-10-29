@@ -20,6 +20,9 @@ const sampleUser = {
 const originalUserFindById = User.findById;
 const originalPostCreate = Post.create;
 const originalPostFindById = Post.findById;
+const originalPostFindOne = Post.findOne;
+const originalBlockExists = Block.exists;
+const originalConnectionExists = Connection.exists;
 const originalBlockFind = Block.find;
 const originalConnectionFind = Connection.find;
 const originalPostFind = Post.find;
@@ -37,6 +40,9 @@ after(async () => {
   User.findById = originalUserFindById;
   Post.create = originalPostCreate;
   Post.findById = originalPostFindById;
+  Post.findOne = originalPostFindOne;
+  Block.exists = originalBlockExists;
+  Connection.exists = originalConnectionExists;
   Block.find = originalBlockFind;
   Connection.find = originalConnectionFind;
   Post.find = originalPostFind;
@@ -155,4 +161,28 @@ test("post feed limits connections-only posts to accepted connections", async ()
     { visibility: "public" },
     { visibility: "connections", author: { $in: [otherUserId] } }
   ]);
+});
+
+
+test("connections-only post comments are hidden from non-connections", async () => {
+  authenticate();
+  Post.findOne = () => ({ select: async () => ({ author: otherUserId, visibility: "connections" }) });
+  Connection.exists = async () => false;
+  let blockCheckCalled = false;
+  Block.exists = async () => { blockCheckCalled = true; return false; };
+
+  const response = await request("GET", `/api/posts/${postId}/comments`);
+
+  assert.equal(response.status, 404);
+  assert.equal(blockCheckCalled, false, "blocked relationship lookup should not run after visibility denial");
+});
+
+test("connections-only post likes are hidden from non-connections", async () => {
+  authenticate();
+  Post.findOne = async () => ({ author: otherUserId, visibility: "connections", likes: [], save: async () => {} });
+  Connection.exists = async () => false;
+
+  const response = await request("POST", `/api/posts/${postId}/like`);
+
+  assert.equal(response.status, 404);
 });
