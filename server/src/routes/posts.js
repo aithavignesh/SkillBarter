@@ -17,6 +17,17 @@ async function blockedIds(userId) {
   return blocks.map((block) => String(block.blocker) === String(userId) ? block.blocked : block.blocker);
 }
 
+async function canViewPost(userId, post) {
+  if (post.visibility !== "connections" || String(post.author) === String(userId)) return true;
+  return Boolean(await Connection.exists({
+    status: "ACCEPTED",
+    $or: [
+      { user: userId, connectedUser: post.author },
+      { user: post.author, connectedUser: userId }
+    ]
+  }));
+}
+
 router.get("/", async (req, res) => {
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 20, 1), 50);
   const before = typeof req.query.before === "string" && !Number.isNaN(Date.parse(req.query.before)) ? new Date(req.query.before) : null;
@@ -52,8 +63,9 @@ router.post("/", postLimiter, async (req, res) => {
 
 router.get("/:id/comments", async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "Invalid post ID." });
-  const post = await Post.findOne({ _id: req.params.id, isHidden: false }).select("author");
+  const post = await Post.findOne({ _id: req.params.id, isHidden: false }).select("author visibility");
   if (!post) return res.status(404).json({ error: "Post not found." });
+  if (!(await canViewPost(req.user._id, post))) return res.status(404).json({ error: "Post not found." });
   const blocked = await Block.exists({ $or: [
     { blocker: req.user._id, blocked: post.author },
     { blocker: post.author, blocked: req.user._id }
@@ -107,6 +119,7 @@ router.post("/:id/like", postLimiter, async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: "Invalid post ID." });
   const post = await Post.findOne({ _id: req.params.id, isHidden: false });
   if (!post) return res.status(404).json({ error: "Post not found." });
+  if (!(await canViewPost(req.user._id, post))) return res.status(404).json({ error: "Post not found." });
   const authorId = String(post.author);
   const blocked = await Block.exists({ $or: [{ blocker: req.user._id, blocked: post.author }, { blocker: post.author, blocked: req.user._id }] });
   if (blocked) return res.status(403).json({ error: "This interaction is unavailable because one participant has blocked the other." });
