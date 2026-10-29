@@ -71,13 +71,8 @@ export async function verifyMongoStaging(db, specification) {
     expected.set(entry.name, entry.expectedCount);
   }
 
-  const results = [];
-  for (const [name, expectedCount] of expected) {
-    const actualCount = await db.collection(name).countDocuments({});
-    results.push({ collection: name, expectedCount, actualCount, valid: actualCount === expectedCount });
-  }
-
-  const referenceResults = [];
+  // Validate the complete specification before any database read. This keeps a
+  // malformed reference from triggering partial counts or other avoidable reads.
   for (const reference of specification.references) {
     requireObject(reference, "Reference check");
     requireSafeName(reference.collection, "Reference source collection");
@@ -86,6 +81,16 @@ export async function verifyMongoStaging(db, specification) {
     if (!expected.has(reference.collection) || !expected.has(reference.targetCollection)) {
       throw new Error("Every reference source and target collection must have an explicit count expectation.");
     }
+  }
+
+  const results = [];
+  for (const [name, expectedCount] of expected) {
+    const actualCount = await db.collection(name).countDocuments({});
+    results.push({ collection: name, expectedCount, actualCount, valid: actualCount === expectedCount });
+  }
+
+  const referenceResults = [];
+  for (const reference of specification.references) {
     const source = db.collection(reference.collection);
     const target = db.collection(reference.targetCollection);
     const targetIds = new Set();
