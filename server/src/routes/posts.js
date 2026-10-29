@@ -55,8 +55,12 @@ router.get("/", async (req, res) => {
 router.post("/", postLimiter, async (req, res) => {
   const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
   const tags = Array.isArray(req.body?.tags) ? req.body.tags.filter((tag) => typeof tag === "string").map((tag) => tag.trim().replace(/^#/, "").toLowerCase()).filter((tag) => /^[a-z0-9_-]{1,40}$/.test(tag)).slice(0, 10) : [];
+  const visibility = req.body?.visibility === undefined ? "public" : req.body.visibility;
   if (content.length < 1 || content.length > 5000) return res.status(400).json({ error: "Post content must contain 1–5000 characters." });
-  const post = await Post.create({ author: req.user._id, content, tags });
+  if (!["public", "connections"].includes(visibility)) {
+    return res.status(400).json({ error: "Post visibility must be public or connections." });
+  }
+  const post = await Post.create({ author: req.user._id, content, tags, visibility });
   await post.populate("author", "fullName username avatarUrl");
   return res.status(201).json({ post });
 });
