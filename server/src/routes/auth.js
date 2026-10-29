@@ -191,7 +191,11 @@ router.post("/otp/verify", otpVerifyLimiter, async (req, res, next) => {
 router.post("/phone-otp/request", otpRequestLimiter, async (req, res, next) => {
   try {
     const phone = normalizeE164Phone(req.body?.phone);
-    const purpose = req.body?.purpose === "register" ? "register" : "login";
+    const requestedPurpose = req.body?.purpose;
+    if (requestedPurpose !== undefined && !["register", "login"].includes(requestedPurpose)) {
+      return res.status(400).json({ error: "Purpose must be either register or login." });
+    }
+    const purpose = requestedPurpose ?? "login";
     if (!phone) return res.status(400).json({ error: "Enter a valid mobile number in international format, such as +919876543210." });
     if (!isPhoneOtpConfigured()) return res.status(503).json({ error: "SMS OTP is not configured on the server." });
 
@@ -218,7 +222,11 @@ router.post("/phone-otp/verify", otpVerifyLimiter, async (req, res, next) => {
   try {
     const phone = normalizeE164Phone(req.body?.phone);
     const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
-    const purpose = req.body?.purpose === "register" ? "register" : "login";
+    const requestedPurpose = req.body?.purpose;
+    if (requestedPurpose !== undefined && !["register", "login"].includes(requestedPurpose)) {
+      return res.status(400).json({ error: "Purpose must be either register or login." });
+    }
+    const purpose = requestedPurpose ?? "login";
     if (!phone || !/^\d{6}$/.test(code)) {
       return res.status(400).json({ error: "Enter a valid mobile number and 6-digit SMS code." });
     }
