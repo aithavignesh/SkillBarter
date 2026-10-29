@@ -23,7 +23,7 @@ test("accepts explicit pending and blocked decisions without claiming readiness"
   assert.equal(result.valid, true);
   assert.equal(result.readyTableCount, 0);
   assert.equal(result.blockedTableCount, 2);
-  assert.equal(result.mappingContractReady, false, "pending mappings must never be reported as import-ready");
+  assert.equal(result.mappingContractReady, false, "pending mappings must never be reported as mapping-contract-ready");
 });
 test("rejects an unsupported contract version and missing table list", () => {
   assert.throws(() => validateMappingContract({ ...contract, contractVersion: 2 }), /contractVersion must be 1/);
@@ -218,6 +218,7 @@ test("CLI prints parseable JSON and returns blocked status as exit code 2", asyn
     const output = JSON.parse(result.stdout);
     assert.equal(output.valid, true);
     assert.equal(output.blockedTableCount, 2);
+    assert.equal(output.mappingContractReady, false);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -289,7 +290,7 @@ test("rejects ready status while any table mapping remains pending or blocked", 
 });
 
 
-test("reports import readiness only when schema is reviewed and every table decision is resolved", () => {
+test("reports mapping-contract readiness only when schema is reviewed and every table decision is resolved", () => {
   const pending = validateMappingContract(contract);
   assert.equal(pending.mappingContractReady, false);
 
