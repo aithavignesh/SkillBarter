@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
 import User from "../src/models/User.js";
 import Post from "../src/models/Post.js";
+import Block from "../src/models/Block.js";
+import Connection from "../src/models/Connection.js";
 import app from "../src/app.js";
 
 const jwtSecret = "post-security-tests-secret-at-least-thirty-two-characters";
@@ -18,6 +20,9 @@ const sampleUser = {
 const originalUserFindById = User.findById;
 const originalPostCreate = Post.create;
 const originalPostFindById = Post.findById;
+const originalBlockFind = Block.find;
+const originalConnectionFind = Connection.find;
+const originalPostFind = Post.find;
 let server;
 let baseUrl;
 
@@ -32,6 +37,9 @@ after(async () => {
   User.findById = originalUserFindById;
   Post.create = originalPostCreate;
   Post.findById = originalPostFindById;
+  Block.find = originalBlockFind;
+  Connection.find = originalConnectionFind;
+  Post.find = originalPostFind;
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
 
@@ -111,4 +119,40 @@ test("post deletion succeeds for the author", async () => {
   const response = await request("DELETE", `/api/posts/${postId}`);
   assert.equal(response.status, 200);
   assert.equal(deleted, true);
+});
+
+
+test("post feed limits connections-only posts to accepted connections", async () => {
+  authenticate();
+  Block.find = () => ({ select: async () => [] });
+  let connectionFilter;
+  Connection.find = (filter) => {
+    connectionFilter = filter;
+    return { select: async () => [{ user: userId, connectedUser: otherUserId }] };
+  };
+  let postFilter;
+  Post.find = (filter) => {
+    postFilter = filter;
+    return {
+      populate() {
+        return {
+          sort() {
+            return { limit: async () => [] };
+          }
+        };
+      }
+    };
+  };
+
+  const response = await request("GET", "/api/posts");
+  assert.equal(response.status, 200);
+  assert.equal(connectionFilter.status, "ACCEPTED");
+  assert.deepEqual(connectionFilter.$or, [
+    { user: userId },
+    { connectedUser: userId }
+  ]);
+  assert.deepEqual(postFilter.$or, [
+    { visibility: "public" },
+    { visibility: "connections", author: { $in: [otherUserId] } }
+  ]);
 });
