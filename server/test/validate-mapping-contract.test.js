@@ -23,7 +23,7 @@ test("accepts explicit pending and blocked decisions without claiming readiness"
   assert.equal(result.valid, true);
   assert.equal(result.readyTableCount, 0);
   assert.equal(result.blockedTableCount, 2);
-  assert.equal(result.readyForImport, false, "pending mappings must never be reported as import-ready");
+  assert.equal(result.mappingContractReady, false, "pending mappings must never be reported as import-ready");
 });
 test("rejects an unsupported contract version and missing table list", () => {
   assert.throws(() => validateMappingContract({ ...contract, contractVersion: 2 }), /contractVersion must be 1/);
@@ -291,7 +291,7 @@ test("rejects ready status while any table mapping remains pending or blocked", 
 
 test("reports import readiness only when schema is reviewed and every table decision is resolved", () => {
   const pending = validateMappingContract(contract);
-  assert.equal(pending.readyForImport, false);
+  assert.equal(pending.mappingContractReady, false);
 
   const reviewedButBlocked = validateMappingContract({
     ...structuredClone(contract),
@@ -300,7 +300,7 @@ test("reports import readiness only when schema is reviewed and every table deci
     tables: [{ name: "connections", status: "blocked", reason: "Await product decision." }]
   });
   assert.equal(reviewedButBlocked.valid, true, "an explicit blocked decision is structurally valid");
-  assert.equal(reviewedButBlocked.readyForImport, false);
+  assert.equal(reviewedButBlocked.mappingContractReady, false);
 
   const approved = validateMappingContract({
     ...structuredClone(contract),
@@ -315,5 +315,5 @@ test("reports import readiness only when schema is reviewed and every table deci
   });
   assert.equal(approved.valid, true);
   assert.equal(approved.blockedTableCount, 0);
-  assert.equal(approved.readyForImport, true);
+  assert.equal(approved.mappingContractReady, true);
 });
