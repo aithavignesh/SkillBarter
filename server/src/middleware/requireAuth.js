@@ -4,10 +4,11 @@ import { isTokenVersionCurrent } from "../utils/security.js";
 
 export async function requireAuth(req, res, next) {
   const authorization = req.get("authorization") || "";
-  const [scheme, token] = authorization.split(" ");
-  if (scheme !== "Bearer" || !token) {
+  const match = authorization.match(/^Bearer\s+(\S+)$/);
+  if (!match) {
     return res.status(401).json({ error: "Authentication required." });
   }
+  const token = match[1];
 
   try {
     const secret = process.env.JWT_SECRET;
