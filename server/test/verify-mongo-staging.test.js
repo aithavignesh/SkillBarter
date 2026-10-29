@@ -143,3 +143,22 @@ test("staging URI validation decodes escaped database names before safety checks
   assert.equal(getStagingDatabaseName("mongodb://localhost:27017/skillbarter%5Fstaging"), "skillbarter_staging");
   assert.throws(() => getStagingDatabaseName("mongodb://localhost:27017/bad%ZZname"), /invalid encoded database name/);
 });
+
+
+test("staging URI validation rejects the same host and database with different credentials or query parameters", () => {
+  const appUri = "mongodb+srv://app-user:app-secret@cluster.example.mongodb.net/skillbarter_staging?retryWrites=true";
+  const aliasedUri = "mongodb+srv://migration-user:migration-secret@cluster.example.mongodb.net/skillbarter_staging?readPreference=primary";
+  assert.throws(
+    () => validateStagingMongoUri(aliasedUri, appUri, "YES"),
+    /must not equal or alias/
+  );
+});
+
+test("staging URI validation permits a separate database on the same host", () => {
+  const appUri = "mongodb+srv://app-user:app-secret@cluster.example.mongodb.net/skillbarter_app?retryWrites=true";
+  const stagingUri = "mongodb+srv://migration-user:migration-secret@cluster.example.mongodb.net/skillbarter_staging?readPreference=primary";
+  assert.deepEqual(validateStagingMongoUri(stagingUri, appUri, "YES"), {
+    databaseName: "skillbarter_staging",
+    hostname: "cluster.example.mongodb.net"
+  });
+});
