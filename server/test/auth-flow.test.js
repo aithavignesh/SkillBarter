@@ -207,6 +207,24 @@ test("email OTP request uses a generic response when no active account matches",
   }
 });
 
+test("phone OTP endpoints reject unsupported purposes before database or provider access", async () => {
+  let databaseQueried = false;
+  User.findOne = () => {
+    databaseQueried = true;
+    throw new Error("Database must not be queried for an invalid OTP purpose.");
+  };
+
+  for (const [path, body] of [
+    ["/api/auth/phone-otp/request", { phone: "+919876543210", purpose: "admin" }],
+    ["/api/auth/phone-otp/verify", { phone: "+919876543210", code: "123456", purpose: "admin" }]
+  ]) {
+    const response = await post(path, body);
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /purpose must be either register or login/i);
+  }
+  assert.equal(databaseQueried, false);
+});
+
 test("phone OTP verification rejects malformed codes before provider access", async () => {
   const response = await post("/api/auth/phone-otp/verify", { phone: "+919876543210", code: "123", purpose: "login" });
   assert.equal(response.status, 400);
