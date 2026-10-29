@@ -85,8 +85,9 @@ router.post("/:id/comments", postLimiter, async (req, res) => {
   if (!content || rawContent.length > 2000 || content.length > 2000) {
     return res.status(400).json({ error: "Comment must contain 1–2000 characters." });
   }
-  const post = await Post.findOne({ _id: req.params.id, isHidden: false }).select("author");
+  const post = await Post.findOne({ _id: req.params.id, isHidden: false }).select("author visibility");
   if (!post) return res.status(404).json({ error: "Post not found." });
+  if (!(await canViewPost(req.user._id, post))) return res.status(404).json({ error: "Post not found." });
   const blocked = await Block.exists({ $or: [
     { blocker: req.user._id, blocked: post.author },
     { blocker: post.author, blocked: req.user._id }
