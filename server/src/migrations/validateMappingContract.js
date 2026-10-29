@@ -113,7 +113,7 @@ export function validateMappingContract(contract) {
   const valid = issues.length === 0;
   return {
     valid,
-    readyForImport: valid && contract.schemaSnapshotReviewed && blockedTableCount === 0,
+    mappingContractReady: valid && contract.schemaSnapshotReviewed && blockedTableCount === 0,
     schemaSnapshotReviewed: contract.schemaSnapshotReviewed,
     tableCount: tables.length,
     readyTableCount,
