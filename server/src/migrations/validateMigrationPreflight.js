@@ -29,8 +29,12 @@ export async function validateMigrationPreflight(exportDirectory, mappingContrac
       .filter((table) => !Array.isArray(table.columns) || table.columns.length === 0)
       .map((table) => ({ table: table.name, issue: "reviewed schema requires an explicit source column inventory in the export manifest", stage: "sourceColumnInventory" }))
     : [];
+  const valid = exportReport.valid && contractReport.valid && coverageReport.valid && targetModelReport.valid && columnInventoryIssues.length === 0;
+  const mappingContractReady = contractReport.mappingContractReady === true;
   return {
-    valid: exportReport.valid && contractReport.valid && coverageReport.valid && targetModelReport.valid && columnInventoryIssues.length === 0,
+    valid,
+    mappingContractReady,
+    readyForDryRun: valid && mappingContractReady,
     export: exportReport,
     mappingContract: contractReport,
     mappingCoverage: coverageReport,
