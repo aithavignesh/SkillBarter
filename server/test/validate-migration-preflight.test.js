@@ -153,7 +153,10 @@ test("CLI prints JSON and uses exit code 2 when mapping is unreviewed", async ()
     const result = spawnSync(process.execPath, [scriptPath, f.exportDirectory, f.contractPath], { encoding: "utf8" });
     assert.equal(result.status, 2, result.stderr);
     assert.equal(result.stderr, "");
-    assert.equal(JSON.parse(result.stdout).valid, false);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.valid, false);
+    assert.equal(report.mappingContractReady, false);
+    assert.equal(report.readyForDryRun, false);
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
