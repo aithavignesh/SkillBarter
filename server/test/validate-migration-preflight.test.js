@@ -173,6 +173,20 @@ test("preflight rejects proposed targets without a matching Mongoose model", asy
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("CLI exits 2 when mappings are structurally valid but still pending", async () => {
+  const f = await fixture({ reviewed: true, mappingStatus: "pending" });
+  try {
+    const scriptPath = fileURLToPath(new URL("../src/migrations/validateMigrationPreflight.js", import.meta.url));
+    const result = spawnSync(process.execPath, [scriptPath, f.exportDirectory, f.contractPath], { encoding: "utf8" });
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.valid, true, "structural validation can pass while a mapping remains pending");
+    assert.equal(report.mappingContractReady, false);
+    assert.equal(report.readyForDryRun, false);
+    assert.equal(result.status, 2, result.stderr);
+    assert.equal(result.stderr, "");
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("preflight validates model targets even while source mappings remain pending", async () => {
   const f = await fixture({ reviewed: false, mappingStatus: "pending" });
   try {
