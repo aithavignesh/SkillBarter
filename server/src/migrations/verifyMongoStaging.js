@@ -3,30 +3,41 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import mongoose from "mongoose";
 
-export function getStagingDatabaseName(uri) {
+function parseMongoUri(uri, label) {
   let parsedUri;
   try { parsedUri = new URL(uri); } catch {
-    throw new Error("MIGRATION_STAGING_MONGODB_URI must be a valid MongoDB URI.");
+    throw new Error(`${label} must be a valid MongoDB URI.`);
   }
   if (!["mongodb:", "mongodb+srv:"].includes(parsedUri.protocol)) {
-    throw new Error("MIGRATION_STAGING_MONGODB_URI must use mongodb:// or mongodb+srv://.");
+    throw new Error(`${label} must use mongodb:// or mongodb+srv://.`);
   }
   let databaseName;
-  try { databaseName = decodeURIComponent(parsedUri.pathname.replace(/^\/+/, "").split("/")[0]); } catch {
-    throw new Error("MIGRATION_STAGING_MONGODB_URI contains an invalid encoded database name.");
+  try { databaseName = decodeURIComponent(parsedUri.pathname.replace(/^\\/+/, "").split("/")[0]); } catch {
+    throw new Error(`${label} contains an invalid encoded database name.`);
   }
-  return databaseName;
+  return { parsedUri, databaseName };
+}
+
+export function getStagingDatabaseName(uri) {
+  return parseMongoUri(uri, "MIGRATION_STAGING_MONGODB_URI").databaseName;
 }
 
 export function validateStagingMongoUri(uri, applicationUri, confirmation) {
   if (typeof uri !== "string" || !uri.trim()) {
     throw new Error("MIGRATION_STAGING_MONGODB_URI is required; use a dedicated staging account.");
   }
-  if (applicationUri && uri === applicationUri) {
-    throw new Error("Staging URI must not equal the application's MONGODB_URI.");
+  const { parsedUri, databaseName } = parseMongoUri(uri, "MIGRATION_STAGING_MONGODB_URI");
+
+  // Compare endpoint identity, not raw URI strings: different credentials or query
+  // parameters must not allow the staging guard to target the application's database.
+  if (typeof applicationUri === "string" && applicationUri.trim()) {
+    const application = parseMongoUri(applicationUri, "MONGODB_URI");
+    if (parsedUri.hostname.toLowerCase() === application.parsedUri.hostname.toLowerCase()
+      && databaseName.toLowerCase() === application.databaseName.toLowerCase()) {
+      throw new Error("Staging URI must not equal or alias the application's MONGODB_URI host/database.");
+    }
   }
-  const databaseName = getStagingDatabaseName(uri);
-  const parsedUri = new URL(uri);
+
   const hostAndDatabase = parsedUri.hostname + " " + databaseName;
   if (!databaseName || /(^|[-_.])(prod|production|live)([-_.]|$)/i.test(hostAndDatabase)) {
     throw new Error("Staging URI must identify a non-production host and database.");
@@ -129,7 +140,7 @@ async function main() {
   try {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000, readPreference: "primary" });
     const report = await verifyMongoStaging(mongoose.connection.db, specification);
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);
     if (!report.valid) process.exitCode = 2;
   } finally {
     await mongoose.disconnect();
@@ -138,7 +149,7 @@ async function main() {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   main().catch((error) => {
-    process.stderr.write(`MongoDB staging verification failed: ${error.message}\n`);
+    process.stderr.write(`MongoDB staging verification failed: ${error.message}\\n`);
     process.exitCode = 1;
   });
 }
