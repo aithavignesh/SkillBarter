@@ -15,6 +15,7 @@ This checklist coordinates the existing schema snapshot runbook, review workshee
 | ID/reference integrity | Pending | Deterministic source-ID crosswalk; uniqueness and foreign-reference resolution validated |
 | Data compatibility | Pending | Length/null/enum/collision/timestamp anomalies reviewed with explicit preserve, transform, quarantine, or exclusion decisions |
 | Security and privacy | Pending | Credential compatibility, sensitive analytics payloads, access controls, and retention reviewed |
+| Admin authorization model | Pending review | Confirm approved roles and permission matrix; current implementation uses a Boolean `isAdmin` gate, not granular roles. Do not claim role-based access control until roles, route permissions, and tests are implemented and reviewed. |
 | Dry-run/import report | Not authorized yet | Approved non-production dry run, row-count reconciliation, rejected-row report, and reviewer sign-off |
 | Production cutover | Not authorized | Separate explicit approval after all prior gates pass |
 
@@ -27,9 +28,10 @@ Do not mark a gate complete from a template, source ORM comment, successful CI r
 3. **Capture approved data-quality aggregates.** Only after confirming the query matches the actual source schema, run exact counts and the status/length inventory. Keep all row-level evidence and sensitive output private.
 4. **Review mappings field by field.** Complete `SCHEMA_REVIEW_TEMPLATE.md`. For each source field, record the target, transformation, exclusion or quarantine policy, validation evidence, decision owner, and reviewer. Keep unresolved fields blocked.
 5. **Resolve identity and relationship semantics.** Approve deterministic source-ID-to-ObjectId mapping, uniqueness/collision handling, nullable references, delete behavior, status conversions, timestamps, and fields missing from target models. Never synthesize users, skills, references, timestamps, credentials, or liker identities.
-6. **Run repository preflight and tests.** Use the existing migration validation scripts and automated test suite against the reviewed contract and sanitized evidence. A green CI run is necessary but not sufficient.
-7. **Perform a non-production dry run only after approval.** Reconcile source and target counts, required/optional references, duplicate keys, rejected/quarantined records, and timestamp distributions. Keep a report of every difference and require reviewer sign-off.
-8. **Treat production cutover as a separate decision.** No production import, traffic switch, legacy shutdown, or migration-branch merge is authorized by this checklist.
+6. **Review admin authorization separately.** Confirm the required roles (if any), permissions per admin endpoint, restrictions on changing privileged accounts, and audit requirements with the project owner. Implement and test only against that approved matrix.
+7. **Run repository preflight and tests.** Use the existing migration validation scripts and automated test suite against the reviewed contract and sanitized evidence. A green CI run is necessary but not sufficient.
+8. **Perform a non-production dry run only after approval.** Reconcile source and target counts, required/optional references, duplicate keys, rejected/quarantined records, and timestamp distributions. Keep a report of every difference and require reviewer sign-off.
+9. **Treat production cutover as a separate decision.** No production import, traffic switch, legacy shutdown, or migration-branch merge is authorized by this checklist.
 
 ## Stop conditions
 
@@ -43,6 +45,7 @@ Stop and leave the relevant mapping blocked if any of the following is true:
 - An observed status/type has no explicit conversion.
 - A source field would be silently discarded or a timestamp would be replaced by import time.
 - The dry-run report has unexplained count differences, duplicates, failed references, or quarantined rows without approved disposition.
+- The admin role/permission requirements are undefined or privileged actions are not covered by tests.
 - Source-owner, security/privacy, or migration-reviewer sign-off is missing.
 
 ## Sign-off record
