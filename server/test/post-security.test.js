@@ -197,3 +197,27 @@ test("non-connections cannot comment on connections-only posts", async () => {
 
   assert.equal(response.status, 404);
 });
+
+
+test("post creation supports validated connections-only visibility", async () => {
+  authenticate();
+  let created;
+  Post.create = async (value) => {
+    created = value;
+    return { _id: postId, ...value, populate: async () => {} };
+  };
+
+  const response = await request("POST", "/api/posts", {
+    content: "  For my connections  ",
+    visibility: "connections"
+  });
+  assert.equal(response.status, 201);
+  assert.equal(created.visibility, "connections");
+  assert.equal(created.content, "For my connections");
+
+  const invalid = await request("POST", "/api/posts", {
+    content: "Should not be public by accident",
+    visibility: "private"
+  });
+  assert.equal(invalid.status, 400);
+});
