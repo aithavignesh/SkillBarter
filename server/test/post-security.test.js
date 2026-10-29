@@ -186,3 +186,14 @@ test("connections-only post likes are hidden from non-connections", async () => 
 
   assert.equal(response.status, 404);
 });
+
+
+test("non-connections cannot comment on connections-only posts", async () => {
+  authenticate();
+  Post.findOne = () => ({ select: async () => ({ author: otherUserId, visibility: "connections" }) });
+  Connection.exists = async () => false;
+
+  const response = await request("POST", `/api/posts/${postId}/comments`, { content: "Hello" });
+
+  assert.equal(response.status, 404);
+});
