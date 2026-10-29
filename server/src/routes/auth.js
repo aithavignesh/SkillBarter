@@ -166,7 +166,12 @@ router.post("/otp/verify", otpVerifyLimiter, async (req, res, next) => {
     if (!challenge || challenge.attempts >= 5 || !emailOtpMatches(challenge.codeHash, email, code)) {
       if (challenge && challenge.attempts < 5) {
         await EmailOtpChallenge.updateOne(
-          { _id: challenge._id, consumedAt: null, attempts: challenge.attempts },
+          {
+            _id: challenge._id,
+            consumedAt: null,
+            expiresAt: { $gt: new Date() },
+            attempts: { $lt: 5 }
+          },
           { $inc: { attempts: 1 } }
         );
       }
