@@ -56,7 +56,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     }
     const report = await validateMigrationPreflight(exportDirectory, mappingContractPath);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    if (!report.valid) process.exitCode = 2;
+    if (!report.valid || !report.readyForDryRun) process.exitCode = 2;
   } catch (error) {
     process.stderr.write(`Migration preflight failed: ${error.message}\n`);
     process.exitCode = 1;
