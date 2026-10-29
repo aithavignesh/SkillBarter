@@ -108,7 +108,19 @@ export function validateMappingContract(contract) {
       issue: "contract status cannot be ready while schema review or any table mapping remains pending, blocked, or invalid"
     });
   }
-  return { valid: issues.length === 0, schemaSnapshotReviewed: contract.schemaSnapshotReviewed, tableCount: tables.length, readyTableCount: tables.filter((table) => ["mapped", "transformed", "excluded"].includes(table.status) && table.valid).length, blockedTableCount: tables.filter((table) => ["pending", "blocked"].includes(table.status) || !table.valid).length, tables, issues };
+  const readyTableCount = tables.filter((table) => ["mapped", "transformed", "excluded"].includes(table.status) && table.valid).length;
+  const blockedTableCount = tables.filter((table) => ["pending", "blocked"].includes(table.status) || !table.valid).length;
+  const valid = issues.length === 0;
+  return {
+    valid,
+    readyForImport: valid && contract.schemaSnapshotReviewed && blockedTableCount === 0,
+    schemaSnapshotReviewed: contract.schemaSnapshotReviewed,
+    tableCount: tables.length,
+    readyTableCount,
+    blockedTableCount,
+    tables,
+    issues
+  };
 }
 async function readJson(filename) { return JSON.parse(await readFile(filename, "utf8")); }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
