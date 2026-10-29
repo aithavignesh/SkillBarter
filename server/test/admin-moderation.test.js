@@ -115,6 +115,16 @@ test("admin endpoints reject requests without a valid bearer token", async () =>
   }
 });
 
+test("admin endpoints reject malformed bearer headers with extra token segments", async () => {
+  setAuthenticatedUser(adminUser);
+  const response = await fetch(`${baseUrl}/api/admin/stats`, {
+    headers: { authorization: `Bearer ${authToken()} ignored-extra-segment` }
+  });
+
+  assert.equal(response.status, 401);
+  assert.match((await response.json()).error, /authentication required/i);
+});
+
 test("admin endpoints reject expired bearer tokens", async () => {
   setAuthenticatedUser(adminUser);
   const expiredToken = jwt.sign({ sub: adminId, tokenVersion: 0 }, jwtSecret, {
