@@ -32,7 +32,11 @@ if (root) {
   for (const workspace of ["next-app", "server"]) {
     if (!root.workspaces?.includes(workspace)) failures.push(`Root workspace missing: ${workspace}`);
   }
-  for (const script of ["dev", "build", "check", "test", "verify:stack", "preflight:migration", "test:staging"]) {
+  for (const script of [
+    "dev", "build", "check", "test", "verify:stack", "preflight:migration", "test:staging",
+    "validate:migration-export", "validate:migration-mapping", "validate:migration-target-models",
+    "verify:migration-staging", "reconcile:migration-report", "test:migration"
+  ]) {
     if (!root.scripts?.[script]) failures.push(`Root npm script missing: ${script}`);
   }
 }
@@ -95,7 +99,16 @@ for (const path of [
   "server/test/app-security.test.js",
   "server/test/deployment-readiness.test.js",
   "server/test/health.test.js",
-  "server/src/migrations/validateMigrationPreflight.js"
+  "server/src/migrations/validateMigrationPreflight.js",
+  "server/src/migrations/validateExport.js",
+  "server/src/migrations/validateMappingContract.js",
+  "server/src/migrations/validateTargetModelCoverage.js",
+  "server/src/migrations/verifyMongoStaging.js",
+  "server/src/migrations/reconcileImportReport.js",
+  "server/test/validate-export.test.js",
+  "server/test/validate-mapping-contract.test.js",
+  "server/test/validate-migration-preflight.test.js",
+  "server/test/verify-mongo-staging.test.js"
 ]) {
   await requirePath(path);
 }
