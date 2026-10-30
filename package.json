@@ -22,7 +22,9 @@
     "validate:migration-export": "npm run validate:export -w server --",
     "validate:migration-mapping": "npm run validate:mapping -w server --",
     "validate:migration-target-models": "npm run validate:target-models -w server --",
-    "verify:migration-staging": "npm run verify:db -w server --"
+    "verify:migration-staging": "npm run verify:db -w server --",
+    "reconcile:migration-report": "node server/src/migrations/reconcileImportReport.js",
+    "test:migration": "node --test server/src/migrations/*.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
