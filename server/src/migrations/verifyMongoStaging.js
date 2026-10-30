@@ -140,7 +140,7 @@ async function main() {
   try {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000, readPreference: "primary" });
     const report = await verifyMongoStaging(mongoose.connection.db, specification);
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\\n`);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     if (!report.valid) process.exitCode = 2;
   } finally {
     await mongoose.disconnect();
@@ -149,7 +149,7 @@ async function main() {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   main().catch((error) => {
-    process.stderr.write(`MongoDB staging verification failed: ${error.message}\\n`);
+    process.stderr.write(`MongoDB staging verification failed: ${error.message}\n`);
     process.exitCode = 1;
   });
 }
