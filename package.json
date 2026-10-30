@@ -24,7 +24,7 @@
     "validate:migration-target-models": "npm run validate:target-models -w server --",
     "verify:migration-staging": "npm run verify:db -w server --",
     "reconcile:migration-report": "node server/src/migrations/reconcileImportReport.js",
-    "test:migration": "node --test server/src/migrations/*.test.js"
+    "test:migration": "npm run test -w server --"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
