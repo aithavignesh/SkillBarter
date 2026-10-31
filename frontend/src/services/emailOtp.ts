@@ -1,4 +1,4 @@
-import { insforge } from '../lib/insforge';
+import { insforge, syncInsforgeAccessToken } from '../lib/insforge';
 
 const getHeaders = () => ({
   'Content-Type': 'application/json',
@@ -37,7 +37,7 @@ export async function verifyEmailOtp(emailInput: string, otpInput: string) {
     throw new Error(data?.message || data?.error || 'Invalid or expired email OTP.');
   }
 
-  insforge.setAccessToken(data.accessToken);
+  syncInsforgeAccessToken(data.accessToken);
   localStorage.setItem('skillbarter_token', data.accessToken);
   // Email OTP sessions return an access token but no browser refresh cookie.
   // Mark this session so the app restores it through the access-token path
