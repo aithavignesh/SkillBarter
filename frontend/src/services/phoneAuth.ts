@@ -1,4 +1,4 @@
-import { insforge } from '../lib/insforge';
+import { insforge, syncInsforgeAccessToken } from '../lib/insforge';
 
 export interface PhoneAuthUser {
   id: number;
@@ -144,7 +144,7 @@ export async function verifyPhoneOtp(phoneInput: string, otpInput: string, purpo
 
   const token = data.accessToken || data.token;
   if (!token) throw new Error('OTP verified, but no login session was returned. Please try again.');
-  insforge.setAccessToken(token);
+  syncInsforgeAccessToken(token);
   localStorage.setItem('skillbarter_token', token);
 
   const user = data.user;
