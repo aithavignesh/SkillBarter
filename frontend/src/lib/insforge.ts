@@ -17,26 +17,25 @@ const unavailableClient = new Proxy(
   },
 );
 
-// Keep the app shell renderable even when deployment configuration is missing.
-// API calls will fail with a clear configuration error instead of crashing the
-// module graph before React mounts.
-// Do not pass a persisted browser token into createClient(). For phone-OTP
-// sessions SkillBarter intentionally has an access token but no refresh token;
-// initializing the SDK with the token can make the auth layer attempt the
-// browser refresh endpoint when that token expires, producing repeated 401s.
-// Initialize the client without a token and attach the active token explicitly.
+// Do not initialize the SDK with a persisted token. OTP sessions intentionally
+// use short-lived access tokens without a browser-managed refresh cookie.
+export const insforge: any = isInsforgeConfigured
+  ? createClient({ baseUrl: baseUrl!, anonKey: anonKey! })
+  : unavailableClient;
+
+/** Keep the SDK and its underlying HTTP client on the same access token. */
+export function syncInsforgeAccessToken(token: string | null) {
+  try {
+    insforge.setAccessToken(token);
+  } catch {}
+  try {
+    insforge.getHttpClient?.().setAuthToken(token);
+  } catch {}
+}
+
 const persistedToken =
   typeof window !== 'undefined' ? localStorage.getItem('skillbarter_token') ?? '' : '';
 
-export const insforge: any = isInsforgeConfigured
-  ? createClient({
-      baseUrl: baseUrl!,
-      anonKey: anonKey!,
-    })
-  : unavailableClient;
-
 if (isInsforgeConfigured && persistedToken) {
-  try {
-    insforge.setAccessToken(persistedToken);
-  } catch {}
+  syncInsforgeAccessToken(persistedToken);
 }
